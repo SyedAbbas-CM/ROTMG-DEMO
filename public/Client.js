@@ -17,15 +17,16 @@ ctx3.imageSmoothingEnabled = false;
 ctx3.webkitImageSmoothingEnabled = false;
 
 const envi = new Image();
-envi.src = "sprites/lofiEnvironment.png";
+envi.src = "assets/images//lofiEnvironment.png";
 const char = new Image();
-char.src = "sprites/lofiChar.png";
+char.src = "assets/images/lofiChar.png";
 const play = new Image();
 play.src = "sprites/players.png";
 const env2 = new Image();
 env2.src = "sprites/lofiEnvironment2.png";
+//bullets and misc objects
 const obj4 = new Image();
-obj4.src = "sprites/lofiObj4.png";
+obj4.src = "sprites/lofiObj.png";
 
 const agj = new FontFace("agj", "url(adoquin/adoquin.woff2)");
 agj.load().then((font) => {
@@ -346,11 +347,11 @@ function gameLoop() {
     gctx.fillStyle = "black"
     gctx.fillRect(539,0,60,256)
 
-    gctx.fillStyle = rgb(${r},${g},${b})
+    gctx.fillStyle = rgb(`${r},${g},${b}`)
     gctx.fillRect(540,256,60,60)
     
     gctx.fillStyle = "white"
-    gctx.fillText(${r},${g},${b},490,340)
+    gctx.fillText(`${r},${g},${b}`,490,340)
 
 
     if(button("pick",525,350,70,24) && !erasing) color_picker = true
@@ -362,11 +363,11 @@ function gameLoop() {
       setTimeout(() => {eraseDelay = true}, 100);
     }
 
-    gctx.fillStyle = rgb(${r},0,0)
+    gctx.fillStyle = rgb(`${r}`,0,0)
     gctx.fillRect(540,0,20,r)
-    gctx.fillStyle = rgb(0,${g},0)
+    gctx.fillStyle = rgb(0,`${g}`,0)
     gctx.fillRect(560,0,20,g)
-    gctx.fillStyle = rgb(0,0,${b})
+    gctx.fillStyle = rgb(0,0,`${b}`)
     gctx.fillRect(580,0,20,b)
 
 
@@ -375,7 +376,7 @@ function gameLoop() {
     if(within(580,-1,20,256,2)) b = mouseY
 
 
-    ctx3.fillStyle = rgb(${r},${g},${b})
+    ctx3.fillStyle = rgb(`${r},${g},${b}`)
 
     for (let n = 0; n < last_used_colors.length; n++) {
       gctx.fillStyle = last_used_colors[n]
@@ -394,8 +395,8 @@ function gameLoop() {
 
       ctx3.fillRect(c3MouseX - Math.floor(drawing_x / zoom),c3MouseY - Math.floor(drawing_y / zoom),1,1)
 
-      if (!last_used_colors.includes(rgb(${r},${g},${b}))) {
-        last_used_colors.push(rgb(${r},${g},${b}));
+      if (!last_used_colors.includes(rgb(`${r},${g},${b}`))) {
+        last_used_colors.push(rgb(`${r},${g},${b}`));
       }
       
     }
@@ -515,10 +516,45 @@ function gameLoop() {
 
   ctx.drawImage(gameCanvas,0,0)
 
-
+  updateBullets();
+  renderBullets();
   requestAnimationFrame(gameLoop);
 }
 
+function shootBullet() {
+  // Determine bullet's initial position and direction based on player's direction
+  const bulletSpeed = 1; // Example speed, adjust as needed
+  const bullet = {
+    x: p.x,
+    y: p.y,
+    direction: p.r, // Use player's current direction
+    speed: bulletSpeed
+  };
+
+  // Send bullet data to the server
+  socket.send(JSON.stringify({ type: 'SHOOT', ...bullet }));
+
+  // Also add the bullet to the local bullets array for immediate rendering
+  bullets.push(bullet);
+}
+function updateBullets() {
+  bullets.forEach(bullet => {
+    bullet.x += bullet.speed * Math.cos(bullet.direction);
+    bullet.y += bullet.speed * Math.sin(bullet.direction);
+
+    // Remove bullets that go out of bounds (adjust as needed)
+    if (bullet.x < 0 || bullet.x > mapSize || bullet.y < 0 || bullet.y > mapSize) {
+      bullets = bullets.filter(b => b !== bullet);
+    }
+  });
+}
+
+function renderBullets() {
+  bullets.forEach(bullet => {
+    gctx.fillStyle = 'red'; // Example color for bullets
+    gctx.fillRect(bullet.x - 2, bullet.y - 2, 4, 4); // Draw bullet as a small square
+  });
+}
 let object_options = { 
    x: 0,
    y: 0,
@@ -668,6 +704,13 @@ addEventListener('wheel', (e) => {
   
   });
 
+document.addEventListener('mousedown', (e) => {
+    if (e.button === 0) { // Left mouse button
+      shootBullet();
+    }
+  });
+
+
 const key = {
   W: false,
   A: false,
@@ -744,7 +787,7 @@ let tex_map_size = 2
 
 let myId
 
-const socket = new WebSocket('wss://rotmgserver.onrender.com/');
+const socket = new WebSocket('127.0.0.1:3000');
 
 // Handle messages from the server
 socket.addEventListener('message', (event) => {
@@ -783,6 +826,11 @@ socket.addEventListener('message', (event) => {
         console.log(data)
         myId = data.playerId
         p.tx = ((myId % 10) * 8) % 56
+    }
+    if (data.type === 'NEW_BULLET') {
+      bullets.push(data.bullet);
+    } else if (data.type === 'UPDATE_BULLETS') {
+      bullets = data.bullets;
     }
 
 });
