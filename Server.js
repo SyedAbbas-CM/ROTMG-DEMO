@@ -6,12 +6,13 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const mapSize = 100 ** 2; // Example map size
+const mapSize = 100 ** 2;
 let map = new Array(mapSize).fill(0);
 map[0] = 1;
 
-// Store player data and bullets
+// Store player, enemy, and bullet data
 let players = {};
+let enemies = [];
 let bullets = [];
 
 const texMap = new Map();
@@ -20,131 +21,184 @@ texMap.set(1, { x: 32, y: 8, tex: "canvas3", wall: true, solid: true, x2: 8, y2:
 
 let tex_map_size = texMap.size;
 
-// Serve static files
+// Serve static files (e.g., your game files)
 app.use(express.static('public'));
+
+// Function to create a new enemy
+function createEnemy(x, y) {
+    const enemy = {
+        id: Date.now() + Math.random(),
+        x: x,
+        y: y,
+        direction: Math.random() * 2 * Math.PI,
+        speed: 0.5,
+        shootCooldown: 100,
+        shootTimer: 0,
+    };
+    enemies.push(enemy);
+    console.log('[createEnemy] Created enemy at position:', { x, y });
+    return enemy;
+}
+
+// Function to create a new bullet
+function createBullet(x, y, direction, speed) {
+    const bullet = {
+        id: Date.now() + Math.random(),
+        x: x,
+        y: y,
+        direction: direction,
+        speed: speed,
+    };
+    bullets.push(bullet);
+    console.log('[createBullet] Bullet created at position:', { x, y }, 'with direction:', direction, 'and speed:', speed);
+    return bullet;
+}
+
+// Initialize some enemies
+createEnemy(50, 50);
+createEnemy(150, 150);
+
+// Update game state (enemies and bullets)
+function updateGameState() {
+    console.time('updateGameState');
+    try {
+        enemies.forEach(enemy => {
+            enemy.x += enemy.speed * Math.cos(enemy.direction);
+            enemy.y += enemy.speed * Math.sin(enemy.direction);
+
+            if (Math.random() < 0.01) {
+                enemy.direction = Math.random() * 2 * Math.PI;
+            }
+
+            if (enemy.shootTimer <= 0) {
+                createBullet(enemy.x, enemy.y, Math.random() * 2 * Math.PI, 1);
+                enemy.shootTimer = enemy.shootCooldown;
+                console.log('[updateGameState] Enemy shot a bullet:', enemy);
+            } else {
+                enemy.shootTimer--;
+            }
+        });
+
+        bullets.forEach((bullet, index) => {
+            bullet.x += bullet.speed * Math.cos(bullet.direction);
+            bullet.y += bullet.speed * Math.sin(bullet.direction);
+
+            if (bullet.x < 0 || bullet.x > 100 || bullet.y < 0 || bullet.y > 100) {
+                bullets.splice(index, 1);
+                console.log('[updateGameState] Bullet removed at index:', index);
+            }
+        });
+    } catch (error) {
+        console.error('[updateGameState] Error updating game state:', error);
+    }
+    console.timeEnd('updateGameState');
+}
 
 // Handle WebSocket connections
 wss.on('connection', (ws) => {
-    console.log('New player connected');
+    console.log('[WebSocket] New player connected');
 
-    // Generate a unique ID for the player
     const playerId = Date.now();
-    players[playerId] = { name: "none", x: 2, y: 2 }; // Example initial data
+    players[playerId] = { name: "none", x: 2, y: 2 };
 
-    // Notify the new player of existing players and bullets
-    ws.send(JSON.stringify({ type: 'MAP', map }));
-    ws.send(JSON.stringify({ type: 'YOUR_ID', playerId }));
-    ws.send(JSON.stringify({ type: 'INIT', players }));
-    ws.send(JSON.stringify({ type: 'TEXTURE_MAP', texMap: Array.from(texMap.entries()) }));
-    ws.send(JSON.stringify({ type: 'INIT_BULLETS', bullets })); // Send existing bullets
+    try {
+        ws.send(JSON.stringify({ type: 'MAP', map }));
+        ws.send(JSON.stringify({ type: 'YOUR_ID', playerId }));
+        ws.send(JSON.stringify({ type: 'INIT', players }));
+        ws.send(JSON.stringify({ type: 'INIT_ENEMIES', enemies }));
+        ws.send(JSON.stringify({ type: 'INIT_BULLETS', bullets }));
+        ws.send(JSON.stringify({ type: 'TEXTURE_MAP', texMap: Array.from(texMap.entries()) }));
+    } catch (error) {
+        console.error('[WebSocket] Error sending initialization data:', error);
+    }
 
-    // Handle incoming messages from clients
     ws.on('message', (message) => {
-        const data = JSON.parse(message);
+        console.time('messageHandling');
+        try {
+            const data = JSON.parse(message);
+            console.log('[WebSocket] Received message:', data);
 
-        switch (data.type) {
-            case 'UPDATE_PLAYER':
-                // Update player data
-                players[playerId] = data.playerData;
+            switch (data.type) {
+                case 'UPDATE_PLAYER':
+                    players[playerId] = data.playerData;
+                    broadcast({ type: 'UPDATE_PLAYER', players });
+                    break;
 
-                // Broadcast updated player data to all clients
-                const updateMessage = JSON.stringify({ type: 'UPDATE_PLAYER', players });
-                wss.clients.forEach((client) => {
-                    if (client.readyState === WebSocket.OPEN) {
-                        client.send(updateMessage);
+                case 'MAP_CHANGE':
+                    if (data.location !== 5050) {
+                        map[data.location] = data.block;
+                        broadcast({ type: 'MAP_UPDATE', location: data.location, block: data.block });
                     }
-                });
-                break;
+                    break;
 
-            case 'MAP_CHANGE':
-                if (data.location !== 5050) {
-                    map[data.location] = data.block;
+                case 'NEW_TEXTURE_MAP':
+                    texMap.set(tex_map_size, data.options);
+                    tex_map_size++;
+                    broadcast({ type: 'TEXTURE_MAP', texMap: Array.from(texMap.entries()) });
+                    break;
 
-                    // Broadcast map change to all clients
-                    const mapUpdateMessage = JSON.stringify({ type: 'MAP_UPDATE', location: data.location, block: data.block });
-                    wss.clients.forEach((client) => {
-                        if (client.readyState === WebSocket.OPEN) {
-                            client.send(mapUpdateMessage);
-                        }
-                    });
-                }
-                break;
+                case 'SHOOT':
+                    createBullet(data.x, data.y, data.direction, data.speed);
+                    broadcast({ type: 'NEW_BULLET', bullet: data });
+                    break;
 
-            case 'NEW_TEXTURE_MAP':
-                texMap.set(tex_map_size, data.options);
-                tex_map_size++;
-
-                const textureMapUpdate = JSON.stringify({ type: 'TEXTURE_MAP', texMap: Array.from(texMap.entries()) });
-                wss.clients.forEach((client) => {
-                    if (client.readyState === WebSocket.OPEN) {
-                        client.send(textureMapUpdate);
-                    }
-                });
-                break;
-
-            case 'SHOOT':
-                // Create new bullet data
-                const bullet = {
-                    id: Date.now(),
-                    playerId,
-                    x: data.x,
-                    y: data.y,
-                    direction: data.direction,
-                    speed: data.speed
-                };
-                bullets.push(bullet);
-
-                // Broadcast new bullet to all clients
-                const bulletMessage = JSON.stringify({ type: 'NEW_BULLET', bullet });
-                wss.clients.forEach((client) => {
-                    if (client.readyState === WebSocket.OPEN) {
-                        client.send(bulletMessage);
-                    }
-                });
-                break;
+                default:
+                    console.warn('[WebSocket] Unhandled message type:', data.type);
+            }
+        } catch (error) {
+            console.error('[messageHandling] Error handling message:', error);
         }
+        console.timeEnd('messageHandling');
     });
 
-    // Handle disconnection
     ws.on('close', () => {
-        console.log('Player disconnected');
+        console.log('[WebSocket] Player disconnected:', playerId);
         delete players[playerId];
+        broadcast({ type: 'UPDATE_PLAYER', players });
+    });
 
-        // Notify all clients of the player removal
-        const updateMessage = JSON.stringify({ type: 'UPDATE_PLAYER', players });
-        wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(`player left ${playerId}`);
-            }
-        });
+    ws.on('error', (error) => {
+        console.error('[WebSocket] Error occurred with player connection:', playerId, error);
     });
 });
 
-// Broadcast player data and bullets at regular intervals
+// Broadcast data to all connected clients
+function broadcast(data) {
+    console.time('broadcast');
+    try {
+        const message = JSON.stringify(data);
+        wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(message);
+            }
+        });
+        console.log('[broadcast] Data broadcasted:', data.type);
+    } catch (error) {
+        console.error('[broadcast] Error broadcasting data:', error);
+    }
+    console.timeEnd('broadcast');
+}
+
+// Broadcast game state data at regular intervals
 setInterval(() => {
-    const updateMessage = JSON.stringify({ type: 'UPDATE_PLAYER', players });
-    const bulletUpdateMessage = JSON.stringify({ type: 'UPDATE_BULLETS', bullets });
-
-    wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(updateMessage);
-            client.send(bulletUpdateMessage);
-        }
-    });
-
-    // Update bullets position
-    bullets.forEach((bullet) => {
-        bullet.x += bullet.speed * Math.cos(bullet.direction);
-        bullet.y += bullet.speed * Math.sin(bullet.direction);
-        // Remove bullet if it goes out of bounds (this is an example)
-        if (bullet.x < 0 || bullet.x > mapSize || bullet.y < 0 || bullet.y > mapSize) {
-            bullets = bullets.filter(b => b.id !== bullet.id);
-        }
-    });
-}, 1000 / 30); // Update and broadcast 30 times per second
+    console.time('broadcastUpdate');
+    try {
+        updateGameState();
+        broadcast({ type: 'UPDATE_PLAYER', players });
+        broadcast({ type: 'UPDATE_ENEMIES', enemies });
+        broadcast({ type: 'UPDATE_BULLETS', bullets });
+    } catch (error) {
+        console.error('[broadcastUpdate] Error broadcasting updates:', error);
+    }
+    console.timeEnd('broadcastUpdate');
+}, 1000 / 30);
 
 // Start the server
 const PORT = 3000;
 server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`[Server] Server is running on port ${PORT}`);
+});
+
+server.on('error', (error) => {
+    console.error('[Server] Error occurred:', error);
 });
