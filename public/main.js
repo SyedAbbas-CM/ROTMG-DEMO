@@ -1,16 +1,13 @@
 // main.js
 
-import { loadAssets } from './assets.js';
-import { initializeGame, gameLoop } from './game.js';
-import { initializeInput } from './input.js';
-import { canvas } from './render.js';
+import { initGame } from './src/game/game.js';
 
-loadAssets()
-  .then(() => {
-    initializeInput(canvas);
-    initializeGame(); // Now performs actual initialization
-    gameLoop();
-  })
-  .catch(error => {
-    console.error('Error loading assets:', error);
-  });
+async function init() {
+  try {
+    await initGame(); // Initialize the game
+  } catch (error) {
+    console.error('Error during game initialization:', error);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', init);

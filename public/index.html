@@ -2,27 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Game</title>
-  <style>
-    body {
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #000;
-    }
-
-    canvas {
-      border: 1px solid #ffffff;
-    }
-  </style>
+  <title>Multi-View 3D Game</title>
+  <link rel="stylesheet" href="styles/styles.css">
+  <!-- Include Three.js as a global script -->
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
 </head>
 <body>
-  <canvas id="gameCanvas" width="600" height="600"></canvas>
-
-  <!-- Main script that imports and initializes all game modules -->
+  <!-- 2D Canvas for Top-Down and Strategic Views -->
+  <canvas id="gameCanvas"></canvas>
+  
+  <!-- 3D Canvas for First-Person View -->
+  <canvas id="glCanvas" style="display: none;"></canvas>
+  
+  <!-- Main Game Script -->
   <script type="module" src="main.js"></script>
 </body>
 </html>

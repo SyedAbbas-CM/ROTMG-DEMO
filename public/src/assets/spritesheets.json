@@ -1,0 +1,37 @@
+[
+    {
+      "name": "lofi_char",
+      "path": "assets/images/Oryx/lofi_char.png",
+      "defaultSpriteWidth": 8,
+      "defaultSpriteHeight": 8,
+      "spritesPerRow": 16,
+      "spritesPerColumn": 16
+    },
+    {
+      "name": "dungeon_enemies",
+      "path": "assets/images/Oryx/dungeon_enemies.png",
+      "defaultSpriteWidth": 12,
+      "defaultSpriteHeight": 12,
+      "spritesPerRow": 20,
+      "spritesPerColumn": 20,
+      "sprites": [
+        {
+          "index": 300,
+          "x": 120,
+          "y": 180,
+          "width": 16,
+          "height": 16
+        }
+      ]
+    },
+    {
+      "name": "big_sprites",
+      "path": "assets/images/Oryx/big_sprites.png",
+      "defaultSpriteWidth": 24,
+      "defaultSpriteHeight": 24,
+      "spritesPerRow": 10,
+      "spritesPerColumn": 10
+    }
+
+  ]
+  

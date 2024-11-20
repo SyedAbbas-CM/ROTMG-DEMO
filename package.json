@@ -12,6 +12,8 @@
   "description": "",
   "dependencies": {
     "express": "^4.19.2",
+    "noisejs": "^2.1.0",
+    "three": "^0.170.0",
     "ws": "^8.18.0"
   }
 }

@@ -80,12 +80,21 @@ function gameLoop() {
   
   action()
 
-  ctx.drawImage(gameCanvas,0,0)
+ // map[Math.round(p.x) + mapSize * (Math.round(p.y))] = 2
 
+  ctx.drawImage(gameCanvas,0,0)
   requestAnimationFrame(gameLoop);
 }
-
+let projectile_cooldown = -100
+let projectile_timeout = 10
 function game(){
+  projectile_cooldown++
+  if(mouseDown && projectile_cooldown > projectile_timeout){
+    projectile_cooldown = 0
+    let tan = Math.atan2(300 - mouseY, 300  - mouseX) - p.r
+    socket.send(JSON.stringify({ type: 'NEW_PROJECTILE', tan }));
+  }
+
   if (key.E) p.r -= 0.0233;
   if (key.Q) p.r += 0.0233;
 
@@ -127,24 +136,36 @@ function game(){
   let nearPX2 = p.x + 15
   let nearPY1 = p.y - 15
   let nearPY2 = p.y + 15
+  const time_since = Date.now() - update_timestamp
+  const how_long_to_move = time_since / 100
 
-  for (const key in player_list) {
+  for (const key in old_player_list) {
     if (Number(key) !== MY_ID && Object.prototype.hasOwnProperty.call(player_list, key)) {
-      const e = player_list[key];
-      if(e.x > nearPX1 &&
-        e.x < nearPX2 &&
-        e.y > nearPY1 &&
-        e.y < nearPY2
+      const e = old_player_list[key];
+      const e2 = player_list[key]
+
+      const dx = e.x - e2.x
+      const dy = e.y - e2.y
+
+      const approx_x = e.x - (dx * how_long_to_move)
+      const approx_y = e.y - (dy * how_long_to_move)
+
+      if(approx_x > nearPX1 &&
+        approx_x < nearPX2 &&
+        approx_y > nearPY1 &&
+        approx_y < nearPY2
       ){
   
         let offCenterPlus = offCenter ? offCenterDiff : 0
-        let screenX = (tSize * (e.x - p.x + 5)) -xCenter
-        let screenY = (tSize * (e.y - p.y + 5)) - yCenter + offCenterPlus
+        let screenX = (tSize * (approx_x - p.x + 5)) - xCenter
+        let screenY = (tSize * (approx_y - p.y + 5)) - yCenter + offCenterPlus
   
         let rotatedScreenX = screenX * cos + screenY * -sin + xCenter
         let rotatedScreenY = screenX * sin + screenY * cos + yCenter
   
         entity.push({
+            not_me: true,
+            name: p.name,
             x: rotatedScreenX,
             y: rotatedScreenY,
             tex: char,
@@ -157,6 +178,37 @@ function game(){
 
     }
   }
+
+  projectile_list = projectile_list.filter(e => e.lifetime > 0);
+
+  projectile_list.forEach(e =>{
+    e.x -= Math.cos(e.tan) * e.spd
+    e.y -= Math.sin(e.tan) * e.spd
+    e.lifetime--
+
+    map[Math.floor(e.x-1) + mapSize * (Math.floor(e.y-1))] = 2
+    setTimeout(() => {
+      map[Math.floor(e.x -1) + mapSize * (Math.floor(e.y-1))] = 0
+    }, 100);
+
+    let offCenterPlus = offCenter ? offCenterDiff : 0
+    let screenX = (tSize * (e.x - p.x + 5 )) - xCenter
+    let screenY = (tSize * (e.y - p.y + 5)) - yCenter + offCenterPlus
+
+    let rotatedScreenX = screenX * cos + screenY * -sin + xCenter - 20
+    let rotatedScreenY = screenX * sin + screenY * cos + yCenter - 35
+
+    entity.push({
+        projectile: true,
+        tan: e.tan,
+        x: rotatedScreenX,
+        y: rotatedScreenY,
+        tex: obj2,
+        tx: 56,
+        ty: 48,
+        size: 32,
+    })
+  })
 
   let roofs = []  
 
@@ -286,12 +338,19 @@ function game(){
       gctx.drawImage(e.tex, e.tx, e.ty, 1, 8, e.x, e.y, WALL_SIZE, -tSize);
     else
       {
-        gctx.drawImage(e.tex,e.tx,e.ty,8,8,Math.round(e.x) - e.size * 0.5,Math.round(e.y) - e.size,e.size,e.size);
-
-        if(e.name && e.name !== p.name){
-          gctx.fillStyle = "rgb(255,255,255)"
-          gctx.fillText(e.name,e.x - 20,e.y + 20)
+        if(e.projectile){
+          gctx.save();
+          gctx.translate( e.x + e.size / 2 ,  e.y + e.size / 2);
+          gctx.rotate(e.tan - 2.35619 + p.r);
+          gctx.drawImage(e.tex,e.tx,e.ty,8,8, -e.size / 2, -e.size / 2, e.size, e.size);
+          gctx.restore();
         }
+        else {
+        gctx.drawImage(e.tex,e.tx,e.ty,8,8,Math.round(e.x) - e.size * 0.5,Math.round(e.y) - e.size,e.size,e.size);
+        if(e.not_me){
+        gctx.fillStyle = "rgb(255,255,255)"
+        gctx.fillText(e.name,e.x - 20,e.y + 20)
+      }}
       }
   });
 
@@ -455,6 +514,7 @@ window.addEventListener("keyup", (e) => {
   // Handle game state transitions
   switch (k) {
     case "T":
+      console.log(player_list)
       alert("pause.");
       break;
     case "Z":
@@ -484,14 +544,16 @@ let map = new Uint8Array(mapSize * mapSize)
 const adjacentNWES = [-mapSize,-1,+1, +mapSize]
 
 
+map[52 + (52 * 100)] = 1
+
 let texMap = new Map();
 
 texMap.set(0, { x: 48, y: 8, tex: envi, wall: false, solid: false, x2: 48, y2: 8 , deco: false});
 texMap.set(1, { x: 32, y: 8, tex: envi, wall: true, solid: true, x2: 8, y2: 8 , deco: false});
+texMap.set(2, { x: 32, y: 8, tex: envi, wall: false, solid: false, x2: 48, y2: 8 , deco: false});
 
-let MY_ID, player_list
-
-const socket = new WebSocket('ws://127.0.0.1:3000');
+let MY_ID, player_list, old_player_list, update_timestamp, projectile_list = []
+const socket = new WebSocket('ws://localhost:3000');
 
 socket.addEventListener('message', (event) => {
     let data = event.data
@@ -503,20 +565,22 @@ socket.addEventListener('message', (event) => {
         return;  // Stop further processing
     }
 
-    // Additional validation can be done here (e.g., checking required fields)
-    if (typeof data.type !== 'string') {
-        console.error("Invalid data format received.");
-        return;
-  }
-
       switch (data.type) {
         case 'INIT':
           MY_ID = data.playerId
           player_list = data.players // an object containing objects labeled with the Ids; players = { 1:{x:82,y:52}, 2:{x:42,y:14} }
           console.log(player_list)
           break;
+
         case 'UPDATE_PLAYER':
+          update_timestamp = Date.now()
+
+          old_player_list = player_list
           player_list = data.players
+          break;
+
+        case 'NEW_PROJECTILE':
+        projectile_list.push(data.projectile)
           break;
       }
 });
@@ -527,7 +591,7 @@ function sendPlayerData(playerData) {
 
 setTimeout(() => {
   setInterval(() => {
-    const playerData = {name:p.name, x: p.x + 1, y: p.y + 1.5 }
+    const playerData = {name: p.name, x: p.x + 1, y: p.y + 1.5 }
     sendPlayerData(playerData);
   }, 100);
 }, 1000);

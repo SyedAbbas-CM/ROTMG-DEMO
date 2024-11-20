@@ -1,12 +1,11 @@
 // networking.js
 
-import { map, setMap } from './map.js';
-import { texMap, setTexMap } from './map.js';
-import { initializePlayers, updatePlayers, bullets } from './entities.js';
-import { player } from './gamestate.js';
+import { map, setMap, setTexMap } from './src/map/map.js';
+import { initializePlayers, updatePlayers, bullets } from './src/entities/entities.js';
+import { player } from './src/game/gamestate.js';
 
 // === NETWORKING SETUP ===
-const socket = new WebSocket('ws://127.0.0.1:3000');
+export const socket = new WebSocket('ws://127.0.0.1:3000');
 
 socket.addEventListener('open', () => {
   console.log('[WebSocket] Connected to the server');
@@ -83,9 +82,7 @@ function handleMapUpdate(data) {
 function handleTextureMap(data) {
   const { texMap: receivedTexMap } = data;
   if (receivedTexMap && typeof receivedTexMap === 'object') {
-    const updatedTexMap = new Map(receivedTexMap);
-
-    // Update texMap with the received data
+    const updatedTexMap = new Map(Object.entries(receivedTexMap).map(([key, value]) => [Number(key), value]));
     setTexMap(updatedTexMap);
     console.log('[TEXTURE_MAP] Texture map updated');
   } else {
@@ -103,7 +100,7 @@ function handleNewTextureMap(data) {
 function handleFullMap(data) {
   const { map: receivedMap } = data;
   if (Array.isArray(receivedMap)) {
-    setMap(receivedMap);
+    setMap(new Uint8Array(receivedMap));
     console.log('[MAP] Full map received and set');
   } else {
     console.warn('[MAP] Invalid data:', data);
@@ -190,6 +187,7 @@ setTimeout(() => {
       name: player.name,
       x: player.x,
       y: player.y,
+      r: player.r,
       // Add other relevant player data here
     };
     sendPlayerData(playerData);
@@ -198,4 +196,3 @@ setTimeout(() => {
 
 // === EXPORTS ===
 export { myId };
-export { socket };
