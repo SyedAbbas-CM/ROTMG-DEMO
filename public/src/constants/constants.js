@@ -1,28 +1,13 @@
 // src/constants/constants.js
 
-<<<<<<< Updated upstream
-export const TILE_SIZE = 12; // Base size for scaling
-export const SCALE = 3;
-=======
 export const TILE_SIZE = 12; // Size of each tile in pixels
 export const CHARACTER_SPRITE_SIZE = 10; // Size of each character sprite in pixels
 export const SCALE = 3; // Scale factor for sprites
 export const CANVAS_WIDTH = window.innerWidth;
 export const CANVAS_HEIGHT = window.innerHeight;
->>>>>>> Stashed changes
 
-// Map Constants
-export const MAP_ROWS = 250;
-export const MAP_COLS = 250;
 
 export const TILE_IDS = {
-<<<<<<< Updated upstream
-  FLOOR: 'lofi_char_0',       // Reference to spriteKey
-  WALL: 'dungeon_enemies_45',
-  OBSTACLE: 'dungeon_enemies_46',
-  WATER: 'lofi_char_10',
-  MOUNTAIN: 'big_sprites_5',
-=======
   FLOOR: 0,
   WALL: 1,
   OBSTACLE: 2,
@@ -85,8 +70,7 @@ export const ENEMY_SPRITE_POSITIONS = {
 // Wall sprite positions within wallSpriteSheet
 export const WALL_SPRITE_POSITIONS = {
   DEFAULT: { x: 0, y: 0 },
->>>>>>> Stashed changes
 };
 
 // Chunking Constants
-export const CHUNK_SIZE = 16;
+export const CHUNK_SIZE = 16; // Size of each chunk (e.g., 16x16 tiles)
