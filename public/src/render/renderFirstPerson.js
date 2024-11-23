@@ -1,14 +1,14 @@
 // src/render/renderFirstPerson.js
 
 import { gameState } from '../game/gamestate.js';
-import { TILE_SIZE, TILE_IDS, SCALE, TILE_SPRITES } from '../constants/constants.js';
+import { UNIT_SIZE, TILE_IDS, TILE_SPRITES, SPRITE_SIZE } from '../constants/constants.js';
 import { map } from '../map/map.js';
 import { assets } from '../assets/assets.js';
 
 
 /* global THREE */
-const VIEW_RADIUS = 200; // Radius in tiles around the player that will be rendered
-const Scaling3D = 12.8
+const VIEW_RADIUS = 15; // Radius in tiles around the player that will be rendered
+//const Scaling3D = 12.8
 // InstancedMeshes for different tile types
 let floorInstancedMesh, wallInstancedMesh, obstacleInstancedMesh, waterInstancedMesh, mountainInstancedMesh;
 
@@ -50,10 +50,10 @@ export function addFirstPersonElements(scene, callback) {
   const mountainMaterial = createTileMaterial(tileTexture, TILE_IDS.MOUNTAIN);
 
   // Define geometry for floor and walls
-  const floorGeometry = new THREE.PlaneGeometry( Scaling3D, Scaling3D);
+  const floorGeometry = new THREE.PlaneGeometry( UNIT_SIZE, UNIT_SIZE);
   floorGeometry.rotateX(-Math.PI / 2); // Rotate the plane to face upwards
 
-  const wallGeometry = new THREE.BoxGeometry(Scaling3D, Scaling3D*3, Scaling3D);
+  const wallGeometry = new THREE.BoxGeometry(UNIT_SIZE,UNIT_SIZE*3, UNIT_SIZE);
 
   // Calculate maxInstances based on square area
   const maxInstances = Math.pow((2 * VIEW_RADIUS + 1), 2); // (2*32+1)^2 = 4225
@@ -115,7 +115,7 @@ export function addFirstPersonElements(scene, callback) {
  */
 function createTileMaterial(texture, tileType) {
   const spritePos = TILE_SPRITES[tileType];
-  const spriteSize = TILE_SIZE; // Assuming square tiles
+  const spriteSize = SPRITE_SIZE; // Assuming square tiles
 
   if (!spritePos) {
     console.error(`No sprite position defined for tile type ${tileType}. Using fallback color.`);
@@ -261,9 +261,9 @@ function updateVisibleTiles() {
 
       if (tile) {
         const position = new THREE.Vector3(
-          tileX*Scaling3D,
+          tileX*UNIT_SIZE,
           tile.height || 0,
-          tileY*Scaling3D
+          -tileY*UNIT_SIZE
         );
         const matrix = new THREE.Matrix4().makeTranslation(position.x, position.y, position.z);
 
@@ -331,9 +331,9 @@ export function updateFirstPerson(camera) {
 
   // Position camera according to tile coordinates
   camera.position.set(
-    character.x ,
+    character.x*UNIT_SIZE ,
     character.z || 1.5, // Default eye height
-    character.y 
+    -character.y *UNIT_SIZE
   );
 
   // Set camera rotation based on character's yaw

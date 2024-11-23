@@ -1,7 +1,7 @@
 // src/render/render.js
 
 import { gameState } from '../game/gamestate.js';
-import { TILE_SIZE, SCALE } from '../constants/constants.js';
+import { SPRITE_SIZE, SCALE } from '../constants/constants.js';
 import { assets } from '../assets/assets.js';
 
 // Get 2D Canvas Context
@@ -22,8 +22,8 @@ export function renderCharacter() {
   const height = character.height * scaleFactor;
   
   // Calculate screen position in top-down view (pixels)
-  const x = (character.x * TILE_SIZE * scaleFactor) - (gameState.camera.position.x * TILE_SIZE * scaleFactor) + canvas2D.width / 2 - width / 2;
-  const y = (character.y * TILE_SIZE * scaleFactor) - (gameState.camera.position.y * TILE_SIZE * scaleFactor) + canvas2D.height / 2 - height / 2;
+  const x = (character.x * SPRITE_SIZE * scaleFactor) - (gameState.camera.position.x * SPRITE_SIZE * scaleFactor) + canvas2D.width / 2 - width / 2;
+  const y = (character.y * SPRITE_SIZE * scaleFactor) - (gameState.camera.position.y * SPRITE_SIZE * scaleFactor) + canvas2D.height / 2 - height / 2;
 
   ctx.drawImage(
     characterSpriteSheet,
@@ -43,8 +43,8 @@ export function renderEnemies() {
     const width = enemy.width * scaleFactor;
     const height = enemy.height * scaleFactor;
 
-    const x = (enemy.x * TILE_SIZE * scaleFactor) - (gameState.camera.position.x * TILE_SIZE * scaleFactor) + canvas2D.width / 2 - width / 2;
-    const y = (enemy.y * TILE_SIZE * scaleFactor) - (gameState.camera.position.y * TILE_SIZE * scaleFactor) + canvas2D.height / 2 - height / 2;
+    const x = (enemy.x * SPRITE_SIZE * scaleFactor) - (gameState.camera.position.x * SPRITE_SIZE * scaleFactor) + canvas2D.width / 2 - width / 2;
+    const y = (enemy.y * SPRITE_SIZE * scaleFactor) - (gameState.camera.position.y * SPRITE_SIZE * scaleFactor) + canvas2D.height / 2 - height / 2;
 
     ctx.drawImage(
       enemySpriteSheet,

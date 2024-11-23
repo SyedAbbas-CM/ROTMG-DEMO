@@ -8,8 +8,8 @@ import { MapLoader } from './mapLoader.js'; // Import MapLoader
 class GameMap {
   constructor() {
     this.chunks = new Map();
-    this.isFixedMap = false;
-    this.proceduralEnabled = true;
+    this.isFixedMap = true;
+    this.proceduralEnabled = false;
   }
 
   /**
@@ -134,16 +134,29 @@ class GameMap {
    * Function to get tile at world coordinates
    */
   getTile(x, y) {
-    const chunkRow = Math.floor(y / CHUNK_SIZE);
-    const chunkCol = Math.floor(x / CHUNK_SIZE);
+    // Convert world coordinates to tile indices
+    const tileX = Math.floor(x);
+    const tileY = Math.floor(y);
+
+    const chunkRow = Math.floor(tileY / CHUNK_SIZE);
+    const chunkCol = Math.floor(tileX / CHUNK_SIZE);
     const chunk = this.loadChunk(chunkRow, chunkCol);
-    if (!chunk) return null;
+    if (!chunk) {
+      console.warn(`getTile: No chunk found for tile (${tileX}, ${tileY}).`);
+      return null;
+    }
 
     const localX = x % CHUNK_SIZE;
     const localY = y % CHUNK_SIZE;
-    if (localY < 0 || localY >= CHUNK_SIZE || localX < 0 || localX >= CHUNK_SIZE) return null;
-    return chunk[localY][localX];
-  }
+    if (localY < 0 || localY >= CHUNK_SIZE || localX < 0 || localX >= CHUNK_SIZE) {
+      console.warn(`getTile: Local tile indices out of bounds (${localX}, ${localY}).`);
+      return null;
+    }
+
+    const tile = chunk[localY][localX];
+    console.log(`getTile: Retrieved tile at (${tileX}, ${tileY}) with type ${tile.type}.`);
+    return tile;
+    }
 
   /**
    * Function to get all tiles in a specific range (for rendering)

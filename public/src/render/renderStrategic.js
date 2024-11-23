@@ -2,7 +2,7 @@
 
 import { gameState } from '../game/gamestate.js';
 import { map } from '../map/map.js';
-import { TILE_SIZE, TILE_SPRITES } from '../constants/constants.js';
+import { SPRITE_SIZE, TILE_SPRITES } from '../constants/constants.js';
 import { assets } from '../assets/assets.js';
 import { renderCharacter, renderEnemies } from './render.js';
 
@@ -24,11 +24,11 @@ export function renderStrategicView() {
   ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
 
   // Determine visible tiles based on camera position
-  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE * scaleFactor));
-  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE * scaleFactor));
+  const tilesInViewX = Math.ceil(canvas2D.width / (SPRITE_SIZE * scaleFactor));
+  const tilesInViewY = Math.ceil(canvas2D.height / (SPRITE_SIZE * scaleFactor));
 
-  const startX = Math.floor(camera.position.x / TILE_SIZE - tilesInViewX / 2);
-  const startY = Math.floor(camera.position.y / TILE_SIZE - tilesInViewY / 2);
+  const startX = Math.floor(camera.position.x / SPRITE_SIZE - tilesInViewX / 2);
+  const startY = Math.floor(camera.position.y / SPRITE_SIZE - tilesInViewY / 2);
   const endX = startX + tilesInViewX;
   const endY = startY + tilesInViewY;
 
@@ -40,11 +40,11 @@ export function renderStrategicView() {
         // Draw tile
         ctx.drawImage(
           assets.tileSpriteSheet,
-          spritePos.x, spritePos.y, TILE_SIZE, TILE_SIZE, // Source rectangle
-          (x * TILE_SIZE - camera.position.x) * scaleFactor + canvas2D.width / 2,
-          (y * TILE_SIZE - camera.position.y) * scaleFactor + canvas2D.height / 2,
-          TILE_SIZE * scaleFactor,
-          TILE_SIZE * scaleFactor
+          spritePos.x, spritePos.y, SPRITE_SIZE, SPRITE_SIZE, // Source rectangle
+          (x * SPRITE_SIZE - camera.position.x) * scaleFactor + canvas2D.width / 2,
+          (y * SPRITE_SIZE - camera.position.y) * scaleFactor + canvas2D.height / 2,
+          SPRITE_SIZE * scaleFactor,
+          SPRITE_SIZE * scaleFactor
         );
       }
     }

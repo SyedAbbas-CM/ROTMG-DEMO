@@ -3,7 +3,7 @@
 import { getKeysPressed, getMoveSpeed } from './input.js';
 import { gameState } from './gamestate.js';
 import { map } from '../map/map.js';
-import { TILE_SIZE, TILE_IDS } from '../constants/constants.js';
+import {  TILE_IDS,SPRITE_SIZE } from '../constants/constants.js';
 
 
 /**
@@ -34,20 +34,20 @@ export function updateCharacter(delta) {
 
     // Movement based on keys
     if (keysPressed['KeyW']) {
-      moveX -= forward.x * speed * delta;
-      moveZ -= forward.z * speed * delta;
+      moveX += forward.x * speed * delta;
+      moveY -= forward.y * speed * delta; // Subtract because forward.y corresponds to -z
     }
     if (keysPressed['KeyS']) {
-      moveX += forward.x * speed * delta;
-      moveZ += forward.z * speed * delta;
+      moveX -= forward.x * speed * delta;
+      moveY += forward.y * speed * delta;
     }
     if (keysPressed['KeyA']) {
-      moveX -= right.x * speed * delta;
-      moveZ -= right.z * speed * delta;
+      moveX += right.x * speed * delta;
+      moveY -= right.y * speed * delta;
     }
     if (keysPressed['KeyD']) {
-      moveX += right.x * speed * delta;
-      moveZ += right.z * speed * delta;
+      moveX -= right.x * speed * delta;
+      moveY += right.y * speed * delta;
     }
   } else {
     // Movement logic for top-down and strategic views
@@ -101,8 +101,8 @@ export function updateCharacter(delta) {
  * @returns {boolean} - True if collision occurs, else false.
  */
 function isCollision(x, z) {
-  const tileX = Math.floor(x / TILE_SIZE);
-  const tileZ = Math.floor(z / TILE_SIZE);
+  const tileX = Math.floor(x / SPRITE_SIZE);
+  const tileZ = Math.floor(z / SPRITE_SIZE);
   const tile = map.getTile(tileX, tileZ);
 
   if (!tile) return true; // Outside map bounds

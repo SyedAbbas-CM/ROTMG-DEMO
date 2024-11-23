@@ -9,7 +9,7 @@ import { updateCharacter } from './updateCharacter.js';
 import { renderTopDownView } from '../render/renderTopDown.js';
 import { renderStrategicView } from '../render/renderStrategic.js';
 import { map } from '../map/map.js';
-import { TILE_SIZE, SCALE } from '../constants/constants.js';
+
 
 /* global THREE */
 let renderer, scene, camera;

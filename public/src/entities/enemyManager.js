@@ -3,7 +3,7 @@
 import { Enemy } from './enemy.js';
 import { assets } from '../assets/assets.js';
 import { gameState } from '../game/gamestate.js';
-import { TILE_SIZE, TILE_IDS } from '../constants/constants.js';
+import { SPRITE_SIZE, TILE_IDS } from '../constants/constants.js';
 
 export class EnemyManager {
   constructor(scene) {
@@ -48,16 +48,16 @@ export class EnemyManager {
   // Method to initialize enemies (e.g., spawn initial enemies)
   initializeEnemies(initialCount) {
     for (let i = 0; i < initialCount; i++) {
-      const x = Math.random() * (25 * TILE_SIZE);
-      const y = Math.random() * (25 * TILE_SIZE);
+      const x = Math.random() * (25 * SPRITE_SIZE);
+      const y = Math.random() * (25 * SPRITE_SIZE);
       this.spawnEnemy(x, y);
     }
   }
 
   // Check if the spawn location is valid (e.g., not inside a wall)
   isValidSpawn(x, y) {
-    const tileX = Math.floor(x / TILE_SIZE);
-    const tileY = Math.floor(y / TILE_SIZE);
+    const tileX = Math.floor(x / SPRITE_SIZE);
+    const tileY = Math.floor(y / SPRITE_SIZE);
     const tile = gameState.map.getTile(tileX, tileY); // Use gameState.map.getTile
     return tile && tile.type !== TILE_IDS.WALL;
   }

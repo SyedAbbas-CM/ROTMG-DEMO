@@ -1,16 +1,16 @@
 // src/entities/enemy.js
 
-import { TILE_SIZE, ENEMY_SPRITE_POSITIONS } from '../constants/constants.js';
+import { UNIT_SIZE, ENEMY_SPRITE_POSITIONS } from '../constants/constants.js';
 
 export class Enemy {
   constructor(x, y) {
     this.x = x; // X position in world coordinates
     this.y = y; // Y position in world coordinates
-    this.z = 5; // Height for 3D rendering
+    this.z = 0; // Height for 3D rendering
     this.speed = 1.5; // Units per second
     this.health = 50; // Enemy health
-    this.width = TILE_SIZE;
-    this.height = TILE_SIZE;
+    this.width = UNIT_SIZE;
+    this.height = UNIT_SIZE;
     this.spriteX = ENEMY_SPRITE_POSITIONS.DEFAULT.x; // X position on the sprite sheet
     this.spriteY = ENEMY_SPRITE_POSITIONS.DEFAULT.y; // Y position on the sprite sheet
     this.rotation = { yaw: 0 }; // Rotation for directional movement
@@ -33,13 +33,20 @@ export class Enemy {
       this.y += moveY;
 
       // Update rotation to face the player
-      this.rotation.yaw = Math.atan2(dy, dx);
+      this.rotation.yaw = Math.atan2(-dy, dx); // Negative dy to account for coordinate mapping
 
       // Update Three.js sprite position if it exists
       if (this.sprite) {
-        this.sprite.position.set(this.x, this.z, this.y);
-        this.sprite.rotation.y = -this.rotation.yaw;
+        this.sprite.position.set(
+          this.x * UNIT_SIZE,
+          this.z,
+          -this.y * UNIT_SIZE
+        );
+        this.sprite.rotation.y = this.rotation.yaw;
       }
+
+      // Debug log
+      console.log(`Enemy: Moved to (${this.x.toFixed(2)}, ${this.y.toFixed(2)}).`);
     }
 
     // Additional behaviors (e.g., attacking) can be implemented here
@@ -49,11 +56,18 @@ export class Enemy {
   createSprite(scene, enemyTexture) {
     const spriteMaterial = new THREE.SpriteMaterial({ map: enemyTexture, transparent: true });
     const sprite = new THREE.Sprite(spriteMaterial);
-    sprite.position.set(this.x, this.z, this.y);
-    sprite.scale.set(this.width, this.height, 1); // Adjust scale as needed
+    sprite.position.set(
+      this.x * UNIT_SIZE,
+      this.z,
+      -this.y * UNIT_SIZE
+    );
+    sprite.scale.set(this.width, this.height, 1); // Adjust scale if needed
     sprite.castShadow = true;
     scene.add(sprite);
     this.sprite = sprite;
+
+    // Debug log
+    console.log(`Enemy: Created sprite at (${this.x}, ${this.y}, ${this.z}).`);
   }
 
   // Method to remove the enemy's sprite from the scene
