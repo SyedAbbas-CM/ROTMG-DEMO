@@ -2,8 +2,7 @@
 
 import { gameState } from '../game/gamestate.js';
 import { TILE_SIZE, SCALE } from '../constants/constants.js';
-import { assets } from '../assets/assets.js';
-
+import { spriteManager } from '../assets/spriteManager.js';
 // Get 2D Canvas Context
 const canvas2D = document.getElementById('gameCanvas');
 const ctx = canvas2D.getContext('2d');
@@ -17,7 +16,10 @@ const scaleFactor = SCALE;
 
 export function renderCharacter() {
   const character = gameState.character;
-  const characterSpriteSheet = assets.characterSpriteSheet;
+
+   const charSheetObj = spriteManager.getSpriteSheet('character_sprites');
+ if (!charSheetObj) return; // fallback or early return
+ const characterSpriteSheet = charSheetObj.image;
   const width = character.width * scaleFactor;
   const height = character.height * scaleFactor;
   
@@ -37,7 +39,9 @@ export function renderCharacter() {
 
 export function renderEnemies() {
   const enemies = gameState.enemies;
-  const enemySpriteSheet = assets.enemySpriteSheet;
+   const enemySheetObj = spriteManager.getSpriteSheet('enemy_sprites');
+ if (!enemySheetObj) return;
+ const enemySpriteSheet = enemySheetObj.image;
 
   enemies.forEach(enemy => {
     const width = enemy.width * scaleFactor;

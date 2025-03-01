@@ -3,7 +3,7 @@
 import { gameState } from '../game/gamestate.js';
 import { map } from '../map/map.js';
 import { TILE_SIZE, TILE_SPRITES } from '../constants/constants.js';
-import { assets } from '../assets/assets.js';
+import { spriteManager } from '../assets/spriteManager.js';
 import { renderCharacter, renderEnemies } from './render.js';
 
 // Get 2D Canvas Context
@@ -31,7 +31,9 @@ export function renderStrategicView() {
   const startY = Math.floor(camera.position.y / TILE_SIZE - tilesInViewY / 2);
   const endX = startX + tilesInViewX;
   const endY = startY + tilesInViewY;
-
+  const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites"); // Name as defined in your config
+  if (!tileSheetObj) return;
+    const tileSpriteSheet = tileSheetObj.image;
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
       const tile = map.getTile(x, y);
@@ -39,7 +41,7 @@ export function renderStrategicView() {
         const spritePos = TILE_SPRITES[tile.type];
         // Draw tile
         ctx.drawImage(
-          assets.tileSpriteSheet,
+          tileSpriteSheet,
           spritePos.x, spritePos.y, TILE_SIZE, TILE_SIZE, // Source rectangle
           (x * TILE_SIZE - camera.position.x) * scaleFactor + canvas2D.width / 2,
           (y * TILE_SIZE - camera.position.y) * scaleFactor + canvas2D.height / 2,

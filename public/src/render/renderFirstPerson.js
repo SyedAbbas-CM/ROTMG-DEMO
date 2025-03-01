@@ -3,8 +3,7 @@
 import { gameState } from '../game/gamestate.js';
 import { TILE_SIZE, TILE_IDS, SCALE, TILE_SPRITES } from '../constants/constants.js';
 import { map } from '../map/map.js';
-import { assets } from '../assets/assets.js';
-
+import { spriteManager } from '../assets/spriteManager.js';
 
 /* global THREE */
 const VIEW_RADIUS = 200; // Radius in tiles around the player that will be rendered
@@ -29,16 +28,17 @@ const FALLBACK_COLORS = {
 export function addFirstPersonElements(scene, callback) {
   console.log('Adding first-person elements to the scene.');
 
-  // Check if tileSpriteSheet is loaded
-  if (!assets.tileSpriteSheet) {
-    console.warn('Tile sprite sheet not loaded. Using fallback materials.');
-    useFallbackMaterials(scene);
-    if (callback) callback();
-    return;
-  }
+
 
   // Create a THREE.Texture from the loaded Image
-  const tileTexture = new THREE.Texture(assets.tileSpriteSheet);
+   const tileSheetObj = spriteManager.getSpriteSheet('tile_sprites');
+ if (!tileSheetObj) {
+   useFallbackMaterials(scene);
+   if (callback) callback();
+   return;
+ }
+ const tileTexture = new THREE.Texture(tileSheetObj.image);
+ tileTexture.needsUpdate = true;
   tileTexture.needsUpdate = true; // Update the texture
   console.log('Created THREE.Texture from tile sprite sheet.');
 

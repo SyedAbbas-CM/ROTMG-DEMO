@@ -1,7 +1,7 @@
 // src/game/input.js
 
 import { gameState } from './gamestate.js';
-
+import { openSpriteEditor } from '../screens/spriteEditor.js';
 export const keysPressed = {};
 
 // Sensitivity and speed settings
@@ -17,7 +17,7 @@ export function initControls() {
     if (e.code === 'KeyV') {
       switch (gameState.camera.viewType) {
         case 'top-down':
-          gameState.camera.viewType = 'first-person';
+          gameState.camera.viewType = 'strategic';
           toggleViews();
           break;
         case 'first-person':
@@ -35,7 +35,10 @@ export function initControls() {
       }
       e.preventDefault(); // Prevent default only for the 'V' key
     }
-
+    if (e.code === 'KeyE') {
+      e.preventDefault();
+      openSpriteEditor();
+    }
     // Do not prevent default for other keys
   });
 

@@ -1,6 +1,5 @@
 // src/game/game.js
-
-import { loadAssets } from '../assets/assets.js';
+import { spriteManager } from '../assets/spriteManager.js'; 
 import { gameState } from './gamestate.js';
 import { initControls } from './input.js';
 import { addFirstPersonElements, updateFirstPerson } from '../render/renderFirstPerson.js';
@@ -17,14 +16,17 @@ let lastTime = 0;
 let enemyManager; // Instance of EnemyManager
 
 // Configuration: Choose between 'procedural' or 'fixed'
-const MAP_MODE = 'fixed'; // 'procedural' | 'fixed'
+const MAP_MODE = 'procedural'; // 'procedural' | 'fixed'
 const FIXED_MAP_URL = 'assets/maps/fixedMap1.json'; // Path to your fixed map file
 
 export async function initGame() {
   try {
     console.log('Starting asset loading...');
-    await loadAssets(); // Load all assets
-    console.log('Asset loading completed.');
+       console.log('Loading sprite sheets via spriteManager...');
+    await spriteManager.loadSpriteSheet({ name: 'character_sprites', path: 'assets/images/Oryx/lofi_char.png' });
+    await spriteManager.loadSpriteSheet({ name: 'enemy_sprites', path: 'assets/images/Oryx/8-Bit_Remaster_Character.png' });
+    await spriteManager.loadSpriteSheet({ name: 'tile_sprites', path: 'assets/images/Oryx/8-Bit_Remaster_World.png' });
+    console.log('All sprite sheets loaded.');
 
     // Initialize Three.js Renderer
     renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('glCanvas'), antialias: true });
