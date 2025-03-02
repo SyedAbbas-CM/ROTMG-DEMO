@@ -1,0 +1,132 @@
+Below is an updated step-by-step plan that incorporates the new items (like double-buffering, strict priority scheduling, “lite” off-screen AI, hot path inlining, etc.) into the original 12-step guide. Where relevant, these additional techniques are slotted in at the most logical phase—often either as a refinement to an existing step or as part of the “final/advanced” steps.
+
+Step 1: Baseline AI (Basic FSM/BT)
+Summary
+
+Just build a simple AI system (FSM, small behavior tree) for each NPC.
+No performance focus yet; correctness is key.
+New Items: Nothing special here—just get it working.
+
+Step 2: Data-Oriented Design (SoA/ECS)
+Summary
+
+Convert from OOP “1 object per NPC” to arrays (SoA) or ECS with typed arrays.
+Drastically cuts GC overhead, sets stage for parallelism.
+New Items: Hot Path Inlining & Specialization can begin here.
+
+Rationale: Once you store data in arrays, you can unify logic into a single large function (or small set of functions) that loops over them.
+Implementation: Keep your per-entity logic out of many small OOP calls; inline the “move,” “attack,” etc. steps in one loop. Minimizes function call overhead.
+Step 3: Minimize GC (Pooling/TypedArrays)
+Summary
+
+Implement object or “slot” pooling.
+Pre-allocate arrays for path nodes, bullets, etc.
+Mark “inactive” entries instead of removing them.
+New Items: Nothing brand-new here, but you can consider Memory Compression (bitfields for booleans, smaller data types).
+
+This ensures the arrays remain small for large NPC counts.
+Step 4: Time-Slicing & LOD AI
+Summary
+
+Don’t update every NPC every frame. Round-robin or distance-based intervals.
+LOD approach: near NPCs get frequent updates, far NPCs are “throttled” or “sleep.”
+New Items:
+
+Strict Priority Scheduling (advanced alternative to simple time-slicing):
+
+Implementation: Use a priority queue of AI tasks. If you run out of budget, skip lower-priority tasks.
+Benefit: More control over which AI logic “definitely runs” and which is deferred.
+“Lite” AI for Off-Screen:
+
+Implementation: When an NPC is far off-screen, remove it from the main ECS or store only minimal data (like a “ticker” for approximate movement).
+Result: Reduces memory usage & CPU by not even running a normal state machine for them.
+Step 5: Event-Driven AI (Avoid Continuous Polling)
+Summary
+
+Set up an event bus or triggers so idle NPCs do nearly zero work unless an event arrives.
+Minimizes overhead for large worlds when nothing is happening to most NPCs.
+New Items: No direct additions, but note that with “lite” AI from step 4, off-screen NPCs can be fully “event-driven,” reactivated only if a trigger references them.
+
+Step 6: Hierarchical / Grouped AI (Squad AI)
+Summary
+
+Commander/squad structure handles large decisions.
+Individuals just do micro tasks, drastically reducing repeated logic.
+New Items: No major new expansions here.
+
+If you do strict priority scheduling, you can also treat a squad update as a “high priority” task and subordinate updates as “lower priority.”
+Step 7: Optimize Decision Models (Caching, Utility AI, GOAP)
+Summary
+
+Avoid recalculating decisions if inputs haven’t changed.
+Add cooldowns, dirty flags, partial re-planning, etc.
+New Items:
+
+Hot Path Inlining also applies here if you have crucial decision logic.
+For example, a utility scoring loop might benefit from a single specialized function.
+Step 8: Parallel AI Execution (WebAssembly Threads, Web Workers)
+Summary
+
+Distribute AI tasks (pathfinding, large loops) across multiple cores.
+Possibly keep the main thread for rendering, do heavy BFS or BFS-like tasks in workers.
+New Items:
+
+Double-Buffering AI State
+
+Rationale: In multi-threaded logic, separate “read” vs. “write” buffers so that one thread reads stable data while another writes updates.
+Implementation: Maintain currentBuffer / nextBuffer for your AI arrays. Swap at the end of each tick.
+Benefits: Minimizes locking, race conditions.
+False-Sharing Prevention (from the new data-oriented improvements)
+
+If multiple threads frequently write different AI fields, ensure they don’t share a cache line. Possibly store frequent writes in separate arrays.
+Step 9: Large-Scale Coordination (Influence Maps, Shared Knowledge)
+Summary
+
+Use influence maps or blackboards so that one update can inform many NPCs.
+Possibly do phased/layered AI updates (commander 1 Hz, squads 5 Hz, individuals 10–15 Hz).
+New Items:
+
+Shared Staging Buffers if the map is updated on GPU or in a worker, then you do a bulk copy or read every so often.
+If blackboard is large, you might do partial updates or asynchronous reads.
+Step 10: Movement / Pathfinding (Flow Fields, Formations)
+Summary
+
+Flow-field pathfinding for big groups.
+Formations to reduce repeated pathfinding.
+Spatial partitions (grids, quadtrees) to keep collision checks local.
+New Items:
+
+Flow-Field Pathfinding Enhancements using GPU or multi-thread is an extension.
+GPU-Driven Collision/Perception can also slot here if your pathfinding or collision logic moves to compute shaders.
+Step 11: Profiling & Balancing CPU/Memory
+Summary
+
+Tools like Chrome DevTools for CPU time, memory snapshots for GC, etc.
+Stress tests with large battles to see bottlenecks.
+New Items:
+
+Strict Priority Scheduling can be combined with dynamic budgets at runtime.
+Hot Path analysis helps discover any leftover micro-inefficiencies.
+Step 12: Additional Advanced Techniques & Final Integration
+Summary
+
+ML-based or approximate sims, GPU compute for crowd simulation, off-screen battle resolution, etc.
+New Items:
+
+GPU-Driven Collision / Vision (If not already integrated in step 10)
+Lite AI for off-screen can also be considered if you want full “AI streaming,” removing them from ECS entirely.
+Real-Time Tuning or “adaptive ticks”: dynamically adjusting everything (LOD, concurrency) based on performance metrics in real time.
+Overall Order Recap
+Baseline – Just get a small, correct AI system.
+Data-Oriented – Switch to SoA/ECS, consider hot path inlining.
+Min GC – Pools, typed arrays, minimal ephemeral objects, potential memory compression.
+Time-Slicing & LOD – Round-robin updates, strict priority scheduling as an advanced approach, possibly “lite” AI for distant spawns.
+Event-Driven – Move from poll-based to triggers/alerts.
+Hierarchical AI – Commander/squad logic.
+Optimize Decision Models – Caching, dirty flags, partial re-planning, etc.
+Parallel Execution – Web Workers/WASM threads, double-buffer AI state, false-sharing prevention.
+Large-Scale Coordination – Influence maps, blackboards, phased updates, potential shared staging buffers for worker/GPU.
+Movement/Pathfinding – Flow fields, formations, spatial partitioning, optional GPU pathfinding.
+Profiling & Balancing – Identify performance bottlenecks, measure memory usage, fix hot spots, refine priority or LOD.
+Advanced Add-Ons – GPU-based collision, “AI streaming,” machine learning for off-screen battles, final integration.
+By following these 12 steps (with additional sub-steps for new techniques), you’ll gradually build a robust, massively scalable AI framework that is both CPU- and memory-efficient.

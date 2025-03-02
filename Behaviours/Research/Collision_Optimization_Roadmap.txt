@@ -1,0 +1,202 @@
+Below is the same roadmap you’ve been using, now expanded with the additional techniques, memory optimizations, and GPU/parallelization strategies we discovered in deeper research. By layering them in incremental steps, you can address performance bottlenecks one at a time without overcomplicating your code prematurely.
+
+1. Baseline: Naïve Bullet–Enemy Collision
+Spawn Projectiles & Store Them
+
+In gameState.projectiles (or a dedicated manager).
+Each projectile has (x, y, width, height) in the same coordinate space as enemies.
+Naïve Double Loop
+
+js
+Copy
+Edit
+for (let i = 0; i < projectiles.length; i++) {
+  for (let j = 0; j < enemies.length; j++) {
+    if (isCollidingAABB(projectiles[i], enemies[j])) {
+      // Handle collision (damage enemy, remove projectile, etc.)
+    }
+  }
+}
+This is O(B × E) and will become expensive for large bullet or enemy counts.
+Wall Collisions (Tile-Based)
+
+js
+Copy
+Edit
+function isCollisionWithWall(px, py) {
+  const tileX = Math.floor(px / TILE_SIZE);
+  const tileY = Math.floor(py / TILE_SIZE);
+  const tile = map.getTile(tileX, tileY);
+  return !tile || tile.type === TILE_IDS.WALL || tile.type === TILE_IDS.MOUNTAIN;
+}
+Already efficient, O(1) per check, because walls are static in your tile map.
+Result
+Everything works but may slow down drastically with many bullets and enemies.
+2. Basic Optimizations
+2.1 Collision Layers / Masks
+Assign each projectile/enemy a collision mask or category. For instance:
+Player bullets: Collide with enemies and walls, ignore other bullets.
+Enemy bullets: Collide with the player, ignore other enemies/bullets.
+Immediate Gain: If bullet–bullet collisions are not needed, you skip them entirely.
+2.2 Precompute AABB Edges
+Before your collision loop, do:
+js
+Copy
+Edit
+entity.xmin = entity.x;
+entity.xmax = entity.x + entity.width;
+entity.ymin = entity.y;
+entity.ymax = entity.y + entity.height;
+Then your collision check is a short 4-comparison formula:
+js
+Copy
+Edit
+function isCollidingAABB(a, b) {
+  return !(
+    a.xmax <= b.xmin || a.xmin >= b.xmax ||
+    a.ymax <= b.ymin || a.ymin >= b.ymax
+  );
+}
+Reduces arithmetic overhead per check.
+Result
+Fewer property lookups and wasted checks, but still O(n²) if bullet or enemy counts grow large.
+3. Broad-Phase to Reduce Pairs
+3.1 Uniform Grid (Spatial Hashing)
+Divide the world into cells, e.g. 64×64.
+For each bullet/enemy, compute which cell(s) they occupy and store them there:
+js
+Copy
+Edit
+const cellX = Math.floor(obj.x / CELL_SIZE);
+const cellY = Math.floor(obj.y / CELL_SIZE);
+grid[cellX][cellY].push(obj);
+Collision: Only check bullets vs. enemies in the same or neighboring cells.
+Pros:
+
+Straightforward, works well if the world is not extremely sparse or if your objects are roughly uniformly distributed.
+3.2 Sweep-and-Prune (Sort-and-Sweep)
+Sort objects by xmin.
+Sweep along the x-axis, quickly skipping pairs that don’t overlap in x.
+If they overlap in x, check y overlap or do a short AABB check.
+Pros:
+
+Very efficient if objects move gradually (you can incrementally update the sorted lists).
+Commonly used in 2D/3D physics engines (e.g., Box2D, Bullet) as a broad-phase.
+Either broad-phase method drastically reduces pair checks from O(n²) to near O(n + m) in typical distributions.
+
+4. SoA (Structure of Arrays) for Narrow-Phase
+Even after a broad-phase, you might have many collisions in dense areas. SoA speeds up the per-check overhead:
+
+Collect Overlap Candidates from your broad-phase. Suppose you have k bullets and m enemies in the same cell.
+Store bounding boxes in typed arrays:
+js
+Copy
+Edit
+const bulletXmin = new Float32Array(k);
+const bulletXmax = new Float32Array(k);
+const bulletYmin = new Float32Array(k);
+const bulletYmax = new Float32Array(k);
+// similarly for enemies
+Loop over these arrays in a tight loop, avoiding object property lookups:
+js
+Copy
+Edit
+for (let i = 0; i < k; i++) {
+  for (let j = 0; j < m; j++) {
+    if (!(bulletXmax[i] <= enemyXmin[j] || /* etc */)) {
+      // collision
+    }
+  }
+}
+Why SoA? Minimizes cache misses and is more SIMD-friendly than storing all data as { xMin, xMax, yMin, ... } objects.
+5. WASM + SIMD for the Hot Path
+Write a Function in C/C++/Rust:
+c
+Copy
+Edit
+void checkCollisionsSoA(
+    float* bulletXmin, float* bulletXmax, float* bulletYmin, float* bulletYmax, int bulletCount,
+    float* enemyXmin,  float* enemyXmax, float* enemyYmin, float* enemyYmax, int enemyCount,
+    unsigned char* collisionFlags
+) {
+  // Possibly use SIMD intrinsics or let compiler auto-vectorize
+}
+Compile to WebAssembly with SIMD (-msimd128).
+In JS, pass pointers (offsets in linear memory) for the typed arrays to that function.
+Read back which bullet–enemy pairs overlapped and apply damage or remove bullets as needed.
+Result:
+
+Narrow-phase collision checks are accelerated by vector instructions at near-native speed.
+Handles thousands of collisions each frame smoothly.
+6. Continue Using Tile Lookups for Walls
+Tile-based walls remain extremely efficient (O(1) checks) because they are stationary.
+Bullets simply do:
+js
+Copy
+Edit
+if (isCollisionWithWall(newBulletX, newBulletY)) {
+  // remove bullet or handle bounce
+}
+No need to insert walls in your dynamic broad-phase. They are effectively in their own static grid (the tile map).
+7. Optional Advanced Steps
+7.1 Multi-Threading with Web Workers
+Offload collision detection (broad-phase + narrow-phase) to a Worker.
+Main thread handles rendering and input; the Worker returns collision results in a shared buffer (using SharedArrayBuffer).
+Benefits: True parallelism on multi-core CPUs. Great if bullet counts are extremely high.
+7.2 Continuous Collision (Line/Ray Tests)
+If bullets move so fast they might skip over small objects or walls in one frame, do a ray or segment intersection check from oldPos → newPos.
+Still feed them into the broad-phase (so you only do segment checks against local objects).
+7.3 GPU Collision (WebGPU Compute)
+For extreme bullet counts (tens of thousands), you can run broad-phase and even narrow-phase on the GPU using compute shaders.
+Challenges:
+Managing data transfer overhead and pipeline synchronization.
+WebGPU is still new, so not all browsers support it widely.
+Potential massive parallel speedup if your game can handle 1-frame or partial-frame delays in collision data.
+8. Extended Techniques from Deep Research
+Here are additional optimizations you can weave into the roadmap if your scale grows:
+
+Memory Pooling & Chunking
+
+Pre-allocate bullet objects to avoid constant GC overhead.
+Recycle them by marking them inactive when they die, reusing the same memory for new bullets.
+Hybrid / Hierarchical Grids
+
+If object distribution is extremely uneven, subdivide large cells into smaller sub-grids in dense areas.
+Similar to quadtrees but simpler to maintain if you prefer grid logic.
+AoSoA Layout
+
+Instead of pure SoA, use Array of Structures of Arrays in blocks matching your SIMD width (e.g., 4 objects per block).
+Improves cache usage while still being vector-friendly.
+Temporal Coherence
+
+Reuse last frame’s broad-phase data (e.g., sorted lists or cell assignments), only update objects that moved.
+Reduces overhead when object movement is small relative to cell size.
+Parallelizing the Broad-Phase
+
+If you have multiple CPU cores, let each worker handle a subset of the grid (or subdivide the domain).
+Merge candidate pairs in the end.
+GPU + CPU Hybrid
+
+GPU can handle a massive broad-phase pass (hashing or BVH), CPU does final narrow-phase or game logic.
+Minimizes data transfer if you carefully pipeline the work.
+Collision Rule Tweaks
+
+Further reduce checks by disabling collisions among certain groups of objects (e.g., same-faction units).
+Dynamically toggle collision for objects that don’t need it currently (like sleeping enemies or off-screen bullets).
+9. Final Overview
+Current Setup
+
+Tile-based wall collisions (already O(1) per check).
+Possibly naive O(n²) bullet–enemy checks.
+Step-by-Step Path
+
+Collision Layers & Precompute Edges.
+Broad-Phase (Grid or Sweep-and-Prune) to cull non-overlapping objects quickly.
+Convert final collision loops to SoA to reduce overhead.
+Move SoA collision code to WASM + SIMD for maximum speed.
+(Optional) Multi-threading or GPU if you still need performance beyond the above steps.
+Beyond That
+
+Memory pooling, temporal coherence, hierarchical grids, or AoSoA if bullet counts skyrocket further.
+Or push collisions to WebGPU or multi-threaded WASM for maximum parallelism.
+This expanded roadmap ensures you address the most impactful optimizations first (like broad-phase, SoA, SIMD) and only add more advanced or specialized techniques (hierarchical grids, GPU compute) if your game demands it. Meanwhile, your tile-based wall collisions remain trivially fast, so you never waste time updating stationary geometry. By iterating step by step, you’ll keep your code maintainable while scaling to handle a true bullet-hell scenario if needed.

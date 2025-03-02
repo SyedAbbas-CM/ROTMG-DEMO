@@ -1,0 +1,177 @@
+Below is an all-in-one roadmap that layers each major collision optimization onto your existing codebase. This includes the straightforward tile-based wall collisions, the more challenging bullet–enemy collisions, and paths to advanced techniques like SoA, WASM SIMD, and even GPU for truly large-scale performance.
+
+1. Baseline: Naïve Bullet–Enemy Collision
+Spawn Projectiles and Store Them
+
+In gameState.projectiles (or a dedicated manager).
+Each projectile has (x, y) coordinates (preferably in the same coordinate space as enemies).
+Naïve Double Loop
+
+In your update() function or a dedicated updateProjectiles() step:
+js
+Copy
+Edit
+for (let i = 0; i < projectiles.length; i++) {
+  for (let j = 0; j < enemies.length; j++) {
+    if (isCollidingAABB(projectiles[i], enemies[j])) {
+      // Handle collision (damage enemy, remove projectile, etc.)
+    }
+  }
+}
+This is O(B × E), quickly becoming slow if you have hundreds or thousands of projectiles and enemies.
+Wall Collisions: Already Tile-Based
+
+You already do a tile lookup for character movement. For projectiles, you can do the same:
+js
+Copy
+Edit
+function isCollisionWithWall(px, py) {
+  const tileX = Math.floor(px / TILE_SIZE);
+  const tileY = Math.floor(py / TILE_SIZE);
+  const tile = map.getTile(tileX, tileY);
+  return !tile || tile.type === TILE_IDS.WALL || tile.type === TILE_IDS.MOUNTAIN;
+}
+This is extremely efficient (O(1) lookups) for stationary geometry. Good job on that part.
+Result
+
+You have a working system but might be slow if you have many bullets and enemies.
+2. Basic Optimizations
+2.1 Collision Layers / Masks
+Assign each object a collision mask or category.
+Projectiles (player bullets) collide only with enemies (and walls).
+Enemy bullets might collide only with the player, not each other.
+This immediately reduces your pair checks if, for example, bullet–bullet collisions don’t matter.
+2.2 Precompute AABB Edges
+Each update() for bullets/enemies:
+js
+Copy
+Edit
+entity.xmin = entity.x;
+entity.xmax = entity.x + entity.width;
+entity.ymin = entity.y;
+entity.ymax = entity.y + entity.height;
+Then your collision check is a quick 4-comparison logic:
+js
+Copy
+Edit
+function isCollidingAABB(a, b) {
+  return !(a.xmax <= b.xmin || a.xmin >= b.xmax ||
+           a.ymax <= b.ymin || a.ymin >= b.ymax);
+}
+Result
+
+Fewer comparisons and property lookups per check.
+Still O(n²) in the worst case, but each check is cheaper.
+3. Broad-Phase to Reduce Pairs
+After you have even a moderate number of bullets (100s) and enemies (10s or 100s), the naive O(n²) approach may be too slow.
+
+3.1 Uniform Grid
+Create a Grid: For example, 64×64 or 128×128 cells spanning your world.
+Each Frame, clear it and assign objects (bullets, enemies) to their cell(s).
+js
+Copy
+Edit
+const cellX = Math.floor(obj.x / CELL_SIZE);
+const cellY = Math.floor(obj.y / CELL_SIZE);
+grid[cellX][cellY].push(obj);
+Collision:
+Only check bullets vs. enemies in the same cell (and neighboring cells if needed).
+This drastically reduces pair checks if your world or distribution of objects is large.
+Pros
+
+Very easy to implement in 2D, especially if you’re already dealing with tiles.
+Typically enough for bullet-hell style games like RotMG.
+3.2 Sweep-and-Prune (Alternatively)
+Sort bullets by their xmin. Sort enemies by their xmin.
+Sweep across the x-axis to skip non-overlapping bounding intervals.
+If objects overlap in x, do the y-overlap check, etc.
+Because bullets/enemies only move small amounts each frame, you can do incremental updates to keep the list mostly sorted each frame.
+Pros
+
+Great if your objects spread out or move smoothly.
+Sometimes simpler than a grid if your map is more linear or you prefer 1D sorting.
+Either method drastically cuts down on pair checks from O(n²) to near O(n + m) in the best case.
+
+4. SoA (Structure of Arrays) for Narrow-Phase
+Even after a broad-phase, you might still have many collisions to check every frame (for instance, if 100 bullets are in the same cell as 50 enemies).
+
+Collect Overlap Candidates:
+The broad-phase will yield pairs or smaller subsets of bullets/enemies that might collide.
+Store Their BBoxes in typed arrays:
+js
+Copy
+Edit
+const bulletXmin = new Float32Array(bulletCount);
+const bulletXmax = new Float32Array(bulletCount);
+const bulletYmin = new Float32Array(bulletCount);
+const bulletYmax = new Float32Array(bulletCount);
+// similarly for enemies
+Loop Over These Arrays for final collision checks:
+js
+Copy
+Edit
+for (let i = 0; i < bulletCount; i++) {
+  for (let j = 0; j < enemyCount; j++) {
+    if (!( bulletXmax[i] <= enemyXmin[j] || bulletXmin[i] >= enemyXmax[j] ||
+           bulletYmax[i] <= enemyYmin[j] || bulletYmin[i] >= enemyYmax[j] )) {
+      // collision
+    }
+  }
+}
+Why SoA?
+
+Minimizes pointer-chasing and property lookups.
+Better CPU cache performance.
+Paves the way to SIMD acceleration.
+5. WASM + SIMD for the Hot Path
+Write a CollisionsSoA Function in C/C++/Rust:
+c
+Copy
+Edit
+// pseudo-C code
+void checkCollisionsSoA(
+    float* bulletXmin, float* bulletXmax, float* bulletYmin, float* bulletYmax, int bulletCount,
+    float* enemyXmin,  float* enemyXmax,  float* enemyYmin,  float* enemyYmax,  int enemyCount,
+    unsigned char* collisionFlags // or some result array
+) {
+  // possibly use SSE/AVX intrinsics or let compiler auto-vectorize
+}
+Compile to WASM with SIMD support (e.g. Emscripten -msimd128).
+In JS, pass typed array memory offsets to the WASM function.
+Read Back a collisions array or bitmask indicating which bullet–enemy pairs collided.
+Apply your game logic (damage, bullet removal, etc.) in JS or also do that in WASM.
+Result
+
+The final narrow-phase is processed at near-native speed in parallel instructions.
+This can handle thousands of collisions per frame without stalling.
+6. Continue Using Tile Lookups for Walls
+Throughout all these steps, walls remain cheap to check because they’re stored in a tile map. A bullet just does:
+
+js
+Copy
+Edit
+if (isCollisionWithWall(newBulletX, newBulletY)) {
+  // remove bullet, or bounce, etc.
+}
+No need to update a broad-phase data structure for static walls.
+
+7. Optional Advanced Steps
+7.1 Multi-Threading with Web Workers
+If collisions become a bottleneck, offload the entire collision pipeline (broad-phase + narrow-phase) to a Worker.
+The main thread handles rendering while the Worker returns collision results each frame.
+7.2 Continuous Collision for Fast Bullets
+If bullets move so fast they skip past tiles or enemies in one frame, do a ray or line-segment intersection approach.
+Use the broad-phase to find potential collisions along the bullet’s trajectory.
+7.3 GPU Collision (WebGPU)
+For extremely large object counts (tens of thousands of bullets), you might do broad-phase + narrow-phase on the GPU with compute shaders.
+WebGPU is the modern standard for compute in browsers, but it’s still not as widely supported as WebGL. This is an advanced path.
+Final Overview
+Current State:
+Tile-based wall collisions (good).
+Potentially naive O(n²) bullet–enemy checks.
+Step 1: Add collision layers, precompute bounding box edges.
+Step 2: Implement broad-phase (grid or sweep-and-prune) to skip checking bullets & enemies that are far apart.
+Step 3: Convert your final collision loops to SoA to reduce overhead.
+Step 4: For big bullet-hell scenarios, move the SoA code into WASM + SIMD for maximum speed.
+Step 5 (Optional): Multi-thread (Web Workers) or GPU-based collisions if you still need more performance.
+This roadmap ensures you incrementally add only as much complexity as you need, while keeping your tile-based walls cheaply handled by the existing lookup logic.
