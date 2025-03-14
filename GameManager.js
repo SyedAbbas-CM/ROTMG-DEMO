@@ -1,12 +1,16 @@
 // File: /src/GameManager.js
 
-import BulletManager from './Managers/bulletManager.js';
-import EnemyManager from './Managers/enemyManager.js';
+import BulletManager from './Managers/BulletManager.js';
+import EnemyManager from './Managers/EnemyManager.js';
 import CollisionManager from './managers/CollisionManager.js';
 
+/**
+ * If you're using Node + WebSocket only, you might not use requestAnimationFrame,
+ * but let's keep the structure for demonstration. 
+ * On the server, you'd just call gameManager.update(dt) inside setInterval or so.
+ */
 export default class GameManager {
   constructor() {
-    // Instantiate managers
     this.bulletManager = new BulletManager(10000);
     this.enemyManager = new EnemyManager(1000);
     this.collisionManager = new CollisionManager(
@@ -14,38 +18,29 @@ export default class GameManager {
       this.enemyManager
     );
 
-    // Timing
     this.lastTime = performance.now();
     this.isRunning = false;
 
-    // For convenience, we can automatically add some test enemies:
     this.initializeTestData();
   }
 
   initializeTestData() {
-    // Add a couple of enemies for demonstration
     this.enemyManager.addEnemy(100, 100);
     this.enemyManager.addEnemy(300, 150);
   }
 
   /**
-   * Main update loop, orchestrating bullet/enemy updates and collision checks.
-   * @param {number} deltaTime - time in seconds since last frame
+   * The main update routine
    */
   update(deltaTime) {
-    // 1. Update enemies (which can spawn bullets)
+    // 1) Enemies update first
     this.enemyManager.update(deltaTime, this.bulletManager);
-
-    // 2. Update all bullets
+    // 2) Then bullets
     this.bulletManager.update(deltaTime);
-
-    // 3. Check collisions
+    // 3) Then collisions
     this.collisionManager.checkCollisions();
   }
 
-  /**
-   * Starts the main game loop using requestAnimationFrame.
-   */
   start() {
     this.isRunning = true;
     this.lastTime = performance.now();
@@ -54,30 +49,32 @@ export default class GameManager {
       if (!this.isRunning) return;
 
       const now = performance.now();
-      const deltaTime = (now - this.lastTime) / 1000; // convert ms to seconds
+      const dt = (now - this.lastTime) / 1000; 
       this.lastTime = now;
 
-      this.update(deltaTime);
-
+      this.update(dt);
       requestAnimationFrame(loop);
     };
 
     loop();
   }
 
-  /**
-   * Stops the main game loop.
-   */
   stop() {
     this.isRunning = false;
   }
 
-  /**
-   * Clean up or reset if needed (placeholder).
-   */
   cleanup() {
     this.bulletManager.cleanup();
     this.enemyManager.cleanup();
-    // No direct cleanup for collisions for now
+  }
+
+  /**
+   * For passing data to websockets or debugging
+   */
+  getBulletData() {
+    return this.bulletManager.getDataArray();
+  }
+  getEnemyData() {
+    return this.enemyManager.getDataArray();
   }
 }

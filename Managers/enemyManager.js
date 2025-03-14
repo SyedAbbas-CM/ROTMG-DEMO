@@ -5,24 +5,24 @@ export default class EnemyManager {
     this.maxEnemies = maxEnemies;
     this.enemyCount = 0;
 
-    // Structure of Arrays (SoA) for enemies
+    // SoA for enemy positioning and size
     this.x = new Float32Array(maxEnemies);
     this.y = new Float32Array(maxEnemies);
     this.width = new Float32Array(maxEnemies);
     this.height = new Float32Array(maxEnemies);
+
+    // Simple cooldown for shooting
     this.shootCooldown = new Float32Array(maxEnemies);
-    // In a future step, we can add 'state' arrays or references to behavior trees.
+
+    // Optional state machine or behavior tree ID
+    this.aiState = new Uint8Array(maxEnemies);
+
+    // Potential partial updates or LOD
+    this.updateInterval = new Uint8Array(maxEnemies);
+    this.frameCounter = 0;
   }
 
-  /**
-   * Adds a new enemy into the manager.
-   * @param {number} x - X position
-   * @param {number} y - Y position
-   * @param {number} [width=20] - Enemy width
-   * @param {number} [height=20] - Enemy height
-   * @param {number} [initialCooldown=1.0] - Initial shooting cooldown
-   */
-  addEnemy(x, y, width = 20, height = 20, initialCooldown = 1.0) {
+  addEnemy(x, y, width = 20, height = 20, initialCooldown = 1.0, initialState = 0) {
     if (this.enemyCount >= this.maxEnemies) {
       console.warn('EnemyManager: Max enemy capacity reached.');
       return;
@@ -33,48 +33,67 @@ export default class EnemyManager {
     this.width[index] = width;
     this.height[index] = height;
     this.shootCooldown[index] = initialCooldown;
+    this.aiState[index] = initialState; // e.g. 0 = idle
+    this.updateInterval[index] = 1;     // update every frame by default
   }
 
-  /**
-   * Updates all enemies, decrementing shoot cooldowns and optionally spawning bullets.
-   * @param {number} deltaTime - Time elapsed in seconds
-   * @param {object} bulletManager - A reference to the BulletManager
-   */
   update(deltaTime, bulletManager) {
+    this.frameCounter++;
+
     for (let i = 0; i < this.enemyCount; i++) {
+      // If partial updates or LOD needed:
+      // if (this.updateInterval[i] > 1 && (this.frameCounter % this.updateInterval[i] !== 0)) {
+      //   continue; // skip updating this enemy this frame
+      // }
+
       // Decrement cooldown
       if (this.shootCooldown[i] > 0) {
         this.shootCooldown[i] -= deltaTime;
       } else {
-        // Shoot: spawn a bullet traveling to the right
+        // Enemy shoots a bullet traveling to the right
         const bulletX = this.x[i] + this.width[i];
         const bulletY = this.y[i] + this.height[i] * 0.5;
         bulletManager.addBullet(bulletX, bulletY, 200, 0, 3.0, 5, 5);
-
-        // Reset the cooldown
         this.shootCooldown[i] = 1.0;
+      }
+
+      // Optional: A tiny, naive "AI state" approach
+      switch (this.aiState[i]) {
+        case 0: // idle
+          // do nothing
+          break;
+        case 1: // patrolling, for example
+          // this.x[i] += someVelocity * deltaTime
+          break;
+        // etc.
       }
     }
   }
 
   /**
    * Returns the current active number of enemies.
-   * @returns {number}
    */
   getActiveEnemyCount() {
     return this.enemyCount;
   }
 
   /**
-   * Placeholder for future expansions: removing enemies, applying damage, etc.
+   * Example for removing an enemy via swap-and-pop
    */
   removeEnemy(index) {
-    // Similar swap-and-pop logic can go here if needed.
+    const last = this.enemyCount - 1;
+    if (index !== last) {
+      this.x[index] = this.x[last];
+      this.y[index] = this.y[last];
+      this.width[index] = this.width[last];
+      this.height[index] = this.height[last];
+      this.shootCooldown[index] = this.shootCooldown[last];
+      this.aiState[index] = this.aiState[last];
+      this.updateInterval[index] = this.updateInterval[last];
+    }
+    this.enemyCount--;
   }
 
-  /**
-   * Cleanup or reset if needed (placeholder for future).
-   */
   cleanup() {
     this.enemyCount = 0;
   }
