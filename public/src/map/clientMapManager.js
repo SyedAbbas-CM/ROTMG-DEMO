@@ -1,217 +1,324 @@
 /**
  * ClientMapManager.js
- * Handles the game world map on the client side
+ * Client-side map management with efficient chunk loading and caching
  */
-import { TILE_IDS } from '../constants/constants.js';
-import { perlin } from './perlinNoise.js';
 
-export class ClientMapManager {
-  /**
-   * Creates a client-side map manager
-   */
-  constructor() {
-    this.chunks = new Map(); // Map of "x,y" -> chunk data
-    this.width = 0;         // Width of the world in tiles
-    this.height = 0;        // Height of the world in tiles
-    this.tileSize = 12;     // Size of each tile in pixels
-    this.chunkSize = 16;    // Size of each chunk in tiles
-    this.viewDistance = 2;  // How many chunks to load around player
-  }
-  
-  /**
-   * Initialize map with server info
-   * @param {Object} mapInfo - Map metadata from server
-   */
-  initMap(mapInfo) {
-    this.width = mapInfo.width;
-    this.height = mapInfo.height;
-    this.tileSize = mapInfo.tileSize || this.tileSize;
-    this.chunkSize = mapInfo.chunkSize || this.chunkSize;
-    
-    console.log(`Map initialized: ${this.width}x${this.height}, ${this.chunkSize}x${this.chunkSize} chunks`);
-  }
-  
-  /**
-   * Get visible chunks around a position
-   * @param {number} x - World X coordinate
-   * @param {number} y - World Y coordinate
-   * @returns {Array} Array of {x, y} chunk coordinates
-   */
-  getVisibleChunks(x, y) {
-    // Convert world coordinates to tile coordinates
-    const tileX = Math.floor(x / this.tileSize);
-    const tileY = Math.floor(y / this.tileSize);
-    
-    // Convert tile coordinates to chunk coordinates
-    const centerChunkX = Math.floor(tileX / this.chunkSize);
-    const centerChunkY = Math.floor(tileY / this.chunkSize);
-    
-    const visibleChunks = [];
-    
-    // Get chunks in view distance
-    for (let dy = -this.viewDistance; dy <= this.viewDistance; dy++) {
-      for (let dx = -this.viewDistance; dx <= this.viewDistance; dx++) {
-        const chunkX = centerChunkX + dx;
-        const chunkY = centerChunkY + dy;
-        
-        // Skip if out of world bounds
-        if (chunkX < 0 || chunkY < 0 || 
-            chunkX * this.chunkSize >= this.width || 
-            chunkY * this.chunkSize >= this.height) {
-          continue;
-        }
-        
-        visibleChunks.push({ x: chunkX, y: chunkY });
+/**
+ * ClientMapManager - Handles loading, caching, and rendering map data
+ */
+class clientMapManager {
+    /**
+     * Create a new client map manager
+     * @param {Object} options - Manager options
+     * @param {NetworkManager} options.networkManager - Network manager for map data requests
+     */
+    constructor(options = {}) {
+      this.networkManager = options.networkManager;
+      this.activeMapId = null;
+      this.mapMetadata = null;
+      this.chunks = new Map(); // Chunk cache: "x,y" -> chunk data
+      this.tileSize = 12; // Default tile size
+      this.chunkSize = 16; // Default chunk size
+      this.visibleChunks = []; // Currently visible chunks
+      this.pendingChunks = new Set(); // Chunks we're currently requesting
+      this.maxCachedChunks = 100; // Maximum chunks to keep in memory
+      this.chunkLoadDistance = 2; // How many chunks to load around player
+      this.fallbackTileTypes = {
+        0: 'floor', // Floor
+        1: 'wall',  // Wall
+        2: 'obstacle', // Obstacle
+        3: 'water', // Water
+        4: 'mountain' // Mountain
+      };
+      
+      // LRU (Least Recently Used) tracking for chunk cache
+      this.chunkLastAccessed = new Map(); // "x,y" -> timestamp
+      
+      // Register network handlers if network manager provided
+      if (this.networkManager) {
+        this.registerNetworkHandlers();
       }
     }
     
-    return visibleChunks;
-  }
-  
-  /**
-   * Check if a chunk is loaded
-   * @param {number} chunkX - Chunk X coordinate
-   * @param {number} chunkY - Chunk Y coordinate
-   * @returns {boolean} True if chunk is loaded
-   */
-  hasChunk(chunkX, chunkY) {
-    return this.chunks.has(`${chunkX},${chunkY}`);
-  }
-  
-  /**
-   * Set chunk data received from server
-   * @param {number} chunkX - Chunk X coordinate
-   * @param {number} chunkY - Chunk Y coordinate
-   * @param {Object} data - Chunk data
-   */
-  setChunkData(chunkX, chunkY, data) {
-    this.chunks.set(`${chunkX},${chunkY}`, data);
-  }
-  
-  /**
-   * Generate a fallback chunk if server doesn't have it
-   * @param {number} chunkX - Chunk X coordinate
-   * @param {number} chunkY - Chunk Y coordinate
-   */
-  generateFallbackChunk(chunkX, chunkY) {
-    const tiles = [];
-    
-    for (let y = 0; y < this.chunkSize; y++) {
-      const row = [];
-      for (let x = 0; x < this.chunkSize; x++) {
-        const globalX = chunkX * this.chunkSize + x;
-        const globalY = chunkY * this.chunkSize + y;
-        
-        // Simple fallback: Generate a flat floor with some random obstacles
-        let tileType = TILE_IDS.FLOOR;
-        
-        // Use perlin noise to create some variety
-        const heightValue = perlin.get(globalX / 20, globalY / 20);
-        
-        if (heightValue > 0.6) {
-          tileType = TILE_IDS.OBSTACLE;
-        } else if (heightValue < -0.6) {
-          tileType = TILE_IDS.WATER;
-        }
-        
-        // Add border walls
-        if (globalX === 0 || globalY === 0 || 
-            globalX === this.width - 1 || globalY === this.height - 1) {
-          tileType = TILE_IDS.WALL;
-        }
-        
-        row.push(tileType);
-      }
-      tiles.push(row);
+    /**
+     * Register network handlers for map data
+     * @private
+     */
+    registerNetworkHandlers() {
+      // Map info handler
+      this.networkManager.on(MessageType.MAP_INFO, (data) => {
+        this.handleMapInfo(data);
+      });
+      
+      // Chunk data handler
+      this.networkManager.on(MessageType.CHUNK_DATA, (data) => {
+        this.handleChunkData(data);
+      });
     }
     
-    const chunkData = {
-      x: chunkX,
-      y: chunkY,
-      tiles: tiles,
-      isFallback: true
-    };
-    
-    this.chunks.set(`${chunkX},${chunkY}`, chunkData);
-    console.log(`Generated fallback chunk at (${chunkX}, ${chunkY})`);
-    
-    return chunkData;
-  }
-  
-  /**
-   * Get a specific tile
-   * @param {number} x - Tile X coordinate
-   * @param {number} y - Tile Y coordinate
-   * @returns {number|null} Tile type or null if not found
-   */
-  getTile(x, y) {
-    // Convert to chunk coordinates
-    const chunkX = Math.floor(x / this.chunkSize);
-    const chunkY = Math.floor(y / this.chunkSize);
-    const localX = x % this.chunkSize;
-    const localY = y % this.chunkSize;
-    
-    // Get chunk
-    const key = `${chunkX},${chunkY}`;
-    if (!this.chunks.has(key)) return null;
-    
-    const chunk = this.chunks.get(key);
-    
-    // Get tile from chunk
-    return chunk.tiles[localY][localX];
-  }
-  
-  /**
-   * Check if a position is a wall or out of bounds
-   * @param {number} x - World X coordinate
-   * @param {number} y - World Y coordinate
-   * @returns {boolean} True if wall or out of bounds
-   */
-  isWallOrOutOfBounds(x, y) {
-    // Convert to tile coordinates
-    const tileX = Math.floor(x / this.tileSize);
-    const tileY = Math.floor(y / this.tileSize);
-    
-    // Check if out of bounds
-    if (tileX < 0 || tileY < 0 || tileX >= this.width || tileY >= this.height) {
-      return true;
+    /**
+     * Handle map info from server
+     * @param {Object} data - Map info data
+     * @private
+     */
+    handleMapInfo(data) {
+      this.activeMapId = data.mapId;
+      this.mapMetadata = data;
+      this.tileSize = data.tileSize || this.tileSize;
+      this.chunkSize = data.chunkSize || this.chunkSize;
+      
+      console.log(`Map info received: ${this.activeMapId}`);
+      
+      // Clear existing chunks
+      this.chunks.clear();
+      this.chunkLastAccessed.clear();
+      this.pendingChunks.clear();
+      
+      // Request initial chunks around (0,0) as default starting point
+      this.updateVisibleChunks(0, 0);
+      
+      // Dispatch event
+      this.dispatchEvent('mapinitialized', { mapId: this.activeMapId });
     }
     
-    // Get tile type
-    const tileType = this.getTile(tileX, tileY);
-    if (tileType === null) return true; // Chunk not loaded yet
+    /**
+     * Handle chunk data from server
+     * @param {Object} data - Chunk data
+     * @private
+     */
+    handleChunkData(data) {
+      const { chunkX, chunkY, chunk } = data;
+      
+      // Store chunk
+      const key = `${chunkX},${chunkY}`;
+      this.chunks.set(key, chunk);
+      this.chunkLastAccessed.set(key, Date.now());
+      
+      // Remove from pending
+      this.pendingChunks.delete(key);
+      
+      // Trim cache if needed
+      this.trimChunkCache();
+      
+      // Dispatch event
+      this.dispatchEvent('chunkloaded', { chunkX, chunkY });
+    }
     
-    // Check if wall or other solid obstacle
-    return tileType === TILE_IDS.WALL || 
-           tileType === TILE_IDS.MOUNTAIN || 
-           tileType === TILE_IDS.WATER;
-  }
-  
-  /**
-   * Get tiles in a specific range (for rendering)
-   * @param {number} startX - Start X coordinate in tiles
-   * @param {number} startY - Start Y coordinate in tiles
-   * @param {number} endX - End X coordinate in tiles
-   * @param {number} endY - End Y coordinate in tiles
-   * @returns {Array} Array of {x, y, type} tile objects
-   */
-  getTilesInRange(startX, startY, endX, endY) {
-    const tiles = [];
-    
-    for (let y = startY; y <= endY; y++) {
-      for (let x = startX; x <= endX; x++) {
-        const tileType = this.getTile(x, y);
-        
-        if (tileType !== null) {
-          tiles.push({
-            x: x,
-            y: y,
-            type: tileType
-          });
+    /**
+     * Update visible chunks based on player position
+     * @param {number} playerX - Player X position in world coordinates
+     * @param {number} playerY - Player Y position in world coordinates
+     */
+    updateVisibleChunks(playerX, playerY) {
+      // Convert player position to chunk coordinates
+      const centerChunkX = Math.floor(playerX / this.tileSize / this.chunkSize);
+      const centerChunkY = Math.floor(playerY / this.tileSize / this.chunkSize);
+      
+      // Get chunks in view distance
+      const newVisibleChunks = [];
+      
+      for (let dy = -this.chunkLoadDistance; dy <= this.chunkLoadDistance; dy++) {
+        for (let dx = -this.chunkLoadDistance; dx <= this.chunkLoadDistance; dx++) {
+          const chunkX = centerChunkX + dx;
+          const chunkY = centerChunkY + dy;
+          const key = `${chunkX},${chunkY}`;
+          
+          // Skip if out of map bounds
+          if (this.mapMetadata) {
+            const chunkStartX = chunkX * this.chunkSize;
+            const chunkStartY = chunkY * this.chunkSize;
+            
+            if (chunkStartX < 0 || chunkStartY < 0 || 
+                chunkStartX >= this.mapMetadata.width || 
+                chunkStartY >= this.mapMetadata.height) {
+              continue;
+            }
+          }
+          
+          newVisibleChunks.push({ x: chunkX, y: chunkY, key });
+          
+          // Update last accessed time
+          if (this.chunks.has(key)) {
+            this.chunkLastAccessed.set(key, Date.now());
+          }
+          // Request chunk if not already loaded or pending
+          else if (!this.pendingChunks.has(key) && this.networkManager) {
+            this.pendingChunks.add(key);
+            this.networkManager.requestChunk(chunkX, chunkY);
+          }
         }
       }
+      
+      this.visibleChunks = newVisibleChunks;
     }
     
-    return tiles;
+    /**
+     * Trim the chunk cache to stay under the maximum limit
+     * @private
+     */
+    trimChunkCache() {
+      if (this.chunks.size <= this.maxCachedChunks) {
+        return;
+      }
+      
+      // Get chunks sorted by last accessed time (oldest first)
+      const sortedChunks = Array.from(this.chunkLastAccessed.entries())
+        .sort((a, b) => a[1] - b[1]);
+      
+      // Calculate how many to remove
+      const removeCount = this.chunks.size - this.maxCachedChunks;
+      
+      // Remove oldest chunks
+      for (let i = 0; i < removeCount; i++) {
+        const [key] = sortedChunks[i];
+        this.chunks.delete(key);
+        this.chunkLastAccessed.delete(key);
+      }
+      
+      console.log(`Trimmed ${removeCount} chunks from cache`);
+    }
+    
+    /**
+     * Get a specific chunk
+     * @param {number} chunkX - Chunk X coordinate
+     * @param {number} chunkY - Chunk Y coordinate
+     * @returns {Object|null} Chunk data or null if not loaded
+     */
+    getChunk(chunkX, chunkY) {
+      const key = `${chunkX},${chunkY}`;
+      
+      // Update last accessed time
+      if (this.chunks.has(key)) {
+        this.chunkLastAccessed.set(key, Date.now());
+        return this.chunks.get(key);
+      }
+      
+      // Request chunk if not already pending
+      if (this.networkManager && !this.pendingChunks.has(key)) {
+        this.pendingChunks.add(key);
+        this.networkManager.requestChunk(chunkX, chunkY);
+      }
+      
+      return null;
+    }
+    
+    /**
+     * Get a specific tile by world coordinates
+     * @param {number} x - Tile X coordinate
+     * @param {number} y - Tile Y coordinate
+     * @returns {Object|null} Tile object or null if chunk not loaded
+     */
+    getTile(x, y) {
+      // Calculate chunk coordinates
+      const chunkX = Math.floor(x / this.chunkSize);
+      const chunkY = Math.floor(y / this.chunkSize);
+      
+      // Get chunk
+      const chunk = this.getChunk(chunkX, chunkY);
+      if (!chunk) {
+        return null;
+      }
+      
+      // Calculate local coordinates
+      const localX = ((x % this.chunkSize) + this.chunkSize) % this.chunkSize;
+      const localY = ((y % this.chunkSize) + this.chunkSize) % this.chunkSize;
+      
+      // Get tile type
+      const tileType = chunk.tiles[localY][localX];
+      
+      // Return tile object
+      return {
+        type: tileType,
+        x,
+        y,
+        typeName: this.fallbackTileTypes[tileType] || 'unknown'
+      };
+    }
+    
+    /**
+     * Get tiles in a range (for rendering)
+     * @param {number} startX - Start X coordinate
+     * @param {number} startY - Start Y coordinate
+     * @param {number} endX - End X coordinate
+     * @param {number} endY - End Y coordinate
+     * @returns {Array} Array of tile objects
+     */
+    getTilesInRange(startX, startY, endX, endY) {
+      const tiles = [];
+      
+      for (let y = startY; y <= endY; y++) {
+        for (let x = startX; x <= endX; x++) {
+          const tile = this.getTile(x, y);
+          if (tile) {
+            tiles.push(tile);
+          }
+        }
+      }
+      
+      return tiles;
+    }
+    
+    /**
+     * Check if a position is a wall or obstacle
+     * @param {number} x - World X coordinate
+     * @param {number} y - World Y coordinate
+     * @returns {boolean} True if wall, false if not (or chunk not loaded)
+     */
+    isWallOrObstacle(x, y) {
+      // Convert to tile coordinates
+      const tileX = Math.floor(x / this.tileSize);
+      const tileY = Math.floor(y / this.tileSize);
+      
+      // Get tile
+      const tile = this.getTile(tileX, tileY);
+      
+      // If chunk not loaded, assume passable
+      if (!tile) {
+        return false;
+      }
+      
+      // Check if wall or obstacle
+      return tile.type === 1 || tile.type === 4;
+    }
+    
+    /**
+     * Generate a fallback tile when chunk not loaded
+     * @param {number} x - Tile X coordinate
+     * @param {number} y - Tile Y coordinate
+     * @returns {Object} Fallback tile
+     * @private
+     */
+    generateFallbackTile(x, y) {
+      // Simple checkerboard pattern
+      const isEven = (x + y) % 2 === 0;
+      const tileType = isEven ? 0 : 2;
+      
+      return {
+        type: tileType,
+        x,
+        y,
+        typeName: this.fallbackTileTypes[tileType] || 'unknown',
+        isFallback: true
+      };
+    }
+    
+    /**
+     * Dispatch an event
+     * @param {string} eventName - Event name
+     * @param {Object} data - Event data
+     * @private
+     */
+    dispatchEvent(eventName, data) {
+      const event = new CustomEvent(`map:${eventName}`, { detail: data });
+      window.dispatchEvent(event);
+    }
   }
-}
+  
+  // Export for ES modules
+  export { ClientMapManager };
+  
+  // Make available for browser
+  if (typeof window !== 'undefined') {
+    window.ClientMapManager = ClientMapManager;
+  }
+  

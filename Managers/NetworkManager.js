@@ -1,449 +1,423 @@
 /**
- * NetworkManager.js (Server)
- * Handles WebSocket communication for the game server
+ * OptimizedNetworkManager.js
+ * Optimized network manager with binary packet encoding for efficiency
  */
-const WebSocket = require('ws');
 
-class NetworkManager {
-  /**
-   * Creates the networking manager for the server
-   * @param {Object} gameManager - Reference to the game manager
-   */
-  constructor(gameManager) {
-    this.gameManager = gameManager;
-    this.wss = null;
-    this.clients = new Map(); // clientId -> {socket, player, lastUpdate}
-    this.updateRate = 1000 / 20; // Send updates at 20 times per second by default
-    this.lastBroadcastTime = 0;
+/**
+ * BinaryPacket - Utility for efficient binary packet encoding/decoding
+ */
+class BinaryPacket {
+    /**
+     * Create a binary packet with a specific message type
+     * @param {number} type - Message type ID
+     * @param {Object} data - Message data
+     * @returns {ArrayBuffer} Binary packet
+     */
+    static encode(type, data) {
+      // Convert data to JSON string for flexibility
+      const jsonStr = JSON.stringify(data);
+      const jsonBytes = new TextEncoder().encode(jsonStr);
+      
+      // Create packet: [1 byte type][4 byte length][jsonBytes]
+      const packet = new ArrayBuffer(5 + jsonBytes.byteLength);
+      const view = new DataView(packet);
+      
+      // Write type and length
+      view.setUint8(0, type);
+      view.setUint32(1, jsonBytes.byteLength, true); // Little-endian
+      
+      // Write JSON data
+      new Uint8Array(packet, 5).set(jsonBytes);
+      
+      return packet;
+    }
     
-    // Message handlers organized by type
-    this.messageHandlers = {
-      'PLAYER_UPDATE': this.handlePlayerUpdate.bind(this),
-      'PLAYER_SHOOT': this.handlePlayerShoot.bind(this),
-      'COLLISION': this.handleCollision.bind(this),
-      'REQUEST_CHUNK': this.handleRequestChunk.bind(this),
-      'PLAYER_JOIN': this.handlePlayerJoin.bind(this)
+    /**
+     * Decode a binary packet
+     * @param {ArrayBuffer} packet - Binary packet
+     * @returns {Object} Decoded packet {type, data}
+     */
+    static decode(packet) {
+      const view = new DataView(packet);
+      
+      // Read type and length
+      const type = view.getUint8(0);
+      const length = view.getUint32(1, true); // Little-endian
+      
+      // Read JSON data
+      const jsonBytes = new Uint8Array(packet, 5, length);
+      const jsonStr = new TextDecoder().decode(jsonBytes);
+      
+      // Parse JSON data
+      try {
+        const data = JSON.parse(jsonStr);
+        return { type, data };
+      } catch (error) {
+        console.error('Error parsing packet JSON:', error);
+        return { type, data: {} };
+      }
+    }
+  }
+  
+  /**
+   * Message type constants
+   */
+  const MessageType = {
+    // Connection messages
+    HANDSHAKE: 1,
+    HANDSHAKE_ACK: 2,
+    PING: 3,
+    PONG: 4,
+    
+    // Game state messages
+    PLAYER_JOIN: 10,
+    PLAYER_LEAVE: 11,
+    PLAYER_UPDATE: 12,
+    PLAYER_LIST: 13,
+    
+    // Entity messages
+    ENEMY_LIST: 20,
+    ENEMY_UPDATE: 21,
+    ENEMY_DEATH: 22,
+    
+    // Bullet messages
+    BULLET_CREATE: 30,
+    BULLET_LIST: 31,
+    BULLET_REMOVE: 32,
+    
+    // Collision messages
+    COLLISION: 40,
+    COLLISION_RESULT: 41,
+    
+    // Map messages
+    MAP_INFO: 50,
+    CHUNK_REQUEST: 51,
+    CHUNK_DATA: 52
+  };
+  
+  /**
+   * OptimizedNetworkManager - Client implementation
+   */
+  class OptimizedNetworkManager {
+    /**
+     * Create a network manager
+     * @param {string} serverUrl - WebSocket server URL
+     * @param {Object} handlers - Message handlers
+     */
+    constructor(serverUrl, handlers = {}) {
+      this.serverUrl = serverUrl;
+      this.socket = null;
+      this.connected = false;
+      this.connecting = false;
+      this.clientId = null;
+      this.messageQueue = [];
+      this.lastPingTime = 0;
+      this.pingInterval = null;
+      this.reconnectAttempts = 0;
+      this.maxReconnectAttempts = 5;
+      this.reconnectDelay = 2000; // ms
+      
+      // Message handlers - default empty object for each type
+      this.handlers = {};
+      Object.values(MessageType).forEach(type => {
+        this.handlers[type] = handlers[type] || (() => {});
+      });
+    }
+    
+    /**
+     * Connect to the WebSocket server
+     * @returns {Promise} Resolves when connected
+     */
+    connect() {
+      return new Promise((resolve, reject) => {
+        if (this.connected) {
+          resolve();
+          return;
+        }
+        
+        if (this.connecting) {
+          this.messageQueue.push({ resolve, reject });
+          return;
+        }
+        
+        this.connecting = true;
+        
+        try {
+          console.log(`Connecting to server: ${this.serverUrl}`);
+          this.socket = new WebSocket(this.serverUrl);
+          
+          // Binary data
+          this.socket.binaryType = 'arraybuffer';
+          
+          this.socket.onopen = () => {
+            console.log('Connected to server');
+            this.connected = true;
+            this.connecting = false;
+            this.reconnectAttempts = 0;
+            
+            // Send handshake
+            this.sendHandshake();
+            
+            // Start ping
+            this.startPing();
+            
+            // Resolve pending promises
+            resolve();
+            while (this.messageQueue.length > 0) {
+              const { resolve } = this.messageQueue.shift();
+              resolve();
+            }
+          };
+          
+          this.socket.onmessage = (event) => {
+            this.handleMessage(event.data);
+          };
+          
+          this.socket.onclose = () => {
+            console.log('Disconnected from server');
+            this.connected = false;
+            this.connecting = false;
+            this.stopPing();
+            
+            // Attempt reconnect
+            this.attemptReconnect();
+            
+            // Reject pending promises
+            reject(new Error('Disconnected from server'));
+            while (this.messageQueue.length > 0) {
+              const { reject } = this.messageQueue.shift();
+              reject(new Error('Disconnected from server'));
+            }
+          };
+          
+          this.socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            this.connecting = false;
+            reject(error);
+          };
+        } catch (error) {
+          console.error('Failed to connect to server:', error);
+          this.connecting = false;
+          reject(error);
+        }
+      });
+    }
+    
+    /**
+     * Attempt to reconnect to the server
+     * @private
+     */
+    attemptReconnect() {
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        console.log('Maximum reconnect attempts reached');
+        return;
+      }
+      
+      this.reconnectAttempts++;
+      
+      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+      
+      setTimeout(() => {
+        this.connect().catch(() => {
+          // Error already logged in connect method
+        });
+      }, this.reconnectDelay * this.reconnectAttempts);
+    }
+    
+    /**
+     * Start the ping interval
+     * @private
+     */
+    startPing() {
+      this.stopPing();
+      this.pingInterval = setInterval(() => {
+        this.sendPing();
+      }, 30000);
+    }
+    
+    /**
+     * Stop the ping interval
+     * @private
+     */
+    stopPing() {
+      if (this.pingInterval) {
+        clearInterval(this.pingInterval);
+        this.pingInterval = null;
+      }
+    }
+    
+    /**
+     * Send a ping message
+     * @private
+     */
+    sendPing() {
+      this.lastPingTime = Date.now();
+      this.send(MessageType.PING, { time: this.lastPingTime });
+    }
+    
+    /**
+     * Send handshake message
+     * @private
+     */
+    sendHandshake() {
+      this.send(MessageType.HANDSHAKE, {
+        clientTime: Date.now(),
+        screenWidth: window.innerWidth,
+        screenHeight: window.innerHeight
+      });
+    }
+    
+    /**
+     * Handle an incoming message
+     * @param {ArrayBuffer} data - Message data
+     * @private
+     */
+    handleMessage(data) {
+      try {
+        // Decode binary packet
+        const packet = BinaryPacket.decode(data);
+        const { type, data: messageData } = packet;
+        
+        // Special handling for certain messages
+        switch (type) {
+          case MessageType.HANDSHAKE_ACK:
+            this.clientId = messageData.clientId;
+            console.log(`Received client ID: ${this.clientId}`);
+            break;
+            
+          case MessageType.PONG:
+            const pingTime = Date.now() - this.lastPingTime;
+            console.log(`Ping: ${pingTime}ms`);
+            break;
+        }
+        
+        // Call handler for this message type
+        if (this.handlers[type]) {
+          this.handlers[type](messageData);
+        }
+      } catch (error) {
+        console.error('Error handling message:', error);
+      }
+    }
+    
+    /**
+     * Send a message to the server
+     * @param {number} type - Message type
+     * @param {Object} data - Message data
+     */
+    send(type, data) {
+      if (!this.connected) {
+        console.warn('Cannot send message, not connected');
+        return false;
+      }
+      
+      try {
+        // Encode binary packet
+        const packet = BinaryPacket.encode(type, data);
+        
+        // Send packet
+        this.socket.send(packet);
+        return true;
+      } catch (error) {
+        console.error('Error sending message:', error);
+        return false;
+      }
+    }
+    
+    /**
+     * Send player update
+     * @param {Object} player - Player data
+     */
+    sendPlayerUpdate(player) {
+      return this.send(MessageType.PLAYER_UPDATE, player);
+    }
+    
+    /**
+     * Send bullet creation
+     * @param {Object} bullet - Bullet data
+     */
+    sendBulletCreate(bullet) {
+      return this.send(MessageType.BULLET_CREATE, bullet);
+    }
+    
+    /**
+     * Send collision
+     * @param {Object} collision - Collision data
+     */
+    sendCollision(collision) {
+      return this.send(MessageType.COLLISION, collision);
+    }
+    
+    /**
+     * Request map chunk
+     * @param {number} chunkX - Chunk X coordinate
+     * @param {number} chunkY - Chunk Y coordinate
+     */
+    requestChunk(chunkX, chunkY) {
+      return this.send(MessageType.CHUNK_REQUEST, { chunkX, chunkY });
+    }
+    
+    /**
+     * Disconnect from the server
+     */
+    disconnect() {
+      this.stopPing();
+      
+      if (this.socket) {
+        this.socket.close();
+        this.socket = null;
+      }
+      
+      this.connected = false;
+      this.connecting = false;
+    }
+    
+    /**
+     * Register a message handler
+     * @param {number} type - Message type
+     * @param {Function} handler - Message handler
+     */
+    on(type, handler) {
+      if (typeof handler === 'function') {
+        this.handlers[type] = handler;
+      }
+    }
+    
+    /**
+     * Check if connected to server
+     * @returns {boolean} True if connected
+     */
+    isConnected() {
+      return this.connected;
+    }
+    
+    /**
+     * Get client ID
+     * @returns {string} Client ID
+     */
+    getClientId() {
+      return this.clientId;
+    }
+  }
+  
+  /**
+   * Export for browser
+   */
+  if (typeof window !== 'undefined') {
+    window.OptimizedNetworkManager = OptimizedNetworkManager;
+    window.MessageType = MessageType;
+    window.BinaryPacket = BinaryPacket;
+  }
+  
+  /**
+   * Export for Node.js
+   */
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      OptimizedNetworkManager,
+      MessageType,
+      BinaryPacket
     };
   }
   
-  /**
-   * Initialize the WebSocket server
-   * @param {Object} server - HTTP server instance
-   */
-  init(server) {
-    this.wss = new WebSocket.Server({ server });
-    
-    // Set up event handlers
-    this.wss.on('connection', (socket, req) => {
-      this.handleConnection(socket, req);
-    });
-    
-    console.log('WebSocket server initialized');
-    
-    // Start update loop
-    this.startUpdateLoop();
-  }
-  
-  /**
-   * Handle a new WebSocket connection
-   * @param {WebSocket} socket - New client socket
-   * @param {Object} req - HTTP request object
-   */
-  handleConnection(socket, req) {
-    // Generate a unique client ID
-    const clientId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-    
-    // Store client information
-    this.clients.set(clientId, {
-      socket,
-      player: {
-        id: clientId,
-        x: 50, // Default spawn position
-        y: 50,
-        name: `Player_${clientId.substr(0, 4)}`,
-        health: 100
-      },
-      lastUpdate: Date.now()
-    });
-    
-    console.log(`Client connected: ${clientId}`);
-    
-    // Set clientId property on socket for easy reference
-    socket.clientId = clientId;
-    
-    // Send initial game state
-    this.sendInitialState(socket, clientId);
-    
-    // Setup message handler
-    socket.on('message', (message) => {
-      this.handleMessage(socket, message);
-    });
-    
-    // Setup disconnect handler
-    socket.on('close', () => {
-      this.handleDisconnect(clientId);
-    });
-    
-    // Broadcast new player to everyone else
-    this.broadcastPlayerJoin(clientId);
-  }
-  
-  /**
-   * Send initial game state to a newly connected client
-   * @param {WebSocket} socket - Client socket
-   * @param {string} clientId - Client ID
-   */
-  sendInitialState(socket, clientId) {
-    try {
-      // 1. Send client ID
-      this.sendToClient(socket, {
-        type: 'INIT_CLIENT',
-        clientId: clientId,
-        timestamp: Date.now()
-      });
-      
-      // 2. Send map info (only metadata, actual chunks will be requested as needed)
-      const mapInfo = this.gameManager.mapManager.getMapInfo();
-      this.sendToClient(socket, {
-        type: 'MAP_INFO',
-        ...mapInfo
-      });
-      
-      // 3. Send list of all players
-      const players = {};
-      this.clients.forEach((client, id) => {
-        if (id !== clientId) { // Don't include the new player
-          players[id] = client.player;
-        }
-      });
-      
-      this.sendToClient(socket, {
-        type: 'PLAYERS_LIST',
-        players: players
-      });
-      
-      // 4. Send current enemies
-      const enemies = this.gameManager.enemyManager.getEnemiesData();
-      this.sendToClient(socket, {
-        type: 'ENEMIES_LIST',
-        enemies: enemies
-      });
-      
-      // 5. Send current bullets
-      const bullets = this.gameManager.bulletManager.getBulletsData();
-      this.sendToClient(socket, {
-        type: 'BULLETS_LIST',
-        bullets: bullets
-      });
-      
-      console.log(`Initial state sent to client ${clientId}`);
-    } catch (error) {
-      console.error('Error sending initial state:', error);
-    }
-  }
-  
-  /**
-   * Handle a WebSocket message
-   * @param {WebSocket} socket - Client socket
-   * @param {string|Buffer} message - Raw message data
-   */
-  handleMessage(socket, message) {
-    try {
-      const data = JSON.parse(message);
-      const handler = this.messageHandlers[data.type];
-      
-      if (handler) {
-        handler(socket, data);
-      } else {
-        console.warn(`No handler for message type: ${data.type}`);
-      }
-    } catch (error) {
-      console.error('Error handling message:', error);
-    }
-  }
-  
-  /**
-   * Handle client disconnection
-   * @param {string} clientId - ID of disconnected client
-   */
-  handleDisconnect(clientId) {
-    // Remove client from tracking
-    this.clients.delete(clientId);
-    
-    // Broadcast player disconnect to remaining clients
-    this.broadcast({
-      type: 'PLAYER_LEAVE',
-      clientId: clientId
-    });
-    
-    console.log(`Client disconnected: ${clientId}`);
-  }
-  
-  /**
-   * Send a message to a specific client
-   * @param {WebSocket} socket - Client socket
-   * @param {Object} data - Message data
-   */
-  sendToClient(socket, data) {
-    if (socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(data));
-    }
-  }
-  
-  /**
-   * Broadcast a message to all connected clients
-   * @param {Object} data - Message data
-   */
-  broadcast(data) {
-    this.wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(data));
-      }
-    });
-  }
-  
-  /**
-   * Broadcast to all clients except one
-   * @param {Object} data - Message data
-   * @param {string} excludeClientId - Client ID to exclude
-   */
-  broadcastExcept(data, excludeClientId) {
-    this.wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN && client.clientId !== excludeClientId) {
-        client.send(JSON.stringify(data));
-      }
-    });
-  }
-  
-  /**
-   * Start the server update loop
-   */
-  startUpdateLoop() {
-    setInterval(() => {
-      this.sendWorldUpdates();
-    }, this.updateRate);
-  }
-  
-  /**
-   * Send regular world state updates to clients
-   */
-  sendWorldUpdates() {
-    const now = Date.now();
-    
-    // Don't send updates too frequently
-    if (now - this.lastBroadcastTime < this.updateRate) {
-      return;
-    }
-    
-    this.lastBroadcastTime = now;
-    
-    try {
-      // 1. Get updated positions of all enemies
-      const enemyUpdates = this.gameManager.enemyManager.getEnemiesData();
-      
-      // 2. Get updated positions of all bullets
-      const bulletUpdates = this.gameManager.bulletManager.getBulletsData();
-      
-      // 3. Get updated positions of all players
-      const playerUpdates = {};
-      this.clients.forEach((client, id) => {
-        playerUpdates[id] = client.player;
-      });
-      
-      // 4. Broadcast world updates to all clients
-      this.broadcast({
-        type: 'WORLD_UPDATE',
-        enemies: enemyUpdates,
-        bullets: bulletUpdates,
-        players: playerUpdates,
-        timestamp: now
-      });
-    } catch (error) {
-      console.error('Error sending world updates:', error);
-    }
-  }
-  
-  /**
-   * Broadcast player join event
-   * @param {string} clientId - ID of new player
-   */
-  broadcastPlayerJoin(clientId) {
-    const clientData = this.clients.get(clientId);
-    if (!clientData) return;
-    
-    this.broadcastExcept({
-      type: 'PLAYER_JOIN',
-      player: clientData.player
-    }, clientId);
-  }
-  
-  /**
-   * Handle player update message
-   * @param {WebSocket} socket - Client socket
-   * @param {Object} data - Message data
-   */
-  handlePlayerUpdate(socket, data) {
-    const clientId = socket.clientId;
-    const clientData = this.clients.get(clientId);
-    
-    if (!clientData) return;
-    
-    // Update player information
-    const player = clientData.player;
-    
-    // Update position and other data
-    if (data.x !== undefined) player.x = data.x;
-    if (data.y !== undefined) player.y = data.y;
-    if (data.rotation !== undefined) player.rotation = data.rotation;
-    if (data.name !== undefined) player.name = data.name;
-    
-    // Update timestamp
-    clientData.lastUpdate = Date.now();
-  }
-  
-  /**
-   * Handle player shoot message
-   * @param {WebSocket} socket - Client socket
-   * @param {Object} data - Message data
-   */
-  handlePlayerShoot(socket, data) {
-    const clientId = socket.clientId;
-    const clientData = this.clients.get(clientId);
-    
-    if (!clientData) return;
-    
-    // Extract bullet data
-    const { x, y, angle, speed, lifetime } = data;
-    
-    // Create a new bullet
-    const bulletId = this.gameManager.bulletManager.addBullet({
-      x,
-      y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      ownerId: clientId,
-      lifetime: lifetime || 3000
-    });
-    
-    // Broadcast new bullet to all clients
-    this.broadcast({
-      type: 'BULLET_CREATED',
-      bulletId,
-      x,
-      y,
-      angle,
-      speed,
-      ownerId: clientId,
-      timestamp: Date.now()
-    });
-  }
-  
-  /**
-   * Handle collision message
-   * @param {WebSocket} socket - Client socket
-   * @param {Object} data - Message data
-   */
-  handleCollision(socket, data) {
-    const clientId = socket.clientId;
-    
-    // Add client ID to the collision data
-    data.clientId = clientId;
-    
-    // Validate and process collision
-    const result = this.gameManager.collisionManager.validateCollision(data);
-    
-    if (result.valid) {
-      // Broadcast validated collision to all clients
-      this.broadcast({
-        type: 'COLLISION_RESULT',
-        valid: true,
-        bulletId: result.bulletId,
-        enemyId: result.enemyId,
-        damage: result.damage,
-        enemyHealth: result.enemyHealth,
-        enemyKilled: result.enemyKilled,
-        timestamp: Date.now()
-      });
-    } else {
-      // Send rejection only to the reporting client
-      this.sendToClient(socket, {
-        type: 'COLLISION_RESULT',
-        valid: false,
-        reason: result.reason,
-        bulletId: result.bulletId,
-        enemyId: result.enemyId
-      });
-    }
-  }
-  
-  /**
-   * Handle map chunk request
-   * @param {WebSocket} socket - Client socket
-   * @param {Object} data - Message data with chunk coordinates
-   */
-  handleRequestChunk(socket, data) {
-    const { chunkX, chunkY } = data;
-    
-    // Get chunk data from the map manager
-    const chunkData = this.gameManager.mapManager.getChunkData(chunkX, chunkY);
-    
-    if (chunkData) {
-      this.sendToClient(socket, {
-        type: 'CHUNK_DATA',
-        chunkX,
-        chunkY,
-        data: chunkData
-      });
-    } else {
-      this.sendToClient(socket, {
-        type: 'CHUNK_NOT_FOUND',
-        chunkX,
-        chunkY
-      });
-    }
-  }
-  
-  /**
-   * Handle player join message (with custom info)
-   * @param {WebSocket} socket - Client socket
-   * @param {Object} data - Message data
-   */
-  handlePlayerJoin(socket, data) {
-    const clientId = socket.clientId;
-    const clientData = this.clients.get(clientId);
-    
-    if (!clientData) return;
-    
-    // Update player name or other customization
-    if (data.name) {
-      clientData.player.name = data.name;
-    }
-    
-    // Broadcast updated player info
-    this.broadcastPlayerJoin(clientId);
-  }
-  
-  /**
-   * Get player by client ID
-   * @param {string} clientId - Client ID
-   * @returns {Object|null} Player object
-   */
-  getPlayer(clientId) {
-    const clientData = this.clients.get(clientId);
-    return clientData ? clientData.player : null;
-  }
-  
-  /**
-   * Get all players
-   * @returns {Object} Map of client IDs to player objects
-   */
-  getAllPlayers() {
-    const players = {};
-    this.clients.forEach((client, id) => {
-      players[id] = client.player;
-    });
-    return players;
-  }
-}
-
-module.exports = NetworkManager;
+  export { OptimizedNetworkManager, MessageType, BinaryPacket };
