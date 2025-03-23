@@ -370,4 +370,4 @@ export class NetworkManager {
         this.socket.close();
       }
     }
-  }
+  } 

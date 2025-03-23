@@ -6,7 +6,7 @@ import {
   createPurpleIllusionist,
   createEmeraldRegenerator,
   createNavyTurtle
-} from '../Behaviours/ColorCodedIndex.js';
+} from '../Behaviours/Experimental/ColorCodedIndex.js';
 
 /**
  * EnemyManager handles enemy creation, updating, and removal.

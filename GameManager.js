@@ -2,7 +2,7 @@
 
 import BulletManager from './Managers/BulletManager.js';
 import EnemyManager from './Managers/EnemyManager.js';
-import CollisionManager from './managers/CollisionManager.js';
+import CollisionManager from './Managers/serverCollisionManager.js';
 
 /**
  * If you're using Node + WebSocket only, you might not use requestAnimationFrame,
