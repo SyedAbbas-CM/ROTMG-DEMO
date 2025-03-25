@@ -1,45 +1,88 @@
-/**
- * server.js
- * Main server implementation with optimized networking and map generation
- */
+// File: server.js
 
-const express = require('express');
-const http = require('http');
-const WebSocket = require('ws');
-const path = require('path');
-const fs = require('fs');
-const { ServerMapManager, setupMapRoutes } = require('./Managers/MapManager');
-const BinaryPacket = require('./server/network/BinaryPacket');
-const MessageType = require('./server/network/MessageType');
-const BulletManager = require('./server/managers/BulletManager');
-const EnemyManager = require('./server/managers/EnemyManager');
-const CollisionManager = require('./server/managers/CollisionManager');
+import express from 'express';
+import http from 'http';
+import { WebSocketServer } from 'ws';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+import { MapManager } from './Managers/MapManager.js';
+import { BinaryPacket, MessageType } from './Managers/NetworkManager.js';
+import BulletManager from './Managers/BulletManager.js';
+import EnemyManager from './Managers/EnemyManager.js';
+import CollisionManager from './Managers/CollisionManager.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Create Express app and HTTP server
 const app = express();
 const server = http.createServer(app);
 
 // Create WebSocket server
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocketServer({ server });
 
 // Set up middleware
 app.use(express.json());
 app.use(express.static('public'));
 
 // Create server managers
-const mapManager = new ServerMapManager({
+const mapManager = new MapManager({
   mapStoragePath: path.join(__dirname, 'maps')
 });
 
-// Set up map routes
-setupMapRoutes(app, mapManager);
+// Setup map routes
+app.get('/api/maps', (req, res) => {
+  // Return list of available maps
+  const mapsList = Array.from(mapManager.maps.values()).map(map => ({
+    id: map.id,
+    name: map.name,
+    width: map.width,
+    height: map.height,
+    procedural: map.procedural
+  }));
+  
+  res.json({ maps: mapsList });
+});
+
+app.get('/api/maps/:id', (req, res) => {
+  // Return specific map info
+  const mapId = req.params.id;
+  const mapInfo = mapManager.getMapMetadata(mapId);
+  
+  if (!mapInfo) {
+    return res.status(404).json({ error: 'Map not found' });
+  }
+  
+  res.json(mapInfo);
+});
+
+app.get('/api/maps/:id/chunk/:x/:y', (req, res) => {
+  // Return chunk data
+  const mapId = req.params.id;
+  const chunkX = parseInt(req.params.x);
+  const chunkY = parseInt(req.params.y);
+  
+  try {
+    const chunk = mapManager.getChunkData(mapId, chunkX, chunkY);
+    res.json(chunk || { error: 'Chunk not found' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Create initial procedural map
-const defaultMapId = mapManager.createProceduralMap({
-  width: 256,
-  height: 256,
-  name: 'Default Map'
-});
+let defaultMapId;
+try {
+  defaultMapId = mapManager.createProceduralMap({
+    width: 256,
+    height: 256,
+    name: 'Default Map'
+  });
+} catch (error) {
+  console.error("Error creating procedural map:", error);
+  defaultMapId = "default";
+}
 
 console.log(`Created default map: ${defaultMapId}`);
 
@@ -47,7 +90,7 @@ console.log(`Created default map: ${defaultMapId}`);
 const bulletManager = new BulletManager(10000);
 
 // Create enemy manager
-const enemyManager = new EnemyManager(1000, bulletManager);
+const enemyManager = new EnemyManager(1000);
 
 // Create collision manager
 const collisionManager = new CollisionManager(bulletManager, enemyManager, mapManager);
@@ -100,7 +143,19 @@ wss.on('connection', (socket, req) => {
   });
   
   // Send map info
-  const mapMetadata = mapManager.getMapMetadata(gameState.mapId);
+  let mapMetadata;
+  try {
+    mapMetadata = mapManager.getMapMetadata(gameState.mapId);
+  } catch (error) {
+    console.error("Error getting map metadata:", error);
+    mapMetadata = {
+      width: 256,
+      height: 256,
+      tileSize: 12,
+      chunkSize: 16
+    };
+  }
+  
   sendToClient(socket, MessageType.MAP_INFO, {
     mapId: gameState.mapId,
     width: mapMetadata.width,
@@ -125,10 +180,126 @@ wss.on('connection', (socket, req) => {
 });
 
 /**
- * Send initial game state to a new client
+ * Update game state
+ */
+function updateGame() {
+  const now = Date.now();
+  const deltaTime = (now - gameState.lastUpdateTime) / 1000; // Convert to seconds
+  gameState.lastUpdateTime = now;
+  
+  // Create a target object using the first connected player
+  // If no players, use a default position
+  let target = null;
+  for (const [id, client] of clients.entries()) {
+    target = client.player;
+    break;
+  }
+  
+  // Default target if no players
+  if (!target) {
+    target = { x: 256, y: 256 };
+  }
+  
+  // Update bullets
+  bulletManager.update(deltaTime);
+  
+  // Update enemies with target
+  enemyManager.update(deltaTime, bulletManager, target);
+  
+  // Check for collisions
+  collisionManager.checkCollisions();
+  
+  // Check for enemy spawns
+  if (now - gameState.lastEnemySpawnTime > gameState.enemySpawnInterval) {
+    gameState.lastEnemySpawnTime = now;
+    
+    // Spawn 1-3 new enemies if below threshold
+    if (enemyManager.getActiveEnemyCount() < 50) {
+      const count = Math.floor(Math.random() * 3) + 1;
+      
+      for (let i = 0; i < count; i++) {
+        // Random enemy type (0-4)
+        const type = Math.floor(Math.random() * 5);
+        
+        // Random position (around the map)
+        const x = Math.random() * 500 + 50;
+        const y = Math.random() * 500 + 50;
+        
+        // Spawn enemy
+        enemyManager.spawnEnemy(type, x, y);
+      }
+      
+      console.log(`Spawned ${count} new enemies`);
+    }
+  }
+  
+  // Broadcast world updates
+  broadcastWorldUpdates();
+}
+
+/**
+ * Broadcast world updates (player, enemy, bullet positions)
+ */
+function broadcastWorldUpdates() {
+  // Get player data
+  const players = {};
+  clients.forEach((client, id) => {
+    players[id] = client.player;
+  });
+  
+  // Get enemy data
+  const enemies = enemyManager.getEnemiesData();
+  
+  // Get bullet data
+  const bullets = bulletManager.getBulletsData();
+  
+  // Broadcast world update
+  broadcast(MessageType.WORLD_UPDATE, {
+    players,
+    enemies,
+    bullets,
+    timestamp: Date.now()
+  });
+}
+
+// Start game update loop
+setInterval(updateGame, gameState.updateInterval);
+
+// Server listen
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\nShutting down server...');
+  
+  // Clean up resources
+  if (collisionManager.cleanup) collisionManager.cleanup();
+  if (enemyManager.cleanup) enemyManager.cleanup();
+  if (bulletManager.cleanup) bulletManager.cleanup();
+  
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+// Export required modules for testing
+export {
+  app,
+  server,
+  mapManager,
+  bulletManager,
+  enemyManager,
+  collisionManager
+};
+
+/** Send initial game state to a new client
  * @param {WebSocket} socket - Client socket
  * @param {number} clientId - Client ID
- */
+*/
 function sendInitialState(socket, clientId) {
   // Send player list
   const players = {};
@@ -247,15 +418,21 @@ function handleBulletCreate(clientId, data) {
   if (!client) return;
   
   // Create bullet
-  const bulletId = bulletManager.addBullet({
-    x: data.x,
-    y: data.y,
-    vx: Math.cos(data.angle) * data.speed,
-    vy: Math.sin(data.angle) * data.speed,
-    ownerId: clientId,
-    damage: data.damage || 10,
-    lifetime: data.lifetime || 3.0
-  });
+  let bulletId;
+  try {
+    bulletId = bulletManager.addBullet({
+      x: data.x,
+      y: data.y,
+      vx: Math.cos(data.angle) * data.speed,
+      vy: Math.sin(data.angle) * data.speed,
+      ownerId: clientId,
+      damage: data.damage || 10,
+      lifetime: data.lifetime || 3.0
+    });
+  } catch (error) {
+    console.error("Error adding bullet:", error);
+    return;
+  }
   
   // Broadcast new bullet to all clients
   broadcast(MessageType.BULLET_CREATE, {
@@ -278,12 +455,18 @@ function handleBulletCreate(clientId, data) {
  */
 function handleCollision(clientId, data) {
   // Validate collision on server
-  const result = collisionManager.validateCollision({
-    bulletId: data.bulletId,
-    enemyId: data.enemyId,
-    timestamp: data.timestamp,
-    clientId
-  });
+  let result;
+  try {
+    result = collisionManager.validateCollision({
+      bulletId: data.bulletId,
+      enemyId: data.enemyId,
+      timestamp: data.timestamp,
+      clientId
+    });
+  } catch (error) {
+    console.error("Error validating collision:", error);
+    return;
+  }
   
   // Send result to client
   if (result.valid) {
@@ -321,19 +504,29 @@ function handleChunkRequest(clientId, data) {
   const client = clients.get(clientId);
   if (!client) return;
   
-  // Get chunk data
   try {
-    const chunk = mapManager.getChunk(client.mapId, data.chunkX, data.chunkY);
+    const chunk = mapManager.getChunkData(client.mapId, data.chunkX, data.chunkY);
     
-    // Send chunk data to client
+    if (!chunk) {
+      sendToClient(client.socket, MessageType.CHUNK_NOT_FOUND, {
+        chunkX: data.chunkX,
+        chunkY: data.chunkY
+      });
+      return;
+    }
+    
     sendToClient(client.socket, MessageType.CHUNK_DATA, {
       chunkX: data.chunkX,
       chunkY: data.chunkY,
-      chunk,
-      timestamp: Date.now()
+      chunk
     });
   } catch (error) {
-    console.error(`Error getting chunk for client ${clientId}:`, error);
+    console.error('Error handling chunk request:', error);
+    sendToClient(client.socket, MessageType.ERROR, {
+      error: 'Failed to load chunk',
+      chunkX: data.chunkX,
+      chunkY: data.chunkY
+    });
   }
 }
 
@@ -361,7 +554,7 @@ function handleClientDisconnect(clientId) {
  * @param {Object} data - Message data
  */
 function sendToClient(socket, type, data) {
-  if (socket.readyState === WebSocket.OPEN) {
+  if (socket.readyState === 1) { // WebSocket.OPEN
     try {
       // Encode binary packet
       const packet = BinaryPacket.encode(type, data);
@@ -381,7 +574,7 @@ function sendToClient(socket, type, data) {
  */
 function broadcast(type, data) {
   wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
+    if (client.readyState === 1) { // WebSocket.OPEN
       sendToClient(client, type, data);
     }
   });
@@ -396,7 +589,7 @@ function broadcast(type, data) {
 function broadcastExcept(type, data, excludeClientId) {
   wss.clients.forEach(client => {
     const clientId = getClientIdFromSocket(client);
-    if (client.readyState === WebSocket.OPEN && clientId !== excludeClientId) {
+    if (client.readyState === 1 && clientId !== excludeClientId) { // WebSocket.OPEN
       sendToClient(client, type, data);
     }
   });
@@ -435,98 +628,3 @@ function spawnInitialEnemies(count) {
   
   console.log(`Spawned ${count} initial enemies`);
 }
-
-/**
- * Update game state
- */
-function updateGame() {
-  const now = Date.now();
-  const deltaTime = (now - gameState.lastUpdateTime) / 1000; // Convert to seconds
-  gameState.lastUpdateTime = now;
-  
-  // Update bullets
-  bulletManager.update(deltaTime);
-  
-  // Update enemies
-  enemyManager.update(deltaTime);
-  
-  // Check for enemy spawns
-  if (now - gameState.lastEnemySpawnTime > gameState.enemySpawnInterval) {
-    gameState.lastEnemySpawnTime = now;
-    
-    // Spawn 1-3 new enemies if below threshold
-    if (enemyManager.enemyCount < 50) {
-      const count = Math.floor(Math.random() * 3) + 1;
-      
-      for (let i = 0; i < count; i++) {
-        // Random enemy type (0-4)
-        const type = Math.floor(Math.random() * 5);
-        
-        // Random position (around the map)
-        const x = Math.random() * 500 + 50;
-        const y = Math.random() * 500 + 50;
-        
-        // Spawn enemy
-        enemyManager.spawnEnemy(type, x, y);
-      }
-      
-      console.log(`Spawned ${count} new enemies`);
-    }
-  }
-  
-  // Broadcast world updates
-  broadcastWorldUpdates();
-}
-
-/**
- * Broadcast world updates (player, enemy, bullet positions)
- */
-function broadcastWorldUpdates() {
-  // Get player data
-  const players = {};
-  clients.forEach((client, id) => {
-    players[id] = client.player;
-  });
-  
-  // Get enemy data
-  const enemies = enemyManager.getEnemiesData();
-  
-  // Get bullet data
-  const bullets = bulletManager.getBulletsData();
-  
-  // Broadcast world update
-  broadcast(MessageType.WORLD_UPDATE, {
-    players,
-    enemies,
-    bullets,
-    timestamp: Date.now()
-  });
-}
-
-// Start game update loop
-setInterval(updateGame, gameState.updateInterval);
-
-// Server listen
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-// Handle graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\nShutting down server...');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
-});
-
-// Export required modules for testing
-module.exports = {
-  app,
-  server,
-  mapManager,
-  bulletManager,
-  enemyManager,
-  collisionManager
-};

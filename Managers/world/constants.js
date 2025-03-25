@@ -3,8 +3,8 @@
 export const TILE_SIZE = 12; // Size of each tile in pixels
 export const CHARACTER_SPRITE_SIZE = 10; // Size of each character sprite in pixels
 export const SCALE = 3; // Scale factor for sprites
-export const CANVAS_WIDTH = window.innerWidth;
-export const CANVAS_HEIGHT = window.innerHeight;
+export const CANVAS_WIDTH = 600;
+export const CANVAS_HEIGHT = 600;
 
 
 export const TILE_IDS = {

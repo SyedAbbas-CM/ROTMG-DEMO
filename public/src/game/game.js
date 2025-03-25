@@ -16,7 +16,7 @@ let lastTime = 0;
 let enemyManager; // Instance of EnemyManager
 
 // Configuration: Choose between 'procedural' or 'fixed'
-const MAP_MODE = 'procedural'; // 'procedural' | 'fixed'
+const MAP_MODE = 'fixed'; // 'procedural' | 'fixed'
 const FIXED_MAP_URL = 'assets/maps/fixedMap1.json'; // Path to your fixed map file
 
 export async function initGame() {

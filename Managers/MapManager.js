@@ -1,44 +1,79 @@
 // File: /src/managers/MapManager.js
 
-const { PerlinNoise } = require('./world/PerlinNoise');
-const { Tile } = require('./world/tile');
-const { TILE_IDS, CHUNK_SIZE } = require('./world/constants');
+import { TILE_IDS, CHUNK_SIZE, TILE_SIZE } from './world/constants.js';
+import { PerlinNoise } from './world/PerlinNoise.js';
+import { Tile } from './world/tile.js';
 
 /**
  * MapManager handles the game world, tiles, and chunks.
+ * This is a unified implementation that consolidates functionality
+ * from both the original MapManager and GameMap classes.
  */
-class MapManager {
+export class MapManager {
   /**
    * Creates a map manager
    */
-  constructor() {
+  constructor(options = {}) {
     this.chunks = new Map(); // Map of "x,y" -> chunk data
-    this.width = 0;         // Width of the world in tiles
-    this.height = 0;        // Height of the world in tiles
-    this.tileSize = 12;     // Size of each tile in pixels
-    this.perlin = new PerlinNoise(Math.random()); // For procedural generation
+    this.width = 0;          // Width of the world in tiles
+    this.height = 0;         // Height of the world in tiles
+    this.tileSize = options.tileSize || TILE_SIZE;  // Size of each tile in pixels
+    
+    // For procedural generation
+    this.perlin = new PerlinNoise(options.seed || Math.random());
     this.proceduralEnabled = true;
+    this.isFixedMap = false;
+    
+    // Map storage (for server)
+    this.mapStoragePath = options.mapStoragePath || '';
+    this.maps = new Map(); // For storing multiple maps (id -> mapData)
+    this.nextMapId = 1;
   }
   
   /**
    * Generate or load a world
    * @param {number} width - Width of the world in tiles
    * @param {number} height - Height of the world in tiles
+   * @param {Object} options - Additional options
+   * @returns {string} Map ID
    */
-  generateWorld(width, height) {
+  generateWorld(width, height, options = {}) {
     this.width = width;
     this.height = height;
     
-    // If we want to pre-generate chunks, we could do it here,
-    // but for large worlds it's better to generate on demand
+    // Clear existing chunks
+    this.chunks.clear();
+    
     console.log(`World initialized with size ${width}x${height}`);
+    
+    // Create a map ID
+    const mapId = `map_${this.nextMapId++}`;
+    
+    // Store map metadata
+    this.maps.set(mapId, {
+      id: mapId,
+      width,
+      height,
+      tileSize: this.tileSize,
+      chunkSize: CHUNK_SIZE,
+      name: options.name || 'Untitled Map',
+      procedural: this.proceduralEnabled,
+      seed: this.perlin.seed
+    });
+    
+    return mapId;
   }
   
   /**
    * Get world info for clients
+   * @param {string} mapId - Map ID
    * @returns {Object} World metadata
    */
-  getMapInfo() {
+  getMapInfo(mapId) {
+    if (mapId && this.maps.has(mapId)) {
+      return this.maps.get(mapId);
+    }
+    
     return {
       width: this.width,
       height: this.height,
@@ -49,12 +84,13 @@ class MapManager {
   
   /**
    * Get data for a specific chunk
+   * @param {string} mapId - Map ID
    * @param {number} chunkX - Chunk X coordinate
    * @param {number} chunkY - Chunk Y coordinate
    * @returns {Object|null} Chunk data or null if not found
    */
-  getChunkData(chunkX, chunkY) {
-    const key = `${chunkX},${chunkY}`;
+  getChunkData(mapId, chunkX, chunkY) {
+    const key = `${mapId || 'default'}_${chunkX},${chunkY}`;
     
     // If chunk exists in cache, return it
     if (this.chunks.has(key)) {
@@ -62,7 +98,7 @@ class MapManager {
     }
     
     // Otherwise generate it
-    if (this.proceduralEnabled) {
+    if (this.proceduralEnabled && !this.isFixedMap) {
       const chunkData = this.generateChunkData(chunkX, chunkY);
       this.chunks.set(key, chunkData);
       return chunkData;
@@ -88,7 +124,7 @@ class MapManager {
         
         // Skip if out of world bounds
         if (globalX >= this.width || globalY >= this.height) {
-          row.push(TILE_IDS.WALL); // Use wall for out of bounds
+          row.push(new Tile(TILE_IDS.WALL)); // Use wall for out of bounds
           continue;
         }
         
@@ -98,7 +134,7 @@ class MapManager {
         // Determine tile type based on height
         const tileType = this.determineTileType(heightValue, globalX, globalY);
         
-        row.push(tileType);
+        row.push(new Tile(tileType, heightValue));
       }
       tiles.push(row);
     }
@@ -118,24 +154,23 @@ class MapManager {
    * @returns {number} TILE_IDS value
    */
   determineTileType(heightValue, x, y) {
-    // Example logic - customize based on your game's needs
-    if (heightValue < -0.4) return TILE_IDS.WATER;
-    if (heightValue < -0.2) return TILE_IDS.FLOOR;
-    if (heightValue < 0.2) return TILE_IDS.FLOOR;
-    if (heightValue < 0.5) return TILE_IDS.OBSTACLE;
-    return TILE_IDS.MOUNTAIN;
-    
-    // Add border walls
+    // Border walls
     if (x === 0 || y === 0 || x === this.width - 1 || y === this.height - 1) {
       return TILE_IDS.WALL;
     }
+    
+    // Example logic - customize based on your game's needs
+    if (heightValue < -0.4) return TILE_IDS.WATER;
+    if (heightValue < 0.2) return TILE_IDS.FLOOR;
+    if (heightValue < 0.5) return TILE_IDS.OBSTACLE;
+    return TILE_IDS.MOUNTAIN;
   }
   
   /**
    * Get a specific tile
    * @param {number} x - Tile X coordinate
    * @param {number} y - Tile Y coordinate
-   * @returns {number|null} Tile type or null if not found
+   * @returns {Tile|null} Tile object or null if not found
    */
   getTile(x, y) {
     // Convert to chunk coordinates
@@ -145,11 +180,22 @@ class MapManager {
     const localY = y % CHUNK_SIZE;
     
     // Get chunk
-    const chunk = this.getChunkData(chunkX, chunkY);
+    const chunk = this.getChunkData(null, chunkX, chunkY);
     if (!chunk) return null;
     
     // Get tile from chunk
     return chunk.tiles[localY][localX];
+  }
+  
+  /**
+   * Get the tile type at a specific coordinate
+   * @param {number} x - Tile X coordinate
+   * @param {number} y - Tile Y coordinate
+   * @returns {number|null} Tile type or null if not found
+   */
+  getTileType(x, y) {
+    const tile = this.getTile(x, y);
+    return tile ? tile.type : null;
   }
   
   /**
@@ -169,7 +215,7 @@ class MapManager {
     }
     
     // Get tile type
-    const tileType = this.getTile(tileX, tileY);
+    const tileType = this.getTileType(tileX, tileY);
     
     // Check if wall or other solid obstacle
     return tileType === TILE_IDS.WALL || 
@@ -178,10 +224,164 @@ class MapManager {
   }
   
   /**
+   * Load a fixed map from a JSON file
+   * @param {string} url - URL or path to map JSON file
+   * @returns {Promise<string>} - Promise resolving to map ID
+   */
+  async loadFixedMap(url) {
+    try {
+      let mapData;
+      
+      // Browser fetch
+      if (typeof fetch === 'function') {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to load map: ${response.statusText}`);
+        }
+        mapData = await response.json();
+      } 
+      // Node.js file read
+      else if (typeof require === 'function') {
+        const fs = require('fs');
+        const path = require('path');
+        const resolvedPath = path.isAbsolute(url) ? url : path.join(this.mapStoragePath, url);
+        const data = fs.readFileSync(resolvedPath, 'utf8');
+        mapData = JSON.parse(data);
+      }
+      else {
+        throw new Error('No valid method to load map data');
+      }
+      
+      // Set map data and get ID
+      const mapId = this.setMapData(mapData);
+      this.isFixedMap = true;
+      this.proceduralEnabled = false;
+      console.log('Fixed map loaded successfully:', mapId);
+      return mapId;
+    } catch (error) {
+      console.error('Failed to load fixed map:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Save a map to a JSON file (server-side)
+   * @param {string} mapId - Map ID
+   * @param {string} filename - Filename to save as
+   * @returns {boolean} - Success status
+   */
+  saveMap(mapId, filename) {
+    if (!this.maps.has(mapId)) {
+      console.error(`Map ${mapId} not found`);
+      return false;
+    }
+    
+    // Only available in Node.js
+    if (typeof require !== 'function') {
+      console.error('Save map is only available server-side');
+      return false;
+    }
+    
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Get map metadata
+      const mapData = this.maps.get(mapId);
+      
+      // Collect all chunks for this map
+      const chunks = {};
+      for (const [key, chunk] of this.chunks.entries()) {
+        if (key.startsWith(`${mapId}_`)) {
+          chunks[key.substring(mapId.length + 1)] = chunk;
+        }
+      }
+      
+      // Prepare the full map data
+      const fullMapData = {
+        ...mapData,
+        chunks
+      };
+      
+      // Save to file
+      const filePath = path.join(this.mapStoragePath, filename);
+      fs.writeFileSync(filePath, JSON.stringify(fullMapData, null, 2));
+      
+      console.log(`Map saved to ${filePath}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to save map:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Sets the map data from a loaded map
+   * @param {Object} mapData - The map data object
+   * @returns {string} Map ID
+   */
+  setMapData(mapData) {
+    const mapId = mapData.id || `map_${this.nextMapId++}`;
+    
+    // Clear existing chunks for this map
+    for (const [key] of this.chunks.entries()) {
+      if (key.startsWith(`${mapId}_`)) {
+        this.chunks.delete(key);
+      }
+    }
+    
+    // Store metadata
+    this.maps.set(mapId, {
+      id: mapId,
+      width: mapData.width,
+      height: mapData.height,
+      tileSize: mapData.tileSize || this.tileSize,
+      chunkSize: mapData.chunkSize || CHUNK_SIZE,
+      name: mapData.name || 'Loaded Map',
+      procedural: false
+    });
+    
+    // Update current dimensions
+    this.width = mapData.width;
+    this.height = mapData.height;
+    
+    // Load chunks if provided
+    if (mapData.chunks) {
+      for (const [chunkKey, chunkData] of Object.entries(mapData.chunks)) {
+        this.chunks.set(`${mapId}_${chunkKey}`, chunkData);
+      }
+    }
+    
+    return mapId;
+  }
+  
+  /**
+   * Function to get tiles in a range
+   * @param {number} xStart - Start X coordinate
+   * @param {number} yStart - Start Y coordinate 
+   * @param {number} xEnd - End X coordinate
+   * @param {number} yEnd - End Y coordinate
+   * @returns {Array} Array of tile objects with coordinates
+   */
+  getTilesInRange(xStart, yStart, xEnd, yEnd) {
+    const tiles = [];
+    for (let y = yStart; y <= yEnd; y++) {
+      for (let x = xStart; x <= xEnd; x++) {
+        const tile = this.getTile(x, y);
+        if (tile) {
+          tiles.push({ x, y, tile });
+        }
+      }
+    }
+    return tiles;
+  }
+  
+  /**
    * Enable procedural generation
    */
   enableProceduralGeneration() {
     this.proceduralEnabled = true;
+    this.isFixedMap = false;
   }
   
   /**
@@ -190,6 +390,36 @@ class MapManager {
   disableProceduralGeneration() {
     this.proceduralEnabled = false;
   }
+  
+  /**
+   * Create a procedural map (server-side helper)
+   * @param {Object} options - Map options
+   * @returns {string} Map ID
+   */
+  createProceduralMap(options = {}) {
+    const width = options.width || 256;
+    const height = options.height || 256;
+    this.enableProceduralGeneration();
+    return this.generateWorld(width, height, options);
+  }
+  
+  /**
+   * Get map metadata (server-side helper)
+   * @param {string} mapId - Map ID
+   * @returns {Object} Map metadata
+   */
+  getMapMetadata(mapId) {
+    return this.maps.has(mapId) ? this.maps.get(mapId) : null;
+  }
 }
 
-module.exports = MapManager;// File: /src/managers/MapManager.js
+// Export a singleton instance for client use
+export const mapManager = new MapManager();
+
+// For CommonJS compatibility
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    MapManager,
+    mapManager
+  };
+}

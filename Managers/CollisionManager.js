@@ -1,16 +1,18 @@
+// File: /src/Managers/CollisionManager.js
+
 /**
- * ServerCollisionManager.js
- * Handles server-side collision validation and authoritative collision processing.
+ * CollisionManager.js
+ * Handles collision detection and processing between entities
  */
 
-class ServerCollisionManager {
+export default class CollisionManager {
   /**
-   * Creates a server-side collision manager
-   * @param {BulletManager} bulletManager - The server's bullet manager instance
-   * @param {EnemyManager} enemyManager - The server's enemy manager instance
-   * @param {MapManager} mapManager - The server's map manager
+   * Creates a collision manager
+   * @param {Object} bulletManager - The bullet manager instance
+   * @param {Object} enemyManager - The enemy manager instance
+   * @param {Object} mapManager - The map manager (optional)
    */
-  constructor(bulletManager, enemyManager, mapManager) {
+  constructor(bulletManager, enemyManager, mapManager = null) {
     this.bulletManager = bulletManager;
     this.enemyManager = enemyManager;
     this.mapManager = mapManager;
@@ -21,7 +23,71 @@ class ServerCollisionManager {
   }
   
   /**
-   * Validate client-reported collision
+   * Check for all collisions in the current state
+   * Called on each update cycle
+   */
+  checkCollisions() {
+    // Skip if managers aren't properly initialized
+    if (!this.bulletManager || !this.enemyManager) return;
+    
+    // For each bullet, check collision with enemies
+    for (let bi = 0; bi < this.bulletManager.bulletCount; bi++) {
+      // Skip expired bullets
+      if (this.bulletManager.life[bi] <= 0) continue;
+      
+      const bulletX = this.bulletManager.x[bi];
+      const bulletY = this.bulletManager.y[bi];
+      const bulletWidth = this.bulletManager.width[bi];
+      const bulletHeight = this.bulletManager.height[bi];
+      const bulletId = this.bulletManager.id[bi];
+      const bulletOwnerId = this.bulletManager.ownerId[bi];
+      
+      // Check for collisions with walls/obstacles if map manager exists
+      if (this.mapManager && this.mapManager.isWallOrOutOfBounds) {
+        if (this.mapManager.isWallOrOutOfBounds(bulletX, bulletY)) {
+          // Bullet hit a wall, mark for removal
+          this.bulletManager.markForRemoval(bi);
+          continue;
+        }
+      }
+      
+      // Check for enemy collisions
+      for (let ei = 0; ei < this.enemyManager.enemyCount; ei++) {
+        // Skip dead enemies
+        if (this.enemyManager.health[ei] <= 0) continue;
+        
+        const enemyX = this.enemyManager.x[ei];
+        const enemyY = this.enemyManager.y[ei];
+        const enemyWidth = this.enemyManager.width[ei];
+        const enemyHeight = this.enemyManager.height[ei];
+        const enemyId = this.enemyManager.id[ei];
+        
+        // Check if bullet and enemy collide (AABB)
+        if (this.checkAABBCollision(
+          bulletX, bulletY, bulletWidth, bulletHeight,
+          enemyX, enemyY, enemyWidth, enemyHeight
+        )) {
+          // Create collision ID to track this collision
+          const collisionId = `${bulletId}_${enemyId}`;
+          
+          // Skip if already processed
+          if (this.processedCollisions.has(collisionId)) continue;
+          
+          // Process this collision
+          this.processCollision(bi, ei, bulletOwnerId);
+          
+          // Mark as processed
+          this.processedCollisions.set(collisionId, Date.now());
+          
+          // Break the enemy loop since bullet hit something
+          break;
+        }
+      }
+    }
+  }
+  
+  /**
+   * Validate client-reported collision (server-side)
    * @param {Object} data - Collision data from client
    * @returns {Object} Validation result
    */
@@ -65,18 +131,20 @@ class ServerCollisionManager {
     }
     
     // Check for line of sight obstruction
-    if (!this.hasLineOfSight(
-      this.bulletManager.x[bulletIndex],
-      this.bulletManager.y[bulletIndex],
-      this.enemyManager.x[enemyIndex],
-      this.enemyManager.y[enemyIndex]
-    )) {
-      return { 
-        valid: false, 
-        reason: 'No line of sight',
-        bulletId,
-        enemyId 
-      };
+    if (this.mapManager && this.mapManager.hasLineOfSight) {
+      if (!this.mapManager.hasLineOfSight(
+        this.bulletManager.x[bulletIndex],
+        this.bulletManager.y[bulletIndex],
+        this.enemyManager.x[enemyIndex],
+        this.enemyManager.y[enemyIndex]
+      )) {
+        return { 
+          valid: false, 
+          reason: 'No line of sight',
+          bulletId,
+          enemyId 
+        };
+      }
     }
     
     // Check for actual collision (AABB)
@@ -119,39 +187,30 @@ class ServerCollisionManager {
    */
   processCollision(bulletIndex, enemyIndex, clientId) {
     // Get bullet and enemy details
-    const bulletId = this.bulletManager.id ? 
-      this.bulletManager.id[bulletIndex] : bulletIndex;
-      
-    const enemyId = this.enemyManager.id ? 
-      this.enemyManager.id[enemyIndex] : enemyIndex;
+    const bulletId = this.bulletManager.id[bulletIndex];
+    const enemyId = this.enemyManager.id[enemyIndex];
     
     // Calculate damage
     const damage = this.bulletManager.damage ? 
       this.bulletManager.damage[bulletIndex] : 10; // Default damage
     
     // Apply damage to enemy
-    if (this.enemyManager.health) {
-      this.enemyManager.health[enemyIndex] -= damage;
-    }
-    
-    // Get current enemy health
-    const enemyHealth = this.enemyManager.health ? 
-      this.enemyManager.health[enemyIndex] : 0;
+    const remainingHealth = this.enemyManager.applyDamage(enemyIndex, damage);
     
     // Remove bullet
     if (this.bulletManager.markForRemoval) {
       this.bulletManager.markForRemoval(bulletIndex);
-    } else {
-      // Default removal method
+    } else if (this.bulletManager.life) {
+      // Alternative removal method
       this.bulletManager.life[bulletIndex] = 0;
     }
     
     // Handle enemy death if needed
     let enemyKilled = false;
-    if (enemyHealth <= 0) {
+    if (remainingHealth <= 0) {
       enemyKilled = true;
       
-      // Call enemy manager's death handler if available
+      // Call enemy manager's death handler
       if (this.enemyManager.onDeath) {
         this.enemyManager.onDeath(enemyIndex, clientId);
       }
@@ -162,7 +221,7 @@ class ServerCollisionManager {
       bulletId,
       enemyId,
       damage,
-      enemyHealth,
+      enemyHealth: remainingHealth,
       enemyKilled,
       clientId
     };
@@ -174,24 +233,15 @@ class ServerCollisionManager {
    * @returns {number} Bullet index or -1 if not found
    */
   findBulletIndex(bulletId) {
-    // If using numerical indices as IDs
-    if (typeof bulletId === 'number' && 
-        bulletId >= 0 && 
-        bulletId < this.bulletManager.bulletCount) {
-      return bulletId;
-    }
-    
     // If bulletManager has a lookup method, use it
     if (this.bulletManager.findIndexById) {
       return this.bulletManager.findIndexById(bulletId);
     }
     
-    // Otherwise search by ID array if it exists
-    if (this.bulletManager.id) {
-      for (let i = 0; i < this.bulletManager.bulletCount; i++) {
-        if (this.bulletManager.id[i] === bulletId) {
-          return i;
-        }
+    // Otherwise search by ID array
+    for (let i = 0; i < this.bulletManager.bulletCount; i++) {
+      if (this.bulletManager.id[i] === bulletId) {
+        return i;
       }
     }
     
@@ -204,24 +254,15 @@ class ServerCollisionManager {
    * @returns {number} Enemy index or -1 if not found
    */
   findEnemyIndex(enemyId) {
-    // If using numerical indices as IDs
-    if (typeof enemyId === 'number' && 
-        enemyId >= 0 && 
-        enemyId < this.enemyManager.enemyCount) {
-      return enemyId;
-    }
-    
     // If enemyManager has a lookup method, use it
     if (this.enemyManager.findIndexById) {
       return this.enemyManager.findIndexById(enemyId);
     }
     
-    // Otherwise search by ID array if it exists
-    if (this.enemyManager.id) {
-      for (let i = 0; i < this.enemyManager.enemyCount; i++) {
-        if (this.enemyManager.id[i] === enemyId) {
-          return i;
-        }
+    // Otherwise search by ID array
+    for (let i = 0; i < this.enemyManager.enemyCount; i++) {
+      if (this.enemyManager.id[i] === enemyId) {
+        return i;
       }
     }
     
@@ -238,63 +279,6 @@ class ServerCollisionManager {
       ay < by + bheight &&
       ay + aheight > by
     );
-  }
-  
-  /**
-   * Check line of sight between two points (tile-based)
-   * @param {number} x1 - Starting X position
-   * @param {number} y1 - Starting Y position
-   * @param {number} x2 - Ending X position
-   * @param {number} y2 - Ending Y position
-   * @returns {boolean} True if line of sight exists
-   */
-  hasLineOfSight(x1, y1, x2, y2) {
-    // If no map manager or it doesn't have getTile, always return true
-    if (!this.mapManager || !this.mapManager.getTile) {
-      return true;
-    }
-    
-    // Bresenham's line algorithm to check tiles between points
-    const dx = Math.abs(x2 - x1);
-    const dy = Math.abs(y2 - y1);
-    const sx = x1 < x2 ? 1 : -1;
-    const sy = y1 < y2 ? 1 : -1;
-    let err = dx - dy;
-    
-    let tileSize = this.mapManager.TILE_SIZE || 12; // Default if not specified
-    let currentX = x1;
-    let currentY = y1;
-    
-    while (currentX !== x2 || currentY !== y2) {
-      // Convert to tile coordinates
-      const tileX = Math.floor(currentX / tileSize);
-      const tileY = Math.floor(currentY / tileSize);
-      
-      // Check if this tile blocks line of sight
-      const tile = this.mapManager.getTile(tileX, tileY);
-      
-      // Check if tile is a wall or other solid obstacle
-      // Adjust tile types based on your game's tile system
-      if (tile && (
-          tile.type === 1 || // Wall
-          tile.type === 4    // Mountain
-      )) {
-        return false;
-      }
-      
-      // Move to next position
-      const e2 = 2 * err;
-      if (e2 > -dy) {
-        err -= dy;
-        currentX += sx;
-      }
-      if (e2 < dx) {
-        err += dx;
-        currentY += sy;
-      }
-    }
-    
-    return true;
   }
   
   /**
@@ -315,8 +299,8 @@ class ServerCollisionManager {
    * Clean up when shutting down
    */
   cleanup() {
-    clearInterval(this.cleanupInterval);
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
   }
 }
-
-module.exports = ServerCollisionManager;
