@@ -1,107 +1,145 @@
-/**
- * ClientMapManager.js
- * Client-side map management with efficient chunk loading and caching
- */
+// public/src/map/ClientMapManager.js
+
+import { Tile } from './tile.js';
+import { TILE_IDS, CHUNK_SIZE } from '../constants/constants.js';
 
 /**
- * ClientMapManager - Handles loading, caching, and rendering map data
+ * ClientMapManager - Handles loading, caching, and rendering map data from server
  */
-class clientMapManager {
+export class ClientMapManager {
     /**
      * Create a new client map manager
      * @param {Object} options - Manager options
      * @param {NetworkManager} options.networkManager - Network manager for map data requests
      */
     constructor(options = {}) {
-      this.networkManager = options.networkManager;
-      this.activeMapId = null;
-      this.mapMetadata = null;
-      this.chunks = new Map(); // Chunk cache: "x,y" -> chunk data
-      this.tileSize = 12; // Default tile size
-      this.chunkSize = 16; // Default chunk size
-      this.visibleChunks = []; // Currently visible chunks
-      this.pendingChunks = new Set(); // Chunks we're currently requesting
-      this.maxCachedChunks = 100; // Maximum chunks to keep in memory
-      this.chunkLoadDistance = 2; // How many chunks to load around player
-      this.fallbackTileTypes = {
-        0: 'floor', // Floor
-        1: 'wall',  // Wall
-        2: 'obstacle', // Obstacle
-        3: 'water', // Water
-        4: 'mountain' // Mountain
-      };
-      
-      // LRU (Least Recently Used) tracking for chunk cache
-      this.chunkLastAccessed = new Map(); // "x,y" -> timestamp
-      
-      // Register network handlers if network manager provided
-      if (this.networkManager) {
-        this.registerNetworkHandlers();
-      }
+        this.networkManager = options.networkManager;
+        this.activeMapId = null;
+        this.mapMetadata = null;
+        this.chunks = new Map(); // Chunk cache: "x,y" -> chunk data
+        this.tileSize = 12; // Default tile size
+        this.chunkSize = 16; // Default chunk size
+        this.width = 0;
+        this.height = 0;
+        this.visibleChunks = []; // Currently visible chunks
+        this.pendingChunks = new Set(); // Chunks we're currently requesting
+        this.maxCachedChunks = 100; // Maximum chunks to keep in memory
+        this.chunkLoadDistance = 2; // How many chunks to load around player
+        this.fallbackTileTypes = {
+            [TILE_IDS.FLOOR]: 'floor',
+            [TILE_IDS.WALL]: 'wall',
+            [TILE_IDS.OBSTACLE]: 'obstacle',
+            [TILE_IDS.WATER]: 'water',
+            [TILE_IDS.MOUNTAIN]: 'mountain'
+        };
+        
+        // LRU (Least Recently Used) tracking for chunk cache
+        this.chunkLastAccessed = new Map(); // "x,y" -> timestamp
+        
+        // Event listeners
+        this.eventListeners = {};
     }
     
     /**
-     * Register network handlers for map data
-     * @private
+     * Initialize the map with metadata from server
+     * @param {Object} data - Map metadata
      */
-    registerNetworkHandlers() {
-      // Map info handler
-      this.networkManager.on(MessageType.MAP_INFO, (data) => {
-        this.handleMapInfo(data);
-      });
-      
-      // Chunk data handler
-      this.networkManager.on(MessageType.CHUNK_DATA, (data) => {
-        this.handleChunkData(data);
-      });
+    initMap(data) {
+        this.activeMapId = data.mapId;
+        this.mapMetadata = data;
+        this.tileSize = data.tileSize || this.tileSize;
+        this.chunkSize = data.chunkSize || this.chunkSize;
+        this.width = data.width || 0;
+        this.height = data.height || 0;
+        
+        console.log(`Map initialized: ${this.activeMapId} (${this.width}x${this.height})`);
+        
+        // Clear existing chunks
+        this.chunks.clear();
+        this.chunkLastAccessed.clear();
+        this.pendingChunks.clear();
+        
+        // Dispatch event
+        this.dispatchEvent('mapinitialized', { mapId: this.activeMapId });
     }
     
     /**
-     * Handle map info from server
-     * @param {Object} data - Map info data
-     * @private
+     * Set chunk data received from server
+     * @param {number} chunkX - Chunk X coordinate
+     * @param {number} chunkY - Chunk Y coordinate
+     * @param {Object} chunkData - Chunk data from server
      */
-    handleMapInfo(data) {
-      this.activeMapId = data.mapId;
-      this.mapMetadata = data;
-      this.tileSize = data.tileSize || this.tileSize;
-      this.chunkSize = data.chunkSize || this.chunkSize;
-      
-      console.log(`Map info received: ${this.activeMapId}`);
-      
-      // Clear existing chunks
-      this.chunks.clear();
-      this.chunkLastAccessed.clear();
-      this.pendingChunks.clear();
-      
-      // Request initial chunks around (0,0) as default starting point
-      this.updateVisibleChunks(0, 0);
-      
-      // Dispatch event
-      this.dispatchEvent('mapinitialized', { mapId: this.activeMapId });
+    setChunkData(chunkX, chunkY, chunkData) {
+        const key = `${chunkX},${chunkY}`;
+        
+        // Process chunk data to match our format
+        const processedChunk = this.processChunkData(chunkData);
+        
+        // Store chunk
+        this.chunks.set(key, processedChunk);
+        this.chunkLastAccessed.set(key, Date.now());
+        
+        // Remove from pending
+        this.pendingChunks.delete(key);
+        
+        // Trim cache if needed
+        this.trimChunkCache();
+        
+        // Dispatch event
+        this.dispatchEvent('chunkloaded', { chunkX, chunkY });
     }
     
     /**
-     * Handle chunk data from server
-     * @param {Object} data - Chunk data
-     * @private
+     * Process chunk data from server into our format
+     * @param {Object} chunkData - Chunk data from server
+     * @returns {Array} Processed chunk data
      */
-    handleChunkData(data) {
-      const { chunkX, chunkY, chunk } = data;
-      
-      // Store chunk
-      const key = `${chunkX},${chunkY}`;
-      this.chunks.set(key, chunk);
-      this.chunkLastAccessed.set(key, Date.now());
-      
-      // Remove from pending
-      this.pendingChunks.delete(key);
-      
-      // Trim cache if needed
-      this.trimChunkCache();
-      
-      // Dispatch event
-      this.dispatchEvent('chunkloaded', { chunkX, chunkY });
+    processChunkData(chunkData) {
+        // If the chunk data is already in the right format, return it
+        if (Array.isArray(chunkData)) {
+            return chunkData;
+        }
+        
+        // Convert from server format to client format
+        const processedData = [];
+        
+        // Process tiles array if it exists
+        if (chunkData.tiles && Array.isArray(chunkData.tiles)) {
+            for (let y = 0; y < chunkData.tiles.length; y++) {
+                const row = [];
+                for (let x = 0; x < chunkData.tiles[y].length; x++) {
+                    const tileData = chunkData.tiles[y][x];
+                    let tileType, tileHeight;
+                    
+                    // Handle different possible formats
+                    if (typeof tileData === 'number') {
+                        tileType = tileData;
+                        tileHeight = 0;
+                    } else if (tileData && typeof tileData === 'object') {
+                        tileType = tileData.type;
+                        tileHeight = tileData.height || 0;
+                    } else {
+                        tileType = TILE_IDS.FLOOR; // Default
+                        tileHeight = 0;
+                    }
+                    
+                    // Create tile instance
+                    row.push(new Tile(tileType, tileHeight));
+                }
+                processedData.push(row);
+            }
+        } else {
+            // Create default chunk data
+            for (let y = 0; y < this.chunkSize; y++) {
+                const row = [];
+                for (let x = 0; x < this.chunkSize; x++) {
+                    row.push(new Tile(TILE_IDS.FLOOR, 0));
+                }
+                processedData.push(row);
+            }
+        }
+        
+        return processedData;
     }
     
     /**
@@ -110,129 +148,129 @@ class clientMapManager {
      * @param {number} playerY - Player Y position in world coordinates
      */
     updateVisibleChunks(playerX, playerY) {
-      // Convert player position to chunk coordinates
-      const centerChunkX = Math.floor(playerX / this.tileSize / this.chunkSize);
-      const centerChunkY = Math.floor(playerY / this.tileSize / this.chunkSize);
-      
-      // Get chunks in view distance
-      const newVisibleChunks = [];
-      
-      for (let dy = -this.chunkLoadDistance; dy <= this.chunkLoadDistance; dy++) {
-        for (let dx = -this.chunkLoadDistance; dx <= this.chunkLoadDistance; dx++) {
-          const chunkX = centerChunkX + dx;
-          const chunkY = centerChunkY + dy;
-          const key = `${chunkX},${chunkY}`;
-          
-          // Skip if out of map bounds
-          if (this.mapMetadata) {
-            const chunkStartX = chunkX * this.chunkSize;
-            const chunkStartY = chunkY * this.chunkSize;
-            
-            if (chunkStartX < 0 || chunkStartY < 0 || 
-                chunkStartX >= this.mapMetadata.width || 
-                chunkStartY >= this.mapMetadata.height) {
-              continue;
+        if (!this.networkManager) return;
+        
+        // Convert player position to chunk coordinates
+        const centerChunkX = Math.floor(playerX / this.tileSize / this.chunkSize);
+        const centerChunkY = Math.floor(playerY / this.tileSize / this.chunkSize);
+        
+        // Get chunks in view distance
+        const newVisibleChunks = [];
+        
+        for (let dy = -this.chunkLoadDistance; dy <= this.chunkLoadDistance; dy++) {
+            for (let dx = -this.chunkLoadDistance; dx <= this.chunkLoadDistance; dx++) {
+                const chunkX = centerChunkX + dx;
+                const chunkY = centerChunkY + dy;
+                
+                // Skip if out of map bounds
+                if (this.mapMetadata) {
+                    const chunkStartX = chunkX * this.chunkSize;
+                    const chunkStartY = chunkY * this.chunkSize;
+                    
+                    if (this.width > 0 && this.height > 0 && 
+                        (chunkStartX < 0 || chunkStartY < 0 || 
+                        chunkStartX >= this.width || 
+                        chunkStartY >= this.height)) {
+                        continue;
+                    }
+                }
+                
+                const key = `${chunkX},${chunkY}`;
+                newVisibleChunks.push({ x: chunkX, y: chunkY, key });
+                
+                // Update last accessed time
+                if (this.chunks.has(key)) {
+                    this.chunkLastAccessed.set(key, Date.now());
+                }
+                // Request chunk if not already loaded or pending
+                else if (!this.pendingChunks.has(key) && this.networkManager) {
+                    this.pendingChunks.add(key);
+                    this.networkManager.requestChunk(chunkX, chunkY);
+                }
             }
-          }
-          
-          newVisibleChunks.push({ x: chunkX, y: chunkY, key });
-          
-          // Update last accessed time
-          if (this.chunks.has(key)) {
-            this.chunkLastAccessed.set(key, Date.now());
-          }
-          // Request chunk if not already loaded or pending
-          else if (!this.pendingChunks.has(key) && this.networkManager) {
-            this.pendingChunks.add(key);
-            this.networkManager.requestChunk(chunkX, chunkY);
-          }
         }
-      }
-      
-      this.visibleChunks = newVisibleChunks;
+        
+        this.visibleChunks = newVisibleChunks;
     }
     
     /**
      * Trim the chunk cache to stay under the maximum limit
-     * @private
      */
     trimChunkCache() {
-      if (this.chunks.size <= this.maxCachedChunks) {
-        return;
-      }
-      
-      // Get chunks sorted by last accessed time (oldest first)
-      const sortedChunks = Array.from(this.chunkLastAccessed.entries())
-        .sort((a, b) => a[1] - b[1]);
-      
-      // Calculate how many to remove
-      const removeCount = this.chunks.size - this.maxCachedChunks;
-      
-      // Remove oldest chunks
-      for (let i = 0; i < removeCount; i++) {
-        const [key] = sortedChunks[i];
-        this.chunks.delete(key);
-        this.chunkLastAccessed.delete(key);
-      }
-      
-      console.log(`Trimmed ${removeCount} chunks from cache`);
+        if (this.chunks.size <= this.maxCachedChunks) {
+            return;
+        }
+        
+        // Get chunks sorted by last accessed time (oldest first)
+        const sortedChunks = Array.from(this.chunkLastAccessed.entries())
+            .sort((a, b) => a[1] - b[1]);
+        
+        // Calculate how many to remove
+        const removeCount = this.chunks.size - this.maxCachedChunks;
+        
+        // Remove oldest chunks
+        for (let i = 0; i < removeCount; i++) {
+            const [key] = sortedChunks[i];
+            this.chunks.delete(key);
+            this.chunkLastAccessed.delete(key);
+        }
+        
+        console.log(`Trimmed ${removeCount} chunks from cache`);
     }
     
     /**
      * Get a specific chunk
      * @param {number} chunkX - Chunk X coordinate
      * @param {number} chunkY - Chunk Y coordinate
-     * @returns {Object|null} Chunk data or null if not loaded
+     * @returns {Array|null} Chunk data or null if not loaded
      */
     getChunk(chunkX, chunkY) {
-      const key = `${chunkX},${chunkY}`;
-      
-      // Update last accessed time
-      if (this.chunks.has(key)) {
-        this.chunkLastAccessed.set(key, Date.now());
-        return this.chunks.get(key);
-      }
-      
-      // Request chunk if not already pending
-      if (this.networkManager && !this.pendingChunks.has(key)) {
-        this.pendingChunks.add(key);
-        this.networkManager.requestChunk(chunkX, chunkY);
-      }
-      
-      return null;
+        const key = `${chunkX},${chunkY}`;
+        
+        // Update last accessed time
+        if (this.chunks.has(key)) {
+            this.chunkLastAccessed.set(key, Date.now());
+            return this.chunks.get(key);
+        }
+        
+        // Request chunk if not already pending
+        if (this.networkManager && !this.pendingChunks.has(key)) {
+            this.pendingChunks.add(key);
+            this.networkManager.requestChunk(chunkX, chunkY);
+        }
+        
+        return null;
     }
     
     /**
      * Get a specific tile by world coordinates
      * @param {number} x - Tile X coordinate
      * @param {number} y - Tile Y coordinate
-     * @returns {Object|null} Tile object or null if chunk not loaded
+     * @returns {Tile|null} Tile object or null if chunk not loaded
      */
     getTile(x, y) {
-      // Calculate chunk coordinates
-      const chunkX = Math.floor(x / this.chunkSize);
-      const chunkY = Math.floor(y / this.chunkSize);
-      
-      // Get chunk
-      const chunk = this.getChunk(chunkX, chunkY);
-      if (!chunk) {
-        return null;
-      }
-      
-      // Calculate local coordinates
-      const localX = ((x % this.chunkSize) + this.chunkSize) % this.chunkSize;
-      const localY = ((y % this.chunkSize) + this.chunkSize) % this.chunkSize;
-      
-      // Get tile type
-      const tileType = chunk.tiles[localY][localX];
-      
-      // Return tile object
-      return {
-        type: tileType,
-        x,
-        y,
-        typeName: this.fallbackTileTypes[tileType] || 'unknown'
-      };
+        // Calculate chunk coordinates
+        const chunkX = Math.floor(x / this.chunkSize);
+        const chunkY = Math.floor(y / this.chunkSize);
+        
+        // Get chunk
+        const chunk = this.getChunk(chunkX, chunkY);
+        if (!chunk) {
+            // Return a fallback tile if chunk isn't loaded
+            return this.generateFallbackTile(x, y);
+        }
+        
+        // Calculate local coordinates within the chunk
+        const localX = ((x % this.chunkSize) + this.chunkSize) % this.chunkSize;
+        const localY = ((y % this.chunkSize) + this.chunkSize) % this.chunkSize;
+        
+        // Return tile if it exists
+        if (chunk[localY] && chunk[localY][localX]) {
+            return chunk[localY][localX];
+        }
+        
+        // Return fallback if tile not found
+        return this.generateFallbackTile(x, y);
     }
     
     /**
@@ -244,18 +282,18 @@ class clientMapManager {
      * @returns {Array} Array of tile objects
      */
     getTilesInRange(startX, startY, endX, endY) {
-      const tiles = [];
-      
-      for (let y = startY; y <= endY; y++) {
-        for (let x = startX; x <= endX; x++) {
-          const tile = this.getTile(x, y);
-          if (tile) {
-            tiles.push(tile);
-          }
+        const tiles = [];
+        
+        for (let y = startY; y <= endY; y++) {
+            for (let x = startX; x <= endX; x++) {
+                const tile = this.getTile(x, y);
+                if (tile) {
+                    tiles.push({ x, y, tile });
+                }
+            }
         }
-      }
-      
-      return tiles;
+        
+        return tiles;
     }
     
     /**
@@ -265,60 +303,72 @@ class clientMapManager {
      * @returns {boolean} True if wall, false if not (or chunk not loaded)
      */
     isWallOrObstacle(x, y) {
-      // Convert to tile coordinates
-      const tileX = Math.floor(x / this.tileSize);
-      const tileY = Math.floor(y / this.tileSize);
-      
-      // Get tile
-      const tile = this.getTile(tileX, tileY);
-      
-      // If chunk not loaded, assume passable
-      if (!tile) {
-        return false;
-      }
-      
-      // Check if wall or obstacle
-      return tile.type === 1 || tile.type === 4;
+        // Convert to tile coordinates
+        const tileX = Math.floor(x / this.tileSize);
+        const tileY = Math.floor(y / this.tileSize);
+        
+        // Get tile
+        const tile = this.getTile(tileX, tileY);
+        
+        // If tile not found, assume passable
+        if (!tile) {
+            return false;
+        }
+        
+        // Check if wall, obstacle, or mountain
+        return tile.type === TILE_IDS.WALL || 
+               tile.type === TILE_IDS.OBSTACLE || 
+               tile.type === TILE_IDS.MOUNTAIN;
     }
     
     /**
      * Generate a fallback tile when chunk not loaded
      * @param {number} x - Tile X coordinate
      * @param {number} y - Tile Y coordinate
-     * @returns {Object} Fallback tile
-     * @private
+     * @returns {Tile} Fallback tile
      */
     generateFallbackTile(x, y) {
-      // Simple checkerboard pattern
-      const isEven = (x + y) % 2 === 0;
-      const tileType = isEven ? 0 : 2;
-      
-      return {
-        type: tileType,
-        x,
-        y,
-        typeName: this.fallbackTileTypes[tileType] || 'unknown',
-        isFallback: true
-      };
+        // Simple checkerboard pattern for fallback tiles
+        const isEven = (x + y) % 2 === 0;
+        const tileType = isEven ? TILE_IDS.FLOOR : TILE_IDS.FLOOR;
+        
+        return new Tile(tileType, 0);
+    }
+    
+    /**
+     * Add event listener
+     * @param {string} event - Event name
+     * @param {Function} callback - Event callback
+     */
+    addEventListener(event, callback) {
+        if (!this.eventListeners[event]) {
+            this.eventListeners[event] = [];
+        }
+        this.eventListeners[event].push(callback);
+    }
+    
+    /**
+     * Remove event listener
+     * @param {string} event - Event name
+     * @param {Function} callback - Event callback
+     */
+    removeEventListener(event, callback) {
+        if (!this.eventListeners[event]) return;
+        const index = this.eventListeners[event].indexOf(callback);
+        if (index !== -1) {
+            this.eventListeners[event].splice(index, 1);
+        }
     }
     
     /**
      * Dispatch an event
-     * @param {string} eventName - Event name
+     * @param {string} event - Event name
      * @param {Object} data - Event data
-     * @private
      */
-    dispatchEvent(eventName, data) {
-      const event = new CustomEvent(`map:${eventName}`, { detail: data });
-      window.dispatchEvent(event);
+    dispatchEvent(event, data) {
+        if (!this.eventListeners[event]) return;
+        for (const callback of this.eventListeners[event]) {
+            callback(data);
+        }
     }
-  }
-  
-  // Export for ES modules
-  export { ClientMapManager };
-  
-  // Make available for browser
-  if (typeof window !== 'undefined') {
-    window.ClientMapManager = ClientMapManager;
-  }
-  
+}
