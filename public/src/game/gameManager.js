@@ -1,9 +1,12 @@
 // public/src/game/GameManager.js
 
-import { ClientBulletManager } from './clientBulletManager.js';
-import { ClientEnemyManager } from './clientEnemyManager.js';
+import { 
+  ClientBulletManager,
+  ClientEnemyManager,
+  ClientNetworkManager as NetworkManager,
+  ClientCollisionManager
+} from '../managers.js';
 import { SimpleCollisionSystem } from '../collision/SimpleCollisionSystem.js';
-import { NetworkManager } from '../network/NetworkManager.js';
 import { map } from '../map/map.js';
 import { gameState } from './gamestate.js';
 

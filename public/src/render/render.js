@@ -38,10 +38,19 @@ export function renderCharacter() {
 }
 
 export function renderEnemies() {
-  const enemies = gameState.enemies;
-   const enemySheetObj = spriteManager.getSpriteSheet('enemy_sprites');
- if (!enemySheetObj) return;
- const enemySpriteSheet = enemySheetObj.image;
+  // Get enemies from enemyManager instead of directly from gameState
+  if (!gameState.enemyManager) return;
+  
+  // Get rendered enemies from the manager
+  const enemies = gameState.enemyManager.getEnemiesForRender ? 
+                  gameState.enemyManager.getEnemiesForRender() : [];
+  
+  const enemySheetObj = spriteManager.getSpriteSheet('enemy_sprites');
+  if (!enemySheetObj) return;
+  const enemySpriteSheet = enemySheetObj.image;
+
+  // Check if enemies is an array before using forEach
+  if (!enemies || !Array.isArray(enemies)) return;
 
   enemies.forEach(enemy => {
     const width = enemy.width * scaleFactor;

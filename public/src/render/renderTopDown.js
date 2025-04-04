@@ -60,7 +60,4 @@ if (!tileSheetObj) return;
 
   // Draw enemies
   renderEnemies();
-
-  console.log(`Top-Down View - Character Position: (${gameState.character.x}, ${gameState.character.y})`);
-  console.log(`Top-Down View - Camera Position: (${gameState.camera.position.x}, ${gameState.camera.position.y})`);
 }

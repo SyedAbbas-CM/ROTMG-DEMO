@@ -43,9 +43,7 @@ export class ClientCollisionManager {
         // Insert bullets into grid
         for (let i = 0; i < this.bulletManager.bulletCount; i++) {
             // Skip bullets fired by enemies
-            if (this.bulletManager.ownerId && 
-                this.bulletManager.ownerId[i] && 
-                typeof this.bulletManager.ownerId[i] === 'string' &&
+            if (this.bulletManager.ownerId[i] && 
                 this.bulletManager.ownerId[i].startsWith('enemy_')) {
                 continue;
             }
@@ -85,9 +83,7 @@ export class ClientCollisionManager {
             }
             
             // Skip bullets fired by enemies
-            if (this.bulletManager.ownerId &&
-                this.bulletManager.ownerId[bulletIndex] &&
-                typeof this.bulletManager.ownerId[bulletIndex] === 'string' &&
+            if (this.bulletManager.ownerId[bulletIndex] &&
                 this.bulletManager.ownerId[bulletIndex].startsWith('enemy_')) {
                 continue;
             }

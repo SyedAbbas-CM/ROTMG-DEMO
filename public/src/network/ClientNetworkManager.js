@@ -134,6 +134,12 @@ export class ClientNetworkManager {
               this.game.generateFallbackChunk(data.chunkX, data.chunkY);
           }
       };
+      
+      // Handle heartbeat messages - just acknowledge we got it
+      this.handlers[MessageType.HEARTBEAT] = (data) => {
+          // Just ignore heartbeat messages silently
+          // Could be used for latency calculation if needed
+      };
   }
   
   /**
@@ -480,6 +486,9 @@ export class BinaryPacket {
 * Message type constants
 */
 export const MessageType = {
+  // System messages
+  HEARTBEAT: 0,
+  
   // Connection messages
   HANDSHAKE: 1,
   HANDSHAKE_ACK: 2,

@@ -4,8 +4,8 @@ import { gameState } from '../game/gamestate.js';
 import { TILE_SIZE, TILE_IDS, SCALE, TILE_SPRITES } from '../constants/constants.js';
 import { map } from '../map/map.js';
 import { spriteManager } from '../assets/spriteManager.js';
+import * as THREE from 'three';
 
-/* global THREE */
 const VIEW_RADIUS = 200; // Radius in tiles around the player that will be rendered
 const Scaling3D = 12.8
 // InstancedMeshes for different tile types

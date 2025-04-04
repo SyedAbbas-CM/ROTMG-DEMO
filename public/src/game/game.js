@@ -6,16 +6,19 @@ import { addFirstPersonElements, updateFirstPerson } from '../render/renderFirst
 import { updateCharacter } from './updateCharacter.js';
 import { renderTopDownView } from '../render/renderTopDown.js';
 import { renderStrategicView } from '../render/renderStrategic.js';
-import { ClientMapManager } from '../map/ClientMapManager.js';
-import { ClientNetworkManager, MessageType } from '../network/ClientNetworkManager.js';
-import { ClientBulletManager } from './clientBulletManager.js';
-import { ClientEnemyManager } from './clientEnemyManager.js';
-import { ClientCollisionManager } from '../collision/ClientCollisionManager.js';
+import { 
+  ClientMapManager, 
+  ClientNetworkManager, 
+  MessageType,
+  ClientBulletManager,
+  ClientEnemyManager,
+  ClientCollisionManager,
+  debugOverlay
+} from '../managers.js';
 import { Player } from '../entities/player.js';
 import { TILE_SIZE, SCALE } from '../constants/constants.js';
-import { DebugOverlay } from '../ui/DebugOverlay.js';
+import * as THREE from 'three';
 
-/* global THREE */
 let renderer, scene, camera;
 let lastTime = 0;
 
@@ -47,11 +50,11 @@ export async function initGame() {
         
         await spriteManager.loadSpriteSheet({ 
             name: 'enemy_sprites', 
-            path: 'assets/images/Oryx/dungeon_enemies.png',
-            defaultSpriteWidth: 12,
-            defaultSpriteHeight: 12,
-            spritesPerRow: 20,
-            spritesPerColumn: 20
+            path: 'assets/images/Oryx/oryx_16bit_fantasy_creatures_trans.png',
+            defaultSpriteWidth: 24,
+            defaultSpriteHeight: 24,
+            spritesPerRow: 16,
+            spritesPerColumn: 8
         });
         
         await spriteManager.loadSpriteSheet({ 
@@ -326,12 +329,21 @@ function update(delta) {
         collisionManager.update(delta);
     }
     
+    // Set enemies for rendering
+    gameState.enemies = enemyManager.getEnemiesForRender ? 
+                         enemyManager.getEnemiesForRender() : [];
+    
     // Send player update to server
     if (networkManager && networkManager.isConnected()) {
+        // Handle either rotation as an object with yaw or as a simple number
+        const rotation = typeof gameState.character.rotation === 'object' ?
+                         gameState.character.rotation.yaw || 0 :
+                         gameState.character.rotation;
+                         
         networkManager.sendPlayerUpdate({
             x: gameState.character.x,
             y: gameState.character.y,
-            rotation: gameState.character.rotation.yaw || 0,
+            rotation: rotation,
             health: gameState.character.health
         });
     }

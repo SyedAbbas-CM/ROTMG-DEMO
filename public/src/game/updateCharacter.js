@@ -15,39 +15,43 @@ export function updateCharacter(delta) {
   const speed = getMoveSpeed(); // Units per second
   const keysPressed = getKeysPressed();
 
+  // Log all currently pressed keys for debugging
+  const activeKeys = Object.keys(keysPressed).filter(key => keysPressed[key]);
+  if (activeKeys.length > 0) {
+    console.log('Active keys:', activeKeys);
+  }
+
   let moveX = 0;
   let moveZ = 0;
 
   if (gameState.camera.viewType === 'first-person') {
     // Calculate forward and right vectors based on yaw
-    const forward = new THREE.Vector3(
-      Math.sin(character.rotation.yaw),
-      0,
-      Math.cos(character.rotation.yaw)
-    ).normalize();
+    const forward = {
+      x: Math.sin(character.rotation.yaw),
+      z: Math.cos(character.rotation.yaw)
+    };
 
-    const right = new THREE.Vector3(
-      Math.sin(character.rotation.yaw + Math.PI / 2),
-      0,
-      Math.cos(character.rotation.yaw + Math.PI / 2)
-    ).normalize();
+    const right = {
+      x: Math.sin(character.rotation.yaw + Math.PI / 2),
+      z: Math.cos(character.rotation.yaw + Math.PI / 2)
+    };
 
     // Movement based on keys
     if (keysPressed['KeyW']) {
-      moveX -= forward.x * speed * delta;
-      moveZ -= forward.z * speed * delta;
-    }
-    if (keysPressed['KeyS']) {
       moveX += forward.x * speed * delta;
       moveZ += forward.z * speed * delta;
     }
-    if (keysPressed['KeyA']) {
-      moveX -= right.x * speed * delta;
-      moveZ -= right.z * speed * delta;
+    if (keysPressed['KeyS']) {
+      moveX -= forward.x * speed * delta;
+      moveZ -= forward.z * speed * delta;
     }
-    if (keysPressed['KeyD']) {
+    if (keysPressed['KeyA']) {
       moveX += right.x * speed * delta;
       moveZ += right.z * speed * delta;
+    }
+    if (keysPressed['KeyD']) {
+      moveX -= right.x * speed * delta;
+      moveZ -= right.z * speed * delta;
     }
   } else {
     // Movement logic for top-down and strategic views
@@ -65,29 +69,16 @@ export function updateCharacter(delta) {
     }
   }
 
-  // Normalize movement to prevent faster diagonal movement
-  const length = Math.hypot(moveX, moveZ);
-  if (length > 0) {
-    moveX /= length;
-    moveZ /= length;
-    moveX *= speed * delta;
-    moveZ *= speed * delta;
-  }
+  // Skip normalization for very small movements
+  if (Math.abs(moveX) > 0.01 || Math.abs(moveZ) > 0.01) {
+    // Calculate new potential position in world coordinates
+    const newX = character.x + moveX;
+    const newZ = character.y + moveZ;
 
-  // Calculate new potential position in world coordinates
-  const newX = character.x + moveX;
-  const newZ = character.y + moveZ;
-
-  // Collision detection
-  if (!isCollision(newX, newZ)) {
-    character.x = newX;
-    character.y = newZ;
-    if (gameState.camera.viewType !== 'first-person') {
-      console.log(`Character moved to (${character.x.toFixed(2)}, ${character.y.toFixed(2)}).`);
-    }
-  } else {
-    if (gameState.camera.viewType !== 'first-person') {
-      console.log(`Collision detected at (${newX.toFixed(2)}, ${newZ.toFixed(2)}). Movement blocked.`);
+    // Collision detection
+    if (!isCollision(newX, newZ)) {
+      character.x = newX;
+      character.y = newZ;
     }
   }
 

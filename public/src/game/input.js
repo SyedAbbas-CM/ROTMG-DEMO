@@ -14,15 +14,19 @@ let mouseY = 0;
 
 // Sensitivity and speed settings
 const MOUSE_SENSITIVITY = 0.002;
-const MOVE_SPEED = 40.0; // Units per second
+const MOVE_SPEED = 100.0; // Increased movement speed for better responsiveness
 
 /**
  * Initialize game controls
  */
 export function initControls() {
+    // Clear any existing key states
+    Object.keys(keysPressed).forEach(key => delete keysPressed[key]);
+    
     // Keyboard input
     window.addEventListener('keydown', (e) => {
         keysPressed[e.code] = true;
+        console.log(`Key pressed: ${e.code}`); // Debug log
 
         // Handle view switching with 'V' key
         if (e.code === 'KeyV') {
@@ -104,8 +108,19 @@ function updatePlayerRotation(event) {
     const dy = event.clientY - centerY;
     const angle = Math.atan2(dy, dx);
     
-    // Update player rotation
-    gameState.character.rotation.yaw = angle;
+    // Update player rotation - use rotateTo method if available
+    if (gameState.character.rotateTo) {
+        // Use the Player class method
+        const targetX = gameState.character.x + dx;
+        const targetY = gameState.character.y + dy;
+        gameState.character.rotateTo(targetX, targetY);
+    } else if (typeof gameState.character.rotation === 'number') {
+        // Character has simple rotation as number
+        gameState.character.rotation = angle;
+    } else if (gameState.character.rotation && typeof gameState.character.rotation === 'object') {
+        // Try to create a new rotation object to avoid readonly property error
+        gameState.character.rotation = { yaw: angle };
+    }
 }
 
 /**

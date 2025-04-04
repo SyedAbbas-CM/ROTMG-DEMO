@@ -121,8 +121,15 @@
     <!-- 2D Canvas (for top-down and strategic views) -->
     <canvas id="gameCanvas"></canvas>
     
-    <!-- Three.js Library -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+    <!-- Three.js Library (ES Module) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/"
+        }
+      }
+    </script>
     
     <!-- Game Scripts -->
     <script type="module">
