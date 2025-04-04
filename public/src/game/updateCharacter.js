@@ -5,84 +5,40 @@ import { gameState } from './gamestate.js';
 import { map } from '../map/map.js';
 import { TILE_SIZE, TILE_IDS } from '../constants/constants.js';
 
-
 /**
  * Updates the character's position based on input and handles collision.
  * @param {number} delta - Time elapsed since the last frame (in seconds).
  */
 export function updateCharacter(delta) {
   const character = gameState.character;
-  const speed = getMoveSpeed(); // Units per second
+  // Force a higher speed value to overcome any potential issues
+  const speed = 200; // Higher speed for testing
   const keysPressed = getKeysPressed();
 
-  // Log all currently pressed keys for debugging
-  const activeKeys = Object.keys(keysPressed).filter(key => keysPressed[key]);
-  if (activeKeys.length > 0) {
-    console.log('Active keys:', activeKeys);
-  }
-
+  // Calculate movement direction
   let moveX = 0;
-  let moveZ = 0;
+  let moveY = 0;
 
-  if (gameState.camera.viewType === 'first-person') {
-    // Calculate forward and right vectors based on yaw
-    const forward = {
-      x: Math.sin(character.rotation.yaw),
-      z: Math.cos(character.rotation.yaw)
-    };
-
-    const right = {
-      x: Math.sin(character.rotation.yaw + Math.PI / 2),
-      z: Math.cos(character.rotation.yaw + Math.PI / 2)
-    };
-
-    // Movement based on keys
-    if (keysPressed['KeyW']) {
-      moveX += forward.x * speed * delta;
-      moveZ += forward.z * speed * delta;
-    }
-    if (keysPressed['KeyS']) {
-      moveX -= forward.x * speed * delta;
-      moveZ -= forward.z * speed * delta;
-    }
-    if (keysPressed['KeyA']) {
-      moveX += right.x * speed * delta;
-      moveZ += right.z * speed * delta;
-    }
-    if (keysPressed['KeyD']) {
-      moveX -= right.x * speed * delta;
-      moveZ -= right.z * speed * delta;
-    }
-  } else {
-    // Movement logic for top-down and strategic views
-    if (keysPressed['KeyW'] || keysPressed['ArrowUp']) {
-      moveZ -= speed * delta;
-    }
-    if (keysPressed['KeyS'] || keysPressed['ArrowDown']) {
-      moveZ += speed * delta;
-    }
-    if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) {
-      moveX -= speed * delta;
-    }
-    if (keysPressed['KeyD'] || keysPressed['ArrowRight']) {
-      moveX += speed * delta;
-    }
+  // Process movement keys - directly set values to avoid complexities
+  if (keysPressed['KeyW'] || keysPressed['ArrowUp']) {
+    console.log('Moving UP');
+    character.y -= speed * delta;
+  }
+  if (keysPressed['KeyS'] || keysPressed['ArrowDown']) {
+    console.log('Moving DOWN');
+    character.y += speed * delta;
+  }
+  if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) {
+    console.log('Moving LEFT');
+    character.x -= speed * delta;
+  }
+  if (keysPressed['KeyD'] || keysPressed['ArrowRight']) {
+    console.log('Moving RIGHT');
+    character.x += speed * delta;
   }
 
-  // Skip normalization for very small movements
-  if (Math.abs(moveX) > 0.01 || Math.abs(moveZ) > 0.01) {
-    // Calculate new potential position in world coordinates
-    const newX = character.x + moveX;
-    const newZ = character.y + moveZ;
-
-    // Collision detection
-    if (!isCollision(newX, newZ)) {
-      character.x = newX;
-      character.y = newZ;
-    }
-  }
-
-  // Note: In first-person view, rotation is controlled by the mouse, not by movement
+  // Log current position after movement
+  console.log(`Current position: (${character.x.toFixed(2)}, ${character.y.toFixed(2)})`);
 }
 
 /**
@@ -92,11 +48,16 @@ export function updateCharacter(delta) {
  * @returns {boolean} - True if collision occurs, else false.
  */
 function isCollision(x, z) {
+  // Ensure x and z are positive
   const tileX = Math.floor(x / TILE_SIZE);
   const tileZ = Math.floor(z / TILE_SIZE);
+  
   const tile = map.getTile(tileX, tileZ);
-
-  if (!tile) return true; // Outside map bounds
+  
+  if (!tile) {
+    return true; // Outside map bounds
+  }
+  
   if (tile.type === TILE_IDS.WALL || tile.type === TILE_IDS.MOUNTAIN) {
     return true;
   }

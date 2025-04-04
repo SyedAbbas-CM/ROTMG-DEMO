@@ -148,8 +148,16 @@ export class ClientCollisionManager {
             
             // Check if position is wall or out of bounds
             if (this.mapManager.isWallOrObstacle(x, y)) {
-                // Mark bullet for removal
-                this.bulletManager.markForRemoval(i);
+                // Mark bullet for removal - handle case where markForRemoval doesn't exist
+                if (this.bulletManager.markForRemoval) {
+                    this.bulletManager.markForRemoval(i);
+                } else if (this.bulletManager.removeBulletById && this.bulletManager.id) {
+                    // Alternative method: remove by ID
+                    this.bulletManager.removeBulletById(this.bulletManager.id[i]);
+                } else if (this.bulletManager.life) {
+                    // Last resort: set lifetime to 0
+                    this.bulletManager.life[i] = 0;
+                }
             }
         }
     }

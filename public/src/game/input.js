@@ -26,7 +26,8 @@ export function initControls() {
     // Keyboard input
     window.addEventListener('keydown', (e) => {
         keysPressed[e.code] = true;
-        console.log(`Key pressed: ${e.code}`); // Debug log
+        // Remove excessive logging
+        // console.log(`Key pressed: ${e.code}`); // Debug log
 
         // Handle view switching with 'V' key
         if (e.code === 'KeyV') {
