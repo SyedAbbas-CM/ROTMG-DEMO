@@ -66,10 +66,23 @@ export async function initGame() {
             spritesPerColumn: 10
         });
         
+        // Load bullet sprites - Add this for bullet rendering
+        await spriteManager.loadSpriteSheet({ 
+            name: 'bullet_sprites', 
+            path: 'assets/images/Oryx/lofi_obj.png', 
+            defaultSpriteWidth: 8,
+            defaultSpriteHeight: 8,
+            spritesPerRow: 16,
+            spritesPerColumn: 16
+        });
+        
         console.log('All sprite sheets loaded.');
 
         // Initialize the game state
         initializeGameState();
+        
+        // The sprite editor container is already in the HTML, skip initialization
+        console.log('Sprite editor container already exists in HTML');
         
         // Initialize Three.js Renderer
         renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('glCanvas'), antialias: true });
@@ -114,10 +127,18 @@ export async function initGame() {
                 console.log('Connected to server. Starting the game loop.');
                 // Start the Game Loop after connection is established
                 requestAnimationFrame(gameLoop);
+                
+                // Show debug overlay by default
+                debugOverlay.show();
+                debugOverlay.enabled = true;
             }).catch(error => {
                 console.error('Failed to connect to server:', error);
                 // Start game loop anyway for offline testing
                 requestAnimationFrame(gameLoop);
+                
+                // Show debug overlay by default
+                debugOverlay.show();
+                debugOverlay.enabled = true;
             });
         });
 
@@ -133,24 +154,41 @@ export async function initGame() {
  * Initialize game state and managers
  */
 function initializeGameState() {
-    // Create local player
+    // Create local player with complete properties
     localPlayer = new Player({
         name: 'Player',
         x: 50,
         y: 50,
+        width: 10,
+        height: 10,
         speed: 150,
+        projectileSpeed: 300, // Critical for shooting
+        damage: 10,
+        shootCooldown: 0.3,
         sprite: 'character_sprites_sprite_1'
     });
+    
+    console.log("Created local player:", localPlayer);
     
     // Create managers
     bulletManager = new ClientBulletManager(10000);
     enemyManager = new ClientEnemyManager(1000);
     
-    // Create network manager with game reference
+    // Make bulletManager available in console for debugging
+    window.bulletManager = bulletManager;
+    
+    // Create map manager first (before network manager)
+    mapManager = new ClientMapManager({});
+    
+    // IMPORTANT: Disable procedural generation to use server's map
+    mapManager.proceduralEnabled = false;
+    
+    // Create network manager with proper handlers
     networkManager = new ClientNetworkManager(SERVER_URL, {
         // Set client ID
         setClientId: (clientId) => {
             localPlayer.id = clientId;
+            console.log(`Received client ID: ${clientId}`);
             
             // Update player status in UI if available
             if (window.updatePlayerStatus) {
@@ -160,83 +198,65 @@ function initializeGameState() {
         
         // Initialize map
         initMap: (mapData) => {
+            console.log("Received map data from server:", mapData);
             mapManager.initMap(mapData);
         },
         
         // Set all players
         setPlayers: (players) => {
-            // TODO: Handle other players
             console.log('Players received:', players);
         },
         
         // Set initial enemies
         setEnemies: (enemies) => {
+            console.log(`Received ${enemies.length} enemies from server`);
             enemyManager.setEnemies(enemies);
         },
         
         // Set initial bullets
         setBullets: (bullets) => {
+            console.log(`Received ${bullets.length} bullets from server`);
             bulletManager.setBullets(bullets);
         },
         
         // Update world state
         updateWorld: (enemies, bullets, players) => {
+            console.log(`World update: ${enemies?.length || 0} enemies, ${bullets?.length || 0} bullets`);
             if (enemies) enemyManager.updateEnemies(enemies);
             if (bullets) bulletManager.updateBullets(bullets);
             // TODO: Update other players
         },
         
-        // Add a player
-        addPlayer: (player) => {
-            // TODO: Add other player
-        },
-        
-        // Remove a player
-        removePlayer: (clientId) => {
-            // TODO: Remove other player
-        },
-        
         // Add a bullet
         addBullet: (bullet) => {
+            console.log("Server created bullet:", bullet);
             bulletManager.addBullet(bullet);
         },
         
         // Apply collision
         applyCollision: (collision) => {
-            // Handle collision result (e.g., update bullet, enemy health)
+            console.log("Processing collision:", collision);
+            // Handle collision result
             bulletManager.removeBulletById(collision.bulletId);
             
             if (collision.enemyId) {
                 enemyManager.setEnemyHealth(collision.enemyId, collision.enemyHealth);
+                
+                if (collision.enemyKilled) {
+                    console.log(`Enemy ${collision.enemyId} was killed`);
+                }
             }
-        },
-        
-        // Handle enemy killed
-        handleEnemyKilled: (enemyId) => {
-            enemyManager.removeEnemyById(enemyId);
         },
         
         // Set chunk data
         setChunkData: (chunkX, chunkY, chunkData) => {
+            console.log(`Received chunk data for (${chunkX}, ${chunkY})`, chunkData);
             mapManager.setChunkData(chunkX, chunkY, chunkData);
-        },
-        
-        // Generate fallback chunk
-        generateFallbackChunk: (chunkX, chunkY) => {
-            // Let the map manager handle this with its fallback generation
-        },
-        
-        // Handle disconnect
-        handleDisconnect: () => {
-            console.log('Disconnected from server. Game running in offline mode.');
-            // Could show reconnect UI here
         }
     });
     
-    // Create map manager with network reference
-    mapManager = new ClientMapManager({
-        networkManager: networkManager
-    });
+    // Now that network manager is created, set it in the map manager
+    mapManager.networkManager = networkManager;
     
     // Create collision manager
     collisionManager = new ClientCollisionManager({
@@ -254,6 +274,8 @@ function initializeGameState() {
     gameState.bulletManager = bulletManager;
     gameState.enemyManager = enemyManager;
     gameState.collisionManager = collisionManager;
+    
+    console.log("Game state initialized with all managers");
 }
 
 /**
@@ -262,10 +284,12 @@ function initializeGameState() {
  */
 async function connectToServer() {
     try {
+        console.log(`Attempting to connect to server at ${SERVER_URL}`);
         await networkManager.connect();
         if (window.updateConnectionStatus) {
             window.updateConnectionStatus('Connected');
         }
+        console.log("Connection to server successful");
         return true;
     } catch (error) {
         console.error('Connection error:', error);
@@ -298,10 +322,13 @@ function gameLoop(time) {
     const delta = (time - lastTime) / 1000; // Convert to seconds
     lastTime = time;
 
-    update(delta);
+    // Limit delta to avoid large jumps on tab switch or slowdown
+    const cappedDelta = Math.min(delta, 0.1);
+    
+    update(cappedDelta);
     render();
     
-    // Update debug overlay if enabled
+    // Update debug overlay
     debugOverlay.update(gameState, time);
 
     requestAnimationFrame(gameLoop);
@@ -328,10 +355,6 @@ function update(delta) {
     if (collisionManager) {
         collisionManager.update(delta);
     }
-    
-    // Set enemies for rendering
-    gameState.enemies = enemyManager.getEnemiesForRender ? 
-                         enemyManager.getEnemiesForRender() : [];
     
     // Send player update to server
     if (networkManager && networkManager.isConnected()) {
@@ -364,9 +387,15 @@ function render() {
 
     if (viewType === 'first-person') {
         renderer.render(scene, camera);
+        document.getElementById('gameCanvas').style.display = 'none';
+        document.getElementById('glCanvas').style.display = 'block';
     } else if (viewType === 'top-down') {
+        document.getElementById('gameCanvas').style.display = 'block';
+        document.getElementById('glCanvas').style.display = 'none';
         renderTopDownView();
     } else if (viewType === 'strategic') {
+        document.getElementById('gameCanvas').style.display = 'block';
+        document.getElementById('glCanvas').style.display = 'none';
         renderStrategicView();
     }
 }
@@ -377,36 +406,61 @@ function render() {
  * @param {number} y - Y coordinate
  */
 export function handleShoot(x, y) {
-    if (!networkManager || !networkManager.isConnected()) return;
+    if (!networkManager || !networkManager.isConnected()) {
+        console.log("Cannot shoot: network manager not connected");
+        return;
+    }
     
-    // Calculate angle
+    // Check if player can shoot
+    if (typeof localPlayer.canShoot === 'function' && !localPlayer.canShoot()) {
+        console.log("Cannot shoot: on cooldown");
+        return; // On cooldown or other restriction
+    }
+    
+    console.log("Shooting at coordinates:", x, y);
+    
+    // Calculate angle from player to target
     const dx = x - gameState.character.x;
     const dy = y - gameState.character.y;
     const angle = Math.atan2(dy, dx);
     
-    // Create local bullet prediction
-    const bulletId = bulletManager.addBullet({
+    // Create a local bullet prediction
+    const bulletData = {
         x: gameState.character.x,
         y: gameState.character.y,
-        vx: Math.cos(angle) * localPlayer.projectileSpeed,
-        vy: Math.sin(angle) * localPlayer.projectileSpeed,
-        ownerId: localPlayer.id,
-        damage: localPlayer.damage,
-        lifetime: 3.0
-    });
+        vx: Math.cos(angle) * gameState.character.projectileSpeed,
+        vy: Math.sin(angle) * gameState.character.projectileSpeed,
+        ownerId: gameState.character.id,
+        damage: gameState.character.damage || 10,
+        lifetime: 3.0,
+        width: 8,
+        height: 8,
+        // Add sprite info
+        spriteSheet: 'bullet_sprites',
+        spriteX: 8 * 10, // X position in sprite sheet (col * width)
+        spriteY: 8 * 11, // Y position in sprite sheet (row * height)
+        spriteWidth: 8,
+        spriteHeight: 8
+    };
+    
+    console.log("Creating bullet with data:", bulletData);
+    const bulletId = bulletManager.addBullet(bulletData);
+    
+    // Update player's last shot time if it has a cooldown
+    if (typeof localPlayer.setLastShotTime === 'function') {
+        localPlayer.setLastShotTime(Date.now());
+    }
     
     // Send to server
     networkManager.sendShoot({
         x: gameState.character.x,
         y: gameState.character.y,
-        angle: angle,
-        speed: localPlayer.projectileSpeed,
-        damage: localPlayer.damage,
-        lifetime: 3.0
+        angle,
+        speed: gameState.character.projectileSpeed,
+        damage: gameState.character.damage || 10
     });
     
-    // Start cooldown
-    localPlayer.startShootCooldown();
+    console.log(`Created bullet ${bulletId} with angle ${angle.toFixed(2)}`);
 }
 
 /**
@@ -415,7 +469,12 @@ export function handleShoot(x, y) {
  * @param {string} enemyId - Enemy ID
  */
 export function reportCollision(bulletId, enemyId) {
-    if (!networkManager || !networkManager.isConnected()) return;
+    if (!networkManager || !networkManager.isConnected()) {
+        console.log("Cannot report collision: network manager not connected");
+        return;
+    }
+    
+    console.log(`Reporting collision between bullet ${bulletId} and enemy ${enemyId}`);
     
     networkManager.sendCollision({
         bulletId: bulletId,

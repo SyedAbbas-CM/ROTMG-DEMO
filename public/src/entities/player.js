@@ -103,6 +103,14 @@ export class Player {
     }
     
     /**
+     * Set the last shot time directly
+     * @param {number} time - The timestamp of the last shot
+     */
+    setLastShotTime(time) {
+      this.lastShootTime = this.shootCooldown;
+    }
+    
+    /**
      * Apply damage to player
      * @param {number} amount - Amount of damage
      * @returns {number} Remaining health

@@ -181,6 +181,8 @@ export default class EnemyManager {
     // Store ID to index mapping
     this.idToIndex.set(enemyId, index);
     
+    console.log(`Spawned enemy ${enemyId} of type ${type} at position (${x.toFixed(2)}, ${y.toFixed(2)}), health: ${defaults.health}`);
+    
     return enemyId;
   }
 
@@ -189,10 +191,15 @@ export default class EnemyManager {
    * @param {number} deltaTime - Time elapsed since last update in seconds
    * @param {Object} bulletManager - Reference to the bullet manager for shooting
    * @param {Object} target - Optional target entity (e.g., player)
+   * @returns {number} The number of active enemies
    */
   update(deltaTime, bulletManager, target = null) {
     // Skip update if no target or bullet manager
-    if (!target) return;
+    if (!target) return this.getActiveEnemyCount();
+    
+    // Count enemies that moved or shot
+    let movedCount = 0;
+    let shotCount = 0;
     
     for (let i = 0; i < this.enemyCount; i++) {
       // Skip inactive enemies
@@ -203,16 +210,36 @@ export default class EnemyManager {
         this.currentCooldown[i] -= deltaTime;
       }
       
-      // Chase behavior
+      // Store original position for movement tracking
+      const originalX = this.x[i];
+      const originalY = this.y[i];
+      
+      // Update chase behavior
       if (this.canChase[i]) {
         this.updateChase(i, target, deltaTime);
       }
       
-      // Shoot behavior
+      // Check if enemy moved
+      if (Math.abs(originalX - this.x[i]) > 0.01 || Math.abs(originalY - this.y[i]) > 0.01) {
+        movedCount++;
+      }
+      
+      // Update shooting behavior
       if (this.canShoot[i] && bulletManager) {
-        this.updateShoot(i, target, bulletManager);
+        const didShoot = this.updateShoot(i, target, bulletManager);
+        if (didShoot) {
+          shotCount++;
+        }
       }
     }
+    
+    const activeCount = this.getActiveEnemyCount();
+    // Only log if there's actual activity
+    if (movedCount > 0 || shotCount > 0) {
+      console.log(`Enemies updated: ${activeCount} active, ${movedCount} moved, ${shotCount} shot at target`);
+    }
+    
+    return activeCount;
   }
   
   /**
@@ -222,92 +249,125 @@ export default class EnemyManager {
    * @param {number} deltaTime - Time elapsed since last update
    */
   updateChase(index, target, deltaTime) {
-    // Calculate distance to target
     const dx = target.x - this.x[index];
     const dy = target.y - this.y[index];
-    const distSq = dx * dx + dy * dy;
+    const distanceSquared = dx * dx + dy * dy;
     
-    // Only chase if target is within radius
-    if (distSq <= this.chaseRadius[index] * this.chaseRadius[index]) {
-      const dist = Math.sqrt(distSq);
-      
-      // Move toward target
-      if (dist > 0 && this.moveSpeed[index] > 0) {
-        const moveAmount = this.moveSpeed[index] * deltaTime;
-        
-        // Normalize direction
-        const normalizedDx = dx / dist;
-        const normalizedDy = dy / dist;
-        
-        // Apply movement
-        this.x[index] += normalizedDx * moveAmount;
-        this.y[index] += normalizedDy * moveAmount;
-      }
+    // Only chase if within chase radius
+    if (distanceSquared > this.chaseRadius[index] * this.chaseRadius[index]) {
+      return false;
     }
+    
+    // Normalize direction
+    const distance = Math.sqrt(distanceSquared);
+    const dirX = dx / distance;
+    const dirY = dy / distance;
+    
+    // Move toward target
+    const moveAmount = this.moveSpeed[index] * deltaTime;
+    this.x[index] += dirX * moveAmount;
+    this.y[index] += dirY * moveAmount;
+    
+    return true;
   }
   
   /**
    * Update shooting behavior for an enemy
    * @param {number} index - Enemy index
    * @param {Object} target - Target entity
-   * @param {Object} bulletManager - Bullet manager
+   * @param {Object} bulletManager - Reference to the bullet manager
+   * @returns {boolean} True if the enemy shot, false otherwise
    */
   updateShoot(index, target, bulletManager) {
-    // Check if on cooldown
-    if (this.currentCooldown[index] > 0) return;
+    // Skip if on cooldown
+    if (this.currentCooldown[index] > 0) {
+      return false;
+    }
     
-    // Calculate distance to target
     const dx = target.x - this.x[index];
     const dy = target.y - this.y[index];
-    const distSq = dx * dx + dy * dy;
+    const distanceSquared = dx * dx + dy * dy;
     
-    // Only shoot if target is within range
-    if (distSq <= this.shootRange[index] * this.shootRange[index]) {
-      // Calculate angle to target
-      const angle = Math.atan2(dy, dx);
-      
-      // Create bullets based on projectileCount and spread
-      for (let i = 0; i < this.projectileCount[index]; i++) {
-        // Calculate spread angle
-        let bulletAngle = angle;
-        if (this.projectileCount[index] > 1) {
-          bulletAngle += this.projectileSpread[index] * (i - (this.projectileCount[index]-1)/2);
-        }
-        
-        // Create bullet
-        bulletManager.addBullet({
-          x: this.x[index],
-          y: this.y[index],
-          vx: Math.cos(bulletAngle) * this.bulletSpeed[index],
-          vy: Math.sin(bulletAngle) * this.bulletSpeed[index],
-          damage: this.damage[index],
-          lifetime: 3.0, // Default lifetime
-          ownerId: this.id[index]
-        });
-      }
-      
-      // Reset cooldown
-      this.currentCooldown[index] = this.cooldown[index];
+    // Only shoot if within range
+    if (distanceSquared > this.shootRange[index] * this.shootRange[index]) {
+      return false;
     }
+    
+    // Calculate angle to target
+    const angle = Math.atan2(dy, dx);
+    
+    // Reset cooldown
+    this.currentCooldown[index] = this.cooldown[index];
+    
+    // Shoot multiple projectiles if needed
+    const count = this.projectileCount[index];
+    const spread = this.projectileSpread[index];
+    
+    // Single projectile case
+    if (count <= 1) {
+      bulletManager.addBullet({
+        x: this.x[index],
+        y: this.y[index],
+        vx: Math.cos(angle) * this.bulletSpeed[index],
+        vy: Math.sin(angle) * this.bulletSpeed[index],
+        ownerId: this.id[index],
+        damage: this.damage[index],
+        lifetime: 3.0,
+        isEnemy: true
+      });
+      
+      console.log(`Enemy ${this.id[index]} fired at target, angle: ${angle.toFixed(2)}`);
+      return true;
+    }
+    
+    // Multiple projectiles case
+    const startAngle = angle - (spread * (count - 1) / 2);
+    for (let i = 0; i < count; i++) {
+      const bulletAngle = startAngle + (spread * i);
+      bulletManager.addBullet({
+        x: this.x[index],
+        y: this.y[index],
+        vx: Math.cos(bulletAngle) * this.bulletSpeed[index],
+        vy: Math.sin(bulletAngle) * this.bulletSpeed[index],
+        ownerId: this.id[index],
+        damage: this.damage[index],
+        lifetime: 3.0,
+        isEnemy: true
+      });
+    }
+    
+    console.log(`Enemy ${this.id[index]} fired ${count} bullets at target in a spread pattern`);
+    return true;
   }
   
   /**
    * Apply damage to an enemy
    * @param {number} index - Enemy index
    * @param {number} damage - Amount of damage to apply
-   * @returns {number} Remaining health
+   * @returns {Object} Result with new health and whether the enemy was killed
    */
   applyDamage(index, damage) {
-    if (index < 0 || index >= this.enemyCount) return 0;
-    
-    this.health[index] -= damage;
-    
-    // Ensure health doesn't go below 0
-    if (this.health[index] < 0) {
-      this.health[index] = 0;
+    if (index < 0 || index >= this.enemyCount) {
+      return { valid: false, reason: 'Invalid enemy index' };
     }
     
-    return this.health[index];
+    // Apply damage
+    this.health[index] -= damage;
+    
+    // Check if killed
+    const killed = this.health[index] <= 0;
+    if (killed) {
+      // Call onDeath to handle death effects
+      this.onDeath(index);
+    }
+    
+    console.log(`Enemy ${this.id[index]} took ${damage} damage, health: ${this.health[index].toFixed(0)}/${this.maxHealth[index]}, killed: ${killed}`);
+    
+    return {
+      valid: true,
+      health: this.health[index],
+      killed: killed
+    };
   }
 
   /**

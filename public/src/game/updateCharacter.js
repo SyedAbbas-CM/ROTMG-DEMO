@@ -2,7 +2,6 @@
 
 import { getKeysPressed, getMoveSpeed } from './input.js';
 import { gameState } from './gamestate.js';
-import { map } from '../map/map.js';
 import { TILE_SIZE, TILE_IDS } from '../constants/constants.js';
 
 /**
@@ -11,56 +10,161 @@ import { TILE_SIZE, TILE_IDS } from '../constants/constants.js';
  */
 export function updateCharacter(delta) {
   const character = gameState.character;
-  // Force a higher speed value to overcome any potential issues
-  const speed = 200; // Higher speed for testing
+  const speed = getMoveSpeed(); // Get speed from input settings
   const keysPressed = getKeysPressed();
 
+  // Call the character's update method to handle cooldowns
+  if (character.update && typeof character.update === 'function') {
+    character.update(delta);
+  }
+
+  // Original position before movement
+  const originalX = character.x;
+  const originalY = character.y;
+  
   // Calculate movement direction
   let moveX = 0;
   let moveY = 0;
 
-  // Process movement keys - directly set values to avoid complexities
+  // Process WASD or arrow keys
   if (keysPressed['KeyW'] || keysPressed['ArrowUp']) {
-    console.log('Moving UP');
-    character.y -= speed * delta;
+    moveY -= 1;
   }
   if (keysPressed['KeyS'] || keysPressed['ArrowDown']) {
-    console.log('Moving DOWN');
-    character.y += speed * delta;
+    moveY += 1;
   }
   if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) {
-    console.log('Moving LEFT');
-    character.x -= speed * delta;
+    moveX -= 1;
   }
   if (keysPressed['KeyD'] || keysPressed['ArrowRight']) {
-    console.log('Moving RIGHT');
-    character.x += speed * delta;
+    moveX += 1;
   }
 
-  // Log current position after movement
-  console.log(`Current position: (${character.x.toFixed(2)}, ${character.y.toFixed(2)})`);
+  // Normalize diagonal movement
+  if (moveX !== 0 && moveY !== 0) {
+    const length = Math.sqrt(moveX * moveX + moveY * moveY);
+    moveX /= length;
+    moveY /= length;
+  }
+
+  // Apply movement with delta time
+  if (moveX !== 0 || moveY !== 0) {
+    const distance = speed * delta;
+    
+    // First try moving along X axis
+    const newX = character.x + moveX * distance;
+    // Save the original Y before moving
+    const backupY = character.y;
+    
+    if (!isCollision(newX, character.y)) {
+      character.x = newX;
+    } else {
+      // Try with smaller increments to handle edge cases
+      const smallStep = Math.sign(moveX) * Math.min(Math.abs(moveX * distance), 0.1);
+      const stepX = character.x + smallStep;
+      if (!isCollision(stepX, character.y)) {
+        character.x = stepX;
+      }
+    }
+    
+    // Now try moving along Y axis
+    const newY = character.y + moveY * distance;
+    if (!isCollision(character.x, newY)) {
+      character.y = newY;
+    } else {
+      // Try with smaller increments
+      const smallStep = Math.sign(moveY) * Math.min(Math.abs(moveY * distance), 0.1);
+      const stepY = character.y + smallStep;
+      if (!isCollision(character.x, stepY)) {
+        character.y = stepY;
+      }
+    }
+    
+    // If we moved, log the new position
+    if (Math.abs(character.x - originalX) > 0.001 || Math.abs(character.y - originalY) > 0.001) {
+      // Only log position every 10 units to avoid spam
+      if (Math.floor(character.x) % 10 === 0 && Math.floor(character.y) % 10 === 0) {
+        console.log(`Position: (${character.x.toFixed(2)}, ${character.y.toFixed(2)})`);
+      }
+    }
+  }
 }
 
 /**
- * Checks if the new position collides with any impassable tiles.
- * @param {number} x - New X position in world coordinates.
- * @param {number} z - New Z position in world coordinates.
- * @returns {boolean} - True if collision occurs, else false.
+ * Checks if the position collides with a wall or is out of bounds
+ * @param {number} x - New X position
+ * @param {number} y - New Y position
+ * @returns {boolean} - True if collision occurs, else false
  */
-function isCollision(x, z) {
-  // Ensure x and z are positive
-  const tileX = Math.floor(x / TILE_SIZE);
-  const tileZ = Math.floor(z / TILE_SIZE);
-  
-  const tile = map.getTile(tileX, tileZ);
-  
-  if (!tile) {
-    return true; // Outside map bounds
+function isCollision(x, y) {
+  // Skip collision if map manager isn't available
+  if (!gameState.map) {
+    return false;
   }
   
-  if (tile.type === TILE_IDS.WALL || tile.type === TILE_IDS.MOUNTAIN) {
-    return true;
-  }
-
+  // Character dimensions (use properties if available, otherwise use defaults)
+  const width = gameState.character.width || 20;
+  const height = gameState.character.height || 20;
+  
+  // Check multiple points on the character's body for collisions
+  // Center
+  if (isPointColliding(x, y)) return true;
+  
+  // Check corners (adjusted to be slightly inset from the edges)
+  const inset = 2; // Inset from edges to avoid getting stuck
+  const halfWidth = width / 2 - inset;
+  const halfHeight = height / 2 - inset;
+  
+  // Top-left corner
+  if (isPointColliding(x - halfWidth, y - halfHeight)) return true;
+  
+  // Top-right corner
+  if (isPointColliding(x + halfWidth, y - halfHeight)) return true;
+  
+  // Bottom-left corner
+  if (isPointColliding(x - halfWidth, y + halfHeight)) return true;
+  
+  // Bottom-right corner
+  if (isPointColliding(x + halfWidth, y + halfHeight)) return true;
+  
+  // No collision detected
   return false;
+}
+
+/**
+ * Checks if a specific point collides with a wall
+ * @param {number} x - X position to check
+ * @param {number} y - Y position to check
+ * @returns {boolean} True if point collides with a wall
+ */
+function isPointColliding(x, y) {
+  // Convert to tile coordinates
+  const tileX = Math.floor(x / TILE_SIZE);
+  const tileY = Math.floor(y / TILE_SIZE);
+  
+  try {
+    // Check if position is a wall or obstacle
+    if (gameState.map.isWallOrObstacle) {
+      return gameState.map.isWallOrObstacle(x, y);
+    }
+    
+    // Fallback to checking tile directly
+    const tile = gameState.map.getTile(tileX, tileY);
+    if (!tile) {
+      // No tile found (out of bounds)
+      return true;
+    }
+    
+    // Check if it's a wall, obstacle, or mountain
+    return (
+      tile.type === TILE_IDS.WALL || 
+      tile.type === TILE_IDS.OBSTACLE || 
+      tile.type === TILE_IDS.MOUNTAIN ||
+      tile.type === TILE_IDS.WATER
+    );
+  } catch (error) {
+    console.error("Error in collision detection:", error);
+    // On error, default to no collision
+    return false;
+  }
 }

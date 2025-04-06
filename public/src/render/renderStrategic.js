@@ -1,10 +1,9 @@
 // src/render/renderStrategic.js
 
 import { gameState } from '../game/gamestate.js';
-import { map } from '../map/map.js';
 import { TILE_SIZE, TILE_SPRITES } from '../constants/constants.js';
 import { spriteManager } from '../assets/spriteManager.js';
-import { renderCharacter, renderEnemies } from './render.js';
+import { renderCharacter, renderEnemies, renderBullets } from './render.js';
 
 // Get 2D Canvas Context
 const canvas2D = document.getElementById('gameCanvas');
@@ -19,6 +18,14 @@ const scaleFactor = 0.5; // Reduce tile size for strategic view
 
 export function renderStrategicView() {
   const camera = gameState.camera;
+  // Use the map from gameState that gets data from the server
+  const mapManager = gameState.map;
+
+  // Skip rendering if no map manager
+  if (!mapManager) {
+    console.warn("Cannot render strategic view: map manager not available");
+    return;
+  }
 
   // Clear the canvas
   ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
@@ -33,10 +40,15 @@ export function renderStrategicView() {
   const endY = startY + tilesInViewY;
   const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites"); // Name as defined in your config
   if (!tileSheetObj) return;
-    const tileSpriteSheet = tileSheetObj.image;
+  const tileSpriteSheet = tileSheetObj.image;
+  
+  console.log(`Rendering strategic view from camera position (${Math.floor(camera.position.x)}, ${Math.floor(camera.position.y)})`);
+  
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
-      const tile = map.getTile(x, y);
+      // Use the mapManager to get tile data
+      const tile = mapManager.getTile ? mapManager.getTile(x, y) : null;
+      
       if (tile) {
         const spritePos = TILE_SPRITES[tile.type];
         // Draw tile
@@ -57,4 +69,7 @@ export function renderStrategicView() {
 
   // Draw enemies
   renderEnemies();
+  
+  // Draw bullets
+  renderBullets();
 }

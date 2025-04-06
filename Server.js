@@ -79,10 +79,15 @@ try {
     height: 256,
     name: 'Default Map'
   });
+  console.log(`Created default map: ${defaultMapId} - This is the map ID that will be sent to clients`);
 } catch (error) {
   console.error("Error creating procedural map:", error);
   defaultMapId = "default";
 }
+
+// Store maps for persistence
+const storedMaps = new Map(); // mapId -> map data
+storedMaps.set(defaultMapId, mapManager.getMapMetadata(defaultMapId));
 
 console.log(`Created default map: ${defaultMapId}`);
 
@@ -104,12 +109,12 @@ const gameState = {
   mapId: defaultMapId,
   lastUpdateTime: Date.now(),
   updateInterval: 1000 / 20, // 20 updates per second
-  enemySpawnInterval: 10000, // 10 seconds between enemy spawns
+  enemySpawnInterval: 30000, // 30 seconds between enemy spawns (was 10000)
   lastEnemySpawnTime: Date.now()
 };
 
-// Spawn initial enemies
-spawnInitialEnemies(20); // Spawn 20 initial enemies
+// Spawn initial enemies - already set to 2 as requested
+spawnInitialEnemies(2);
 
 // WebSocket connection handler
 wss.on('connection', (socket, req) => {
@@ -118,6 +123,21 @@ wss.on('connection', (socket, req) => {
   
   // Set binary type
   socket.binaryType = 'arraybuffer';
+  
+  // Parse URL to check for map ID in query parameters
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const requestedMapId = url.searchParams.get('mapId');
+  
+  // Determine which map to use (requested or default)
+  let useMapId = defaultMapId;
+  if (requestedMapId && storedMaps.has(requestedMapId)) {
+    console.log(`Client ${clientId} requested existing map: ${requestedMapId}`);
+    useMapId = requestedMapId;
+  } else if (requestedMapId) {
+    console.log(`Client ${clientId} requested unknown map: ${requestedMapId}, using default`);
+  } else {
+    console.log(`Client ${clientId} connected without map request, using default map: ${defaultMapId}`);
+  }
   
   // Store client info
   clients.set(clientId, {
@@ -130,11 +150,11 @@ wss.on('connection', (socket, req) => {
       health: 100,
       lastUpdate: Date.now()
     },
-    mapId: gameState.mapId,
+    mapId: useMapId,  // Use the appropriate map ID
     lastUpdate: Date.now()
   });
   
-  console.log(`Client connected: ${clientId}`);
+  console.log(`Client connected: ${clientId}, assigned to map: ${useMapId}`);
   
   // Send handshake acknowledgement
   sendToClient(socket, MessageType.HANDSHAKE_ACK, {
@@ -145,7 +165,8 @@ wss.on('connection', (socket, req) => {
   // Send map info
   let mapMetadata;
   try {
-    mapMetadata = mapManager.getMapMetadata(gameState.mapId);
+    mapMetadata = mapManager.getMapMetadata(useMapId);
+    console.log(`Sending map info to client ${clientId} for map ${useMapId}:`, mapMetadata);
   } catch (error) {
     console.error("Error getting map metadata:", error);
     mapMetadata = {
@@ -157,7 +178,7 @@ wss.on('connection', (socket, req) => {
   }
   
   sendToClient(socket, MessageType.MAP_INFO, {
-    mapId: gameState.mapId,
+    mapId: useMapId,  // Use the appropriate map ID
     width: mapMetadata.width,
     height: mapMetadata.height,
     tileSize: mapMetadata.tileSize,
@@ -201,21 +222,30 @@ function updateGame() {
   }
   
   // Update bullets
-  bulletManager.update(deltaTime);
+  const activeBullets = bulletManager.update(deltaTime);
+  if (activeBullets > 0) {
+    console.log(`Active bullets: ${activeBullets}`);
+  }
   
   // Update enemies with target
-  enemyManager.update(deltaTime, bulletManager, target);
+  const activeEnemies = enemyManager.update(deltaTime, bulletManager, target);
+  if (activeEnemies > 0) {
+    console.log(`Active enemies: ${activeEnemies}, targeting position (${target.x.toFixed(2)}, ${target.y.toFixed(2)})`);
+  }
   
   // Check for collisions
-  collisionManager.checkCollisions();
+  const collisions = collisionManager.checkCollisions();
+  if (collisions > 0) {
+    console.log(`${collisions} collisions detected by server collision system`);
+  }
   
   // Check for enemy spawns
   if (now - gameState.lastEnemySpawnTime > gameState.enemySpawnInterval) {
     gameState.lastEnemySpawnTime = now;
     
-    // Spawn 1-3 new enemies if below threshold
-    if (enemyManager.getActiveEnemyCount() < 50) {
-      const count = Math.floor(Math.random() * 3) + 1;
+    // Spawn only 1 new enemy if below threshold (was 1-3)
+    if (enemyManager.getActiveEnemyCount() < 10) { // Reduced enemy cap from 50 to 10
+      const count = 1; // Fixed to 1 enemy per spawn instead of random 1-3
       
       for (let i = 0; i < count; i++) {
         // Random enemy type (0-4)
@@ -229,7 +259,7 @@ function updateGame() {
         enemyManager.spawnEnemy(type, x, y);
       }
       
-      console.log(`Spawned ${count} new enemies`);
+      console.log(`Spawned ${count} new enemy`);
     }
   }
   
@@ -380,6 +410,11 @@ function handleClientMessage(clientId, message) {
         // Client info already stored at connection, do nothing
         break;
         
+      case MessageType.MAP_REQUEST:
+        // Handle map request by ID
+        handleMapRequest(clientId, data);
+        break;
+        
       default:
         console.warn(`Unknown message type from client ${clientId}: ${type}`);
     }
@@ -400,12 +435,22 @@ function handlePlayerUpdate(clientId, data) {
   // Update player data
   const player = client.player;
   
+  // Store old position for debug logs
+  const oldX = player.x;
+  const oldY = player.y;
+  const oldRotation = player.rotation;
+  
   if (data.x !== undefined) player.x = data.x;
   if (data.y !== undefined) player.y = data.y;
   if (data.rotation !== undefined) player.rotation = data.rotation;
   if (data.health !== undefined) player.health = data.health;
   
   player.lastUpdate = Date.now();
+  
+  // Log player movement if position actually changed
+  if (oldX !== player.x || oldY !== player.y || oldRotation !== player.rotation) {
+    console.log(`Player ${clientId} moved: (${oldX.toFixed(2)}, ${oldY.toFixed(2)}) → (${player.x.toFixed(2)}, ${player.y.toFixed(2)}), rotation: ${player.rotation.toFixed(2)}`);
+  }
 }
 
 /**
@@ -429,6 +474,8 @@ function handleBulletCreate(clientId, data) {
       damage: data.damage || 10,
       lifetime: data.lifetime || 3.0
     });
+    
+    console.log(`Player ${clientId} fired bullet ${bulletId} at angle ${data.angle.toFixed(2)}, position (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
   } catch (error) {
     console.error("Error adding bullet:", error);
     return;
@@ -463,6 +510,8 @@ function handleCollision(clientId, data) {
       timestamp: data.timestamp,
       clientId
     });
+    
+    console.log(`Player ${clientId} reported collision: bullet ${data.bulletId} hit enemy ${data.enemyId}, valid: ${result.valid}`);
   } catch (error) {
     console.error("Error validating collision:", error);
     return;
@@ -470,6 +519,8 @@ function handleCollision(clientId, data) {
   
   // Send result to client
   if (result.valid) {
+    console.log(`Valid collision: bullet ${result.bulletId} hit enemy ${result.enemyId}, enemy health: ${result.enemyHealth}, killed: ${result.enemyKilled}`);
+    
     // Broadcast valid collision to all clients
     broadcast(MessageType.COLLISION_RESULT, {
       valid: true,
@@ -481,6 +532,8 @@ function handleCollision(clientId, data) {
       timestamp: Date.now()
     });
   } else {
+    console.log(`Invalid collision rejected: ${result.reason}`);
+    
     // Send rejection only to the reporting client
     const client = clients.get(clientId);
     if (client) {
@@ -496,6 +549,45 @@ function handleCollision(clientId, data) {
 }
 
 /**
+ * Handle map request by ID
+ * @param {number} clientId - Client ID
+ * @param {Object} data - Request data
+ */
+function handleMapRequest(clientId, data) {
+  const client = clients.get(clientId);
+  if (!client) return;
+  
+  console.log(`Client ${clientId} requesting map: ${data.mapId}`);
+  
+  // Check if the requested map exists
+  if (!data.mapId || !storedMaps.has(data.mapId)) {
+    console.log(`Map ${data.mapId} not found, using default`);
+    // Keep existing map
+    return;
+  }
+  
+  // Update client's map ID
+  client.mapId = data.mapId;
+  console.log(`Updated client ${clientId} to use map ${data.mapId}`);
+  
+  // Send map info to client
+  const mapMetadata = mapManager.getMapMetadata(data.mapId);
+  if (!mapMetadata) {
+    console.error(`Failed to get metadata for map ${data.mapId}`);
+    return;
+  }
+  
+  sendToClient(client.socket, MessageType.MAP_INFO, {
+    mapId: data.mapId,
+    width: mapMetadata.width,
+    height: mapMetadata.height,
+    tileSize: mapMetadata.tileSize,
+    chunkSize: mapMetadata.chunkSize,
+    timestamp: Date.now()
+  });
+}
+
+/**
  * Handle map chunk request
  * @param {number} clientId - Client ID
  * @param {Object} data - Request data
@@ -505,9 +597,11 @@ function handleChunkRequest(clientId, data) {
   if (!client) return;
   
   try {
+    console.log(`Client ${clientId} requesting chunk (${data.chunkX}, ${data.chunkY}) for map ${client.mapId}`);
     const chunk = mapManager.getChunkData(client.mapId, data.chunkX, data.chunkY);
     
     if (!chunk) {
+      console.log(`Chunk (${data.chunkX}, ${data.chunkY}) not found for map ${client.mapId}`);
       sendToClient(client.socket, MessageType.CHUNK_NOT_FOUND, {
         chunkX: data.chunkX,
         chunkY: data.chunkY
@@ -515,6 +609,7 @@ function handleChunkRequest(clientId, data) {
       return;
     }
     
+    console.log(`Sending chunk (${data.chunkX}, ${data.chunkY}) for map ${client.mapId}`);
     sendToClient(client.socket, MessageType.CHUNK_DATA, {
       chunkX: data.chunkX,
       chunkY: data.chunkY,

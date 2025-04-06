@@ -10,22 +10,173 @@ export class SpriteManager {
 
   /**
    * Loads a sprite sheet from a configuration object.
-   * The config must include: name, path, defaultSpriteWidth, defaultSpriteHeight, spritesPerRow, spritesPerColumn.
-   * Optionally, config.sprites can be provided.
+   * The config must include: name, path, and optionally defaultSpriteWidth and defaultSpriteHeight.
+   * If width/height are not specified, auto-detection will be used.
    */
   async loadSpriteSheet(config) {
-    const image = await this._loadImage(config.path);
-    this.spriteSheets[config.name] = { image, config };
+    // Create a default config with sensible defaults
+    const defaultConfig = {
+      defaultSpriteWidth: 8,
+      defaultSpriteHeight: 8,
+      autoDetect: true
+    };
 
-    // Auto-extract if no sprites provided.
-    if (!config.sprites || config.sprites.length === 0) {
-      config.sprites = this.autoExtractSprites(image, config);
+    // Merge provided config with defaults
+    const mergedConfig = { ...defaultConfig, ...config };
+    
+    try {
+      // Load the image
+      const image = await this._loadImage(mergedConfig.path);
+      this.spriteSheets[mergedConfig.name] = { image, config: mergedConfig };
+      
+      // Extract sprites automatically
+      if (mergedConfig.autoDetect) {
+        mergedConfig.sprites = await this.autoDetectSprites(image, mergedConfig);
+      } 
+      // Fall back to grid-based extraction if sprites not provided and autoDetect is false
+      else if (!mergedConfig.sprites || mergedConfig.sprites.length === 0) {
+        if (!mergedConfig.spritesPerRow || !mergedConfig.spritesPerColumn) {
+          // If grid dimensions not specified, estimate them based on image size
+          mergedConfig.spritesPerRow = Math.floor(image.width / mergedConfig.defaultSpriteWidth);
+          mergedConfig.spritesPerColumn = Math.floor(image.height / mergedConfig.defaultSpriteHeight);
+        }
+        mergedConfig.sprites = this.autoExtractSprites(image, mergedConfig);
+      }
+      
+      // Define sprites in our manager
+      this.defineSprites(mergedConfig.name, mergedConfig);
+      console.log(`Loaded sprite sheet "${mergedConfig.name}" with ${mergedConfig.sprites.length} sprites`);
+      
+      return this.spriteSheets[mergedConfig.name];
+    } catch (error) {
+      console.error(`Failed to load sprite sheet "${mergedConfig.name}":`, error);
+      throw error;
     }
-
-    this.defineSprites(config.name, config);
-    return this.spriteSheets[config.name];
   }
 
+  /**
+   * Auto-detect sprites by scanning the image for non-transparent regions.
+   * This uses an HTML canvas to analyze the image data.
+   */
+  async autoDetectSprites(image, config) {
+    return new Promise((resolve) => {
+      // Create a canvas to analyze the image
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, 0, 0);
+      
+      // Get the image data for analysis
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      
+      // Step 1: Create an alpha map (true for non-transparent pixels)
+      const alphaMap = [];
+      for (let y = 0; y < canvas.height; y++) {
+        alphaMap[y] = [];
+        for (let x = 0; x < canvas.width; x++) {
+          const pixelIndex = (y * canvas.width + x) * 4;
+          // A pixel is non-transparent if its alpha value is greater than 0
+          alphaMap[y][x] = data[pixelIndex + 3] > 0;
+        }
+      }
+      
+      // Step 2: Use a modified flood-fill algorithm to find contiguous sprite regions
+      const visited = Array(canvas.height).fill().map(() => Array(canvas.width).fill(false));
+      const sprites = [];
+      let id = 0;
+      
+      // Helper function for flood fill
+      const floodFill = (startX, startY) => {
+        if (!alphaMap[startY][startX] || visited[startY][startX]) return null;
+        
+        // Use a queue-based flood fill
+        const queue = [{x: startX, y: startY}];
+        visited[startY][startX] = true;
+        
+        // Track bounds of the contiguous region
+        let minX = startX, maxX = startX, minY = startY, maxY = startY;
+        
+        while (queue.length > 0) {
+          const {x, y} = queue.shift();
+          
+          // Check all 4 adjacent pixels
+          const neighbors = [
+            {x: x+1, y: y}, {x: x-1, y: y}, 
+            {x: x, y: y+1}, {x: x, y: y-1}
+          ];
+          
+          for (const neighbor of neighbors) {
+            const nx = neighbor.x;
+            const ny = neighbor.y;
+            
+            // Skip out-of-bounds pixels
+            if (nx < 0 || nx >= canvas.width || ny < 0 || ny >= canvas.height) continue;
+            
+            // Skip transparent or already visited pixels
+            if (!alphaMap[ny][nx] || visited[ny][nx]) continue;
+            
+            // Mark as visited and add to queue
+            visited[ny][nx] = true;
+            queue.push({x: nx, y: ny});
+            
+            // Update bounding box
+            minX = Math.min(minX, nx);
+            maxX = Math.max(maxX, nx);
+            minY = Math.min(minY, ny);
+            maxY = Math.max(maxY, ny);
+          }
+        }
+        
+        // Return the sprite definition
+        return {
+          id,
+          name: `sprite_${id}`,
+          x: minX,
+          y: minY,
+          width: maxX - minX + 1,
+          height: maxY - minY + 1
+        };
+      };
+      
+      // Scan the image and find sprites
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          const sprite = floodFill(x, y);
+          if (sprite) {
+            sprites.push(sprite);
+            id++;
+          }
+        }
+      }
+      
+      // Filter out sprites that are too small (likely noise)
+      const minSize = 3; // Minimum dimension in pixels
+      const filteredSprites = sprites.filter(sprite => 
+        sprite.width >= minSize && sprite.height >= minSize);
+      
+      resolve(filteredSprites.length > 0 ? filteredSprites : this.fallbackToGridExtraction(image, config));
+    });
+  }
+  
+  /**
+   * Fall back to grid-based extraction if auto-detection finds no sprites.
+   */
+  fallbackToGridExtraction(image, config) {
+    console.warn(`Auto-detection found no sprites for "${config.name}", falling back to grid extraction`);
+    // Determine grid dimensions if not provided
+    if (!config.spritesPerRow || !config.spritesPerColumn) {
+      config.spritesPerRow = Math.floor(image.width / config.defaultSpriteWidth);
+      config.spritesPerColumn = Math.floor(image.height / config.defaultSpriteHeight);
+    }
+    return this.autoExtractSprites(image, config);
+  }
+
+  /**
+   * Extract sprites in a grid pattern based on the provided config.
+   */
   autoExtractSprites(image, config) {
     const sprites = [];
     const { defaultSpriteWidth, defaultSpriteHeight, spritesPerRow, spritesPerColumn } = config;
@@ -87,22 +238,24 @@ export class SpriteManager {
     });
 
     // Process groups if provided
-    Object.keys(spriteData.groups || {}).forEach(groupName => {
-      if (!this.groups[groupName]) {
-        this.groups[groupName] = [];
-      }
-      spriteData.groups[groupName].forEach(idOrName => {
-        const found = spriteData.sprites.find(
-          spr => spr.id === idOrName || spr.name === idOrName
-        );
-        if (found) {
-          const key = `${sheetName}_${found.name || `sprite_${found.id}`}`;
-          if (!this.groups[groupName].includes(key)) {
-            this.groups[groupName].push(key);
-          }
+    if (spriteData.groups) {
+      Object.keys(spriteData.groups).forEach(groupName => {
+        if (!this.groups[groupName]) {
+          this.groups[groupName] = [];
         }
+        spriteData.groups[groupName].forEach(idOrName => {
+          const found = spriteData.sprites.find(
+            spr => spr.id === idOrName || spr.name === idOrName
+          );
+          if (found) {
+            const key = `${sheetName}_${found.name || `sprite_${found.id}`}`;
+            if (!this.groups[groupName].includes(key)) {
+              this.groups[groupName].push(key);
+            }
+          }
+        });
       });
-    });
+    }
   }
 
   /**
@@ -149,6 +302,54 @@ export class SpriteManager {
     if (!spr) return null;
     const sheet = this.getSpriteSheet(spr.sheetName);
     return sheet ? sheet.image : null;
+  }
+  
+  /**
+   * Creates sprite animation groups based on provided criteria.
+   * @param {string} sheetName - Name of the sprite sheet
+   * @param {string} groupName - Name for the new group
+   * @param {Object} options - Grouping options
+   */
+  createSpriteGroup(sheetName, groupName, options = {}) {
+    const sheet = this.getSpriteSheet(sheetName);
+    if (!sheet) {
+      console.warn(`Cannot create group: Sheet "${sheetName}" not found`);
+      return;
+    }
+    
+    // Filter sprites based on options
+    const matchingSprites = sheet.config.sprites.filter(sprite => {
+      let match = true;
+      
+      // Match by size
+      if (options.width && sprite.width !== options.width) match = false;
+      if (options.height && sprite.height !== options.height) match = false;
+      
+      // Match by position
+      if (options.row !== undefined) {
+        const spriteRow = Math.floor(sprite.y / sheet.config.defaultSpriteHeight);
+        if (spriteRow !== options.row) match = false;
+      }
+      
+      if (options.column !== undefined) {
+        const spriteCol = Math.floor(sprite.x / sheet.config.defaultSpriteWidth);
+        if (spriteCol !== options.column) match = false;
+      }
+      
+      // Custom matcher function
+      if (options.matcher && typeof options.matcher === 'function') {
+        if (!options.matcher(sprite)) match = false;
+      }
+      
+      return match;
+    });
+    
+    // Create or update the group
+    this.groups[groupName] = matchingSprites.map(sprite => 
+      `${sheetName}_${sprite.name || `sprite_${sprite.id}`}`
+    );
+    
+    return this.groups[groupName];
   }
 }
 

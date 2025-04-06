@@ -2,6 +2,7 @@
 
 import { Tile } from './tile.js';
 import { TILE_IDS, CHUNK_SIZE } from '../constants/constants.js';
+import { gameState } from '../game/gamestate.js';
 
 /**
  * ClientMapManager - Handles loading, caching, and rendering map data from server
@@ -25,6 +26,10 @@ export class ClientMapManager {
         this.pendingChunks = new Set(); // Chunks we're currently requesting
         this.maxCachedChunks = 100; // Maximum chunks to keep in memory
         this.chunkLoadDistance = 2; // How many chunks to load around player
+        
+        // CRITICAL: Default to false to use server's map data
+        this.proceduralEnabled = false;
+        
         this.fallbackTileTypes = {
             [TILE_IDS.FLOOR]: 'floor',
             [TILE_IDS.WALL]: 'wall',
@@ -38,6 +43,8 @@ export class ClientMapManager {
         
         // Event listeners
         this.eventListeners = {};
+        
+        console.log("ClientMapManager initialized, procedural generation disabled");
     }
     
     /**
@@ -53,11 +60,20 @@ export class ClientMapManager {
         this.height = data.height || 0;
         
         console.log(`Map initialized: ${this.activeMapId} (${this.width}x${this.height})`);
+        console.log(`Map properties: tileSize=${this.tileSize}, chunkSize=${this.chunkSize}`);
         
         // Clear existing chunks
         this.chunks.clear();
         this.chunkLastAccessed.clear();
         this.pendingChunks.clear();
+        
+        // CRITICAL: Always disable procedural generation
+        this.proceduralEnabled = false;
+        
+        // Immediately request chunks around player position
+        if (gameState && gameState.character) {
+            this.updateVisibleChunks(gameState.character.x, gameState.character.y);
+        }
         
         // Dispatch event
         this.dispatchEvent('mapinitialized', { mapId: this.activeMapId });
@@ -81,6 +97,8 @@ export class ClientMapManager {
         
         // Remove from pending
         this.pendingChunks.delete(key);
+        
+        console.log(`Stored chunk (${chunkX}, ${chunkY}) with ${processedChunk.length} rows`);
         
         // Trim cache if needed
         this.trimChunkCache();
@@ -148,11 +166,14 @@ export class ClientMapManager {
      * @param {number} playerY - Player Y position in world coordinates
      */
     updateVisibleChunks(playerX, playerY) {
-        if (!this.networkManager) return;
+        if (!this.networkManager) {
+            console.warn("Cannot update visible chunks: network manager not available");
+            return;
+        }
         
-        // Convert player position to chunk coordinates
-        const centerChunkX = Math.floor(playerX / this.tileSize / this.chunkSize);
-        const centerChunkY = Math.floor(playerY / this.tileSize / this.chunkSize);
+        // Convert player position to chunk coordinates (integers)
+        const centerChunkX = Math.floor(playerX / (this.tileSize * this.chunkSize));
+        const centerChunkY = Math.floor(playerY / (this.tileSize * this.chunkSize));
         
         // Get chunks in view distance
         const newVisibleChunks = [];
@@ -163,14 +184,13 @@ export class ClientMapManager {
                 const chunkY = centerChunkY + dy;
                 
                 // Skip if out of map bounds
-                if (this.mapMetadata) {
+                if (this.mapMetadata && this.width > 0 && this.height > 0) {
                     const chunkStartX = chunkX * this.chunkSize;
                     const chunkStartY = chunkY * this.chunkSize;
                     
-                    if (this.width > 0 && this.height > 0 && 
-                        (chunkStartX < 0 || chunkStartY < 0 || 
+                    if (chunkStartX < 0 || chunkStartY < 0 || 
                         chunkStartX >= this.width || 
-                        chunkStartY >= this.height)) {
+                        chunkStartY >= this.height) {
                         continue;
                     }
                 }
@@ -183,9 +203,15 @@ export class ClientMapManager {
                     this.chunkLastAccessed.set(key, Date.now());
                 }
                 // Request chunk if not already loaded or pending
-                else if (!this.pendingChunks.has(key) && this.networkManager) {
+                else if (!this.pendingChunks.has(key)) {
                     this.pendingChunks.add(key);
-                    this.networkManager.requestChunk(chunkX, chunkY);
+                    try {
+                        this.networkManager.requestChunk(chunkX, chunkY);
+                        console.log(`Requested chunk (${chunkX}, ${chunkY})`);
+                    } catch (error) {
+                        console.error(`Error requesting chunk (${chunkX}, ${chunkY}):`, error);
+                        this.pendingChunks.delete(key);
+                    }
                 }
             }
         }
@@ -236,7 +262,13 @@ export class ClientMapManager {
         // Request chunk if not already pending
         if (this.networkManager && !this.pendingChunks.has(key)) {
             this.pendingChunks.add(key);
-            this.networkManager.requestChunk(chunkX, chunkY);
+            try {
+                this.networkManager.requestChunk(chunkX, chunkY);
+                console.log(`Requested chunk (${chunkX}, ${chunkY}) on-demand`);
+            } catch (error) {
+                console.error(`Error requesting chunk (${chunkX}, ${chunkY}):`, error);
+                this.pendingChunks.delete(key);
+            }
         }
         
         return null;
@@ -263,6 +295,12 @@ export class ClientMapManager {
         // Calculate local coordinates within the chunk
         const localX = ((x % this.chunkSize) + this.chunkSize) % this.chunkSize;
         const localY = ((y % this.chunkSize) + this.chunkSize) % this.chunkSize;
+        
+        // Make sure we're within the bounds of the chunk data
+        if (chunk.length <= localY || !chunk[localY] || chunk[localY].length <= localX) {
+            console.warn(`Invalid local coordinates (${localX}, ${localY}) for chunk (${chunkX}, ${chunkY})`);
+            return this.generateFallbackTile(x, y);
+        }
         
         // Return tile if it exists
         if (chunk[localY] && chunk[localY][localX]) {
@@ -315,10 +353,11 @@ export class ClientMapManager {
             return false;
         }
         
-        // Check if wall, obstacle, or mountain
+        // Check if wall, obstacle, mountain, or water
         return tile.type === TILE_IDS.WALL || 
                tile.type === TILE_IDS.OBSTACLE || 
-               tile.type === TILE_IDS.MOUNTAIN;
+               tile.type === TILE_IDS.MOUNTAIN ||
+               tile.type === TILE_IDS.WATER;
     }
     
     /**
@@ -328,7 +367,13 @@ export class ClientMapManager {
      * @returns {Tile} Fallback tile
      */
     generateFallbackTile(x, y) {
-        // Simple checkerboard pattern for fallback tiles
+        // Use a simple pattern for fallback tiles
+        // Make map edges walls, interior floor
+        if (x < 0 || y < 0 || (this.width > 0 && x >= this.width) || (this.height > 0 && y >= this.height)) {
+            return new Tile(TILE_IDS.WALL, 0);
+        }
+        
+        // Checkerboard pattern
         const isEven = (x + y) % 2 === 0;
         const tileType = isEven ? TILE_IDS.FLOOR : TILE_IDS.FLOOR;
         

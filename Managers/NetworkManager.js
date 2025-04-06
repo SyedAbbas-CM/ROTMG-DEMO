@@ -92,7 +92,9 @@ class BinaryPacket {
     // Map messages
     MAP_INFO: 50,
     CHUNK_REQUEST: 51,
-    CHUNK_DATA: 52
+    CHUNK_DATA: 52,
+    CHUNK_NOT_FOUND: 53,
+    MAP_REQUEST: 70
   };
   
   /**

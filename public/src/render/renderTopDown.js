@@ -1,10 +1,9 @@
 // src/render/renderTopDown.js
 
 import { gameState } from '../game/gamestate.js';
-import { map } from '../map/map.js';
 import { TILE_SIZE, TILE_SPRITES } from '../constants/constants.js';
 import { spriteManager } from '../assets/spriteManager.js';
-import { renderCharacter, renderEnemies } from './render.js';
+import { renderCharacter, renderEnemies, renderBullets } from './render.js';
 
 // Get 2D Canvas Context
 const canvas2D = document.getElementById('gameCanvas');
@@ -19,6 +18,12 @@ const scaleFactor = 4; // Adjust scale as needed
 
 export function renderTopDownView() {
   const camera = gameState.camera;
+  const mapManager = gameState.map;
+
+  if (!mapManager) {
+    console.warn("Cannot render map: map manager not available");
+    return;
+  }
 
   // Clear the canvas
   ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
@@ -32,14 +37,15 @@ export function renderTopDownView() {
   const endX = startX + tilesInViewX;
   const endY = startY + tilesInViewY;
   const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites"); // Name as defined in your config
-if (!tileSheetObj) return;
+  if (!tileSheetObj) return;
   const tileSpriteSheet = tileSheetObj.image;
 
-
+  console.log(`Rendering map from camera position (${Math.floor(camera.position.x)}, ${Math.floor(camera.position.y)})`);
 
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
-      const tile = map.getTile(x, y);
+      const tile = mapManager.getTile ? mapManager.getTile(x, y) : null;
+      
       if (tile) {
         const spritePos = TILE_SPRITES[tile.type];
         // Draw tile
@@ -60,4 +66,7 @@ if (!tileSheetObj) return;
 
   // Draw enemies
   renderEnemies();
+  
+  // Draw bullets
+  renderBullets();
 }

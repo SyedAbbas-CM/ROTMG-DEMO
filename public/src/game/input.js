@@ -4,6 +4,7 @@ import { gameState } from './gamestate.js';
 import { openSpriteEditor } from '../screens/spriteEditor.js';
 import { handleShoot } from './game.js';
 import { TILE_SIZE, SCALE } from '../constants/constants.js';
+import { Camera } from '../camera.js';
 
 // Track currently pressed keys
 export const keysPressed = {};
@@ -40,6 +41,20 @@ export function initControls() {
             e.preventDefault();
             openSpriteEditor();
         }
+        
+        // Add spacebar to also trigger shooting
+        if (e.code === 'Space') {
+            // Shoot in the direction the player is facing
+            const rotation = typeof gameState.character.rotation === 'object' ?
+                   gameState.character.rotation.yaw || 0 :
+                   gameState.character.rotation;
+                   
+            const distance = 100; // Distance ahead of the player to aim
+            const targetX = gameState.character.x + Math.cos(rotation) * distance;
+            const targetY = gameState.character.y + Math.sin(rotation) * distance;
+            
+            handleShoot(targetX, targetY);
+        }
     });
 
     window.addEventListener('keyup', (e) => {
@@ -64,10 +79,11 @@ export function initControls() {
         mouseX = e.clientX;
         mouseY = e.clientY;
         
-        // If in top-down view, rotate player to face mouse
-        if (gameState.camera.viewType !== 'first-person') {
-            updatePlayerRotation(e);
+        // Only update rotation when in first-person view
+        if (gameState.camera.viewType === 'first-person') {
+            // This will be handled by the onMouseMove function
         }
+        // Removed automatic rotation for top-down view
     });
 
     // Handle pointer lock for first-person mode
@@ -79,6 +95,74 @@ export function initControls() {
             document.removeEventListener('mousemove', onMouseMove, false);
         }
     });
+
+    // Add mouse click event for shooting
+    window.addEventListener('click', (e) => {
+        // Only handle clicks on canvas
+        const targetId = e.target.id;
+        if (targetId !== 'gameCanvas' && targetId !== 'glCanvas') {
+            return;
+        }
+        
+        console.log("Mouse click detected");
+        
+        // Get click position in game world
+        const rect = e.target.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        
+        // Convert to world coordinates based on view type
+        let worldX, worldY;
+        
+        if (gameState.camera.viewType === 'first-person') {
+            // In first-person view, shoot forward
+            const cameraDir = gameState.camera.getDirection();
+            worldX = gameState.character.x + cameraDir.x * 100;
+            worldY = gameState.character.y + cameraDir.y * 100;
+        } else {
+            // In other views, convert screen coordinates to world coordinates
+            worldX = clickX + gameState.camera.x;
+            worldY = clickY + gameState.camera.y;
+        }
+        
+        // Handle shooting
+        handleShoot(worldX, worldY);
+    });
+
+    // Add touch event listener for trackpad support
+    window.addEventListener('touchstart', (e) => {
+        // Prevent default to avoid scrolling
+        e.preventDefault();
+        
+        // Get touch position
+        const touch = e.touches[0];
+        const targetId = e.target.id;
+        if (targetId !== 'gameCanvas' && targetId !== 'glCanvas') {
+            return;
+        }
+        
+        // Get click position in game world
+        const rect = e.target.getBoundingClientRect();
+        const touchX = touch.clientX - rect.left;
+        const touchY = touch.clientY - rect.top;
+        
+        // Convert to world coordinates 
+        let worldX, worldY;
+        
+        if (gameState.camera.viewType === 'first-person') {
+            // In first-person, shoot forward
+            const cameraDir = gameState.camera.getDirection();
+            worldX = gameState.character.x + cameraDir.x * 100;
+            worldY = gameState.character.y + cameraDir.y * 100;
+        } else {
+            // In other views, convert screen coordinates to world coordinates
+            worldX = touchX + gameState.camera.x;
+            worldY = touchY + gameState.camera.y;
+        }
+        
+        // Handle shooting
+        handleShoot(worldX, worldY);
+    }, { passive: false });
 }
 
 /**
@@ -156,7 +240,7 @@ function handleMouseClick(event) {
 function switchView() {
     switch (gameState.camera.viewType) {
         case 'top-down':
-            gameState.camera.viewType = 'first-person';
+            gameState.camera.viewType = 'strategic';
             break;
         case 'first-person':
             gameState.camera.viewType = 'strategic';
