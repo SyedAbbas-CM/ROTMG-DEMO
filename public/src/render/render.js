@@ -15,15 +15,54 @@ const scaleFactor = SCALE;
  * Render the character
  */
 export function renderCharacter() {
+  console.log("renderCharacter called");
+  
   const character = gameState.character;
   if (!character) {
     console.error("Cannot render character: character not defined in gameState");
     return;
   }
 
+  console.log(`Character at position: (${character.x.toFixed(1)}, ${character.y.toFixed(1)})`);
+
   const charSheetObj = spriteManager.getSpriteSheet('character_sprites');
   if (!charSheetObj) {
-    console.warn("Character sprite sheet not loaded");
+    console.warn("Character sprite sheet not loaded - attempting fallback rendering");
+    // Fallback rendering with a simple shape
+    const width = character.width * scaleFactor;
+    const height = character.height * scaleFactor;
+    const x = canvas2D.width / 2 - width / 2;
+    const y = canvas2D.height / 2 - height / 2;
+    
+    // Draw a visible character with a bright color
+    ctx.save();
+    ctx.translate(x + width/2, y + height/2);
+    
+    // Apply rotation if character has it
+    if (typeof character.rotation === 'object' && character.rotation.yaw !== undefined) {
+      ctx.rotate(character.rotation.yaw);
+    } else if (typeof character.rotation === 'number') {
+      ctx.rotate(character.rotation);
+    }
+    
+    // Draw a brightly colored rectangle for visibility
+    ctx.fillStyle = 'lime';
+    ctx.fillRect(-width/2, -height/2, width, height);
+    
+    // Add border for better visibility
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-width/2, -height/2, width, height);
+    
+    // Add direction indicator
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -height);
+    ctx.strokeStyle = 'yellow';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    ctx.restore();
     return;
   }
   
@@ -48,12 +87,20 @@ export function renderCharacter() {
     ctx.rotate(character.rotation);
   }
   
+  // Log sprite details
+  console.log(`Drawing character sprite from (${character.spriteX}, ${character.spriteY}) at screen pos (${x}, ${y})`);
+  
   // Draw character image
   ctx.drawImage(
     characterSpriteSheet,
     character.spriteX, character.spriteY, TILE_SIZE, TILE_SIZE, // Source rectangle
     -width/2, -height/2, width, height // Destination rectangle (centered)
   );
+  
+  // Add outline for better visibility
+  ctx.strokeStyle = 'yellow';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-width/2, -height/2, width, height);
   
   // Restore transform
   ctx.restore();
@@ -167,8 +214,10 @@ export function renderBullets() {
   const screenCenterX = ctx.canvas.width / 2;
   const screenCenterY = ctx.canvas.height / 2;
   
-  // Add debug output to verify bullet count
-  console.log(`Rendering ${gameState.bulletManager.bulletCount || 0} bullets`);
+  // Minimal logging only when needed
+  if (Math.random() < 0.01) { // Just 1% of frames
+    console.log(`[renderBullets] Bullets count: ${gameState.bulletManager.bulletCount || 0}`);
+  }
   
   // Call the bullet manager's render method with camera position
   if (typeof gameState.bulletManager.render === 'function') {
@@ -185,11 +234,18 @@ export function renderBullets() {
     
     // Draw each bullet
     bullets.forEach(bullet => {
-      // Calculate screen coordinates
+      // Calculate screen coordinates - ensure correct coordinate scaling with TILE_SIZE
       const screenX = (bullet.x - gameState.camera.position.x) * TILE_SIZE + screenCenterX;
       const screenY = (bullet.y - gameState.camera.position.y) * TILE_SIZE + screenCenterY;
       
-      // Check if we have sprite information for this bullet
+      // Verify bullet is on screen before drawing to avoid rendering off-screen
+      const bulletHalfSize = (bullet.width || 8) / 2;
+      if (screenX + bulletHalfSize < 0 || screenX - bulletHalfSize > canvas2D.width || 
+          screenY + bulletHalfSize < 0 || screenY - bulletHalfSize > canvas2D.height) {
+        return; // Skip rendering off-screen bullets
+      }
+      
+      // Draw bullet
       if (spriteManager && bullet.spriteSheet) {
         // Render with sprite
         spriteManager.drawSprite(
@@ -203,11 +259,16 @@ export function renderBullets() {
           bullet.height || 8
         );
       } else {
-        // Fallback to simple circle
-        ctx.fillStyle = bullet.isLocal ? 'yellow' : 'red';
+        // Fallback to simple but visible bullet
+        ctx.fillStyle = bullet.ownerId === gameState.playerManager?.localPlayerId ? 'yellow' : 'red';
         ctx.beginPath();
         ctx.arc(screenX, screenY, (bullet.width || 8) / 2, 0, Math.PI * 2);
         ctx.fill();
+        
+        // Add highlight outline for better visibility
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1;
+        ctx.stroke();
       }
     });
   }
@@ -217,26 +278,42 @@ export function renderBullets() {
  * Complete render function for game state
  */
 export function renderGame() {
+  // Debug log to see if this function is being called
+  console.log(`renderGame called - view type: ${gameState.camera?.viewType}`);
+  
   // Make sure canvas is properly sized
   if (canvas2D.width !== window.innerWidth || canvas2D.height !== window.innerHeight) {
     canvas2D.width = window.innerWidth;
     canvas2D.height = window.innerHeight;
   }
   
-  // Clear the canvas
+  // Clear the canvas - first with clearRect
   ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
   
+  // Then fill with a dark background color to ensure old pixels are gone
+  ctx.fillStyle = 'rgba(0, 0, 0, 1)';  // Solid black background
+  ctx.fillRect(0, 0, canvas2D.width, canvas2D.height);
+  
   // Draw level (different based on view type)
+  // Note: We don't import these functions directly to avoid circular references
+  // Instead, we get them from the global scope
   const viewType = gameState.camera.viewType;
-  if (viewType === 'top-down') {
-    renderTopDownView();
-  } else if (viewType === 'strategic') {
-    renderStrategicView();
+  try {
+    if (viewType === 'top-down' && typeof window.renderTopDownView === 'function') {
+      window.renderTopDownView();
+    } else if (viewType === 'strategic' && typeof window.renderStrategicView === 'function') {
+      window.renderStrategicView();
+    } else {
+      console.error(`Cannot render view type ${viewType}: render function not available`);
+    }
+  } catch (error) {
+    console.error("Error rendering game view:", error);
   }
   
   // Draw entities
   renderBullets();
   renderEnemies();
+  renderPlayers();
   renderCharacter();
   
   // Draw UI elements
@@ -282,5 +359,34 @@ function renderUI() {
     ctx.fillStyle = gameState.networkManager.isConnected() ? 'green' : 'red';
     ctx.font = '12px Arial';
     ctx.fillText(`Server: ${status}`, canvas2D.width - 120, 20);
+    
+    // Add player counter to UI
+    const playerCount = gameState.playerManager?.players.size || 0;
+    const totalPlayers = playerCount + 1; // Add 1 for local player
+    ctx.fillStyle = 'white';
+    ctx.fillText(`Players: ${totalPlayers} (${playerCount} others)`, canvas2D.width - 120, 40);
+  }
+}
+
+/**
+ * Render all players (except the local player)
+ */
+export function renderPlayers() {
+  // Skip if no player manager
+  if (!gameState.playerManager) {
+    console.error("Cannot render players: playerManager not available in gameState");
+    return;
+  }
+  
+  // Log minimally, only when really needed
+  if (Math.random() < 0.01) { // Just 1% of frames
+    console.log(`[renderPlayers] Rendering ${gameState.playerManager.players.size} players. Local ID: ${gameState.playerManager.localPlayerId}`);
+  }
+  
+  try {
+    // Delegate rendering to the player manager's render method
+    gameState.playerManager.render(ctx, gameState.camera.position);
+  } catch (error) {
+    console.error("Error rendering players:", error);
   }
 }

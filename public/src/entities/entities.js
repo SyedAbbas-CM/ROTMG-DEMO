@@ -14,12 +14,32 @@ const bullets = [];
  * @param {Object} playerData - Player data from server
  */
 export function updatePlayers(playerData) {
-    if (!playerData) return;
-    
-    // Log player data occasionally for debugging
-    if (Object.keys(playerData).length > 0 && Math.random() < 0.05) {
-        console.log(`Updating ${Object.keys(playerData).length} players:`, Object.keys(playerData));
+    if (!playerData) {
+        console.warn("updatePlayers called with no playerData");
+        return;
     }
+    
+    // Log raw data received
+    console.log(`[updatePlayers] Raw data received: ${JSON.stringify(playerData)}`);
+    console.log(`[updatePlayers] Player IDs in data: ${Object.keys(playerData).join(', ')}`);
+    console.log(`[updatePlayers] Local player ID: ${playerManager.localPlayerId}, Character ID: ${gameState.character?.id}`);
+    
+    // CRITICAL FIX: Filter out the metadata properties that aren't players
+    // Skip properties like 'timestamp' and 'players' which aren't player objects
+    const actualPlayerData = {};
+    for (const [id, data] of Object.entries(playerData)) {
+        // Verify this is actually a player object with coordinates, not metadata
+        if (data && typeof data === 'object' && data.x !== undefined && data.y !== undefined) {
+            actualPlayerData[id] = data;
+        } else {
+            console.log(`Skipping non-player property: ${id}`);
+        }
+    }
+    
+    // Print the filtered player data
+    const playerCount = Object.keys(actualPlayerData).length;
+    console.log(`[updatePlayers] Processing ${playerCount} players after filtering metadata properties`);
+    console.log(`[updatePlayers] Player IDs after filtering: ${Object.keys(actualPlayerData).join(', ')}`);
     
     // Set local player ID for playerManager if not already set
     if (!playerManager.localPlayerId && gameState.character && gameState.character.id) {
@@ -27,51 +47,106 @@ export function updatePlayers(playerData) {
         console.log(`Set local player ID to ${gameState.character.id} in playerManager`);
     }
     
+    // Debug output of our current known local player ID
+    if (Math.random() < 0.05) {
+        console.log(`Current local player ID: ${playerManager.localPlayerId || 'not set'}, character ID: ${gameState.character?.id || 'not set'}`);
+    }
+    
+    // IMPORTANT: Make sure playerManager is registered with gameState
+    if (gameState && !gameState.playerManager) {
+        gameState.playerManager = playerManager;
+        console.log("Registered playerManager with gameState");
+    }
+    
     // Clear old players that aren't in the update
+    const removedPlayers = [];
     for (let id of playerManager.players.keys()) {
-        if (!playerData[id] && id !== gameState.character?.id) {
+        if (!actualPlayerData[id] && id !== gameState.character?.id && id !== playerManager.localPlayerId) {
             console.log(`Removing player ${id} - no longer in updates`);
             playerManager.players.delete(id);
+            removedPlayers.push(id);
         }
     }
     
+    // Track new and updated players
+    const newPlayers = [];
+    const updatedPlayers = [];
+    
     // Update or add new players
-    for (let [id, data] of Object.entries(playerData)) {
+    for (let [id, data] of Object.entries(actualPlayerData)) {
         // Skip local player since it's handled separately
         if (id === gameState.character?.id || id === playerManager.localPlayerId) {
+            if (Math.random() < 0.05) {
+                console.log(`Skipping local player update for ID: ${id}`);
+            }
+            continue;
+        }
+        
+        // Verify the player data has required properties - should be redundant now with filtering
+        if (!data || typeof data !== 'object' || data.x === undefined || data.y === undefined) {
+            console.warn(`Invalid player data for ID ${id}:`, data);
             continue;
         }
         
         if (!playerManager.players.has(id)) {
             // Log when adding a new player
             console.log(`Adding new player: ${id} at position (${data.x}, ${data.y})`);
+            newPlayers.push(id);
             
             // Enhance player data with rendering info if missing
             const enhancedData = {
+                id: id, // IMPORTANT: Make sure ID is set
                 ...data,
-                // Default values if missing from server data
-                width: data.width || 24,
-                height: data.height || 24,
+                // Use same dimensions as local player (10x10)
+                width: data.width || 10,
+                height: data.height || 10,
+                // Use TILE_SIZE (usually 8) for sprite dimensions
                 spriteX: data.spriteX !== undefined ? data.spriteX : 0,
                 spriteY: data.spriteY !== undefined ? data.spriteY : 0,
+                // Cosmetic properties
                 health: data.health || 100,
                 maxHealth: data.maxHealth || 100,
+                // Store the current position as both current and target for interpolation
+                _prevX: data.x,
+                _prevY: data.y, 
+                _targetX: data.x,
+                _targetY: data.y,
+                // Timestamps for interpolation
+                lastPositionUpdate: Date.now(),
                 lastUpdate: Date.now()
             };
             
-            // Create a proper Player instance
-            playerManager.players.set(id, new Player(enhancedData));
+            // Create a proper data object
+            playerManager.players.set(id, enhancedData);
         } else {
             // Update existing player with new data
+            updatedPlayers.push(id);
             const player = playerManager.players.get(id);
+            
+            // Save previous position for interpolation
+            player._prevX = player.x;
+            player._prevY = player.y;
+            
+            // Update position directly for now
             Object.assign(player, data);
+            
+            // Store new position as target position
+            player._targetX = data.x;
+            player._targetY = data.y;
+            
+            // Update timestamps
+            player.lastPositionUpdate = Date.now();
             player.lastUpdate = Date.now();
+            
+            // Make sure ID is properly set
+            player.id = id;
         }
     }
     
-    // Ensure playerManager is registered with gameState
-    if (gameState && !gameState.playerManager) {
-        gameState.playerManager = playerManager;
+    // Summary log with useful details
+    if (newPlayers.length > 0 || updatedPlayers.length > 0 || removedPlayers.length > 0) {
+        console.log(`Player update complete: ${newPlayers.length} new, ${updatedPlayers.length} updated, ${removedPlayers.length} removed`);
+        console.log(`Current players in manager: ${playerManager.players.size}`);
     }
 }
 
@@ -235,6 +310,30 @@ export function initializePlayers(localPlayerId) {
     if (playerManager) {
         playerManager.setLocalPlayerId(localPlayerId);
         console.log(`Initialized player system with local player ID: ${localPlayerId}`);
+    }
+}
+
+/**
+ * Update player positions using interpolation for smooth movement
+ * @param {number} delta - Time elapsed since last frame in seconds
+ */
+export function updatePlayerInterpolation(delta) {
+    if (!playerManager || playerManager.players.size === 0) return;
+
+    // How fast to move toward target position (higher = faster)
+    const INTERPOLATION_SPEED = 10;
+
+    // Interpolate each player's position
+    for (const player of playerManager.players.values()) {
+        if (!player._targetX || !player._targetY) continue;
+        
+        // Calculate interpolation factor based on time and speed
+        // This produces smoother motion than just using a fixed step
+        const t = Math.min(delta * INTERPOLATION_SPEED, 1);
+        
+        // Smoothly interpolate position
+        player.x = player.x + (player._targetX - player.x) * t;
+        player.y = player.y + (player._targetY - player.y) * t;
     }
 }
 

@@ -2,41 +2,54 @@
  * Player.js
  * Represents the local player character
  */
+import { generateUUID } from '../utils/uuid.js';
+
 export class Player {
     /**
      * Create a new player
      * @param {Object} options - Player options
      */
     constructor(options = {}) {
+      // Generate a unique ID for this player
+      // NOTE: This will be overridden by the server-assigned ID when connected
+      this.id = options.id || generateUUID();
+      
+      // Log the generated ID to help with debugging
+      console.log(`[Player] Created new player with initial ID: ${this.id}`);
+      
       // Core properties
-      this.id = options.id || null;
       this.name = options.name || 'Player';
-      this.x = options.x || 50;
-      this.y = options.y || 50;
-      this.width = options.width || 20;
-      this.height = options.height || 20;
-      this.rotation = options.rotation || 0; // Rotation in radians
+      this.x = options.x || 0;
+      this.y = options.y || 0;
+      this.width = options.width || 10;
+      this.height = options.height || 10;
+      this.rotation = 0;
       
       // Movement
-      this.speed = options.speed || 150; // Pixels per second
+      this.speed = options.speed || 100; // Pixels per second
+      this.vx = 0;
+      this.vy = 0;
       this.isMoving = false;
       this.moveDirection = { x: 0, y: 0 };
       
       // Combat
-      this.health = options.health || 100;
+      this.health = options.health !== undefined ? options.health : 100;
       this.maxHealth = options.maxHealth || 100;
       this.damage = options.damage || 10;
-      this.projectileSpeed = options.projectileSpeed || 300;
-      this.shootCooldown = options.shootCooldown || 0.3; // Seconds
-      this.lastShootTime = 0;
+      this.projectileSpeed = options.projectileSpeed || 200;
+      this.shootCooldown = options.shootCooldown || 0.5; // Seconds
+      this.lastShotTime = 0;
       
       // Visual
-      this.sprite = options.sprite || null;
       this.spriteX = options.spriteX || 0;
       this.spriteY = options.spriteY || 0;
       
       // State
       this.isDead = false;
+      
+      // Network properties
+      this.isLocal = options.isLocal !== undefined ? options.isLocal : true;
+      this.lastUpdate = Date.now();
     }
     
     /**
@@ -45,9 +58,9 @@ export class Player {
      */
     update(deltaTime) {
       // Update cooldowns
-      if (this.lastShootTime > 0) {
-        this.lastShootTime -= deltaTime;
-        if (this.lastShootTime < 0) this.lastShootTime = 0;
+      if (this.lastShotTime > 0) {
+        this.lastShotTime -= deltaTime;
+        if (this.lastShotTime < 0) this.lastShotTime = 0;
       }
     }
     
@@ -92,14 +105,14 @@ export class Player {
      * @returns {boolean} True if player can shoot
      */
     canShoot() {
-      return this.lastShootTime <= 0;
+      return this.lastShotTime <= 0;
     }
     
     /**
      * Start shoot cooldown
      */
     startShootCooldown() {
-      this.lastShootTime = this.shootCooldown;
+      this.lastShotTime = this.shootCooldown;
     }
     
     /**
@@ -107,7 +120,7 @@ export class Player {
      * @param {number} time - The timestamp of the last shot
      */
     setLastShotTime(time) {
-      this.lastShootTime = this.shootCooldown;
+      this.lastShotTime = this.shootCooldown;
     }
     
     /**

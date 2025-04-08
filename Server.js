@@ -208,6 +208,14 @@ function updateGame() {
   const deltaTime = (now - gameState.lastUpdateTime) / 1000; // Convert to seconds
   gameState.lastUpdateTime = now;
   
+  // Periodically log connected clients for debugging
+  if (now % 5000 < 50) { // Every 5 seconds
+    console.log(`Server has ${clients.size} connected clients:`);
+    clients.forEach((client, id) => {
+      console.log(`- Client ${id}: pos(${client.player.x.toFixed(0)}, ${client.player.y.toFixed(0)}), hp: ${client.player.health}`);
+    });
+  }
+  
   // Create a target object using the first connected player
   // If no players, use a default position
   let target = null;
@@ -290,10 +298,46 @@ function broadcastWorldUpdates() {
     bullets,
     timestamp: Date.now()
   });
+  
+  // Also periodically broadcast the player list separately to ensure clients have the latest player info
+  // Only do this every 2 seconds to reduce network traffic
+  if (Date.now() % 2000 < 50) {
+    console.log(`Broadcasting player list: ${Object.keys(players).length} players`);
+    broadcast(MessageType.PLAYER_LIST, players);
+  }
 }
 
 // Start game update loop
 setInterval(updateGame, gameState.updateInterval);
+
+// Add a separate player status logging interval (every 5 seconds)
+setInterval(() => {
+  const playerCount = clients.size;
+  
+  if (playerCount > 0) {
+    console.log(`[SERVER] ${playerCount} client${playerCount > 1 ? 's' : ''} connected`);
+    
+    // Log player positions and details for debugging
+    const playerPositions = [];
+    clients.forEach((client, id) => {
+      const player = client.player;
+      playerPositions.push(`  - Player ${id}: (${player.x.toFixed(1)}, ${player.y.toFixed(1)}), health: ${player.health}`);
+    });
+    
+    console.log('Player positions:');
+    playerPositions.forEach(p => console.log(p));
+    
+    // Log what's being sent in PLAYER_LIST messages
+    const players = {};
+    clients.forEach((client, id) => {
+      players[id] = client.player;
+    });
+    
+    console.log(`Player list message would contain ${Object.keys(players).length} players: ${Object.keys(players).join(', ')}`);
+  } else {
+    console.log('[SERVER] No clients connected');
+  }
+}, 5000);
 
 // Server listen
 const PORT = process.env.PORT || 3000;
@@ -339,10 +383,8 @@ function sendInitialState(socket, clientId) {
     }
   });
   
-  sendToClient(socket, MessageType.PLAYER_LIST, {
-    players,
-    timestamp: Date.now()
-  });
+  // FIXED: Send just the players object directly
+  sendToClient(socket, MessageType.PLAYER_LIST, players);
   
   // Send enemy list
   const enemies = enemyManager.getEnemiesData();

@@ -3,7 +3,6 @@
 import { gameState } from '../game/gamestate.js';
 import { TILE_SIZE, TILE_SPRITES } from '../constants/constants.js';
 import { spriteManager } from '../assets/spriteManager.js';
-import { renderCharacter, renderEnemies, renderBullets } from './render.js';
 
 // Get 2D Canvas Context
 const canvas2D = document.getElementById('gameCanvas');
@@ -25,8 +24,8 @@ export function renderTopDownView() {
     return;
   }
 
-  // Clear the canvas
-  ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
+  // Clear handled in renderGame, don't do it here
+  // ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
 
   // Determine visible tiles based on camera position
   const tilesInViewX = Math.ceil(canvas2D.width / TILE_SIZE);
@@ -61,12 +60,9 @@ export function renderTopDownView() {
     }
   }
 
-  // Draw character
-  renderCharacter();
-
-  // Draw enemies
-  renderEnemies();
-  
-  // Draw bullets
-  renderBullets();
+  // Entities are rendered in the main renderGame function
+  // No need to render them here
 }
+
+// Export to window object to avoid circular references
+window.renderTopDownView = renderTopDownView;

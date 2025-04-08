@@ -17,6 +17,7 @@ export const gameState = {
     enemyManager: null,
     map: null,
     collisionManager: null,
+    playerManager: null,
     
     // Tracking info
     lastUpdateX: character.x,

@@ -6,6 +6,8 @@ import { addFirstPersonElements, updateFirstPerson } from '../render/renderFirst
 import { updateCharacter } from './updateCharacter.js';
 import { renderTopDownView } from '../render/renderTopDown.js';
 import { renderStrategicView } from '../render/renderStrategic.js';
+import { updatePlayers, playerManager, updatePlayerInterpolation } from '../entities/entities.js';
+import { renderGame } from '../render/render.js';
 import { 
   ClientMapManager, 
   ClientNetworkManager, 
@@ -39,22 +41,47 @@ export async function initGame() {
         
         // Initialize sprite sheets
         console.log('Loading sprite sheets...');
-        await spriteManager.loadSpriteSheet({ 
-            name: 'character_sprites', 
-            path: 'assets/images/Oryx/lofi_char.png',
-            defaultSpriteWidth: 8,
-            defaultSpriteHeight: 8,
-            spritesPerRow: 16,
-            spritesPerColumn: 16
-        });
+        try {
+            await spriteManager.loadSpriteSheet({ 
+                name: 'character_sprites', 
+                path: 'assets/images/Oryx/8-Bit_Remaster_Character.png',
+                defaultSpriteWidth: 10,
+                defaultSpriteHeight: 10
+            });
+        } catch (e) {
+            console.error("Failed to load first character sprite path, trying fallback:", e);
+            try {
+                // Try lofi_char.png as a fallback
+                await spriteManager.loadSpriteSheet({ 
+                    name: 'character_sprites', 
+                    path: 'assets/images/Oryx/lofi_char.png',
+                    defaultSpriteWidth: 8,
+                    defaultSpriteHeight: 8,
+                    spritesPerRow: 16,
+                    spritesPerColumn: 16
+                });
+                console.log("Successfully loaded fallback character sprite sheet");
+            } catch (e2) {
+                console.error("All character sprite loading attempts failed:", e2);
+            }
+        }
+        
+        // Verify character sprites loaded successfully 
+        const charSheet = spriteManager.getSpriteSheet('character_sprites');
+        if (!charSheet) {
+            console.error('Failed to load character sprites! Players will not render correctly.');
+            console.error('Verify the file exists at: assets/images/Oryx/8-Bit_Remaster_Character.png');
+        } else {
+            console.log('Character sprites loaded successfully:', charSheet.config);
+        }
         
         await spriteManager.loadSpriteSheet({ 
             name: 'enemy_sprites', 
-            path: 'assets/images/Oryx/oryx_16bit_fantasy_creatures_trans.png',
-            defaultSpriteWidth: 24,
-            defaultSpriteHeight: 24,
-            spritesPerRow: 16,
-            spritesPerColumn: 8
+            path: 'assets/images/Oryx/lofi_char.png',
+            defaultSpriteWidth: 8,
+            defaultSpriteHeight: 8,
+            spritesPerRow: 40,
+            spritesPerColumn: 40
         });
         
         await spriteManager.loadSpriteSheet({ 
@@ -145,6 +172,14 @@ export async function initGame() {
         // Handle window resize
         window.addEventListener('resize', handleResize);
         console.log('Window resize event listener added.');
+
+        // Add debug key for testing player rendering
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'p') {
+                console.log('DEBUG: Creating test player');
+                spawnTestPlayer();
+            }
+        });
     } catch (error) {
         console.error('Error initializing the game:', error);
     }
@@ -185,17 +220,55 @@ function initializeGameState() {
     
     // Create network manager with proper handlers
     networkManager = new ClientNetworkManager(SERVER_URL, {
-        // Set client ID
+        // Get client ID from server
         setClientId: (clientId) => {
-            localPlayer.id = clientId;
-            console.log(`Received client ID: ${clientId}`);
+            console.log(`[setClientId] Received client ID from server: ${clientId}`);
             
-            // Update player status in UI if available
-            if (window.updatePlayerStatus) {
-                window.updatePlayerStatus(`Player ID: ${clientId}`);
-            }
+            // Set the ID for the local player
+            localPlayer.id = clientId;
+            
+            // IMPORTANT: Also set this in playerManager to ensure proper filtering
+            playerManager.setLocalPlayerId(clientId);
+            
+            console.log(`[setClientId] Local player ID set to: ${clientId}`);
         },
         
+        onConnect: () => {
+            console.log("Connected to server");
+            gameState.isConnected = true;
+        },
+        
+        onDisconnect: () => {
+            console.log("Disconnected from server");
+            gameState.isConnected = false;
+        },
+        [MessageType.PLAYER_LIST]: (data) => {
+            // Log raw data first
+            console.log(`[PLAYER_LIST] Raw data received: ${JSON.stringify(data)}`);
+            console.log(`[PLAYER_LIST] Player IDs in raw data: ${Object.keys(data).join(', ')}`);
+            console.log(`[PLAYER_LIST] Local player ID: ${localPlayer.id}`);
+            
+            // Filter out the local player to avoid the ghost sprite issue
+            if (data && typeof data === 'object' && localPlayer) {
+                // Create a copy of the data without the local player
+                const filteredData = { ...data };
+                
+                // Remove local player from the data if it exists
+                if (filteredData[localPlayer.id]) {
+                    delete filteredData[localPlayer.id];
+                    console.log(`[PLAYER_LIST] Filtered out local player (${localPlayer.id}) from player list update`);
+                }
+                
+                // Log remaining players after filtering
+                console.log(`[PLAYER_LIST] Remaining players after filtering: ${Object.keys(filteredData).join(', ')}`);
+                
+                // Update players with the filtered data
+                updatePlayers(filteredData);
+            } else {
+                // If something's wrong with the data, use it as is
+                updatePlayers(data);
+            }
+        },
         // Initialize map
         initMap: (mapData) => {
             console.log("Received map data from server:", mapData);
@@ -205,6 +278,24 @@ function initializeGameState() {
         // Set all players
         setPlayers: (players) => {
             console.log('Players received:', players);
+            
+            // Filter out the local player to avoid the ghost sprite issue
+            if (players && typeof players === 'object' && localPlayer) {
+                // Create a copy of the data without the local player
+                const filteredPlayers = { ...players };
+                
+                // Remove local player from the data if it exists
+                if (filteredPlayers[localPlayer.id]) {
+                    delete filteredPlayers[localPlayer.id];
+                    console.log(`Filtered out local player (${localPlayer.id}) from setPlayers update`);
+                }
+                
+                // Update players with the filtered data
+                updatePlayers(filteredPlayers);
+            } else {
+                // If something's wrong with the data, use it as is
+                updatePlayers(players);
+            }
         },
         
         // Set initial enemies
@@ -221,10 +312,49 @@ function initializeGameState() {
         
         // Update world state
         updateWorld: (enemies, bullets, players) => {
-            console.log(`World update: ${enemies?.length || 0} enemies, ${bullets?.length || 0} bullets`);
+            // Only log world updates occasionally to reduce console spam
+            if (Math.random() < 0.05) {
+                console.log(`World update: ${enemies?.length || 0} enemies, ${bullets?.length || 0} bullets, ${players ? Object.keys(players).length : 0} players`);
+                
+                // When logging, also show all player IDs
+                if (players && typeof players === 'object') {
+                    console.log(`[updateWorld] Player IDs in update: ${Object.keys(players).join(', ')}`);
+                    console.log(`[updateWorld] Local player ID: ${localPlayer.id}`);
+                }
+            }
+            
+            // Update game entities
             if (enemies) enemyManager.updateEnemies(enemies);
             if (bullets) bulletManager.updateBullets(bullets);
-            // TODO: Update other players
+            
+            // Filter out local player from world updates to avoid ghost sprites
+            if (players && typeof players === 'object' && localPlayer) {
+                // Create a copy of players without the local player
+                const filteredPlayers = { ...players };
+                
+                // Remove local player from the data if it exists
+                if (filteredPlayers[localPlayer.id]) {
+                    delete filteredPlayers[localPlayer.id];
+                    
+                    // Log filtering occasionally
+                    if (Math.random() < 0.05) {
+                        console.log(`[updateWorld] Filtered out local player (${localPlayer.id}) from update`);
+                        console.log(`[updateWorld] Remaining players: ${Object.keys(filteredPlayers).join(', ')}`);
+                    }
+                }
+                
+                // Only update if we have players
+                if (Object.keys(filteredPlayers).length > 0) {
+                    updatePlayers(filteredPlayers);
+                } else {
+                    if (Math.random() < 0.05) {
+                        console.log("[updateWorld] No other players to update after filtering");
+                    }
+                }
+            } else if (players) {
+                // Update with original players data if filtering isn't possible
+                updatePlayers(players);
+            }
         },
         
         // Add a bullet
@@ -274,6 +404,11 @@ function initializeGameState() {
     gameState.bulletManager = bulletManager;
     gameState.enemyManager = enemyManager;
     gameState.collisionManager = collisionManager;
+    gameState.playerManager = playerManager;
+    
+    // Set the local player ID in the player manager
+    // IMPORTANT: This prevents the local player from being rendered twice
+    playerManager.setLocalPlayerId(localPlayer.id);
     
     console.log("Game state initialized with all managers");
 }
@@ -342,8 +477,13 @@ function update(delta) {
     // Update local player
     updateCharacter(delta);
     
+    // Update other players position interpolation (for smooth movement)
+    updatePlayerInterpolation(delta);
+    
+    // Update bullet positions
+    gameState.bulletManager.update(delta);
+    
     // Update game elements
-    bulletManager.update(delta);
     enemyManager.update(delta);
     
     // Update map visible chunks based on player position
@@ -389,14 +529,14 @@ function render() {
         renderer.render(scene, camera);
         document.getElementById('gameCanvas').style.display = 'none';
         document.getElementById('glCanvas').style.display = 'block';
-    } else if (viewType === 'top-down') {
+    } else {
+        // For top-down and strategic views
         document.getElementById('gameCanvas').style.display = 'block';
         document.getElementById('glCanvas').style.display = 'none';
-        renderTopDownView();
-    } else if (viewType === 'strategic') {
-        document.getElementById('gameCanvas').style.display = 'block';
-        document.getElementById('glCanvas').style.display = 'none';
-        renderStrategicView();
+        
+        // Use the main render function from render.js
+        // This handles clearing the canvas and rendering all entities
+        renderGame();
     }
 }
 
@@ -428,13 +568,13 @@ export function handleShoot(x, y) {
     const bulletData = {
         x: gameState.character.x,
         y: gameState.character.y,
-        vx: Math.cos(angle) * gameState.character.projectileSpeed,
-        vy: Math.sin(angle) * gameState.character.projectileSpeed,
+        vx: Math.cos(angle) * (gameState.character.projectileSpeed * 0.5), // Slower speed
+        vy: Math.sin(angle) * (gameState.character.projectileSpeed * 0.5), // Slower speed
         ownerId: gameState.character.id,
         damage: gameState.character.damage || 10,
-        lifetime: 3.0,
-        width: 8,
-        height: 8,
+        lifetime: 6.0, // Double the lifetime for better visibility (was 3.0)
+        width: 12, // Larger size for better visibility
+        height: 12, // Larger size for better visibility
         // Add sprite info
         spriteSheet: 'bullet_sprites',
         spriteX: 8 * 10, // X position in sprite sheet (col * width)
@@ -456,7 +596,7 @@ export function handleShoot(x, y) {
         x: gameState.character.x,
         y: gameState.character.y,
         angle,
-        speed: gameState.character.projectileSpeed,
+        speed: gameState.character.projectileSpeed * 0.5, // Match the slower speed
         damage: gameState.character.damage || 10
     });
     
@@ -481,4 +621,38 @@ export function reportCollision(bulletId, enemyId) {
         enemyId: enemyId,
         timestamp: Date.now()
     });
+}
+
+// Debug function to spawn a test player
+function spawnTestPlayer() {
+    if (!playerManager) {
+        console.error("Cannot spawn test player: playerManager not available");
+        return;
+    }
+    
+    // Generate a random ID that won't conflict with real player IDs
+    const testId = 'test-' + Math.floor(Math.random() * 9999);
+    
+    // Create test player data at a position offset from the local player
+    const testPlayerData = {
+        id: testId,
+        x: gameState.character.x + (Math.random() * 10) - 5,
+        y: gameState.character.y + (Math.random() * 10) - 5,
+        health: 100,
+        maxHealth: 100,
+        name: "Test Player",
+        // Match local player dimensions
+        width: 10,
+        height: 10,
+        // Use the same sprite as the local player
+        spriteX: 0,
+        spriteY: 0,
+        rotation: 0,
+        lastUpdate: Date.now()
+    };
+    
+    // Add to playerManager
+    playerManager.players.set(testId, testPlayerData);
+    console.log(`Created test player ${testId} at (${testPlayerData.x.toFixed(1)}, ${testPlayerData.y.toFixed(1)})`);
+    console.log(`Player manager now has ${playerManager.players.size} other players`);
 }

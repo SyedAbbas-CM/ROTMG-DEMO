@@ -3,7 +3,6 @@
 import { gameState } from '../game/gamestate.js';
 import { TILE_SIZE, TILE_SPRITES } from '../constants/constants.js';
 import { spriteManager } from '../assets/spriteManager.js';
-import { renderCharacter, renderEnemies, renderBullets, renderPlayers } from './render.js';
 
 // Get 2D Canvas Context
 const canvas2D = document.getElementById('gameCanvas');
@@ -83,16 +82,16 @@ export function renderStrategicView() {
     return; // Silently return if no map manager
   }
 
-  // Clear the canvas
-  ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
+  // Clear handled in renderGame function
+  // ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
   
   // ANTI-FLICKERING: Throttle chunk updates
   const now = performance.now();
   const frameTime = now - lastRenderFrameTime;
   
   // Calculate how many tiles we need to render to fill the screen
-  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE * scaleFactor)) + 2;
-  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE * scaleFactor)) + 2;
+  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE * scaleFactor)) ;
+  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE * scaleFactor)) ;
   
   // Add buffer to prevent black edges and empty areas
   const bufferTiles = 4;
@@ -195,10 +194,10 @@ export function renderStrategicView() {
     lastRenderFrameTime = now;
   }
 
-  // Draw character and entities
-  renderCharacter();
-  renderEnemies();
-  renderBullets();
-  renderPlayers();
+  // Entities are rendered in the main renderGame function
+  // No need to render them here
 }
+
+// Export to window object to avoid circular references
+window.renderStrategicView = renderStrategicView;
 

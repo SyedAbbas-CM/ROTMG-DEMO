@@ -64,9 +64,26 @@ export class ClientNetworkManager {
         };
         
         this.handlers[MessageType.PLAYER_LIST] = (data) => {
-            console.log(`Received players list: ${data.players ? Object.keys(data.players).length : 0} players`);
+            if (!data.players) {
+                console.error("Received PLAYER_LIST message with no players property:", data);
+                return;
+            }
+            
+            const playerCount = Object.keys(data.players || {}).length;
+            console.log(`[NETWORK] Received player list: ${playerCount} players (IDs: ${Object.keys(data.players).join(', ')})`);
+            
+            if (playerCount > 0) {
+                // Log a sample player for data validation
+                const samplePlayerId = Object.keys(data.players)[0];
+                const samplePlayer = data.players[samplePlayerId];
+                console.log(`Sample player data for ${samplePlayerId}:`, samplePlayer);
+            }
+            
+            // Call game's setPlayers handler
             if (this.game.setPlayers) {
                 this.game.setPlayers(data.players);
+            } else {
+                console.error("PLAYER_LIST handler called but this.game.setPlayers not defined!");
             }
         };
         
@@ -87,7 +104,9 @@ export class ClientNetworkManager {
         this.handlers[MessageType.WORLD_UPDATE] = (data) => {
             // Do not log every world update to avoid console spam
             if (this.game.updateWorld) {
-                this.game.updateWorld(data.enemies, data.bullets, data.players);
+                // Check if players is nested inside a 'players' property (from server inconsistency)
+                const players = data.players?.players || data.players;
+                this.game.updateWorld(data.enemies, data.bullets, players);
             }
         };
         
