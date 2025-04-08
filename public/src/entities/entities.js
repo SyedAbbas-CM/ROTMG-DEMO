@@ -78,79 +78,8 @@ export function updatePlayers(playerData) {
         console.log("Registered playerManager with gameState");
     }
     
-    // Update or add new players
-    for (let [id, data] of Object.entries(actualPlayerData)) {
-        // IMPORTANT: String comparison to avoid type mismatches
-        const playerId = String(id);
-        const localId = playerManager.localPlayerId ? String(playerManager.localPlayerId) : null;
-        const characterId = gameState.character?.id ? String(gameState.character.id) : null;
-        
-        // Skip local player since it's handled separately
-        const isLocalPlayer = (localId && playerId === localId) || (characterId && playerId === characterId);
-        
-        if (isLocalPlayer) {
-            throttledLog('skip-local', `[updatePlayers] Skipping local player update for ID: ${id}`, null, 5000);
-            continue;
-        }
-        
-        // Verify the player data has required properties
-        if (!data || typeof data !== 'object' || data.x === undefined || data.y === undefined) {
-            console.warn(`Invalid player data for ID ${id}:`, data);
-            continue;
-        }
-        
-        if (!playerManager.players.has(id)) {
-            // Log when adding a new player - this is important so don't throttle
-            console.log(`Adding new player: ${id} at position (${data.x}, ${data.y})`);
-            
-            // Enhance player data with rendering info if missing
-            const enhancedData = {
-                id: id, // IMPORTANT: Make sure ID is set
-                ...data,
-                // Use same dimensions as local player (10x10)
-                width: data.width || 10,
-                height: data.height || 10,
-                // Use TILE_SIZE (usually 8) for sprite dimensions
-                spriteX: data.spriteX !== undefined ? data.spriteX : 0,
-                spriteY: data.spriteY !== undefined ? data.spriteY : 0,
-                // Cosmetic properties
-                health: data.health || 100,
-                maxHealth: data.maxHealth || 100,
-                // Store the current position as both current and target for interpolation
-                _prevX: data.x,
-                _prevY: data.y, 
-                _targetX: data.x,
-                _targetY: data.y,
-                // Timestamps for interpolation
-                lastPositionUpdate: Date.now(),
-                lastUpdate: Date.now()
-            };
-            
-            // Create a proper data object
-            playerManager.players.set(id, enhancedData);
-        } else {
-            // Update existing player with new data
-            const player = playerManager.players.get(id);
-            
-            // Save previous position for interpolation
-            player._prevX = player.x;
-            player._prevY = player.y;
-            
-            // Update position directly for now
-            Object.assign(player, data);
-            
-            // Store new position as target position
-            player._targetX = data.x;
-            player._targetY = data.y;
-            
-            // Update timestamps
-            player.lastPositionUpdate = Date.now();
-            player.lastUpdate = Date.now();
-            
-            // Make sure ID is properly set
-            player.id = id;
-        }
-    }
+    // Update players
+    playerManager.updatePlayers(actualPlayerData);
     
     // Log summary of current player count after update (throttled)
     throttledLog('update-complete', `[updatePlayers] Update complete, playerManager now has ${playerManager.players.size} players`);
@@ -324,27 +253,29 @@ export function initializePlayers(localPlayerId) {
 }
 
 /**
- * Update player positions using interpolation for smooth movement
- * @param {number} delta - Time elapsed since last frame in seconds
+ * Update player position interpolation
+ * @param {number} deltaTime - Delta time in seconds
  */
-export function updatePlayerInterpolation(delta) {
-    if (!playerManager || playerManager.players.size === 0) return;
-
-    // How fast to move toward target position (higher = faster)
-    const INTERPOLATION_SPEED = 10;
-
-    // Interpolate each player's position
+export function updatePlayerInterpolation(deltaTime) {
+    if (!playerManager) return;
+    
+    // Interpolate positions for smooth movement
     for (const player of playerManager.players.values()) {
-        if (!player._targetX || !player._targetY) continue;
+        // Skip if we don't have interpolation data
+        if (player._prevX === undefined || player._targetX === undefined) continue;
         
-        // Calculate interpolation factor based on time and speed
-        // This produces smoother motion than just using a fixed step
-        const t = Math.min(delta * INTERPOLATION_SPEED, 1);
-        
-        // Smoothly interpolate position
-        player.x = player.x + (player._targetX - player.x) * t;
-        player.y = player.y + (player._targetY - player.y) * t;
+        // Current position - use lerp for interpolation between prev and target
+        player.x = lerp(player._prevX, player._targetX, Math.min(1, (Date.now() - player.lastPositionUpdate) / 100));
+        player.y = lerp(player._prevY, player._targetY, Math.min(1, (Date.now() - player.lastPositionUpdate) / 100));
     }
+    
+    // Update player animations
+    playerManager.updatePlayerAnimations(deltaTime);
+}
+
+// Linear interpolation helper
+function lerp(start, end, t) {
+    return start + t * (end - start);
 }
 
 // Export bullets array for direct access if needed

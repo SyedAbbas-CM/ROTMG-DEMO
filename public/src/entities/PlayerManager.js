@@ -1,6 +1,7 @@
 import { spriteManager } from '../assets/spriteManager.js';
 import { TILE_SIZE, SCALE } from '../constants/constants.js';
 import { gameState } from '../game/gamestate.js';
+import { EntityAnimator } from './EntityAnimator.js';
 
 /**
  * Utility for throttling log messages
@@ -33,6 +34,9 @@ export class PlayerManager {
         this.localPlayerId = options.localPlayerId || null;
         this.maxPlayers = options.maxPlayers || 100;
         
+        // Animation tracking for other players
+        this.playerAnimators = new Map(); // Map of player ID to animator
+        
         // Debug
         this.debug = true; // Enable debug by default for troubleshooting
         
@@ -60,7 +64,30 @@ export class PlayerManager {
             if (this.players.has(playerId)) {
                 // Update existing player
                 const player = this.players.get(playerId);
+                
+                // Save previous position for movement detection
+                const prevX = player.x;
+                const prevY = player.y;
+                
+                // Update player data
                 Object.assign(player, playerData);
+                
+                // Update player's animation if it exists
+                if (this.playerAnimators.has(playerId)) {
+                    const animator = this.playerAnimators.get(playerId);
+                    
+                    // Calculate if player is moving based on position change
+                    const isMoving = prevX !== player.x || prevY !== player.y;
+                    
+                    // Calculate velocity direction based on position change
+                    const velocity = {
+                        x: player.x - prevX,
+                        y: player.y - prevY
+                    };
+                    
+                    // Update animator
+                    animator.update(0.016, isMoving, velocity); // Use 1/60 as delta time
+                }
             } else {
                 // Add new player with default sprite properties if they're missing
                 const enhancedPlayerData = {
@@ -83,6 +110,17 @@ export class PlayerManager {
                 };
                 
                 this.players.set(playerId, enhancedPlayerData);
+                
+                // Create an animator for this player
+                this.playerAnimators.set(playerId, new EntityAnimator({
+                    defaultState: 'idle',
+                    frameCount: 4,
+                    frameDuration: 0.15,
+                    spriteWidth: TILE_SIZE,
+                    spriteHeight: TILE_SIZE,
+                    spriteSheet: 'character_sprites'
+                }));
+                
                 console.log(`Added new player: ${playerId} at position (${playerData.x}, ${playerData.y})`, enhancedPlayerData);
             }
         }
@@ -92,6 +130,7 @@ export class PlayerManager {
             if (playerId !== this.localPlayerId && !playersData[playerId]) {
                 console.log(`Removing player: ${playerId}`);
                 this.players.delete(playerId);
+                this.playerAnimators.delete(playerId);
             }
         }
         
@@ -99,6 +138,34 @@ export class PlayerManager {
         throttledLog('player-count', `Player Manager: Now tracking ${this.players.size} other players`);
         if (this.players.size > 0 && throttledLog('player-ids', 'Players being tracked:', Array.from(this.players.keys()), 5000)) {
             // Log player IDs only every 5 seconds
+        }
+    }
+    
+    /**
+     * Update animations for all players
+     * @param {number} deltaTime - Time elapsed since last update in seconds
+     */
+    updatePlayerAnimations(deltaTime) {
+        // Update all player animations
+        for (const [playerId, player] of this.players.entries()) {
+            if (this.playerAnimators.has(playerId)) {
+                const animator = this.playerAnimators.get(playerId);
+                
+                // Skip update if we don't have position data
+                if (player._prevX === undefined || player._targetX === undefined) continue;
+                
+                // Calculate if player is moving based on interpolation targets
+                const isMoving = player._prevX !== player._targetX || player._prevY !== player._targetY;
+                
+                // Calculate velocity direction based on movement targets
+                const velocity = {
+                    x: player._targetX - player._prevX,
+                    y: player._targetY - player._prevY
+                };
+                
+                // Update animator
+                animator.update(deltaTime, isMoving, velocity);
+            }
         }
     }
     
@@ -241,13 +308,31 @@ export class PlayerManager {
                     ctx.rotate(player.rotation);
                 }
                 
-                // Draw player sprite - center it properly
-                ctx.drawImage(
-                    characterSpriteSheet,
-                    player.spriteX || 0, player.spriteY || 0, 
-                    TILE_SIZE, TILE_SIZE, // Use TILE_SIZE for source rectangle to match main character
-                    -width/2, -height/2, width, height
-                );
+                // Get player animator
+                const animator = this.playerAnimators.get(player.id);
+                
+                if (animator) {
+                    // Get animation source rect
+                    const sourceRect = animator.getSourceRect();
+                    
+                    // Draw player sprite with animation
+                    ctx.drawImage(
+                        characterSpriteSheet,
+                        sourceRect.x, sourceRect.y,
+                        sourceRect.width, sourceRect.height,
+                        -width/2, -height/2,
+                        width, height
+                    );
+                } else {
+                    // Fallback to old rendering without animation
+                    ctx.drawImage(
+                        characterSpriteSheet,
+                        player.spriteX || 0, player.spriteY || 0, 
+                        TILE_SIZE, TILE_SIZE,
+                        -width/2, -height/2,
+                        width, height
+                    );
+                }
 
                 // Visual debugging - add bright highlight around player in debug mode
                 if (this.visualDebug) {
@@ -315,9 +400,6 @@ export class PlayerManager {
         
         for (const player of this.players.values()) {
             try {
-                // Skip local player
-                if (player.id === this.localPlayerId) continue;
-                
                 // Use player's actual dimensions with proper scaling
                 const width = player.width * SCALE;
                 const height = player.height * SCALE;
@@ -343,35 +425,32 @@ export class PlayerManager {
                     ctx.rotate(player.rotation);
                 }
                 
-                // Draw a colored rectangle instead (more professional than magenta circles)
-                ctx.fillStyle = 'rgba(0, 128, 255, 0.8)'; // Semi-transparent blue
+                // Draw simple colored rectangle
+                ctx.fillStyle = 'blue';
                 ctx.fillRect(-width/2, -height/2, width, height);
                 
-                // Add border for better visibility
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(-width/2, -height/2, width, height);
-                
-                // Add direction indicator
+                // Draw simple direction indicator
+                ctx.fillStyle = 'white';
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
-                ctx.lineTo(0, -height/2 - 5);
-                ctx.strokeStyle = '#ffff00';
-                ctx.lineWidth = 2;
+                ctx.lineTo(width/2, 0);
                 ctx.stroke();
                 
                 // Draw player name
                 if (player.name) {
-                    ctx.fillStyle = 'white';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
                     ctx.textAlign = 'center';
                     ctx.font = '12px Arial';
-                    ctx.fillText(player.name, 0, -height/2 - 10);
+                    ctx.strokeText(player.name, 0, -height/2 - 5);
+                    ctx.fillText(player.name, 0, -height/2 - 5);
                 }
                 
                 // Restore context
                 ctx.restore();
             } catch (error) {
-                console.error("Error in fallback rendering:", error);
+                console.error("Error rendering player fallback:", error);
             }
         }
     }

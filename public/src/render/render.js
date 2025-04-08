@@ -15,94 +15,93 @@ const scaleFactor = SCALE;
  * Render the character
  */
 export function renderCharacter() {
-  //console.log("renderCharacter called");
-  
   const character = gameState.character;
   if (!character) {
     console.error("Cannot render character: character not defined in gameState");
     return;
   }
 
-  //console.log(`Character at position: (${character.x.toFixed(1)}, ${character.y.toFixed(1)})`);
-
-  const charSheetObj = spriteManager.getSpriteSheet('character_sprites');
-  if (!charSheetObj) {
-    console.warn("Character sprite sheet not loaded - attempting fallback rendering");
-    // Fallback rendering with a simple shape
-    const width = character.width * scaleFactor;
-    const height = character.height * scaleFactor;
-    const x = canvas2D.width / 2 - width / 2;
-    const y = canvas2D.height / 2 - height / 2;
-    
-    // Draw a visible character with a bright color
-    ctx.save();
-    ctx.translate(x + width/2, y + height/2);
-    
-    // Apply rotation if character has it
-    if (typeof character.rotation === 'object' && character.rotation.yaw !== undefined) {
-      ctx.rotate(character.rotation.yaw);
-    } else if (typeof character.rotation === 'number') {
-      ctx.rotate(character.rotation);
-    }
-    
-    // Draw a brightly colored rectangle for visibility
-    ctx.fillStyle = 'lime';
-    ctx.fillRect(-width/2, -height/2, width, height);
-    
-    // Add border for better visibility
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(-width/2, -height/2, width, height);
-    
-    // Add direction indicator
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(0, -height);
-    ctx.strokeStyle = 'yellow';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    
-    ctx.restore();
+  // Use the player's draw method if it exists
+  if (character.draw && typeof character.draw === 'function') {
+    character.draw(ctx, gameState.camera.position);
     return;
   }
-  
-  const characterSpriteSheet = charSheetObj.image;
-  const width = character.width * scaleFactor;
-  const height = character.height * scaleFactor;
-  
-  // Calculate screen position in top-down view (pixels)
-  const x = canvas2D.width / 2 - width / 2;
-  const y = canvas2D.height / 2 - height / 2;
 
-  // Save current transform
+  // Fallback to old rendering method if draw method doesn't exist
+  const charSheetObj = spriteManager.getSpriteSheet('character_sprites');
+  if (!charSheetObj) {
+    console.warn("Character sprite sheet not loaded");
+    
+    // Draw a placeholder rectangle if sprite sheet not available
+    ctx.fillStyle = 'red';
+    
+    // Get screen dimensions
+    const screenWidth = canvas2D.width;
+    const screenHeight = canvas2D.height;
+    
+    // Calculate screen position (center of screen)
+    const screenX = screenWidth / 2;
+    const screenY = screenHeight / 2;
+    
+    // Draw rectangle
+    ctx.fillRect(
+      screenX - (character.width * SCALE) / 2,
+      screenY - (character.height * SCALE) / 2,
+      character.width * SCALE,
+      character.height * SCALE
+    );
+    return;
+  }
+
+  // Older sprite-based rendering
+  const characterSpriteSheet = charSheetObj.image;
+  
+  // Get screen dimensions
+  const screenWidth = canvas2D.width;
+  const screenHeight = canvas2D.height;
+  
+  // Calculate screen position (center of screen)
+  const screenX = screenWidth / 2;
+  const screenY = screenHeight / 2;
+  
+  // Save the canvas state
   ctx.save();
   
-  // Draw character at center of screen
-  ctx.translate(x + width/2, y + height/2);
-  
-  // Apply rotation if character has it
-  if (typeof character.rotation === 'object' && character.rotation.yaw !== undefined) {
-    ctx.rotate(character.rotation.yaw);
-  } else if (typeof character.rotation === 'number') {
+  // If character has a rotation, rotate around character center
+  if (typeof character.rotation === 'number') {
+    ctx.translate(screenX, screenY);
     ctx.rotate(character.rotation);
+    
+    // Get sprite coordinates
+    const spriteX = character.spriteX !== undefined ? character.spriteX : 0;
+    const spriteY = character.spriteY !== undefined ? character.spriteY : 0;
+    
+    // Draw character centered at (0,0) after translation
+    ctx.drawImage(
+      characterSpriteSheet,
+      spriteX, spriteY,
+      TILE_SIZE, TILE_SIZE,
+      -character.width * SCALE / 2, -character.height * SCALE / 2,
+      character.width * SCALE, character.height * SCALE
+    );
+  } else {
+    // Get sprite coordinates
+    const spriteX = character.spriteX !== undefined ? character.spriteX : 0;
+    const spriteY = character.spriteY !== undefined ? character.spriteY : 0;
+    
+    // Draw character without rotation
+    ctx.drawImage(
+      characterSpriteSheet,
+      spriteX, spriteY,
+      TILE_SIZE, TILE_SIZE,
+      screenX - character.width * SCALE / 2,
+      screenY - character.height * SCALE / 2,
+      character.width * SCALE,
+      character.height * SCALE
+    );
   }
   
-  // Log sprite details
-  //console.log(`Drawing character sprite from (${character.spriteX}, ${character.spriteY}) at screen pos (${x}, ${y})`);
-  
-  // Draw character image
-  ctx.drawImage(
-    characterSpriteSheet,
-    character.spriteX, character.spriteY, TILE_SIZE, TILE_SIZE, // Source rectangle
-    -width/2, -height/2, width, height // Destination rectangle (centered)
-  );
-  
-  // Add outline for better visibility
-  ctx.strokeStyle = 'yellow';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(-width/2, -height/2, width, height);
-  
-  // Restore transform
+  // Restore canvas state
   ctx.restore();
 }
 

@@ -3,6 +3,9 @@
  * Represents the local player character
  */
 import { generateUUID } from '../utils/uuid.js';
+import { EntityAnimator } from './EntityAnimator.js';
+import { spriteManager } from '../assets/spriteManager.js';
+import { SCALE, TILE_SIZE } from '../constants/constants.js';
 
 export class Player {
     /**
@@ -50,6 +53,18 @@ export class Player {
       // Network properties
       this.isLocal = options.isLocal !== undefined ? options.isLocal : true;
       this.lastUpdate = Date.now();
+      
+      // Initialize the animator
+      this.animator = new EntityAnimator({
+        defaultState: 'idle',
+        frameCount: 4,
+        frameDuration: 0.15,
+        attackDuration: 0.3,
+        attackCooldownTime: this.shootCooldown,
+        spriteWidth: TILE_SIZE,
+        spriteHeight: TILE_SIZE,
+        spriteSheet: 'character_sprites'
+      });
     }
     
     /**
@@ -62,6 +77,13 @@ export class Player {
         this.lastShotTime -= deltaTime;
         if (this.lastShotTime < 0) this.lastShotTime = 0;
       }
+      
+      // Update animator
+      this.animator.update(
+        deltaTime, 
+        this.isMoving, 
+        { x: this.moveDirection.x, y: this.moveDirection.y }
+      );
     }
     
     /**
@@ -98,6 +120,13 @@ export class Player {
       const dx = targetX - this.x;
       const dy = targetY - this.y;
       this.rotation = Math.atan2(dy, dx);
+      
+      // Update animator direction based on rotation
+      if (Math.abs(dx) > Math.abs(dy)) {
+        this.animator.direction = dx < 0 ? 1 : 3; // Left or right
+      } else {
+        this.animator.direction = dy < 0 ? 2 : 0; // Up or down
+      }
     }
     
     /**
@@ -121,6 +150,9 @@ export class Player {
      */
     setLastShotTime(time) {
       this.lastShotTime = this.shootCooldown;
+      
+      // Also trigger attack animation
+      this.animator.attack();
     }
     
     /**
@@ -134,6 +166,9 @@ export class Player {
       if (this.health <= 0) {
         this.health = 0;
         this.isDead = true;
+        
+        // Set death animation
+        this.animator.setAnimationState(this.animator.states.DEATH, this.animator.direction);
       }
       
       return this.health;
@@ -153,6 +188,8 @@ export class Player {
       
       if (this.isDead && this.health > 0) {
         this.isDead = false;
+        // Reset animation to idle
+        this.animator.setAnimationState(this.animator.states.IDLE, this.animator.direction);
       }
       
       return this.health;
@@ -175,4 +212,131 @@ export class Player {
         spriteY: this.spriteY
       };
     }
-  }
+    
+    /**
+     * Draw the player on the canvas
+     * @param {CanvasRenderingContext2D} ctx - Canvas rendering context
+     * @param {Object} cameraPosition - Camera position {x, y}
+     */
+    draw(ctx, cameraPosition) {
+      if (!ctx) return;
+      
+      // Get sprite sheet
+      const spriteSheetObj = spriteManager.getSpriteSheet(this.animator.spriteSheet);
+      if (!spriteSheetObj) {
+        this.drawDebugRect(ctx, cameraPosition);
+        return;
+      }
+      
+      const spriteSheet = spriteSheetObj.image;
+      
+      // Get screen dimensions
+      const screenWidth = ctx.canvas.width;
+      const screenHeight = ctx.canvas.height;
+      
+      // Define scale based on view type
+      const scaleFactor = window.gameState?.camera?.viewType === 'strategic' ? 0.5 : 1;
+      
+      // Calculate screen position
+      const screenX = (this.x - cameraPosition.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
+      const screenY = (this.y - cameraPosition.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
+      
+      // Apply the same scale factor used for the main character
+      const width = this.width * SCALE;
+      const height = this.height * SCALE;
+      
+      // Save context for rotation
+      ctx.save();
+      
+      // Translate to player position
+      ctx.translate(screenX, screenY);
+      
+      // If player has a rotation, use it
+      if (typeof this.rotation === 'number') {
+        ctx.rotate(this.rotation);
+      }
+      
+      // Get animation source rect
+      const sourceRect = this.animator.getSourceRect();
+      
+      // Draw player sprite
+      ctx.drawImage(
+        spriteSheet,
+        sourceRect.x, sourceRect.y,
+        sourceRect.width, sourceRect.height,
+        -width/2, -height/2,
+        width, height
+      );
+      
+      // Draw player name
+      if (this.name) {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.font = '12px Arial';
+        ctx.strokeText(this.name, 0, -height/2 - 5);
+        ctx.fillText(this.name, 0, -height/2 - 5);
+      }
+      
+      // Draw health bar if health is defined
+      if (this.health !== undefined && this.maxHealth !== undefined) {
+        const healthPercent = this.health / this.maxHealth;
+        const barWidth = width;
+        const barHeight = 3;
+        const barY = height/2 + 5;
+        
+        // Background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(-barWidth/2, barY, barWidth, barHeight);
+        
+        // Health
+        ctx.fillStyle = healthPercent > 0.6 ? 'green' : healthPercent > 0.3 ? 'yellow' : 'red';
+        ctx.fillRect(-barWidth/2, barY, barWidth * healthPercent, barHeight);
+      }
+      
+      // Restore context
+      ctx.restore();
+    }
+    
+    /**
+     * Draw a simple rectangle for debugging
+     * @param {CanvasRenderingContext2D} ctx - Canvas rendering context
+     * @param {Object} cameraPosition - Camera position {x, y}
+     */
+    drawDebugRect(ctx, cameraPosition) {
+      // Get screen dimensions
+      const screenWidth = ctx.canvas.width;
+      const screenHeight = ctx.canvas.height;
+      
+      // Define scale based on view type
+      const scaleFactor = window.gameState?.camera?.viewType === 'strategic' ? 0.5 : 1;
+      
+      // Calculate screen position
+      const screenX = (this.x - cameraPosition.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
+      const screenY = (this.y - cameraPosition.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
+      
+      // Apply the same scale factor used for the main character
+      const width = this.width * SCALE;
+      const height = this.height * SCALE;
+      
+      // Draw debug rectangle
+      ctx.fillStyle = 'red';
+      ctx.fillRect(
+        screenX - width/2,
+        screenY - height/2,
+        width, height
+      );
+      
+      // Draw player name
+      if (this.name) {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.font = '12px Arial';
+        ctx.strokeText(this.name, screenX, screenY - height/2 - 5);
+        ctx.fillText(this.name, screenX, screenY - height/2 - 5);
+      }
+    }
+}
