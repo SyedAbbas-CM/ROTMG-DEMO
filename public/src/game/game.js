@@ -179,6 +179,17 @@ export async function initGame() {
                 console.log('DEBUG: Creating test player');
                 spawnTestPlayer();
             }
+            
+            // Debug dump of player info on 'i' key
+            if (e.key === 'i') {
+                debugDumpPlayerInfo();
+            }
+            
+            // Request player list update from server on 'd' key
+            if (e.key === 'd') {
+                console.log('DEBUG: Requesting player list from server');
+                requestPlayerList();
+            }
         });
     } catch (error) {
         console.error('Error initializing the game:', error);
@@ -227,10 +238,21 @@ function initializeGameState() {
             // Set the ID for the local player
             localPlayer.id = clientId;
             
-            // IMPORTANT: Also set this in playerManager to ensure proper filtering
+            // IMPORTANT: Store this ID in multiple places to ensure consistency
+            // This is critical for proper player filtering
             playerManager.setLocalPlayerId(clientId);
             
+            // If we have a character in gameState, also ensure its ID matches
+            if (gameState.character) {
+                gameState.character.id = clientId;
+                console.log(`[setClientId] Updated gameState.character.id to ${clientId}`);
+            }
+            
+            // Log confirmation of ID setting
             console.log(`[setClientId] Local player ID set to: ${clientId}`);
+            
+            // Debug check - print the player list to verify filtering will work
+            console.log(`[setClientId] Current players in playerManager: ${Array.from(playerManager.players.keys()).join(', ')}`);
         },
         
         onConnect: () => {
@@ -248,10 +270,20 @@ function initializeGameState() {
             console.log(`[PLAYER_LIST] Player IDs in raw data: ${Object.keys(data).join(', ')}`);
             console.log(`[PLAYER_LIST] Local player ID: ${localPlayer.id}`);
             
+            // Check if data is already the players object or if it contains a players property
+            let playersData = data;
+            
+            // Make sure we're working with the correct format
+            // The server might send { players: {...} } or just {...}
+            if (data.players && typeof data.players === 'object') {
+                playersData = data.players;
+                console.log(`[PLAYER_LIST] Found nested players object with ${Object.keys(playersData).length} players`);
+            }
+            
             // Filter out the local player to avoid the ghost sprite issue
-            if (data && typeof data === 'object' && localPlayer) {
+            if (playersData && typeof playersData === 'object' && localPlayer) {
                 // Create a copy of the data without the local player
-                const filteredData = { ...data };
+                const filteredData = { ...playersData };
                 
                 // Remove local player from the data if it exists
                 if (filteredData[localPlayer.id]) {
@@ -262,10 +294,15 @@ function initializeGameState() {
                 // Log remaining players after filtering
                 console.log(`[PLAYER_LIST] Remaining players after filtering: ${Object.keys(filteredData).join(', ')}`);
                 
-                // Update players with the filtered data
-                updatePlayers(filteredData);
+                // Update players with the filtered data if there are any players left
+                if (Object.keys(filteredData).length > 0) {
+                    updatePlayers(filteredData);
+                } else {
+                    console.log(`[PLAYER_LIST] No other players to update after filtering out local player`);
+                }
             } else {
                 // If something's wrong with the data, use it as is
+                console.log(`[PLAYER_LIST] Using raw data as fallback`);
                 updatePlayers(data);
             }
         },
@@ -327,20 +364,46 @@ function initializeGameState() {
             if (enemies) enemyManager.updateEnemies(enemies);
             if (bullets) bulletManager.updateBullets(bullets);
             
+            // Check if we actually got player data
+            if (!players || typeof players !== 'object') {
+                if (Math.random() < 0.05) {
+                    console.log(`[updateWorld] No valid player data received`);
+                }
+                return;
+            }
+            
+            // Check if players object is empty
+            if (Object.keys(players).length === 0) {
+                if (Math.random() < 0.05) {
+                    console.log(`[updateWorld] Received empty players object`);
+                }
+                return;
+            }
+            
             // Filter out local player from world updates to avoid ghost sprites
-            if (players && typeof players === 'object' && localPlayer) {
+            if (localPlayer) {
                 // Create a copy of players without the local player
                 const filteredPlayers = { ...players };
                 
+                // Convert to strings for comparison to avoid type issues
+                const localPlayerId = String(localPlayer.id);
+                
                 // Remove local player from the data if it exists
-                if (filteredPlayers[localPlayer.id]) {
-                    delete filteredPlayers[localPlayer.id];
-                    
-                    // Log filtering occasionally
-                    if (Math.random() < 0.05) {
-                        console.log(`[updateWorld] Filtered out local player (${localPlayer.id}) from update`);
-                        console.log(`[updateWorld] Remaining players: ${Object.keys(filteredPlayers).join(', ')}`);
+                for (const id of Object.keys(filteredPlayers)) {
+                    if (String(id) === localPlayerId) {
+                        delete filteredPlayers[id];
+                        
+                        // Log filtering occasionally
+                        if (Math.random() < 0.05) {
+                            console.log(`[updateWorld] Filtered out local player (${id}) from update`);
+                        }
+                        break; // Only one local player should exist
                     }
+                }
+                
+                // Log remaining players occasionally
+                if (Math.random() < 0.05) {
+                    console.log(`[updateWorld] Remaining players after filtering: ${Object.keys(filteredPlayers).join(', ')}`);
                 }
                 
                 // Only update if we have players
@@ -351,8 +414,9 @@ function initializeGameState() {
                         console.log("[updateWorld] No other players to update after filtering");
                     }
                 }
-            } else if (players) {
-                // Update with original players data if filtering isn't possible
+            } else {
+                // No local player reference, can't filter properly
+                console.warn("[updateWorld] No localPlayer reference, sending unfiltered data");
                 updatePlayers(players);
             }
         },
@@ -655,4 +719,80 @@ function spawnTestPlayer() {
     playerManager.players.set(testId, testPlayerData);
     console.log(`Created test player ${testId} at (${testPlayerData.x.toFixed(1)}, ${testPlayerData.y.toFixed(1)})`);
     console.log(`Player manager now has ${playerManager.players.size} other players`);
+}
+
+/**
+ * Debug function to dump player information
+ */
+function debugDumpPlayerInfo() {
+    console.log('===== PLAYER DEBUG INFO =====');
+    console.log(`Local player: ID=${localPlayer?.id}, position=(${localPlayer?.x?.toFixed(1)}, ${localPlayer?.y?.toFixed(1)})`);
+    console.log(`Character ID in gameState: ${gameState.character?.id}`);
+    console.log(`PlayerManager local ID: ${playerManager.localPlayerId}`);
+    console.log(`Number of other players: ${playerManager.players.size}`);
+    
+    if (playerManager.players.size > 0) {
+        console.log('Other players:');
+        playerManager.players.forEach((player, id) => {
+            console.log(`  - ID=${id}, position=(${player.x?.toFixed(1)}, ${player.y?.toFixed(1)}), last update: ${new Date(player.lastUpdate).toISOString()}`);
+        });
+    } else {
+        console.log('No other players currently tracked');
+        
+        // Try to manually create a test player to help diagnose rendering issues
+        console.log('Creating test player for diagnostic purposes...');
+        spawnTestPlayer();
+        console.log('After adding test player, player count is now: ' + playerManager.players.size);
+    }
+    
+    // Add test for string vs number ID comparison
+    if (localPlayer && localPlayer.id && playerManager.players.size > 0) {
+        console.log('ID type diagnostics:');
+        console.log(`Local player ID type: ${typeof localPlayer.id}`);
+        
+        const firstPlayerId = Array.from(playerManager.players.keys())[0];
+        console.log(`First other player ID type: ${typeof firstPlayerId}`);
+        
+        const stringCompareMatch = String(localPlayer.id) === String(firstPlayerId);
+        const directCompareMatch = localPlayer.id === firstPlayerId;
+        
+        console.log(`Direct comparison: ${directCompareMatch}, String comparison: ${stringCompareMatch}`);
+    }
+    
+    // Add rendering test
+    console.log("RENDERING TEST: Forcing render of all players...");
+    console.log(`Players to render: ${playerManager.getPlayersForRender().length}`);
+    
+    // Enable visual debugging to make other players more obvious
+    playerManager.visualDebug = true;
+    console.log("Visual debugging enabled - other players will have magenta borders");
+    
+    console.log('=============================');
+    
+    // Return true to indicate diagnostic ran successfully
+    return true;
+}
+
+// Add this function to request player list from server
+function requestPlayerList() {
+    if (!networkManager || !networkManager.isConnected()) {
+        console.log("Cannot request player list: network manager not connected");
+        return;
+    }
+    
+    console.log("Requesting current player list from server...");
+    
+    // Check if networkManager has a direct method to request player list
+    if (networkManager.requestPlayerList) {
+        networkManager.requestPlayerList();
+    } else {
+        // Otherwise, try to get the player list indirectly
+        console.log("No direct method to request player list. Trying ping to trigger server response...");
+        if (networkManager.sendPing) {
+            networkManager.sendPing();
+        }
+    }
+    
+    // Show current player info
+    debugDumpPlayerInfo();
 }

@@ -1,6 +1,24 @@
 // public/src/network/ClientNetworkManager.js
 
 /**
+ * Utility for throttling log messages to reduce console spam
+ */
+const logThrottles = {};
+function throttledLog(key, message, data, interval = 1000) {
+    const now = Date.now();
+    if (!logThrottles[key] || now - logThrottles[key] >= interval) {
+        logThrottles[key] = now;
+        if (data !== undefined) {
+            console.log(message, data);
+        } else {
+            console.log(message);
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
  * ClientNetworkManager
  * Handles WebSocket communication with the game server using binary packet format
  */
@@ -64,45 +82,60 @@ export class ClientNetworkManager {
         };
         
         this.handlers[MessageType.PLAYER_LIST] = (data) => {
-            if (!data.players) {
-                console.error("Received PLAYER_LIST message with no players property:", data);
+            // Check if data is directly the players object or has a nested 'players' property
+            // This handles both formats from the server
+            let playersData = data;
+            
+            // If the data has a 'players' property and it's an object, use that
+            if (data.players && typeof data.players === 'object') {
+                playersData = data.players;
+                throttledLog('player-list-format', '[NETWORK] Found nested players property in PLAYER_LIST message');
+            }
+            
+            // Validate that we have an object with players
+            if (!playersData || typeof playersData !== 'object') {
+                console.error('Invalid player list data format:', data);
                 return;
             }
             
-            const playerCount = Object.keys(data.players || {}).length;
-            console.log(`[NETWORK] Received player list: ${playerCount} players (IDs: ${Object.keys(data.players).join(', ')})`);
+            const playerCount = Object.keys(playersData).length;
             
-            if (playerCount > 0) {
-                // Log a sample player for data validation
-                const samplePlayerId = Object.keys(data.players)[0];
-                const samplePlayer = data.players[samplePlayerId];
+            // Throttle these logs to once per second
+            throttledLog('player-list', `[NETWORK] Received player list: ${playerCount} players (IDs: ${Object.keys(playersData).join(', ')})`);
+            
+            if (playerCount > 0 && throttledLog('player-sample', 'Player sample:', null, 5000)) {
+                // Log a sample player for data validation (only once every 5 seconds)
+                const samplePlayerId = Object.keys(playersData)[0];
+                const samplePlayer = playersData[samplePlayerId];
                 console.log(`Sample player data for ${samplePlayerId}:`, samplePlayer);
             }
             
-            // Call game's setPlayers handler
+            // Call game's setPlayers handler with the correct players data
             if (this.game.setPlayers) {
-                this.game.setPlayers(data.players);
+                this.game.setPlayers(playersData);
             } else {
                 console.error("PLAYER_LIST handler called but this.game.setPlayers not defined!");
             }
         };
         
         this.handlers[MessageType.ENEMY_LIST] = (data) => {
-            console.log(`Received enemies list: ${data.enemies ? data.enemies.length : 0} enemies`);
+            throttledLog('enemy-list', `Received enemies list: ${data.enemies ? data.enemies.length : 0} enemies`, null, 2000);
             if (this.game.setEnemies && data.enemies) {
                 this.game.setEnemies(data.enemies);
             }
         };
         
         this.handlers[MessageType.BULLET_LIST] = (data) => {
-            console.log(`Received bullets list: ${data.bullets ? data.bullets.length : 0} bullets`);
+            throttledLog('bullet-list', `Received bullets list: ${data.bullets ? data.bullets.length : 0} bullets`, null, 2000);
             if (this.game.setBullets && data.bullets) {
                 this.game.setBullets(data.bullets);
             }
         };
         
         this.handlers[MessageType.WORLD_UPDATE] = (data) => {
-            // Do not log every world update to avoid console spam
+            // Only log occasionally to reduce spam
+            throttledLog('world-update', `World update received`, null, 3000);
+            
             if (this.game.updateWorld) {
                 // Check if players is nested inside a 'players' property (from server inconsistency)
                 const players = data.players?.players || data.players;
@@ -340,6 +373,20 @@ export class ClientNetworkManager {
             const packet = BinaryPacket.decode(data);
             const { type, data: messageData } = packet;
             
+            // Diagnostic: Always log PLAYER_LIST messages raw format for debugging
+            // This will help understand exactly what the server is sending
+            if (type === MessageType.PLAYER_LIST) {
+                console.log('=== RAW PLAYER_LIST MESSAGE ===');
+                console.log('Raw message data:', messageData);
+                console.log('Type of data:', typeof messageData);
+                console.log('Keys:', Object.keys(messageData));
+                console.log('Has players property:', messageData.hasOwnProperty('players'));
+                console.log('================================');
+                
+                // Store the last player list message for diagnostics
+                this.lastPlayerListMessage = messageData;
+            }
+            
             // Update server time offset
             if (messageData.timestamp) {
                 this.lastServerTime = messageData.timestamp;
@@ -505,6 +552,18 @@ export class ClientNetworkManager {
             mapId
         });
     }
+    
+    /**
+     * Request the current player list from the server
+     * This is useful for diagnostics
+     */
+    requestPlayerList() {
+        console.log("Sending player list request to server");
+        return this.send(MessageType.PLAYER_LIST_REQUEST, {
+            clientId: this.clientId,
+            timestamp: Date.now()
+        });
+    }
 }
 
 /**
@@ -606,5 +665,8 @@ export const MessageType = {
     WORLD_UPDATE: 60,
     
     // Map request
-    MAP_REQUEST: 70
+    MAP_REQUEST: 70,
+    
+    // Player list request
+    PLAYER_LIST_REQUEST: 80
 };

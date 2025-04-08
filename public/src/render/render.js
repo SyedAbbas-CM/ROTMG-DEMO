@@ -15,7 +15,7 @@ const scaleFactor = SCALE;
  * Render the character
  */
 export function renderCharacter() {
-  console.log("renderCharacter called");
+  //console.log("renderCharacter called");
   
   const character = gameState.character;
   if (!character) {
@@ -23,7 +23,7 @@ export function renderCharacter() {
     return;
   }
 
-  console.log(`Character at position: (${character.x.toFixed(1)}, ${character.y.toFixed(1)})`);
+  //console.log(`Character at position: (${character.x.toFixed(1)}, ${character.y.toFixed(1)})`);
 
   const charSheetObj = spriteManager.getSpriteSheet('character_sprites');
   if (!charSheetObj) {
@@ -88,7 +88,7 @@ export function renderCharacter() {
   }
   
   // Log sprite details
-  console.log(`Drawing character sprite from (${character.spriteX}, ${character.spriteY}) at screen pos (${x}, ${y})`);
+  //console.log(`Drawing character sprite from (${character.spriteX}, ${character.spriteY}) at screen pos (${x}, ${y})`);
   
   // Draw character image
   ctx.drawImage(
@@ -216,7 +216,7 @@ export function renderBullets() {
   
   // Minimal logging only when needed
   if (Math.random() < 0.01) { // Just 1% of frames
-    console.log(`[renderBullets] Bullets count: ${gameState.bulletManager.bulletCount || 0}`);
+    //console.log(`[renderBullets] Bullets count: ${gameState.bulletManager.bulletCount || 0}`);
   }
   
   // Call the bullet manager's render method with camera position
@@ -279,7 +279,7 @@ export function renderBullets() {
  */
 export function renderGame() {
   // Debug log to see if this function is being called
-  console.log(`renderGame called - view type: ${gameState.camera?.viewType}`);
+  //console.log(`renderGame called - view type: ${gameState.camera?.viewType}`);
   
   // Make sure canvas is properly sized
   if (canvas2D.width !== window.innerWidth || canvas2D.height !== window.innerHeight) {
@@ -380,7 +380,7 @@ export function renderPlayers() {
   
   // Log minimally, only when really needed
   if (Math.random() < 0.01) { // Just 1% of frames
-    console.log(`[renderPlayers] Rendering ${gameState.playerManager.players.size} players. Local ID: ${gameState.playerManager.localPlayerId}`);
+    //console.log(`[renderPlayers] Rendering ${gameState.playerManager.players.size} players. Local ID: ${gameState.playerManager.localPlayerId}`);
   }
   
   try {

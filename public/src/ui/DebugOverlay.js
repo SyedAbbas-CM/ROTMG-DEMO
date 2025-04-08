@@ -107,7 +107,7 @@ export class DebugOverlay {
         if (!this.enabled) return;
         
         // Basic update
-        console.log("Debug overlay updated", time);
+        //console.log("Debug overlay updated", time);
         
         // Update FPS counter
         this.frameCount++;

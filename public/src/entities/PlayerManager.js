@@ -3,6 +3,24 @@ import { TILE_SIZE, SCALE } from '../constants/constants.js';
 import { gameState } from '../game/gamestate.js';
 
 /**
+ * Utility for throttling log messages
+ */
+const logThrottles = {};
+function throttledLog(key, message, data, interval = 1000) {
+    const now = Date.now();
+    if (!logThrottles[key] || now - logThrottles[key] >= interval) {
+        logThrottles[key] = now;
+        if (data !== undefined) {
+            console.log(message, data);
+        } else {
+            console.log(message);
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
  * PlayerManager - Manages all players in the game
  */
 export class PlayerManager {
@@ -77,10 +95,10 @@ export class PlayerManager {
             }
         }
         
-        // Always log player count for debugging
-        console.log(`Player Manager: Now tracking ${this.players.size} other players`);
-        if (this.players.size > 0) {
-            console.log("Players being tracked:", Array.from(this.players.keys()));
+        // Always log player count for debugging, but throttled
+        throttledLog('player-count', `Player Manager: Now tracking ${this.players.size} other players`);
+        if (this.players.size > 0 && throttledLog('player-ids', 'Players being tracked:', Array.from(this.players.keys()), 5000)) {
+            // Log player IDs only every 5 seconds
         }
     }
     
@@ -91,24 +109,46 @@ export class PlayerManager {
     getPlayersForRender() {
         const allPlayers = Array.from(this.players.values());
         
-        // Log only player count to reduce console noise
-        if (Math.random() < 0.1) { // Only log 10% of the time
-            console.log(`[PlayerManager] Players available: ${allPlayers.length}, Local ID: ${this.localPlayerId}`);
+        // Log player data and IDs, but throttled to reduce spam
+        throttledLog('players-available', `[PlayerManager] Players available: ${allPlayers.length}, Local ID: ${this.localPlayerId}`);
+        
+        if (allPlayers.length > 0 && throttledLog('player-debug', 'Player debug info', null, 10000)) {
+            // Only log detailed player data every 10 seconds
+            console.log(`[PlayerManager] Player IDs in Map: ${Array.from(this.players.keys()).join(', ')}`);
+            console.log(`[PlayerManager] First player object:`, allPlayers[0]);
         }
         
-        // Filter out ONLY the local player by exact ID match
-        // This is the critical fix - we only want to exclude the exact local player ID
+        // Enhanced filter logic with more checks and debug output
         const playersToRender = allPlayers.filter(player => {
-            // Check for invalid IDs first
-            if (!player.id) return true; // Keep players with undefined IDs
+            // Skip players without an ID (shouldn't happen but check anyway)
+            if (!player.id) {
+                throttledLog('player-no-id', `[PlayerManager] Player without ID found, will render:`, player, 5000);
+                return true;
+            }
             
-            // Keep all players EXCEPT the one matching the local player ID
-            return player.id !== this.localPlayerId;
+            // Convert both IDs to strings for comparison (in case of type mismatch)
+            const playerId = String(player.id);
+            const localId = this.localPlayerId ? String(this.localPlayerId) : null;
+            
+            // Skip the local player - this is the key filtering logic
+            const isLocalPlayer = localId && playerId === localId;
+            
+            if (isLocalPlayer) {
+                throttledLog('filter-local', `[PlayerManager] Filtering out local player with ID: ${playerId}`, null, 5000);
+                return false;
+            }
+            
+            // Keep this player for rendering
+            return true;
         });
         
-        // Brief log of filtered results
-        if (Math.random() < 0.1 && playersToRender.length > 0) { // Only log 10% of the time
-            console.log(`[PlayerManager] Rendering ${playersToRender.length} players`);
+        // Log filtering results with throttling
+        throttledLog('render-count', `[PlayerManager] Rendering ${playersToRender.length} out of ${allPlayers.length} players`);
+        
+        if (playersToRender.length > 0 && throttledLog('render-ids', 'Players to render IDs', null, 5000)) {
+            console.log(`[PlayerManager] Players to render IDs: ${playersToRender.map(p => p.id).join(', ')}`);
+        } else if (allPlayers.length > 0 && playersToRender.length === 0 && throttledLog('all-filtered', 'All players filtered warning', null, 5000)) {
+            console.log(`[PlayerManager] WARNING: All players filtered out! Check if localPlayerId (${this.localPlayerId}) matches all player IDs`);
         }
         
         return playersToRender;
@@ -134,10 +174,8 @@ export class PlayerManager {
             return;
         }
         
-        // Minimal logging for performance
-        if (Math.random() < 0.01) { // Just 1% of calls
-            console.log(`PlayerManager rendering ${this.players.size} players`);
-        }
+        // Throttle this log to reduce spam
+        throttledLog('render-players', `PlayerManager rendering ${this.players.size} players`, null, 5000);
         
         // Get list of players to render (filtered)
         const playersToRender = this.getPlayersForRender();

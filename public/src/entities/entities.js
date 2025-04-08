@@ -3,6 +3,24 @@ import { PlayerManager } from './PlayerManager.js';
 import { Player } from '../entities/player.js';
 import { TILE_SIZE } from '../constants/constants.js';
 
+/**
+ * Utility for throttling log messages
+ */
+const logThrottles = {};
+function throttledLog(key, message, data, interval = 1000) {
+    const now = Date.now();
+    if (!logThrottles[key] || now - logThrottles[key] >= interval) {
+        logThrottles[key] = now;
+        if (data !== undefined) {
+            console.log(message, data);
+        } else {
+            console.log(message);
+        }
+        return true;
+    }
+    return false;
+}
+
 // Create a playerManager instance
 const playerManager = new PlayerManager();
 
@@ -19,10 +37,12 @@ export function updatePlayers(playerData) {
         return;
     }
     
-    // Log raw data received
-    console.log(`[updatePlayers] Raw data received: ${JSON.stringify(playerData)}`);
-    console.log(`[updatePlayers] Player IDs in data: ${Object.keys(playerData).join(', ')}`);
-    console.log(`[updatePlayers] Local player ID: ${playerManager.localPlayerId}, Character ID: ${gameState.character?.id}`);
+    // Log raw data received (throttled)
+    if (throttledLog('update-players-raw', '[updatePlayers] Raw data received:', null, 5000)) {
+        console.log(JSON.stringify(playerData));
+        console.log(`[updatePlayers] Player IDs in data: ${Object.keys(playerData).join(', ')}`);
+        console.log(`[updatePlayers] Local player ID: ${playerManager.localPlayerId}, Character ID: ${gameState.character?.id}`);
+    }
     
     // CRITICAL FIX: Filter out the metadata properties that aren't players
     // Skip properties like 'timestamp' and 'players' which aren't player objects
@@ -32,24 +52,24 @@ export function updatePlayers(playerData) {
         if (data && typeof data === 'object' && data.x !== undefined && data.y !== undefined) {
             actualPlayerData[id] = data;
         } else {
-            console.log(`Skipping non-player property: ${id}`);
+            throttledLog('skip-non-player', `Skipping non-player property: ${id}`, null, 5000);
         }
     }
     
-    // Print the filtered player data
+    // Print the filtered player data (throttled)
     const playerCount = Object.keys(actualPlayerData).length;
-    console.log(`[updatePlayers] Processing ${playerCount} players after filtering metadata properties`);
-    console.log(`[updatePlayers] Player IDs after filtering: ${Object.keys(actualPlayerData).join(', ')}`);
+    throttledLog('player-count', `[updatePlayers] Processing ${playerCount} players after filtering metadata properties`);
     
-    // Set local player ID for playerManager if not already set
-    if (!playerManager.localPlayerId && gameState.character && gameState.character.id) {
-        playerManager.setLocalPlayerId(gameState.character.id);
-        console.log(`Set local player ID to ${gameState.character.id} in playerManager`);
+    if (throttledLog('player-ids-filtered', 'Filtered player IDs', null, 5000)) {
+        console.log(`[updatePlayers] Player IDs after filtering: ${Object.keys(actualPlayerData).join(', ')}`);
     }
     
-    // Debug output of our current known local player ID
-    if (Math.random() < 0.05) {
-        console.log(`Current local player ID: ${playerManager.localPlayerId || 'not set'}, character ID: ${gameState.character?.id || 'not set'}`);
+    // IMPORTANT: Ensure localPlayerId is properly set
+    if (gameState.character && gameState.character.id) {
+        if (!playerManager.localPlayerId || playerManager.localPlayerId !== gameState.character.id) {
+            playerManager.setLocalPlayerId(gameState.character.id);
+            console.log(`[updatePlayers] Updated playerManager.localPlayerId to match character.id: ${gameState.character.id}`);
+        }
     }
     
     // IMPORTANT: Make sure playerManager is registered with gameState
@@ -58,40 +78,30 @@ export function updatePlayers(playerData) {
         console.log("Registered playerManager with gameState");
     }
     
-    // Clear old players that aren't in the update
-    const removedPlayers = [];
-    for (let id of playerManager.players.keys()) {
-        if (!actualPlayerData[id] && id !== gameState.character?.id && id !== playerManager.localPlayerId) {
-            console.log(`Removing player ${id} - no longer in updates`);
-            playerManager.players.delete(id);
-            removedPlayers.push(id);
-        }
-    }
-    
-    // Track new and updated players
-    const newPlayers = [];
-    const updatedPlayers = [];
-    
     // Update or add new players
     for (let [id, data] of Object.entries(actualPlayerData)) {
+        // IMPORTANT: String comparison to avoid type mismatches
+        const playerId = String(id);
+        const localId = playerManager.localPlayerId ? String(playerManager.localPlayerId) : null;
+        const characterId = gameState.character?.id ? String(gameState.character.id) : null;
+        
         // Skip local player since it's handled separately
-        if (id === gameState.character?.id || id === playerManager.localPlayerId) {
-            if (Math.random() < 0.05) {
-                console.log(`Skipping local player update for ID: ${id}`);
-            }
+        const isLocalPlayer = (localId && playerId === localId) || (characterId && playerId === characterId);
+        
+        if (isLocalPlayer) {
+            throttledLog('skip-local', `[updatePlayers] Skipping local player update for ID: ${id}`, null, 5000);
             continue;
         }
         
-        // Verify the player data has required properties - should be redundant now with filtering
+        // Verify the player data has required properties
         if (!data || typeof data !== 'object' || data.x === undefined || data.y === undefined) {
             console.warn(`Invalid player data for ID ${id}:`, data);
             continue;
         }
         
         if (!playerManager.players.has(id)) {
-            // Log when adding a new player
+            // Log when adding a new player - this is important so don't throttle
             console.log(`Adding new player: ${id} at position (${data.x}, ${data.y})`);
-            newPlayers.push(id);
             
             // Enhance player data with rendering info if missing
             const enhancedData = {
@@ -120,7 +130,6 @@ export function updatePlayers(playerData) {
             playerManager.players.set(id, enhancedData);
         } else {
             // Update existing player with new data
-            updatedPlayers.push(id);
             const player = playerManager.players.get(id);
             
             // Save previous position for interpolation
@@ -143,10 +152,11 @@ export function updatePlayers(playerData) {
         }
     }
     
-    // Summary log with useful details
-    if (newPlayers.length > 0 || updatedPlayers.length > 0 || removedPlayers.length > 0) {
-        console.log(`Player update complete: ${newPlayers.length} new, ${updatedPlayers.length} updated, ${removedPlayers.length} removed`);
-        console.log(`Current players in manager: ${playerManager.players.size}`);
+    // Log summary of current player count after update (throttled)
+    throttledLog('update-complete', `[updatePlayers] Update complete, playerManager now has ${playerManager.players.size} players`);
+    
+    if (playerManager.players.size > 0 && throttledLog('player-ids-current', 'Current player IDs', null, 5000)) {
+        console.log(`[updatePlayers] Current player IDs: ${Array.from(playerManager.players.keys()).join(', ')}`);
     }
 }
 

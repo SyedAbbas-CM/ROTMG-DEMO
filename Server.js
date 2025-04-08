@@ -457,6 +457,11 @@ function handleClientMessage(clientId, message) {
         handleMapRequest(clientId, data);
         break;
         
+      case MessageType.PLAYER_LIST_REQUEST:
+        // Handle request for player list
+        handlePlayerListRequest(clientId);
+        break;
+        
       default:
         console.warn(`Unknown message type from client ${clientId}: ${type}`);
     }
@@ -764,4 +769,25 @@ function spawnInitialEnemies(count) {
   }
   
   console.log(`Spawned ${count} initial enemies`);
+}
+
+/**
+ * Handle request for player list
+ * @param {number} clientId - Client ID
+ */
+function handlePlayerListRequest(clientId) {
+    console.log(`Client ${clientId} requested player list`);
+    
+    const client = clients.get(clientId);
+    if (!client) return;
+    
+    // Get player data
+    const players = {};
+    clients.forEach((otherClient, id) => {
+        players[id] = otherClient.player;
+    });
+    
+    // Send player list directly to the client
+    console.log(`Sending player list to client ${clientId}: ${Object.keys(players).length} players`);
+    sendToClient(client.socket, MessageType.PLAYER_LIST, players);
 }

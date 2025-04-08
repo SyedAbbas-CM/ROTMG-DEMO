@@ -39,7 +39,7 @@ export function renderTopDownView() {
   if (!tileSheetObj) return;
   const tileSpriteSheet = tileSheetObj.image;
 
-  console.log(`Rendering map from camera position (${Math.floor(camera.position.x)}, ${Math.floor(camera.position.y)})`);
+  //console.log(`Rendering map from camera position (${Math.floor(camera.position.x)}, ${Math.floor(camera.position.y)})`);
 
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {

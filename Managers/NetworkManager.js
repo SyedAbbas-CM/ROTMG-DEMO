@@ -94,7 +94,10 @@ class BinaryPacket {
     CHUNK_REQUEST: 51,
     CHUNK_DATA: 52,
     CHUNK_NOT_FOUND: 53,
-    MAP_REQUEST: 70
+    MAP_REQUEST: 70,
+    
+    // Player list request
+    PLAYER_LIST_REQUEST: 80
   };
   
   /**
