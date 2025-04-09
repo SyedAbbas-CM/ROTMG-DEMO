@@ -551,8 +551,22 @@ function update(delta) {
     enemyManager.update(delta);
     
     // Update map visible chunks based on player position
+    // Use different strategies based on view type to prevent flickering
     if (mapManager) {
-        mapManager.updateVisibleChunks(gameState.character.x, gameState.character.y);
+        const viewType = gameState.camera.viewType;
+        
+        if (viewType === 'strategic') {
+            // For strategic view, update chunks less frequently
+            // This is now handled in renderStrategic.js directly
+            // Do not update chunks here to prevent flickering
+        } else if (viewType === 'top-down') {
+            // For top-down view, update chunks at regular rate
+            // This view shows fewer chunks so network requests are less problematic
+            mapManager.updateVisibleChunks(gameState.character.x, gameState.character.y);
+        } else {
+            // First-person view
+            mapManager.updateVisibleChunks(gameState.character.x, gameState.character.y);
+        }
     }
     
     // Update collision detection
@@ -632,8 +646,8 @@ export function handleShoot(x, y) {
     const bulletData = {
         x: gameState.character.x,
         y: gameState.character.y,
-        vx: Math.cos(angle) * (gameState.character.projectileSpeed * 0.5), // Slower speed
-        vy: Math.sin(angle) * (gameState.character.projectileSpeed * 0.5), // Slower speed
+        vx: Math.cos(angle) * (gameState.character.projectileSpeed * 0.3), // Slower speed (changed from 0.5 to 0.3)
+        vy: Math.sin(angle) * (gameState.character.projectileSpeed * 0.3), // Slower speed (changed from 0.5 to 0.3)
         ownerId: gameState.character.id,
         damage: gameState.character.damage || 10,
         lifetime: 6.0, // Double the lifetime for better visibility (was 3.0)
@@ -660,7 +674,7 @@ export function handleShoot(x, y) {
         x: gameState.character.x,
         y: gameState.character.y,
         angle,
-        speed: gameState.character.projectileSpeed * 0.5, // Match the slower speed
+        speed: gameState.character.projectileSpeed * 0.3, // Match the slower speed (changed from 0.5 to 0.3)
         damage: gameState.character.damage || 10
     });
     

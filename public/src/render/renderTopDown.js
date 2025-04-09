@@ -15,6 +15,14 @@ canvas2D.height = window.innerHeight;
 // Rendering parameters
 const scaleFactor = 4; // Adjust scale as needed
 
+// ANTI-FLICKERING: Add a tile cache to prevent constantly requesting the same chunks
+// Top-down view has fewer tiles, so we need a smaller cache
+const topDownTileCache = new Map();
+
+// Track when we last updated chunks to limit request frequency
+let lastChunkUpdateTime = 0;
+const CHUNK_UPDATE_INTERVAL = 2000; // Only update chunks every 2 seconds for top-down (less frequently needed)
+
 export function renderTopDownView() {
   const camera = gameState.camera;
   const mapManager = gameState.map;
@@ -24,26 +32,48 @@ export function renderTopDownView() {
     return;
   }
 
-  // Clear handled in renderGame, don't do it here
-  // ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
+  // Calculate current time for throttling
+  const now = performance.now();
 
   // Determine visible tiles based on camera position
-  const tilesInViewX = Math.ceil(canvas2D.width / TILE_SIZE);
-  const tilesInViewY = Math.ceil(canvas2D.height / TILE_SIZE);
+  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE * scaleFactor));
+  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE * scaleFactor));
 
   const startX = Math.floor(camera.position.x / TILE_SIZE - tilesInViewX / 2);
   const startY = Math.floor(camera.position.y / TILE_SIZE - tilesInViewY / 2);
   const endX = startX + tilesInViewX;
   const endY = startY + tilesInViewY;
-  const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites"); // Name as defined in your config
+  
+  // ANTI-FLICKERING: Only update visible chunks periodically, not every frame
+  // Top-down view needs much less frequent updates since it shows fewer tiles
+  if (now - lastChunkUpdateTime > CHUNK_UPDATE_INTERVAL) {
+    // If mapManager has updateVisibleChunks method, call it only periodically
+    if (mapManager.updateVisibleChunks) {
+      mapManager.updateVisibleChunks(camera.position.x, camera.position.y);
+    }
+    
+    lastChunkUpdateTime = now;
+  }
+  
+  const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites");
   if (!tileSheetObj) return;
   const tileSpriteSheet = tileSheetObj.image;
 
-  //console.log(`Rendering map from camera position (${Math.floor(camera.position.x)}, ${Math.floor(camera.position.y)})`);
-
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
-      const tile = mapManager.getTile ? mapManager.getTile(x, y) : null;
+      // ANTI-FLICKERING: Check cache first before requesting tile
+      const tileKey = `${x},${y}`;
+      let tile = topDownTileCache.get(tileKey);
+      
+      if (!tile) {
+        // Get the tile from map manager if not in cache
+        tile = mapManager.getTile ? mapManager.getTile(x, y) : null;
+        
+        // Store in cache if valid
+        if (tile) {
+          topDownTileCache.set(tileKey, tile);
+        }
+      }
       
       if (tile) {
         const spritePos = TILE_SPRITES[tile.type];
@@ -60,9 +90,25 @@ export function renderTopDownView() {
     }
   }
 
-  // Entities are rendered in the main renderGame function
-  // No need to render them here
+  // ANTI-FLICKERING: Periodically clean up cache to prevent memory leaks
+  // Clean up less frequently for top-down view
+  if (now % 60000 < 16) { // Every minute
+    const cacheCleanupDistance = Math.max(tilesInViewX, tilesInViewY) * 2;
+    
+    for (const [key, _] of topDownTileCache) {
+      const [tileX, tileY] = key.split(',').map(Number);
+      const dx = Math.abs(tileX - startX - tilesInViewX/2);
+      const dy = Math.abs(tileY - startY - tilesInViewY/2);
+      
+      if (dx > cacheCleanupDistance || dy > cacheCleanupDistance) {
+        topDownTileCache.delete(key);
+      }
+    }
+  }
 }
 
 // Export to window object to avoid circular references
 window.renderTopDownView = renderTopDownView;
+
+// Log the export to ensure it's registered globally
+console.log("TopDown view render function registered:", window.renderTopDownView ? "Success" : "Failed");

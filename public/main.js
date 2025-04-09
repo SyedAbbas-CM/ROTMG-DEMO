@@ -1,5 +1,5 @@
 // main.js
-import { Game } from './src/game/Game.js';
+import { Game } from './src/game/game.js';
 
 // Server URL (change for production)
 const SERVER_URL = 'ws://localhost:3000';

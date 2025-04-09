@@ -238,22 +238,17 @@ function handleMouseClick(event) {
  * Switch between view modes (top-down, first-person, strategic)
  */
 function switchView() {
-    switch (gameState.camera.viewType) {
-        case 'top-down':
-            gameState.camera.viewType = 'strategic';
-            break;
-        case 'first-person':
-            gameState.camera.viewType = 'strategic';
-            break;
-        case 'strategic':
-            gameState.camera.viewType = 'top-down';
-            break;
-        default:
-            gameState.camera.viewType = 'top-down';
-            break;
-    }
+    // Call the enhanced debugging function we defined
+    toggleViewMode();
     
+    // Toggle the canvas visibility
     toggleViews();
+    
+    // Log available render functions for debugging
+    console.log(`[switchView] Render functions available:
+    - Top-down: ${typeof window.renderTopDownView === 'function'}
+    - Strategic: ${typeof window.renderStrategicView === 'function'}
+    Current view: ${gameState.camera.viewType}`);
 }
 
 /**
@@ -294,4 +289,33 @@ export function getMoveSpeed() {
  */
 export function getMousePosition() {
     return { x: mouseX, y: mouseY };
+}
+
+/**
+ * Handle view mode switching
+ * Most likely toggles between first-person, top-down, and strategic views
+ * Add debug logging to help diagnose view switching issues
+ */
+function toggleViewMode() {
+  if (!gameState.camera) {
+    console.error("Cannot toggle view: gameState.camera is not defined");
+    return;
+  }
+  
+  const currentView = gameState.camera.viewType;
+  console.log(`[input] Toggling view from: ${currentView}`);
+  
+  // Cycle through view types
+  if (gameState.camera.viewType === 'first-person') {
+    gameState.camera.viewType = 'top-down';
+    console.log(`[input] Switched to top-down view. render function available: ${typeof window.renderTopDownView === 'function'}`);
+  } else if (gameState.camera.viewType === 'top-down') {
+    gameState.camera.viewType = 'strategic';
+    console.log(`[input] Switched to strategic view. render function available: ${typeof window.renderStrategicView === 'function'}`);
+  } else {
+    gameState.camera.viewType = 'first-person';
+    console.log(`[input] Switched to first-person view`);
+  }
+  
+  console.log(`[input] New view type: ${gameState.camera.viewType}`);
 }

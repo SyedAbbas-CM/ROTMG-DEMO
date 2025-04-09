@@ -3,6 +3,10 @@
 import { gameState } from '../game/gamestate.js';
 import { TILE_SIZE, SCALE } from '../constants/constants.js';
 import { spriteManager } from '../assets/spriteManager.js';
+// Import view renderers - comment these out if they cause circular references
+// They should be available on the window object anyway
+// import { renderTopDownView } from './renderTopDown.js';
+// import { renderStrategicView } from './renderStrategic.js';
 
 // Get 2D Canvas Context
 const canvas2D = document.getElementById('gameCanvas');
@@ -277,9 +281,6 @@ export function renderBullets() {
  * Complete render function for game state
  */
 export function renderGame() {
-  // Debug log to see if this function is being called
-  //console.log(`renderGame called - view type: ${gameState.camera?.viewType}`);
-  
   // Make sure canvas is properly sized
   if (canvas2D.width !== window.innerWidth || canvas2D.height !== window.innerHeight) {
     canvas2D.width = window.innerWidth;
@@ -297,13 +298,27 @@ export function renderGame() {
   // Note: We don't import these functions directly to avoid circular references
   // Instead, we get them from the global scope
   const viewType = gameState.camera.viewType;
+  
   try {
-    if (viewType === 'top-down' && typeof window.renderTopDownView === 'function') {
-      window.renderTopDownView();
-    } else if (viewType === 'strategic' && typeof window.renderStrategicView === 'function') {
-      window.renderStrategicView();
+    // Log the availability of render functions (only occasionally to avoid console spam)
+    if (Math.random() < 0.01) {
+      console.log(`Render functions available: topdown=${typeof window.renderTopDownView === 'function'}, strategic=${typeof window.renderStrategicView === 'function'}`);
+    }
+    
+    if (viewType === 'top-down') {
+      if (typeof window.renderTopDownView === 'function') {
+        window.renderTopDownView();
+      } else {
+        console.error("Top-down view render function not available");
+      }
+    } else if (viewType === 'strategic') {
+      if (typeof window.renderStrategicView === 'function') {
+        window.renderStrategicView();
+      } else {
+        console.error("Strategic view render function not available - make sure renderStrategic.js is loaded and window.renderStrategicView is set");
+      }
     } else {
-      console.error(`Cannot render view type ${viewType}: render function not available`);
+      console.error(`Unknown view type ${viewType}`);
     }
   } catch (error) {
     console.error("Error rendering game view:", error);

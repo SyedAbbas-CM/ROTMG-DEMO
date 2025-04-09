@@ -8,196 +8,131 @@ import { spriteManager } from '../assets/spriteManager.js';
 const canvas2D = document.getElementById('gameCanvas');
 const ctx = canvas2D.getContext('2d');
 
-// Rendering parameters
-const scaleFactor = 0.5; // Reduce tile size for strategic view
+// Resize canvas to match window size
+canvas2D.width = window.innerWidth;
+canvas2D.height = window.innerHeight;
 
-// Track last update time for throttling
-let lastRenderFrameTime = 0;
+// Rendering parameters for strategic view (zoomed out)
+const scaleFactor = 0.5; // Smaller scale for strategic view
 
-// ANTI-FLICKERING: Tile rendering cache - stores the last rendered state of each tile
-const tileRenderCache = {
-  // Format: "x,y" -> { spriteX, spriteY, lastRendered }
-  tiles: new Map(),
-  lastCleanup: 0,
-  maxSize: 10000, // Maximum tiles to cache
-  cleanupInterval: 30000, // Cleanup less frequently (every 30 seconds)
-  
-  // Add a tile to the cache
-  addTile: function(x, y, spriteX, spriteY) {
-    const key = `${x},${y}`;
-    this.tiles.set(key, { 
-      spriteX, 
-      spriteY, 
-      lastRendered: Date.now() 
-    });
-    
-    // Cleanup if needed
-    const now = Date.now();
-    if (now - this.lastCleanup > this.cleanupInterval) {
-      this.cleanup();
-      this.lastCleanup = now;
-    }
-  },
-  
-  // Get a cached tile
-  getTile: function(x, y) {
-    const key = `${x},${y}`;
-    return this.tiles.get(key);
-  },
-  
-  // Cleanup the cache (remove oldest tiles)
-  cleanup: function() {
-    if (this.tiles.size <= this.maxSize) return;
-    
-    // Sort tiles by last rendered time
-    const sortedTiles = Array.from(this.tiles.entries())
-      .sort((a, b) => a[1].lastRendered - b[1].lastRendered);
-    
-    // Remove oldest tiles
-    const removeCount = Math.floor((this.tiles.size - this.maxSize) / 2); // Only remove half the excess
-    for (let i = 0; i < removeCount; i++) {
-      this.tiles.delete(sortedTiles[i][0]);
-    }
-  }
-};
+// ANTI-FLICKERING: Add a tile cache to prevent constantly requesting the same chunks
+const strategicTileCache = new Map();
 
-// Debug variables to track rendering consistency
-const DEBUG = {
-  enabled: false, // Disable verbose debugging by default
-  lastRender: 0,
-  frameCount: 0,
-  lastRenderTime: 0,
-  renderTimes: [],
-  chunkCountHistory: [],
-  isFirstRender: true,
-  visibleTileCount: 0
-};
+// Track when we last updated chunks to limit request frequency
+let lastChunkUpdateTime = 0;
+const CHUNK_UPDATE_INTERVAL = 1000; // Only update chunks every 1 second
 
 export function renderStrategicView() {
   const camera = gameState.camera;
   const mapManager = gameState.map;
 
-  // Skip rendering if no map manager
   if (!mapManager) {
-    return; // Silently return if no map manager
+    console.warn("Cannot render map: map manager not available");
+    return;
   }
 
-  // Clear handled in renderGame function
-  // ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
-  
-  // ANTI-FLICKERING: Throttle chunk updates
+  // Calculate current time for throttling
   const now = performance.now();
-  const frameTime = now - lastRenderFrameTime;
-  
-  // Calculate how many tiles we need to render to fill the screen
-  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE * scaleFactor)) ;
-  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE * scaleFactor)) ;
-  
-  // Add buffer to prevent black edges and empty areas
-  const bufferTiles = 4;
 
-  // Calculate the starting tile coordinates
-  const cameraX = Math.floor(camera.position.x);
-  const cameraY = Math.floor(camera.position.y);
-  const startX = Math.floor(cameraX / TILE_SIZE - tilesInViewX / 2) - bufferTiles;
-  const startY = Math.floor(cameraY / TILE_SIZE - tilesInViewY / 2) - bufferTiles;
+  // Determine visible tiles based on camera position
+  // For strategic view, we show more tiles due to the smaller scale
+  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE * scaleFactor));
+  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE * scaleFactor));
+
+  // Add buffer tiles to avoid visual gaps at edges
+  const bufferTiles = 4;
+  const startX = Math.floor(camera.position.x / TILE_SIZE - tilesInViewX / 2) - bufferTiles;
+  const startY = Math.floor(camera.position.y / TILE_SIZE - tilesInViewY / 2) - bufferTiles;
   const endX = startX + tilesInViewX + bufferTiles * 2;
   const endY = startY + tilesInViewY + bufferTiles * 2;
   
-  // Get sprite sheet
+  // ANTI-FLICKERING: Only update visible chunks periodically, not every frame
+  if (now - lastChunkUpdateTime > CHUNK_UPDATE_INTERVAL) {
+    // If mapManager has updateVisibleChunks method, call it only periodically
+    if (mapManager.updateVisibleChunks) {
+      // Temporarily disable network requests if possible
+      const originalNetworkManager = mapManager.networkManager;
+      const wasAutoUpdating = mapManager.autoUpdateChunks;
+      
+      try {
+        // Disable automatic chunk updates during rendering to prevent flickering
+        mapManager.autoUpdateChunks = false;
+        
+        // Update visible chunks without network requests if possible
+        if (mapManager.updateVisibleChunksLocally) {
+          mapManager.updateVisibleChunksLocally(camera.position.x, camera.position.y);
+        } else {
+          // If no local update method, use regular update but disable network temporarily
+          mapManager.networkManager = null; // Temporarily disable network requests
+          mapManager.updateVisibleChunks(camera.position.x, camera.position.y);
+          mapManager.networkManager = originalNetworkManager; // Restore network manager
+        }
+      } catch (err) {
+        console.error("Error updating chunks:", err);
+        // Restore values in case of error
+        mapManager.autoUpdateChunks = wasAutoUpdating;
+        mapManager.networkManager = originalNetworkManager;
+      }
+    }
+    
+    lastChunkUpdateTime = now;
+  }
+  
   const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites");
   if (!tileSheetObj) return;
   const tileSpriteSheet = tileSheetObj.image;
-  
-  // Track how many tiles we actually render
-  let renderedTileCount = 0;
-  let cachedTileCount = 0;
-  
-  // Track which chunks are being used in this frame
-  const usedChunks = new Set();
-  
-  // ANTI-FLICKERING: Set to track which cached tiles we've rendered
-  const renderedCachedTiles = new Set();
-  
-  // First pass: Render actual tiles from the map
+
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
-      // Calculate chunk coordinates for this tile
-      const chunkX = Math.floor(x / mapManager.chunkSize);
-      const chunkY = Math.floor(y / mapManager.chunkSize);
-      const chunkKey = `${chunkX},${chunkY}`;
+      // ANTI-FLICKERING: Check cache first before requesting tile
+      const tileKey = `${x},${y}`;
+      let tile = strategicTileCache.get(tileKey);
       
-      // Track used chunk
-      usedChunks.add(chunkKey);
-      
-      // Calculate screen position first to see if it's visible
-      const screenX = (x * TILE_SIZE - camera.position.x) * scaleFactor + canvas2D.width / 2;
-      const screenY = (y * TILE_SIZE - camera.position.y) * scaleFactor + canvas2D.height / 2;
-      
-      // Skip if completely out of view (with buffer)
-      const tileScreenSize = TILE_SIZE * scaleFactor;
-      if (screenX < -tileScreenSize || screenX > canvas2D.width + tileScreenSize ||
-          screenY < -tileScreenSize || screenY > canvas2D.height + tileScreenSize) {
-        continue;  
+      if (!tile) {
+        // Get the tile from map manager if not in cache
+        tile = mapManager.getTile ? mapManager.getTile(x, y) : null;
+        
+        // Store in cache if valid
+        if (tile) {
+          strategicTileCache.set(tileKey, tile);
+        }
       }
-      
-      const tile = mapManager.getTile ? mapManager.getTile(x, y) : null;
       
       if (tile) {
         const spritePos = TILE_SPRITES[tile.type];
-        if (!spritePos) continue; // Skip if missing sprite data
-        
-        // Draw tile
+        // Draw tile with strategic scaling
         ctx.drawImage(
           tileSpriteSheet,
           spritePos.x, spritePos.y, TILE_SIZE, TILE_SIZE, // Source rectangle
-          screenX, screenY, tileScreenSize, tileScreenSize // Destination rectangle
+          (x * TILE_SIZE - camera.position.x) * scaleFactor + canvas2D.width / 2,
+          (y * TILE_SIZE - camera.position.y) * scaleFactor + canvas2D.height / 2,
+          TILE_SIZE * scaleFactor,
+          TILE_SIZE * scaleFactor
         );
-        
-        // ANTI-FLICKERING: Add to cache
-        tileRenderCache.addTile(x, y, spritePos.x, spritePos.y);
-        
-        // Mark as rendered
-        renderedCachedTiles.add(`${x},${y}`);
-        
-        renderedTileCount++;
-      } 
-      else {
-        // ANTI-FLICKERING: Check the tile cache for previously rendered tiles
-        const cachedTile = tileRenderCache.getTile(x, y);
-        
-        if (cachedTile) {
-          // Draw from cache
-          ctx.drawImage(
-            tileSpriteSheet,
-            cachedTile.spriteX, cachedTile.spriteY, TILE_SIZE, TILE_SIZE,
-            screenX, screenY, tileScreenSize, tileScreenSize
-          );
-          
-          // Mark as rendered
-          renderedCachedTiles.add(`${x},${y}`);
-          
-          cachedTileCount++;
-        }
       }
     }
   }
-  
-  // Update visible chunks in map manager occasionally
-  // Only do this on a timer to prevent flickering
-  if (frameTime > 1000) { // Only update chunks every 1 second
-    if (mapManager.updateVisibleChunks) {
-      // Use slightly larger distance for strategic view to reduce edge flickering
-      const strategicChunkDistance = 3; 
-      mapManager.updateVisibleChunks(camera.position.x, camera.position.y, strategicChunkDistance);
-    }
-    lastRenderFrameTime = now;
-  }
 
-  // Entities are rendered in the main renderGame function
-  // No need to render them here
+  // ANTI-FLICKERING: Periodically clean up cache to prevent memory leaks
+  // Clean up every ~30 seconds
+  if (now % 30000 < 16) {
+    // Keep this light - just clear old tiles far outside the view
+    const cacheCleanupDistance = Math.max(tilesInViewX, tilesInViewY) * 2;
+    
+    for (const [key, _] of strategicTileCache) {
+      const [tileX, tileY] = key.split(',').map(Number);
+      const dx = Math.abs(tileX - startX - tilesInViewX/2);
+      const dy = Math.abs(tileY - startY - tilesInViewY/2);
+      
+      if (dx > cacheCleanupDistance || dy > cacheCleanupDistance) {
+        strategicTileCache.delete(key);
+      }
+    }
+  }
 }
 
-// Export to window object to avoid circular references
+// Make sure this function is defined in window scope
 window.renderStrategicView = renderStrategicView;
 
+// Log when the file loads to verify it's being included
+console.log("Strategic view render system initialized. Function available:", typeof window.renderStrategicView === 'function');
