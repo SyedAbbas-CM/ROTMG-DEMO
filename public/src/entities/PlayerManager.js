@@ -167,6 +167,17 @@ export class PlayerManager {
                 animator.update(deltaTime, isMoving, velocity);
             }
         }
+        
+        // Clean up stale player positions after some time
+        // This helps prevent "ghost" player artifacts
+        const now = Date.now();
+        for (const [playerId, player] of this.players.entries()) {
+            if (now - player.lastPositionUpdate > 10000) { // 10 seconds of no updates
+                throttledLog('stale-player', `Removing stale player ${playerId} - no updates for 10 seconds`, null, 5000);
+                this.players.delete(playerId);
+                this.playerAnimators.delete(playerId);
+            }
+        }
     }
     
     /**
@@ -280,6 +291,9 @@ export class PlayerManager {
         // Define the scale factor
         const scaleFactor = gameState.camera?.viewType === 'strategic' ? 0.5 : 1;
         
+        // Get the view type for adjusted culling
+        const isStrategicView = gameState.camera?.viewType === 'strategic';
+        
         // Draw each player
         for (const player of playersToRender) {
             try {
@@ -291,9 +305,13 @@ export class PlayerManager {
                 const screenX = (player.x - cameraPosition.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
                 const screenY = (player.y - cameraPosition.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
                 
-                // Skip if off screen (with a buffer)
-                if (screenX < -width*2 || screenX > screenWidth + width*2 || 
-                    screenY < -height*2 || screenY > screenHeight + height*2) {
+                // Improved offscreen culling - use larger culling distance in strategic view
+                // to prevent players from "popping" when moving quickly
+                const cullingDistance = isStrategicView ? Math.max(screenWidth, screenHeight) : width * 2;
+                
+                // Skip if off screen (with appropriate buffer)
+                if (screenX < -cullingDistance || screenX > screenWidth + cullingDistance || 
+                    screenY < -cullingDistance || screenY > screenHeight + cullingDistance) {
                     continue;
                 }
                 
@@ -334,19 +352,6 @@ export class PlayerManager {
                     );
                 }
 
-                // Visual debugging - add bright highlight around player in debug mode
-                if (this.visualDebug) {
-                    ctx.strokeStyle = 'magenta';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(-width/2, -height/2, width, height);
-                    
-                    // Draw a line pointing up to make more obvious
-                    ctx.beginPath();
-                    ctx.moveTo(0, -height/2);
-                    ctx.lineTo(0, -height/2 - 20);
-                    ctx.stroke();
-                }
-                
                 // Draw player name
                 if (player.name) {
                     ctx.fillStyle = '#ffffff';
@@ -380,6 +385,26 @@ export class PlayerManager {
                 // Only log errors occasionally to prevent spam
                 if (Math.random() < 0.1) {
                     console.error("Error rendering player:", error, player);
+                }
+            }
+        }
+        
+        // Clear stale players if moving in strategic view
+        if (isStrategicView && gameState.character) {
+            const staticThreshold = 0.1; // Distance threshold to consider movement significant
+            const characterMoved = 
+                Math.abs(gameState.character.x - (gameState.lastUpdateX || 0)) > staticThreshold || 
+                Math.abs(gameState.character.y - (gameState.lastUpdateY || 0)) > staticThreshold;
+                
+            if (characterMoved) {
+                gameState.lastUpdateX = gameState.character.x;
+                gameState.lastUpdateY = gameState.character.y;
+                
+                // Force clear canvas next frame to remove any ghost artifacts
+                if (!this._lastClearCanvas) {
+                    this._lastClearCanvas = Date.now();
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(0, 0, screenWidth, screenHeight);
                 }
             }
         }

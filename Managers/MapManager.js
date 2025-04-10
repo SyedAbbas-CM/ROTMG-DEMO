@@ -265,29 +265,41 @@ export class MapManager {
   }
   
   /**
-   * Save a map to a JSON file (server-side)
-   * @param {string} mapId - Map ID
+   * Save map to a file
+   * @param {string} mapId - Map ID to save
    * @param {string} filename - Filename to save as
-   * @returns {boolean} - Success status
+   * @returns {Promise<boolean>} - Promise resolving to success status
    */
-  saveMap(mapId, filename) {
+  async saveMap(mapId, filename) {
     if (!this.maps.has(mapId)) {
       console.error(`Map ${mapId} not found`);
       return false;
     }
     
-    // Only available in Node.js
-    if (typeof require !== 'function') {
-      console.error('Save map is only available server-side');
+    // Check if we're running in Node.js - use dynamic import for ES modules
+    let fs, path;
+    try {
+      // Use dynamic import for ES modules
+      const fsModule = await import('fs');
+      const pathModule = await import('path');
+      fs = fsModule.default || fsModule;
+      path = pathModule.default || pathModule;
+      console.log("Using ES dynamic import");
+    } catch (e) {
+      console.error("Cannot access the file system:", e.message);
       return false;
     }
     
     try {
-      const fs = require('fs');
-      const path = require('path');
-      
       // Get map metadata
       const mapData = this.maps.get(mapId);
+      console.log(`DEBUG: Preparing to save map ${mapId} with dimensions ${mapData.width}x${mapData.height}`);
+      
+      // Make sure directory exists
+      if (!fs.existsSync(this.mapStoragePath)) {
+        console.log(`DEBUG: Creating map storage directory: ${this.mapStoragePath}`);
+        fs.mkdirSync(this.mapStoragePath, { recursive: true });
+      }
       
       // Collect all chunks for this map
       const chunks = {};
@@ -297,6 +309,8 @@ export class MapManager {
         }
       }
       
+      console.log(`DEBUG: Found ${Object.keys(chunks).length} chunks to save`);
+      
       // Prepare the full map data
       const fullMapData = {
         ...mapData,
@@ -305,12 +319,165 @@ export class MapManager {
       
       // Save to file
       const filePath = path.join(this.mapStoragePath, filename);
+      console.log(`DEBUG: Attempting to save map to path: ${filePath}`);
+      
+      // Create maps directory if it doesn't exist
+      if (!fs.existsSync(path.dirname(filePath))) {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        console.log(`DEBUG: Created directory: ${path.dirname(filePath)}`);
+      }
+      
       fs.writeFileSync(filePath, JSON.stringify(fullMapData, null, 2));
       
-      console.log(`Map saved to ${filePath}`);
+      console.log(`Map saved to ${filePath} successfully!`);
       return true;
     } catch (error) {
       console.error('Failed to save map:', error);
+      console.error(`ERROR DETAILS: ${error.message}`);
+      console.error(`Stack trace: ${error.stack}`);
+      console.error(`Map storage path: ${this.mapStoragePath}`);
+      return false;
+    }
+  }
+  
+  /**
+   * Save map as a simple 2D array of tile types
+   * @param {string} mapId - Map ID to save
+   * @param {string} filename - Filename to save as
+   * @returns {Promise<boolean>} - Promise resolving to success status
+   */
+  async saveSimpleMap(mapId, filename) {
+    if (!this.maps.has(mapId)) {
+      console.error(`Map ${mapId} not found`);
+      return false;
+    }
+    
+    // Check if we're running in Node.js - use dynamic import for ES modules
+    let fs, path;
+    try {
+      // Use dynamic import for ES modules
+      const fsModule = await import('fs');
+      const pathModule = await import('path');
+      fs = fsModule.default || fsModule;
+      path = pathModule.default || pathModule;
+      console.log("Using ES dynamic import");
+    } catch (e) {
+      console.error("Cannot access the file system:", e.message);
+      return false;
+    }
+    
+    try {
+      // Get map metadata
+      const mapData = this.maps.get(mapId);
+      const width = mapData.width;
+      const height = mapData.height;
+      
+      console.log(`DEBUG: Preparing to save simple map ${mapId} with dimensions ${width}x${height}`);
+      
+      // Make sure directory exists
+      if (!fs.existsSync(this.mapStoragePath)) {
+        console.log(`DEBUG: Creating map storage directory: ${this.mapStoragePath}`);
+        fs.mkdirSync(this.mapStoragePath, { recursive: true });
+      }
+      
+      // Create a 2D array initialized with -1 (unknown)
+      const tileMap = Array(height).fill().map(() => Array(width).fill(-1));
+      
+      // FIXED: Use the direct approach to get tile types
+      console.log(`Trying direct tile lookup for map ${mapId} - width=${width}, height=${height}`);
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          // Get tile directly using getTile method
+          const tile = this.getTile(x, y);
+          if (tile) {
+            tileMap[y][x] = tile.type;
+          }
+        }
+      }
+      
+      // Check if we still have all -1s, if so try the chunk approach as backup
+      let allNegativeOne = true;
+      for (let y = 0; y < height && allNegativeOne; y++) {
+        for (let x = 0; x < width && allNegativeOne; x++) {
+          if (tileMap[y][x] !== -1) {
+            allNegativeOne = false;
+            break;
+          }
+        }
+      }
+      
+      // If all still -1, try the chunk approach
+      if (allNegativeOne) {
+        console.log(`WARNING: Direct tile lookup failed, trying chunk-based approach`);
+        let processedChunks = 0;
+        
+        for (const [key, chunk] of this.chunks.entries()) {
+          // Log all keys for debugging
+          console.log(`DEBUG: Checking chunk key: ${key} for map prefix ${mapId}_`);
+          
+          if (!key.startsWith(`${mapId}_`)) continue;
+          
+          const chunkKey = key.substring(mapId.length + 1);
+          const [chunkX, chunkY] = chunkKey.split(',').map(Number);
+          const startX = chunkX * this.maps.get(mapId).chunkSize;
+          const startY = chunkY * this.maps.get(mapId).chunkSize;
+          
+          console.log(`DEBUG: Processing chunk ${chunkKey} at position (${startX}, ${startY})`);
+          
+          // Debug chunk data structure
+          console.log(`DEBUG: Chunk structure: ${JSON.stringify(Object.keys(chunk))}`);
+          console.log(`DEBUG: Chunk tiles length: ${chunk.tiles ? chunk.tiles.length : 'undefined'}`);
+          
+          // Fill in the tile types from this chunk
+          if (chunk.tiles) {
+            for (let y = 0; y < chunk.tiles.length; y++) {
+              if (!chunk.tiles[y]) continue;
+              
+              for (let x = 0; x < chunk.tiles[y].length; x++) {
+                const globalX = startX + x;
+                const globalY = startY + y;
+                
+                // Skip if outside map bounds
+                if (globalX >= width || globalY >= height) continue;
+                
+                const tile = chunk.tiles[y][x];
+                if (tile) {
+                  tileMap[globalY][globalX] = tile.type;
+                }
+              }
+            }
+          }
+          
+          processedChunks++;
+        }
+        
+        console.log(`DEBUG: Processed ${processedChunks} chunks for the simple map`);
+      }
+      
+      // Save to file
+      const filePath = path.join(this.mapStoragePath, filename);
+      console.log(`DEBUG: Attempting to save simple map to path: ${filePath}`);
+      
+      // Create maps directory if it doesn't exist
+      if (!fs.existsSync(path.dirname(filePath))) {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+        console.log(`DEBUG: Created directory: ${path.dirname(filePath)}`);
+      }
+      
+      // Format the map with one row per line for readability
+      const formattedJson = "[\n" + 
+        tileMap.map(row => "  " + JSON.stringify(row)).join(",\n") + 
+        "\n]";
+      
+      fs.writeFileSync(filePath, formattedJson);
+      
+      console.log(`Simple map saved to ${filePath} successfully!`);
+      return true;
+    } catch (error) {
+      console.error('Failed to save simple map:', error);
+      console.error(`ERROR DETAILS: ${error.message}`);
+      console.error(`Stack trace: ${error.stack}`);
+      console.error(`Map storage path: ${this.mapStoragePath}`);
       return false;
     }
   }

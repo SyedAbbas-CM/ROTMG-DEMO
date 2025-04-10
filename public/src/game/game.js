@@ -190,6 +190,17 @@ export async function initGame() {
                 console.log('DEBUG: Requesting player list from server');
                 requestPlayerList();
             }
+            
+            // Debug map information on 'm' key
+            if (e.key === 'm') {
+                console.log('DEBUG: Printing map information');
+                if (mapManager) {
+                    // Print basic info by default, hold shift for detailed info
+                    mapManager.debugPrintMapInfo(e.shiftKey);
+                } else {
+                    console.log('No map manager available');
+                }
+            }
         });
     } catch (error) {
         console.error('Error initializing the game:', error);

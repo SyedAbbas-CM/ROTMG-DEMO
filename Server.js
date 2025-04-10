@@ -74,12 +74,76 @@ app.get('/api/maps/:id/chunk/:x/:y', (req, res) => {
 // Create initial procedural map
 let defaultMapId;
 try {
+  // Set map storage path for the server
+  mapManager.mapStoragePath = './maps';
+  
+  // Create a procedural map with reduced size
   defaultMapId = mapManager.createProceduralMap({
-    width: 256,
-    height: 256,
+    width: 64,
+    height: 64,
+    seed: 123456789,
     name: 'Default Map'
   });
   console.log(`Created default map: ${defaultMapId} - This is the map ID that will be sent to clients`);
+  
+  // Direct save - guaranteed to work with imported fs
+  const enableDirectMapSave = false; // Set to true to enable direct map saving
+  if (enableDirectMapSave) {
+    try {
+      // Get map metadata
+      const mapData = mapManager.getMapMetadata(defaultMapId);
+      
+      // Create a simple tile map
+      const simpleTileMap = [];
+      for (let y = 0; y < mapData.height; y++) {
+        const row = [];
+        for (let x = 0; x < mapData.width; x++) {
+          // Get tile type, default to -1 if not found
+          const tile = mapManager.getTile(x, y);
+          row.push(tile ? tile.type : -1);
+        }
+        simpleTileMap.push(row);
+      }
+      
+      // Save the simple map directly to the root directory with custom formatting
+      const directFilePath = './direct_simple_map.json';
+      
+      // Custom formatting: one row per line, no commas between rows
+      const formattedJson = "[\n" + 
+        simpleTileMap.map(row => "  " + JSON.stringify(row)).join(",\n") + 
+        "\n]";
+      
+      fs.writeFileSync(directFilePath, formattedJson);
+      console.log(`DIRECT SAVE: Simple map saved to ${directFilePath} with custom formatting`);
+    } catch (directSaveError) {
+      console.error("Error with direct save:", directSaveError);
+    }
+  }
+  
+  // Save the map to a file for debugging purposes
+  (async () => {
+    try {
+      // Save detailed version using the MapManager methods in the maps folder
+      const filename = `server_map_${defaultMapId}.json`;
+      const saveResult = await mapManager.saveMap(defaultMapId, filename);
+      if (saveResult) {
+        console.log(`SERVER MAP SAVED: Map saved to maps/${filename}`);
+      } else {
+        console.error(`Failed to save map to file`);
+      }
+      
+      // Save simple tile type array version using MapManager method
+      const simpleFilename = `simple_map_${defaultMapId}.json`;
+      const simpleResult = await mapManager.saveSimpleMap(defaultMapId, simpleFilename);
+      if (simpleResult) {
+        console.log(`SIMPLE MAP SAVED: Simple map format saved to maps/${simpleFilename}`);
+      } else {
+        console.error(`Failed to save simple map format`);
+      }
+    } catch (saveError) {
+      console.error("Error saving map to file:", saveError);
+    }
+  })();
 } catch (error) {
   console.error("Error creating procedural map:", error);
   defaultMapId = "default";
@@ -238,7 +302,7 @@ function updateGame() {
   // Update enemies with target
   const activeEnemies = enemyManager.update(deltaTime, bulletManager, target);
   if (activeEnemies > 0) {
-    console.log(`Active enemies: ${activeEnemies}, targeting position (${target.x.toFixed(2)}, ${target.y.toFixed(2)})`);
+    //console.log(`Active enemies: ${activeEnemies}, targeting position (${target.x.toFixed(2)}, ${target.y.toFixed(2)})`);
   }
   
   // Check for collisions
@@ -790,4 +854,47 @@ function handlePlayerListRequest(clientId) {
     // Send player list directly to the client
     console.log(`Sending player list to client ${clientId}: ${Object.keys(players).length} players`);
     sendToClient(client.socket, MessageType.PLAYER_LIST, players);
+}
+
+// Helper function to create a simple tile map format (2D array of tile types)
+function createSimpleTileMap(mapManager, mapId) {
+  const mapData = mapManager.getMapMetadata(mapId);
+  const width = mapData.width;
+  const height = mapData.height;
+  const chunkSize = mapData.chunkSize;
+  
+  // Create a 2D array initialized with -1 (unknown)
+  const tileMap = Array(height).fill().map(() => Array(width).fill(-1));
+  
+  // Populate the map with actual tile types from all chunks
+  for (const [key, chunk] of mapManager.chunks.entries()) {
+    if (!key.startsWith(`${mapId}_`)) continue;
+    
+    const chunkKey = key.substring(mapId.length + 1);
+    const [chunkX, chunkY] = chunkKey.split(',').map(Number);
+    const startX = chunkX * chunkSize;
+    const startY = chunkY * chunkSize;
+    
+    // Fill in the tile types from this chunk
+    if (chunk.tiles) {
+      for (let y = 0; y < chunk.tiles.length; y++) {
+        if (!chunk.tiles[y]) continue;
+        
+        for (let x = 0; x < chunk.tiles[y].length; x++) {
+          const globalX = startX + x;
+          const globalY = startY + y;
+          
+          // Skip if outside map bounds
+          if (globalX >= width || globalY >= height) continue;
+          
+          const tile = chunk.tiles[y][x];
+          if (tile) {
+            tileMap[globalY][globalX] = tile.type;
+          }
+        }
+      }
+    }
+  }
+  
+  return tileMap;
 }

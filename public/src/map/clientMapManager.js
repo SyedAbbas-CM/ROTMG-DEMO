@@ -88,6 +88,9 @@ export class ClientMapManager {
     setChunkData(chunkX, chunkY, chunkData) {
         const key = `${chunkX},${chunkY}`;
         
+        // Track time for performance measurement
+        const startTime = performance.now();
+        
         // Process chunk data to match our format
         const processedChunk = this.processChunkData(chunkData);
         
@@ -98,7 +101,26 @@ export class ClientMapManager {
         // Remove from pending
         this.pendingChunks.delete(key);
         
-        console.log(`Stored chunk (${chunkX}, ${chunkY}) with ${processedChunk.length} rows`);
+        // Calculate processing time
+        const processingTime = (performance.now() - startTime).toFixed(2);
+        
+        // Log more detailed chunk info but keep it infrequent to avoid spam
+        if (Math.random() < 0.2) { // Only log 20% of chunks
+            console.log(`[MapManager] Received chunk at (${chunkX}, ${chunkY}): ${processedChunk.length} rows x ${processedChunk[0]?.length || 0} cols (processed in ${processingTime}ms)`);
+            
+            // Count tile types for debugging
+            const tileCounts = {};
+            if (processedChunk && Array.isArray(processedChunk)) {
+                for (const row of processedChunk) {
+                    for (const tile of row) {
+                        const type = tile?.type || 'unknown';
+                        tileCounts[type] = (tileCounts[type] || 0) + 1;
+                    }
+                }
+                // Log tile distribution
+                console.log(`[MapManager] Chunk ${key} tile distribution:`, tileCounts);
+            }
+        }
         
         // Trim cache if needed
         this.trimChunkCache();
@@ -171,12 +193,18 @@ export class ClientMapManager {
             return;
         }
         
+        // Log request for debugging
+        console.log(`[MapManager] Updating visible chunks around (${playerX.toFixed(1)}, ${playerY.toFixed(1)})`);
+        
         // Convert player position to chunk coordinates (integers)
         const centerChunkX = Math.floor(playerX / (this.tileSize * this.chunkSize));
         const centerChunkY = Math.floor(playerY / (this.tileSize * this.chunkSize));
         
+        //console.log(`[MapManager] Center chunk: (${centerChunkX}, ${centerChunkY})`);
+        
         // Get chunks in view distance
         const newVisibleChunks = [];
+        const chunksRequested = []; // Track new chunk requests for logging
         
         for (let dy = -this.chunkLoadDistance; dy <= this.chunkLoadDistance; dy++) {
             for (let dx = -this.chunkLoadDistance; dx <= this.chunkLoadDistance; dx++) {
@@ -207,7 +235,7 @@ export class ClientMapManager {
                     this.pendingChunks.add(key);
                     try {
                         this.networkManager.requestChunk(chunkX, chunkY);
-                        console.log(`Requested chunk (${chunkX}, ${chunkY})`);
+                        chunksRequested.push(`(${chunkX},${chunkY})`);
                     } catch (error) {
                         console.error(`Error requesting chunk (${chunkX}, ${chunkY}):`, error);
                         this.pendingChunks.delete(key);
@@ -216,7 +244,91 @@ export class ClientMapManager {
             }
         }
         
+        // Log chunk requests in a single message to reduce console spam
+        if (chunksRequested.length > 0) {
+            console.log(`[MapManager] Requested ${chunksRequested.length} new chunks: ${chunksRequested.join(', ')}`);
+        }
+        
         this.visibleChunks = newVisibleChunks;
+    }
+    
+    /**
+     * Update visible chunks without making network requests
+     * Use this to prevent flickering in strategic view
+     * @param {number} playerX - Player X position
+     * @param {number} playerY - Player Y position
+     * @param {number} [customChunkDistance] - Optional chunk load distance
+     */
+    updateVisibleChunksLocally(playerX, playerY, customChunkDistance) {
+        // Log local update
+        console.log(`[MapManager] Updating visible chunks LOCALLY around (${playerX.toFixed(1)}, ${playerY.toFixed(1)})`);
+        
+        // Convert player position to chunk coordinates
+        const centerChunkX = Math.floor(playerX / (this.tileSize * this.chunkSize));
+        const centerChunkY = Math.floor(playerY / (this.tileSize * this.chunkSize));
+        
+        // Use custom distance if provided, otherwise use default
+        const effectiveChunkLoadDistance = customChunkDistance !== undefined ? 
+            customChunkDistance : this.chunkLoadDistance;
+        
+        console.log(`[MapManager] Local update center chunk: (${centerChunkX}, ${centerChunkY}), distance: ${effectiveChunkLoadDistance}`);
+        
+        // Update visible chunks list without requesting any new chunks
+        const newVisibleChunks = [];
+        const missingChunks = []; // Track chunks that would be loaded if we were making network requests
+        
+        // Build list of currently visible chunks
+        for (let dy = -effectiveChunkLoadDistance; dy <= effectiveChunkLoadDistance; dy++) {
+            for (let dx = -effectiveChunkLoadDistance; dx <= effectiveChunkLoadDistance; dx++) {
+                const chunkX = centerChunkX + dx;
+                const chunkY = centerChunkY + dy;
+                
+                // Skip if out of map bounds
+                if (this.mapMetadata && this.width > 0 && this.height > 0) {
+                    const chunkStartX = chunkX * this.chunkSize;
+                    const chunkStartY = chunkY * this.chunkSize;
+                    
+                    if (chunkStartX < 0 || chunkStartY < 0 || 
+                        chunkStartX >= this.width || 
+                        chunkStartY >= this.height) {
+                        continue;
+                    }
+                }
+                
+                const key = `${chunkX},${chunkY}`;
+                
+                // Add to visible chunks list
+                newVisibleChunks.push({ x: chunkX, y: chunkY, key });
+                
+                // Update last accessed time for existing chunks
+                if (this.chunks.has(key)) {
+                    this.chunkLastAccessed.set(key, Date.now());
+                } else {
+                    // Track missing chunks (only done for debugging)
+                    missingChunks.push(`(${chunkX},${chunkY})`);
+                }
+                // No network requests here, unlike updateVisibleChunks
+            }
+        }
+        
+        // Log missing chunks for debugging
+        if (missingChunks.length > 0) {
+            console.log(`[MapManager] ${missingChunks.length} chunks in view distance not loaded: ${missingChunks.join(', ')}`);
+        }
+        
+        // Update the visible chunks list
+        this.visibleChunks = newVisibleChunks;
+        
+        // No trimming of the cache here to avoid any visual jitter
+        
+        // Update last position for next call
+        this._lastPlayerPosition = { x: centerChunkX, y: centerChunkY };
+        
+        return {
+            center: { x: centerChunkX, y: centerChunkY },
+            loadedChunks: this.visibleChunks.length - missingChunks.length,
+            missingChunks: missingChunks.length
+        };
     }
     
     /**
@@ -241,7 +353,7 @@ export class ClientMapManager {
             this.chunkLastAccessed.delete(key);
         }
         
-        console.log(`Trimmed ${removeCount} chunks from cache`);
+            console.log(`Trimmed ${removeCount} chunks from cache`);
     }
     
     /**
@@ -414,6 +526,274 @@ export class ClientMapManager {
         if (!this.eventListeners[event]) return;
         for (const callback of this.eventListeners[event]) {
             callback(data);
+        }
+    }
+    
+    /**
+     * Print debug information about the current map state
+     * @param {boolean} [showFullChunks=false] - Whether to print full chunk data
+     */
+    debugPrintMapInfo(showFullChunks = false) {
+        console.log('=== MAP MANAGER DEBUG INFO ===');
+        console.log(`Map ID: ${this.activeMapId || 'None'}`);
+        console.log(`Map Size: ${this.width}x${this.height}`);
+        console.log(`Tile Size: ${this.tileSize}, Chunk Size: ${this.chunkSize}`);
+        console.log(`Procedural Generation: ${this.proceduralEnabled ? 'Enabled' : 'Disabled'}`);
+        console.log(`Loaded Chunks: ${this.chunks.size}`);
+        console.log(`Pending Chunks: ${this.pendingChunks.size}`);
+        console.log(`Visible Chunks: ${this.visibleChunks.length}`);
+        
+        // Print chunk locations
+        const chunkLocations = Array.from(this.chunks.keys()).map(key => {
+            const [x, y] = key.split(',').map(Number);
+            return `(${x},${y})`;
+        });
+        console.log(`Chunk Locations: ${chunkLocations.join(', ')}`);
+        
+        // Print chunk data if requested
+        if (showFullChunks) {
+            console.log('=== CHUNK DATA ===');
+            this.chunks.forEach((chunk, key) => {
+                console.log(`Chunk ${key}:`);
+                this.printChunkVisually(key, chunk);
+            });
+        }
+        
+        console.log('=============================');
+    }
+    
+    /**
+     * Print a visual representation of a chunk to the console
+     * @param {string} chunkKey - The chunk key (e.g. "0,0")
+     * @param {Array} chunk - The chunk data
+     */
+    printChunkVisually(chunkKey, chunk) {
+        if (!chunk || !Array.isArray(chunk)) {
+            console.log(`Chunk ${chunkKey} has invalid data format`);
+            return;
+        }
+        
+        // Define tile type symbols for visual representation
+        const symbols = {
+            [TILE_IDS.FLOOR]: '.',
+            [TILE_IDS.WALL]: '#',
+            [TILE_IDS.OBSTACLE]: 'O',
+            [TILE_IDS.WATER]: '~',
+            [TILE_IDS.MOUNTAIN]: '^',
+            'default': '?'
+        };
+        
+        console.log(`Chunk ${chunkKey} - ${chunk.length}x${chunk[0]?.length || 0}:`);
+        
+        // Build visual representation
+        const visual = [];
+        for (let y = 0; y < chunk.length; y++) {
+            let row = '';
+            for (let x = 0; x < chunk[y].length; x++) {
+                const tile = chunk[y][x];
+                const tileType = tile?.type || 'default';
+                row += symbols[tileType] || symbols['default'];
+            }
+            visual.push(row);
+        }
+        
+        // Print the visual representation
+        visual.forEach(row => console.log(row));
+    }
+    
+    /**
+     * Visualize the loaded map in the browser console with color
+     * @param {number} centerX - Center tile X coordinate
+     * @param {number} centerY - Center tile Y coordinate
+     * @param {number} width - Width in tiles to visualize
+     * @param {number} height - Height in tiles to visualize
+     */
+    visualizeMap(centerX = null, centerY = null, width = 40, height = 20) {
+        console.log('=== MAP VISUALIZATION ===');
+        
+        // If no center specified, use player position
+        if (centerX === null || centerY === null) {
+            if (gameState && gameState.character) {
+                centerX = Math.floor(gameState.character.x);
+                centerY = Math.floor(gameState.character.y);
+            } else {
+                centerX = 0;
+                centerY = 0;
+            }
+        }
+        
+        console.log(`Map centered at (${centerX}, ${centerY}), showing ${width}x${height} tiles`);
+        
+        // Calculate boundaries
+        const startX = Math.floor(centerX - width / 2);
+        const startY = Math.floor(centerY - height / 2);
+        const endX = startX + width;
+        const endY = startY + height;
+        
+        // Define colors for different tile types
+        const colors = {
+            [TILE_IDS.FLOOR]: 'color: #8a8a8a', // Gray
+            [TILE_IDS.WALL]: 'color: #d43f3f', // Red
+            [TILE_IDS.OBSTACLE]: 'color: #d49f3f', // Orange
+            [TILE_IDS.WATER]: 'color: #3f8ad4', // Blue
+            [TILE_IDS.MOUNTAIN]: 'color: #6f6f6f', // Dark gray
+            'current': 'color: #ffffff; background-color: #ff0000', // White on red for player position
+            'default': 'color: #ffffff' // White
+        };
+        
+        // Define symbols for tile types
+        const symbols = {
+            [TILE_IDS.FLOOR]: '·',
+            [TILE_IDS.WALL]: '█',
+            [TILE_IDS.OBSTACLE]: '▒',
+            [TILE_IDS.WATER]: '≈',
+            [TILE_IDS.MOUNTAIN]: '▲',
+            'current': '⊕',
+            'default': '?'
+        };
+        
+        // Track which chunks are loaded or missing
+        const loadedChunks = new Set();
+        const missingChunks = new Set();
+        
+        // Build the visualization row by row
+        for (let y = startY; y < endY; y++) {
+            let row = '%c';
+            let formats = [];
+            
+            for (let x = startX; x < endX; x++) {
+                // Check if this is the player position
+                const isPlayerPos = (x === centerX && y === centerY);
+                
+                if (isPlayerPos) {
+                    row += symbols['current'];
+                    formats.push(colors['current']);
+                    continue;
+                }
+                
+                // Get tile type
+                const tile = this.getTile(x, y);
+                
+                // Track chunk status
+                const chunkX = Math.floor(x / this.chunkSize);
+                const chunkY = Math.floor(y / this.chunkSize);
+                const chunkKey = `${chunkX},${chunkY}`;
+                
+                if (this.chunks.has(chunkKey)) {
+                    loadedChunks.add(chunkKey);
+                } else {
+                    missingChunks.add(chunkKey);
+                }
+                
+                // Add appropriate symbol with color
+                if (tile) {
+                    const tileType = tile.type;
+                    row += '%c' + (symbols[tileType] || symbols['default']);
+                    formats.push(colors[tileType] || colors['default']);
+                    } else {
+                    row += '%c' + '.';
+                    formats.push('color: #333333'); // Dark gray for unknown/missing
+                }
+            }
+            
+            // Print the row with formats
+            console.log(row, ...formats);
+        }
+        
+        // Print chunk information
+        console.log('Loaded chunks: ' + Array.from(loadedChunks).join(', '));
+        console.log('Missing chunks: ' + Array.from(missingChunks).join(', '));
+        console.log('===========================');
+        
+        // Return summary
+        return {
+            center: { x: centerX, y: centerY },
+            loadedChunks: loadedChunks.size,
+            missingChunks: missingChunks.size,
+            tilesShown: width * height
+        };
+    }
+    
+    /**
+     * Save current map data to a file
+     * @returns {Object} Map data object
+     */
+    saveMapData() {
+        // Get map dimensions
+        const width = this.width || 64;
+        const height = this.height || 64;
+        
+        console.log(`Saving map with dimensions ${width}x${height}`);
+        
+        // Initialize with 0 (floor) as default
+        const tileMap = Array(height).fill().map(() => Array(width).fill(0));
+        
+        // Keep track of chunks and tiles processed
+        const loadedChunks = new Set();
+        const tilesFound = 0;
+        
+        // Process all loaded chunks
+        for (const [key, chunk] of this.chunks.entries()) {
+            const [chunkX, chunkY] = key.split(',').map(Number);
+            const startX = chunkX * this.chunkSize;
+            const startY = chunkY * this.chunkSize;
+            
+            loadedChunks.add(key);
+            
+            // Process each tile in the chunk
+            if (chunk && Array.isArray(chunk)) {
+                for (let y = 0; y < chunk.length; y++) {
+                    if (!chunk[y]) continue;
+                    
+                    for (let x = 0; x < chunk[y].length; x++) {
+                        if (!chunk[y][x]) continue;
+                        
+                        const globalX = startX + x;
+                        const globalY = startY + y;
+                        
+                        // Make sure we're within the map bounds
+                        if (globalX >= 0 && globalX < width && globalY >= 0 && globalY < height) {
+                            if (chunk[y][x].type !== undefined) {
+                                tileMap[globalY][globalX] = chunk[y][x].type;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Format JSON with one row per line for readability
+        const formattedJson = "[\n" + 
+            tileMap.map(row => "  " + JSON.stringify(row)).join(",\n") + 
+            "\n]";
+        
+        // Save the map using the browser's download capability
+        try {
+            const blob = new Blob([formattedJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `client_map_direct_${this.activeMapId || 'unknown'}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log(`Map data saved to ${a.download} (${loadedChunks.size} chunks)`);
+            
+            // Make the save map function available globally for debugging
+            window.clientMapData = tileMap;
+            console.log("Map data also available at window.clientMapData");
+            
+            return { 
+                tileMap, 
+                loadedChunks: loadedChunks.size,
+                width,
+                height
+            };
+        } catch (error) {
+            console.error("Error saving map data:", error);
+            return null;
         }
     }
 }

@@ -18,6 +18,428 @@ function throttledLog(key, message, data, interval = 1000) {
     return false;
 }
 
+// Simple utility to save map data to a file
+window.saveMapData = function() {
+    try {
+        // First check if we have direct access to the clientMapManager
+        if (window.gameState && window.gameState.map) {
+            console.log("Saving map data from ClientMapManager...");
+            console.log("Map object:", window.gameState.map);
+            console.log("Loaded chunks:", window.gameState.map.chunks ? window.gameState.map.chunks.size : 0);
+            
+            // Get map dimensions
+            const map = window.gameState.map;
+            const width = map.width || 64;
+            const height = map.height || 64;
+            const mapId = map.activeMapId || 'unknown';
+            
+            console.log(`Creating map with dimensions ${width}x${height}`);
+            
+            // Initialize with 0 (floor) as default
+            const tileMap = Array(height).fill().map(() => Array(width).fill(0));
+            
+            // Process all loaded chunks
+            let tilesFound = 0;
+            const loadedChunks = new Set();
+            
+            // Check if chunks are loaded
+            if (map.chunks && map.chunks.size > 0) {
+                console.log(`Found ${map.chunks.size} loaded chunks in map manager`);
+                
+                // First method: get data from loaded chunks
+                for (const [key, chunk] of map.chunks.entries()) {
+                    const [chunkX, chunkY] = key.split(',').map(Number);
+                    const startX = chunkX * map.chunkSize;
+                    const startY = chunkY * map.chunkSize;
+                    
+                    loadedChunks.add(key);
+                    
+                    // Process each tile in the chunk
+                    if (chunk && Array.isArray(chunk)) {
+                        for (let y = 0; y < chunk.length; y++) {
+                            if (!chunk[y]) continue;
+                            
+                            for (let x = 0; x < chunk[y].length; x++) {
+                                if (!chunk[y][x]) continue;
+                                
+                                const globalX = startX + x;
+                                const globalY = startY + y;
+                                
+                                // Make sure we're within the map bounds
+                                if (globalX >= 0 && globalX < width && globalY >= 0 && globalY < height) {
+                                    if (chunk[y][x].type !== undefined) {
+                                        tileMap[globalY][globalX] = chunk[y][x].type;
+                                        tilesFound++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                console.log(`Found ${tilesFound} tiles with defined types from chunks`);
+            } else {
+                console.log("No loaded chunks found in map manager. Will try direct tile lookup.");
+            }
+            
+            // Second method: If few tiles found, try direct lookup for entire map
+            if (tilesFound < width * height * 0.1) { // Less than 10% filled
+                console.log("Few tiles found, using direct getTile() lookup for each position...");
+                
+                // Force load chunks around player if possible
+                if (gameState.character && typeof map.updateVisibleChunks === 'function') {
+                    console.log("Forcing chunk update around player position...");
+                    map.updateVisibleChunks(gameState.character.x, gameState.character.y);
+                    
+                    // Give some time for chunks to load
+                    console.log("Waiting for chunks to load...");
+                    setTimeout(() => {
+                        console.log(`After forced update: ${map.chunks ? map.chunks.size : 0} chunks loaded`);
+                    }, 500);
+                }
+                
+                // Use direct tile lookup with getTile()
+                let directTilesFound = 0;
+                
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        // Get tile directly from the map manager
+                        const tile = map.getTile(x, y);
+                        if (tile && tile.type !== undefined && tile.type !== 0) {
+                            tileMap[y][x] = tile.type;
+                            directTilesFound++;
+                        }
+                    }
+                }
+                
+                console.log(`Found ${directTilesFound} additional tiles with defined types using direct lookup`);
+                tilesFound += directTilesFound;
+            }
+            
+            // Third method: If we have access to mapDebug, use that data
+            if (tilesFound < width * height * 0.1 && window.mapDebug && window.mapDebug.chunks) {
+                console.log("Still few tiles found, trying with mapDebug data...");
+                
+                let debugTilesFound = 0;
+                
+                // Process mapDebug chunks
+                for (const key in window.mapDebug.chunks) {
+                    const [chunkX, chunkY] = key.split(',').map(Number);
+                    const chunk = window.mapDebug.chunks[key];
+                    const startX = chunkX * map.chunkSize;
+                    const startY = chunkY * map.chunkSize;
+                    
+                    // Process the chunk
+                    if (chunk && Array.isArray(chunk)) {
+                        for (let y = 0; y < chunk.length; y++) {
+                            if (!chunk[y]) continue;
+                            
+                            for (let x = 0; x < chunk[y].length; x++) {
+                                if (!chunk[y][x]) continue;
+                                
+                                const globalX = startX + x;
+                                const globalY = startY + y;
+                                
+                                // Make sure we're within the map bounds
+                                if (globalX >= 0 && globalX < width && globalY >= 0 && globalY < height) {
+                                    if (chunk[y][x].type !== undefined) {
+                                        tileMap[globalY][globalX] = chunk[y][x].type;
+                                        debugTilesFound++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                console.log(`Found ${debugTilesFound} additional tiles with defined types from mapDebug`);
+                tilesFound += debugTilesFound;
+            }
+            
+            // Fourth method: If all else fails, try map's direct saving method
+            if (tilesFound < width * height * 0.1 && typeof map.saveMapData === 'function') {
+                console.log("Using map's direct saveMapData method as last resort...");
+                // This will open its own download
+                const mapData = map.saveMapData();
+                if (mapData && mapData.tileMap) {
+                    console.log("Map's direct saveMapData method returned data");
+                    // Replace our tile map with the one from the map manager
+                    for (let y = 0; y < Math.min(height, mapData.tileMap.length); y++) {
+                        for (let x = 0; x < Math.min(width, mapData.tileMap[y].length); x++) {
+                            tileMap[y][x] = mapData.tileMap[y][x];
+                        }
+                    }
+                    tilesFound = "unknown (using direct map data)";
+                }
+            }
+            
+            console.log(`Total tiles found: ${tilesFound} out of ${width*height} total tiles`);
+            
+            // Finally, check if we have all zeros and add some variety if so
+            let allZeros = true;
+            for (let y = 0; y < height && allZeros; y++) {
+                for (let x = 0; x < width && allZeros; x++) {
+                    if (tileMap[y][x] !== 0) {
+                        allZeros = false;
+                        break;
+                    }
+                }
+            }
+            
+            if (allZeros) {
+                console.warn("WARNING: All tiles are 0, adding some variety for testing purposes");
+                
+                // Add some walls and obstacles in a pattern
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        // Create a border
+                        if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
+                            tileMap[y][x] = 1; // Wall
+                        } 
+                        // Add some obstacles in a pattern
+                        else if ((x % 10 === 0 && y % 10 === 0) || (x % 10 === 5 && y % 10 === 5)) {
+                            tileMap[y][x] = 2; // Obstacle
+                        }
+                        // Add some water
+                        else if ((x > width/2 - 5 && x < width/2 + 5) && (y > height/2 - 5 && y < height/2 + 5)) {
+                            tileMap[y][x] = 3; // Water
+                        }
+                    }
+                }
+                
+                console.log("Added variety to the all-zero map for testing");
+            }
+            
+            // Format JSON with one row per line for readability like simple_map_map_1.json
+            const formattedJson = "[\n" + 
+                tileMap.map(row => "  " + JSON.stringify(row)).join(",\n") + 
+                "\n]";
+            
+            // Save the simple map
+            const blob = new Blob([formattedJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `client_simple_map_${mapId}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log(`Map saved to ${a.download} (${loadedChunks.size} chunks)`);
+            return true;
+        } else if (window.mapDebug && window.mapDebug.chunks) {
+            // Fallback to using mapDebug if available
+            console.log("Using mapDebug data as fallback...");
+            const mapId = window.mapDebug.mapId || 'unknown';
+            const chunks = window.mapDebug.chunks;
+            
+            // Find the bounds of the map from chunks
+            let minChunkX = Infinity, minChunkY = Infinity;
+            let maxChunkX = -Infinity, maxChunkY = -Infinity;
+            
+            for (const key in chunks) {
+                const [chunkX, chunkY] = key.split(',').map(Number);
+                minChunkX = Math.min(minChunkX, chunkX);
+                minChunkY = Math.min(minChunkY, chunkY);
+                maxChunkX = Math.max(maxChunkX, chunkX);
+                maxChunkY = Math.max(maxChunkY, chunkY);
+            }
+            
+            const chunkSize = 16; // Default chunk size
+            const width = (maxChunkX - minChunkX + 1) * chunkSize;
+            const height = (maxChunkY - minChunkY + 1) * chunkSize;
+            
+            console.log(`Creating map with dimensions ${width}x${height} from mapDebug`);
+            
+            // Initialize with 0 (floor) as default
+            const tileMap = Array(height).fill().map(() => Array(width).fill(0));
+            
+            // Fill the map with known tile types from chunks
+            for (const key in chunks) {
+                const [chunkX, chunkY] = key.split(',').map(Number);
+                const chunk = chunks[key];
+                
+                if (!chunk || !Array.isArray(chunk)) continue;
+                
+                const startX = (chunkX - minChunkX) * chunkSize;
+                const startY = (chunkY - minChunkY) * chunkSize;
+                
+                for (let y = 0; y < chunk.length; y++) {
+                    if (!chunk[y]) continue;
+                    
+                    for (let x = 0; x < chunk[y].length; x++) {
+                        if (!chunk[y][x]) continue;
+                        
+                        const globalX = startX + x;
+                        const globalY = startY + y;
+                        
+                        if (globalX >= 0 && globalX < width && globalY >= 0 && globalY < height) {
+                            if (chunk[y][x].type !== undefined) {
+                                tileMap[globalY][globalX] = chunk[y][x].type;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Format JSON with one row per line for readability
+            const formattedJson = "[\n" + 
+                tileMap.map(row => "  " + JSON.stringify(row)).join(",\n") + 
+                "\n]";
+            
+            // Save the simple map
+            const blob = new Blob([formattedJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `client_simple_map_${mapId}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log(`Map saved to ${a.download} using mapDebug data`);
+            return true;
+        } else {
+            console.warn("No map data available. Please wait for the map to load or explore more of the map first.");
+            return false;
+        }
+    } catch (error) {
+        console.error("Error saving map data:", error);
+        return false;
+    }
+};
+
+// Save a simple 2D array of just tile types
+function saveTileTypeArray() {
+    try {
+        // Check if we have access to the map manager directly
+        if (!window.gameState || !window.gameState.map) {
+            console.error("No map manager available in gameState");
+            return false;
+        }
+        
+        const map = window.gameState.map;
+        const mapId = window.mapDebug?.mapId || 'unknown';
+        const chunkSize = map.chunkSize || 16;
+        const width = map.width || 64;
+        const height = map.height || 64;
+        
+        console.log(`Creating client map with dimensions ${width}x${height} from clientMapManager`);
+        
+        // Initialize with 0 (floor) as default instead of -1
+        const tileMap = Array(height).fill().map(() => Array(width).fill(0));
+        
+        // Use direct tile lookup for each position in the map
+        let tilesFound = 0;
+        
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                // Get tile directly from the map manager
+                const tile = map.getTile(x, y);
+                if (tile && tile.type !== undefined) {
+                    tileMap[y][x] = tile.type;
+                    tilesFound++;
+                }
+            }
+        }
+        
+        console.log(`Found ${tilesFound} tiles with defined types out of ${width*height} total tiles`);
+        
+        // If we found very few tiles, try another approach
+        if (tilesFound < width * height * 0.1) { // Less than 10% of tiles have values
+            console.log("Very few tiles found, trying with chunk data from mapDebug");
+            
+            // Find the bounds of the map from chunks
+            let minChunkX = Infinity, minChunkY = Infinity;
+            let maxChunkX = -Infinity, maxChunkY = -Infinity;
+            
+            // Find the bounds of all chunks
+            for (const key in window.mapDebug?.chunks || {}) {
+                const [chunkX, chunkY] = key.split(',').map(Number);
+                minChunkX = Math.min(minChunkX, chunkX);
+                minChunkY = Math.min(minChunkY, chunkY);
+                maxChunkX = Math.max(maxChunkX, chunkX);
+                maxChunkY = Math.max(maxChunkY, chunkY);
+            }
+            
+            console.log(`Chunk bounds: (${minChunkX},${minChunkY}) to (${maxChunkX},${maxChunkY})`);
+            
+            // Fill the map with known tile types from chunks
+            for (const key in window.mapDebug?.chunks || {}) {
+                const [chunkX, chunkY] = key.split(',').map(Number);
+                const chunk = window.mapDebug.chunks[key];
+                
+                // Check if the chunk has tiles
+                if (!chunk || !Array.isArray(chunk)) {
+                    console.log(`Chunk ${key} has invalid format:`, chunk);
+                    continue;
+                }
+                
+                // Process each tile in the chunk
+                for (let relY = 0; relY < chunkSize; relY++) {
+                    if (!chunk[relY]) continue;
+                    
+                    for (let relX = 0; relX < chunkSize; relX++) {
+                        if (!chunk[relY][relX]) continue;
+                        
+                        const globalX = chunkX * chunkSize + relX;
+                        const globalY = chunkY * chunkSize + relY;
+                        
+                        // Make sure we're within the map bounds
+                        if (globalX >= 0 && globalX < width && globalY >= 0 && globalY < height) {
+                            if (chunk[relY][relX].type !== undefined) {
+                                tileMap[globalY][globalX] = chunk[relY][relX].type;
+                                tilesFound++;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            console.log(`After using chunk data: Found ${tilesFound} tiles with defined types`);
+        }
+        
+        // Check if we have the map's debug print method
+        if (tilesFound < width * height * 0.1 && typeof map.printMapDebug === 'function') {
+            console.log("Still very few tiles found, trying to extract data from debug visualization");
+            
+            // Get the debug representation which contains all the tile information
+            const debugInfo = map.printMapDebug(width, height, true);
+            
+            // If the debug info returned tile counts, we have success
+            if (debugInfo && debugInfo.loadedChunks > 0) {
+                console.log(`Successfully extracted map data from debug visualization: ${debugInfo.loadedChunks} chunks loaded`);
+            }
+        }
+        
+        // Format JSON with one row per line for readability
+        const formattedJson = "[\n" + 
+            tileMap.map(row => "  " + JSON.stringify(row)).join(",\n") + 
+            "\n]";
+        
+        // Save the simple map
+        const blob = new Blob([formattedJson], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `client_simple_map_${mapId}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log(`Simple tile map saved to ${a.download}`);
+        return true;
+    } catch (error) {
+        console.error("Error saving simple tile map:", error);
+        return false;
+    }
+}
+
+console.log("Map save function available. Use window.saveMapData() in the console to download map data.");
+
 /**
  * ClientNetworkManager
  * Handles WebSocket communication with the game server using binary packet format
@@ -183,6 +605,20 @@ export class ClientNetworkManager {
         
         this.handlers[MessageType.CHUNK_DATA] = (data) => {
             console.log(`Received chunk data for (${data.chunkX}, ${data.chunkY})`);
+            
+            // Create a simple global object to store map data for debugging
+            if (!window.mapDebug) {
+                window.mapDebug = {
+                    mapId: localStorage.getItem('currentMapId') || 'unknown',
+                    chunks: {}
+                };
+                console.log("Map debug object created. Access it via window.mapDebug in the console");
+            }
+            
+            // Store chunk data in the global object
+            const chunkKey = `${data.chunkX},${data.chunkY}`;
+            window.mapDebug.chunks[chunkKey] = data.chunk;
+            
             if (this.game.setChunkData) {
                 this.game.setChunkData(data.chunkX, data.chunkY, data.chunk);
             }
@@ -456,7 +892,7 @@ export class ClientNetworkManager {
      */
     sendPlayerUpdate(playerData) {
         if (playerData) {
-            console.log(`Sending player update: pos=(${playerData.x ? playerData.x.toFixed(2) : 'undefined'}, ${playerData.y ? playerData.y.toFixed(2) : 'undefined'}), angle=${playerData.angle ? playerData.angle.toFixed(2) : 'undefined'}`);
+            //console.log(`Sending player update: pos=(${playerData.x ? playerData.x.toFixed(2) : 'undefined'}, ${playerData.y ? playerData.y.toFixed(2) : 'undefined'}), angle=${playerData.angle ? playerData.angle.toFixed(2) : 'undefined'}`);
         }
         return this.send(MessageType.PLAYER_UPDATE, playerData);
     }
