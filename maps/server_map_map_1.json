@@ -1,0 +1,11 @@
+{
+  "id": "map_1",
+  "width": 64,
+  "height": 64,
+  "tileSize": 12,
+  "chunkSize": 16,
+  "name": "Default Map",
+  "procedural": true,
+  "seed": 0.9160579091963088,
+  "chunks": {}
+}

@@ -287,11 +287,18 @@ export function renderGame() {
     canvas2D.height = window.innerHeight;
   }
   
-  // Clear the canvas - first with clearRect
+  // Clear the canvas - first with clearRect for best performance
   ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
   
-  // Then fill with a dark background color to ensure old pixels are gone
-  ctx.fillStyle = 'rgba(0, 0, 0, 1)';  // Solid black background
+  // Then fill with a solid background color to ensure ALL old pixels are gone
+  // This is especially important in strategic view to prevent ghost artifacts
+  if (gameState.camera.viewType === 'strategic') {
+    // Use fully opaque black background in strategic view to prevent ghosting
+    ctx.fillStyle = 'rgb(0, 0, 0)';  
+  } else {
+    // Use standard black in other views
+    ctx.fillStyle = 'rgb(0, 0, 0)';
+  }
   ctx.fillRect(0, 0, canvas2D.width, canvas2D.height);
   
   // Draw level (different based on view type)
