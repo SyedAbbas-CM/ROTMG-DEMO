@@ -1,8 +1,9 @@
 // src/constants/constants.js
 
 export const TILE_SIZE = 12; // Size of each tile in pixels
-export const CHARACTER_SPRITE_SIZE = 10; // Size of each character sprite in pixels
-export const SCALE = 3; // Scale factor for sprites
+export const CHARACTER_SPRITE_SIZE = 12; // Size of each character sprite in pixels
+export const SCALE = 5; // Scale factor for sprites
+export const SCALE_S = 2;
 export const CANVAS_WIDTH = window.innerWidth;
 export const CANVAS_HEIGHT = window.innerHeight;
 

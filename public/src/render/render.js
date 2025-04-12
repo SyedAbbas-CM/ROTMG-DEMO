@@ -25,8 +25,24 @@ export function renderCharacter() {
     return;
   }
 
+  // Debug: Log the current view type to verify it's being detected correctly
+  console.log(`[renderCharacter] Current view type: ${gameState.camera?.viewType}`);
+
+  // Determine scale factor based on view type
+  let isStrategicView = gameState.camera?.viewType === 'strategic';
+  let viewScaleFactor = isStrategicView ? 0.25 : 1.0; // 50% smaller in strategic view
+  let effectiveScale = SCALE * viewScaleFactor; 
+
+  // Debug: Log the scale factor being used
+  console.log(`[renderCharacter] Using scale factor: ${viewScaleFactor}, effectiveScale: ${effectiveScale}`);
+
   // Use the player's draw method if it exists
   if (character.draw && typeof character.draw === 'function') {
+    // Directly set a flag on the character to ensure proper scaling
+    character._isStrategicView = isStrategicView;
+    character._viewScaleFactor = viewScaleFactor;
+    
+    // We'll still use the default draw method, but with view scaling info attached
     character.draw(ctx, gameState.camera.position);
     return;
   }
@@ -47,12 +63,12 @@ export function renderCharacter() {
     const screenX = screenWidth / 2;
     const screenY = screenHeight / 2;
     
-    // Draw rectangle
+    // Draw rectangle with view-dependent scaling
     ctx.fillRect(
-      screenX - (character.width * SCALE) / 2,
-      screenY - (character.height * SCALE) / 2,
-      character.width * SCALE,
-      character.height * SCALE
+      screenX - (character.width * effectiveScale) / 2,
+      screenY - (character.height * effectiveScale) / 2,
+      character.width * effectiveScale,
+      character.height * effectiveScale
     );
     return;
   }
@@ -80,28 +96,28 @@ export function renderCharacter() {
     const spriteX = character.spriteX !== undefined ? character.spriteX : 0;
     const spriteY = character.spriteY !== undefined ? character.spriteY : 0;
     
-    // Draw character centered at (0,0) after translation
+    // Draw character centered at (0,0) after translation with view-dependent scaling
     ctx.drawImage(
       characterSpriteSheet,
       spriteX, spriteY,
       TILE_SIZE, TILE_SIZE,
-      -character.width * SCALE / 2, -character.height * SCALE / 2,
-      character.width * SCALE, character.height * SCALE
+      -character.width * effectiveScale / 2, -character.height * effectiveScale / 2,
+      character.width * effectiveScale, character.height * effectiveScale
     );
   } else {
     // Get sprite coordinates
     const spriteX = character.spriteX !== undefined ? character.spriteX : 0;
     const spriteY = character.spriteY !== undefined ? character.spriteY : 0;
     
-    // Draw character without rotation
+    // Draw character without rotation with view-dependent scaling
     ctx.drawImage(
       characterSpriteSheet,
       spriteX, spriteY,
       TILE_SIZE, TILE_SIZE,
-      screenX - character.width * SCALE / 2,
-      screenY - character.height * SCALE / 2,
-      character.width * SCALE,
-      character.height * SCALE
+      screenX - character.width * effectiveScale / 2,
+      screenY - character.height * effectiveScale / 2,
+      character.width * effectiveScale,
+      character.height * effectiveScale
     );
   }
   

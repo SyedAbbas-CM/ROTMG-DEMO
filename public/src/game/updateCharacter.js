@@ -13,15 +13,6 @@ export function updateCharacter(delta) {
   const speed = getMoveSpeed(); // Get speed from input settings
   const keysPressed = getKeysPressed();
 
-  // Call the character's update method to handle cooldowns
-  if (character.update && typeof character.update === 'function') {
-    character.update(delta);
-  }
-
-  // Original position before movement
-  const originalX = character.x;
-  const originalY = character.y;
-  
   // Calculate movement direction
   let moveX = 0;
   let moveY = 0;
@@ -47,14 +38,31 @@ export function updateCharacter(delta) {
     moveY /= length;
   }
 
+  // Set character's moving state and direction
+  const isMoving = (moveX !== 0 || moveY !== 0);
+  character.isMoving = isMoving;
+  
+  // Also set the moveDirection property for animation and other systems
+  if (isMoving) {
+    character.moveDirection = { x: moveX, y: moveY };
+  }
+
+  // Call the character's update method to handle cooldowns and animation
+  // This is before actual movement so animations can be updated even if blocked by walls
+  if (character.update && typeof character.update === 'function') {
+    character.update(delta);
+  }
+
+  // Original position before movement
+  const originalX = character.x;
+  const originalY = character.y;
+
   // Apply movement with delta time
-  if (moveX !== 0 || moveY !== 0) {
+  if (isMoving) {
     const distance = speed * delta;
     
     // First try moving along X axis
     const newX = character.x + moveX * distance;
-    // Save the original Y before moving
-    const backupY = character.y;
     
     if (!isCollision(newX, character.y)) {
       character.x = newX;

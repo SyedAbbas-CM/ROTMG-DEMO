@@ -78,11 +78,19 @@ export class Player {
         if (this.lastShotTime < 0) this.lastShotTime = 0;
       }
       
-      // Update animator
+      // Make sure movement properties are set correctly for animation
+      const isMoving = this.isMoving || (Math.abs(this.moveDirection.x) > 0.01 || Math.abs(this.moveDirection.y) > 0.01);
+      
+      // Log animation state for debugging
+      if (isMoving) {
+        console.log(`[Player.update] Moving: ${isMoving}, Direction: ${this.animator.direction}, MoveDir: ${JSON.stringify(this.moveDirection)}`);
+      }
+      
+      // Update animator with clear movement state
       this.animator.update(
         deltaTime, 
-        this.isMoving, 
-        { x: this.moveDirection.x, y: this.moveDirection.y }
+        isMoving, 
+        this.moveDirection // Pass move direction vector directly 
       );
     }
     
@@ -100,10 +108,24 @@ export class Player {
         dy /= length;
       }
       
+      // Set movement state
+      this.isMoving = (dx !== 0 || dy !== 0);
+      
       // Save move direction
       this.moveDirection.x = dx;
       this.moveDirection.y = dy;
-      this.isMoving = dx !== 0 || dy !== 0;
+      
+      // Update animator direction based on movement
+      if (this.isMoving && this.animator) {
+        // Determine dominant direction
+        if (Math.abs(dx) > Math.abs(dy)) {
+          // Horizontal movement is dominant
+          this.animator.direction = dx < 0 ? 1 : 3; // 1 = left, 3 = right
+        } else {
+          // Vertical movement is dominant
+          this.animator.direction = dy < 0 ? 2 : 0; // 2 = up, 0 = down
+        }
+      }
       
       // Apply movement
       const distance = this.speed * deltaTime;
@@ -234,16 +256,29 @@ export class Player {
       const screenWidth = ctx.canvas.width;
       const screenHeight = ctx.canvas.height;
       
+      // Check for direct view scaling flags set by renderCharacter
+      let viewScaleFactor;
+      if (this._viewScaleFactor !== undefined) {
+        // Use the flag directly set on the character object
+        viewScaleFactor = this._viewScaleFactor;
+        console.log(`[Player.draw] Using direct scale factor: ${viewScaleFactor}`);
+      } else {
+        // Fallback to checking the view type
+        const isStrategicView = window.gameState?.camera?.viewType === 'strategic';
+        viewScaleFactor = isStrategicView ? 0.5 : 1.0; // 50% smaller in strategic view
+        console.log(`[Player.draw] Using fallback scale factor: ${viewScaleFactor}, view: ${window.gameState?.camera?.viewType}`);
+      }
+      
       // Define scale based on view type
-      const scaleFactor = window.gameState?.camera?.viewType === 'strategic' ? 0.5 : 1;
+      const scaleFactor = viewScaleFactor;
       
       // Calculate screen position
       const screenX = (this.x - cameraPosition.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
       const screenY = (this.y - cameraPosition.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
       
-      // Apply the same scale factor used for the main character
-      const width = this.width * SCALE;
-      const height = this.height * SCALE;
+      // Apply the appropriate scale factor for rendering
+      const width = this.width * SCALE * viewScaleFactor;
+      const height = this.height * SCALE * viewScaleFactor;
       
       // Save context for rotation
       ctx.save();
@@ -309,16 +344,20 @@ export class Player {
       const screenWidth = ctx.canvas.width;
       const screenHeight = ctx.canvas.height;
       
+      // Determine view scaling factor based on view type
+      const isStrategicView = window.gameState?.camera?.viewType === 'strategic';
+      const viewScaleFactor = isStrategicView ? 0.5 : 1.0; // 50% smaller in strategic view
+      
       // Define scale based on view type
-      const scaleFactor = window.gameState?.camera?.viewType === 'strategic' ? 0.5 : 1;
+      const scaleFactor = viewScaleFactor;
       
       // Calculate screen position
       const screenX = (this.x - cameraPosition.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
       const screenY = (this.y - cameraPosition.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
       
-      // Apply the same scale factor used for the main character
-      const width = this.width * SCALE;
-      const height = this.height * SCALE;
+      // Apply the appropriate scale factor for rendering
+      const width = this.width * SCALE * viewScaleFactor;
+      const height = this.height * SCALE * viewScaleFactor;
       
       // Draw debug rectangle
       ctx.fillStyle = 'red';

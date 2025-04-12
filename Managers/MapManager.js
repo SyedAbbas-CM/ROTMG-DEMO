@@ -3,7 +3,7 @@
 import { TILE_IDS, CHUNK_SIZE, TILE_SIZE } from './world/constants.js';
 import { PerlinNoise } from './world/PerlinNoise.js';
 import { Tile } from './world/tile.js';
-
+import { EnhancedPerlinNoise } from './world/AdvancedPerlinNoise.js';
 /**
  * MapManager handles the game world, tiles, and chunks.
  * This is a unified implementation that consolidates functionality
@@ -20,7 +20,7 @@ export class MapManager {
     this.tileSize = options.tileSize || TILE_SIZE;  // Size of each tile in pixels
     
     // For procedural generation
-    this.perlin = new PerlinNoise(options.seed || Math.random());
+    this.perlin = new EnhancedPerlinNoise(options.seed || Math.random());
     this.proceduralEnabled = true;
     this.isFixedMap = false;
     

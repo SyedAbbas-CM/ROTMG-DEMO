@@ -194,7 +194,7 @@ export class ClientMapManager {
         }
         
         // Log request for debugging
-        console.log(`[MapManager] Updating visible chunks around (${playerX.toFixed(1)}, ${playerY.toFixed(1)})`);
+        //console.log(`[MapManager] Updating visible chunks around (${playerX.toFixed(1)}, ${playerY.toFixed(1)})`);
         
         // Convert player position to chunk coordinates (integers)
         const centerChunkX = Math.floor(playerX / (this.tileSize * this.chunkSize));
