@@ -646,17 +646,43 @@ export function handleShoot(x, y) {
         return; // On cooldown or other restriction
     }
     
-    console.log("Shooting at coordinates:", x, y);
+    // Debug: Log target coordinates
+    console.log(`[handleShoot] Shooting at target coordinates: (${x.toFixed(2)}, ${y.toFixed(2)})`);
+    console.log(`[handleShoot] Player position: (${gameState.character.x.toFixed(2)}, ${gameState.character.y.toFixed(2)})`);
     
     // Calculate angle from player to target
     const dx = x - gameState.character.x;
     const dy = y - gameState.character.y;
     const angle = Math.atan2(dy, dx);
     
+    // Debug: Log targeting details
+    console.log(`[handleShoot] Delta: (${dx.toFixed(2)}, ${dy.toFixed(2)}), Angle: ${angle.toFixed(2)} rad (${(angle * 180 / Math.PI).toFixed(1)}°)`);
+    
+    // CRITICAL FIX: Get direction from angle BEFORE starting attack animation
+    let attackDirection = 0; // default to down
+    
     // Set the player's direction based on the shooting angle
-    // This will make the player face the direction they're shooting
     if (gameState.character.animator && typeof gameState.character.animator.setDirectionFromAngle === 'function') {
+        // First, update the animator's direction without starting the animation
         gameState.character.animator.setDirectionFromAngle(angle);
+        
+        // Save the direction for the attack
+        attackDirection = gameState.character.animator.direction;
+        console.log(`[handleShoot] Attack direction set to: ${attackDirection} (${['down', 'left', 'up', 'right'][attackDirection]})`);
+    } else {
+        console.log(`[handleShoot] Warning: Cannot set direction, animator not available or method missing`);
+    }
+    
+    // Update player's last shot time and trigger attack animation
+    if (typeof localPlayer.setLastShotTime === 'function') {
+        // Skip animation in setLastShotTime since we'll trigger it explicitly
+        localPlayer.setLastShotTime(Date.now(), true);
+        
+        // Also explicitly start the attack animation if available
+        if (localPlayer.animator && typeof localPlayer.animator.attack === 'function') {
+            console.log(`[handleShoot] Explicitly triggering attack animation with direction: ${attackDirection}`);
+            localPlayer.animator.attack(attackDirection);
+        }
     }
     
     // Create a local bullet prediction
@@ -680,11 +706,6 @@ export function handleShoot(x, y) {
     
     console.log("Creating bullet with data:", bulletData);
     const bulletId = bulletManager.addBullet(bulletData);
-    
-    // Update player's last shot time if it has a cooldown
-    if (typeof localPlayer.setLastShotTime === 'function') {
-        localPlayer.setLastShotTime(Date.now());
-    }
     
     // Send to server
     networkManager.sendShoot({

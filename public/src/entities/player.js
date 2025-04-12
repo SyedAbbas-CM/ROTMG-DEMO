@@ -200,12 +200,18 @@ export class Player {
     /**
      * Set the last shot time directly
      * @param {number} time - The timestamp of the last shot
+     * @param {boolean} skipAnimation - Whether to skip triggering the attack animation
      */
-    setLastShotTime(time) {
+    setLastShotTime(time, skipAnimation = false) {
+      console.log(`[Player.setLastShotTime] Setting cooldown: ${this.shootCooldown.toFixed(2)}, skipAnimation: ${skipAnimation}`);
       this.lastShotTime = this.shootCooldown;
       
-      // Also trigger attack animation
-      this.animator.attack();
+      // Only trigger attack animation if not skipped
+      // This allows handleShoot to control the attack animation with the correct direction
+      if (!skipAnimation && this.animator && typeof this.animator.attack === 'function') {
+        console.log(`[Player.setLastShotTime] Triggering attack animation`);
+        this.animator.attack();
+      }
     }
     
     /**

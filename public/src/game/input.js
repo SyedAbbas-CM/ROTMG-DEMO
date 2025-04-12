@@ -182,31 +182,6 @@ function onMouseMove(event) {
  * Update player rotation to face mouse cursor in top-down view
  * @param {MouseEvent} event - Mouse event
  */
-function updatePlayerRotation(event) {
-    // Get viewport dimensions
-    const canvas = document.getElementById('gameCanvas');
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    
-    // Calculate angle between player and mouse
-    const dx = event.clientX - centerX;
-    const dy = event.clientY - centerY;
-    const angle = Math.atan2(dy, dx);
-    
-    // Update player rotation - use rotateTo method if available
-    if (gameState.character.rotateTo) {
-        // Use the Player class method
-        const targetX = gameState.character.x + dx;
-        const targetY = gameState.character.y + dy;
-        gameState.character.rotateTo(targetX, targetY);
-    } else if (typeof gameState.character.rotation === 'number') {
-        // Character has simple rotation as number
-        gameState.character.rotation = angle;
-    } else if (gameState.character.rotation && typeof gameState.character.rotation === 'object') {
-        // Try to create a new rotation object to avoid readonly property error
-        gameState.character.rotation = { yaw: angle };
-    }
-}
 
 /**
  * Handle mouse click
@@ -308,6 +283,7 @@ function toggleViewMode() {
   // Cycle through view types
   if (gameState.camera.viewType === 'first-person') {
     gameState.camera.viewType = 'top-down';
+    
     console.log(`[input] Switched to top-down view. render function available: ${typeof window.renderTopDownView === 'function'}`);
   } else if (gameState.camera.viewType === 'top-down') {
     gameState.camera.viewType = 'strategic';

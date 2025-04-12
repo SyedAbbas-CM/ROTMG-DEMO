@@ -236,7 +236,7 @@ export default class EnemyManager {
     const activeCount = this.getActiveEnemyCount();
     // Only log if there's actual activity
     if (movedCount > 0 || shotCount > 0) {
-      console.log(`Enemies updated: ${activeCount} active, ${movedCount} moved, ${shotCount} shot at target`);
+      //console.log(`Enemies updated: ${activeCount} active, ${movedCount} moved, ${shotCount} shot at target`);
     }
     
     return activeCount;

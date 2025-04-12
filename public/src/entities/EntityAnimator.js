@@ -76,22 +76,25 @@ export class EntityAnimator {
     // Update attack state
     if (this.isAttacking) {
       this.attackCooldown -= deltaTime;
+      // Debug log attack state
+      if (this.frameTimer >= this.frameDuration) {
+        console.log(`[Animator.update] Attack in progress - cooldown: ${this.attackCooldown.toFixed(2)}, frame: ${this.frameIndex}`);
+      }
+      
       if (this.attackCooldown <= 0) {
+        console.log(`[Animator.update] Attack completed, resetting to idle`);
         this.isAttacking = false;
         // Reset to idle when attack animation completes
         this.resetToIdle();
       }
     }
     
-    // CRITICAL FIX: Make sure we correctly interpret the movement state 
-    // Only determine animation state if we haven't been forcibly set
+    // Only determine animation state if not attacking
     if (!this.isAttacking && isMoving !== undefined) {
-      // CRITICAL FIX: Only update animation state if not attacking
       this.updateAnimationState(isMoving, velocity);
     }
     
-    // CRITICAL FIX: Only update animation frames for animated states
-    // But NEVER animate when in IDLE state (even after state changes)
+    // Only update animation frames for animated states
     if ((this.currentState === this.states.WALK || this.currentState === this.states.ATTACK) && 
         this.frameTimer >= this.frameDuration) {
       
@@ -101,16 +104,15 @@ export class EntityAnimator {
       if (this.currentState === this.states.WALK) {
         this.frameIndex = (this.frameIndex + 1) % 2;
       }
-      // For attack, behavior depends on direction
+      // For attacks, always use 2 frames regardless of direction
       else if (this.currentState === this.states.ATTACK) {
-        // Left and right attacks only have one frame in this sprite sheet
-        if (this.direction === 1 || this.direction === 3) {
-          // Keep frameIndex at 0 for left/right attacks
-          this.frameIndex = 0;
-        } else {
-          // Down and up attacks have 2 frames
-          this.frameIndex = (this.frameIndex + 1) % 2;
-        }
+        // Log before frame change
+        const oldFrame = this.frameIndex;
+        
+        // Always cycle through 2 frames for all directions
+        this.frameIndex = (this.frameIndex + 1) % 2;
+        
+        console.log(`[Animator.update] Attack animation frame changed: ${oldFrame} -> ${this.frameIndex}`);
       }
     }
   }
@@ -162,17 +164,37 @@ export class EntityAnimator {
   
   /**
    * Start attack animation
+   * @param {number} direction - Optional direction override (0-3)
    * @returns {boolean} Whether attack was started
    */
-  attack() {
-    if (!this.isAttacking && this.attackCooldown <= 0) {
+  attack(direction) {
+    // Check if we can attack
+    const canAttack = !this.isAttacking && this.attackCooldown <= 0;
+    console.log(`[Animator.attack] Can attack: ${canAttack}, isAttacking: ${this.isAttacking}, cooldown: ${this.attackCooldown.toFixed(2)}`);
+    
+    if (canAttack) {
+      // Set attack flags
       this.isAttacking = true;
       this.attackCooldown = this.attackDuration;
+      
+      // If a direction was provided, override the current direction
+      if (direction !== undefined && direction >= 0 && direction <= 3) {
+        console.log(`[Animator.attack] Overriding direction: ${this.direction} -> ${direction}`);
+        this.direction = direction;
+      }
+      
+      console.log(`[Animator.attack] Starting attack in direction: ${this.direction} (${['down', 'left', 'up', 'right'][this.direction]})`);
+      
+      // Always set the animation state to ATTACK
       this.currentState = this.states.ATTACK;
-      this.frameIndex = 0; // Reset animation frame for attack
+      
+      // Reset animation frame and timer to start the sequence
+      this.frameIndex = 0;
       this.frameTimer = 0;
+      
       return true;
     }
+    
     return false;
   }
   
@@ -219,26 +241,40 @@ export class EntityAnimator {
    * @param {number} angle - Direction angle in radians
    */
   setDirectionFromAngle(angle) {
+    // DEBUG: Log the raw angle for diagnostic purposes
+    console.log(`[setDirectionFromAngle] Raw angle: ${angle.toFixed(2)} radians`);
+    
     // Convert angle to direction: 0=down, 1=left, 2=up, 3=right
     // Normalize angle to 0-2π range
     const normalizedAngle = (angle + 2 * Math.PI) % (2 * Math.PI);
+    console.log(`[setDirectionFromAngle] Normalized angle: ${normalizedAngle.toFixed(2)} radians`);
     
-    // Map angle to 4 directions
-    // Down: -π/4 to π/4
-    // Left: π/4 to 3π/4
-    // Up: 3π/4 to 5π/4
-    // Right: 5π/4 to 7π/4
+    // CORRECTION: FIX THE ANGLE MAPPING
+    // 
+    // The angle is in standard mathematical orientation where:
+    // - 0 or 2π = right (positive X axis)
+    // - π/2 = down (positive Y axis in canvas)
+    // - π = left (negative X axis)
+    // - 3π/2 = up (negative Y axis in canvas)
+    //
+    // Map these angles to our direction indices:
+    // - Right (3): -π/4 to π/4 (around 0)
+    // - Down (0): π/4 to 3π/4 (around π/2)
+    // - Left (1): 3π/4 to 5π/4 (around π)
+    // - Up (2): 5π/4 to 7π/4 (around 3π/2)
+    
     let direction;
     if (normalizedAngle >= 7 * Math.PI / 4 || normalizedAngle < Math.PI / 4) {
-      direction = 0; // Down
+      direction = 3; // Right (around 0 radians)
     } else if (normalizedAngle >= Math.PI / 4 && normalizedAngle < 3 * Math.PI / 4) {
-      direction = 1; // Left
+      direction = 0; // Down (around π/2 radians)
     } else if (normalizedAngle >= 3 * Math.PI / 4 && normalizedAngle < 5 * Math.PI / 4) {
-      direction = 2; // Up
+      direction = 1; // Left (around π radians)
     } else {
-      direction = 3; // Right
+      direction = 2; // Up (around 3π/2 radians)
     }
     
+    console.log(`[setDirectionFromAngle] Setting direction to: ${direction} (${['down', 'left', 'up', 'right'][direction]})`);
     this.direction = direction;
   }
   
@@ -262,9 +298,9 @@ export class EntityAnimator {
    * 
    * ATTACK frames:
    * - Down (0): columns 18 & 19 (2 frames)
-   * - Left (1): column 24 (1 frame)
+   * - Left (1): column 24 (1 frame) - paired with idle frame (3) for 2-frame animation
    * - Up (2): columns 21 & 22 (2 frames)
-   * - Right (3): column 17 (1 frame)
+   * - Right (3): column 17 (1 frame) - paired with idle frame (0) for 2-frame animation
    *
    * @returns {Object} Source rectangle {x, y, width, height}
    */
@@ -295,17 +331,27 @@ export class EntityAnimator {
         break;
       
       case this.states.ATTACK:
-        // Attack frames - note some directions only have 1 frame
+        // DEBUG: Log direction to verify mapping
+        console.log(`[EntityAnimator] Attack direction: ${this.direction}, frameIndex: ${this.frameIndex}`);
+        
+        // Fixed mapping for attack animations
         {
-          if (this.direction === 0) { // down
+          if (this.direction === 0) { // down - has 2 frames
+            // Use columns 18 & 19 for down attack
             col = this.frameIndex === 0 ? 18 : 19;
-          } else if (this.direction === 1) { // left
-            col = 24; // Only one frame for left attack
-          } else if (this.direction === 2) { // up
+          } else if (this.direction === 1) { // left - only 1 attack frame
+            // For left attacks, use column 24 and alternate with idle
+            col = this.frameIndex === 0 ? 24 : 3;
+          } else if (this.direction === 2) { // up - has 2 frames
+            // Use columns 21 & 22 for up attack
             col = this.frameIndex === 0 ? 21 : 22;
-          } else { // right
-            col = 17; // Only one frame for right attack
+          } else { // right - only 1 attack frame
+            // For right attacks, use column 17 and alternate with idle
+            col = this.frameIndex === 0 ? 17 : 0;
           }
+          
+          // DEBUG: Log which column is being used
+          console.log(`[EntityAnimator] Using sprite column: ${col}`);
         }
         break;
       
