@@ -38,17 +38,32 @@ export function updateCharacter(delta) {
     moveY /= length;
   }
 
-  // Set character's moving state and direction
+  // CRITICAL FIX: Force a clean state change when stopping movement
   const isMoving = (moveX !== 0 || moveY !== 0);
+  const wasMoving = character.isMoving;
+  
+  // Update character's movement state
   character.isMoving = isMoving;
   
-  // Also set the moveDirection property for animation and other systems
-  if (isMoving) {
+  // When stopping movement, zero out the movement direction
+  if (!isMoving) {
+    character.moveDirection = { x: 0, y: 0 };
+    
+    // CRITICAL FIX: Force the animator to reset to idle directly
+    if (wasMoving && character.animator && character.animator.resetToIdle) {
+      character.animator.resetToIdle();
+    }
+  } else {
+    // Update move direction when actually moving
     character.moveDirection = { x: moveX, y: moveY };
+    
+    // CRITICAL FIX: Force animation state to WALK when starting to move
+    if (!wasMoving && character.animator && character.animator.states && character.animator.setCurrentState) {
+      character.animator.setCurrentState(character.animator.states.WALK);
+    }
   }
 
   // Call the character's update method to handle cooldowns and animation
-  // This is before actual movement so animations can be updated even if blocked by walls
   if (character.update && typeof character.update === 'function') {
     character.update(delta);
   }

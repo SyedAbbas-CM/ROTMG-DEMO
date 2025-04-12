@@ -653,6 +653,12 @@ export function handleShoot(x, y) {
     const dy = y - gameState.character.y;
     const angle = Math.atan2(dy, dx);
     
+    // Set the player's direction based on the shooting angle
+    // This will make the player face the direction they're shooting
+    if (gameState.character.animator && typeof gameState.character.animator.setDirectionFromAngle === 'function') {
+        gameState.character.animator.setDirectionFromAngle(angle);
+    }
+    
     // Create a local bullet prediction
     const bulletData = {
         x: gameState.character.x,

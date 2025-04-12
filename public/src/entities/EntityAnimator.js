@@ -83,13 +83,16 @@ export class EntityAnimator {
       }
     }
     
-    // Determine animation state based on current conditions
-    this.updateAnimationState(isMoving, velocity);
+    // CRITICAL FIX: Make sure we correctly interpret the movement state 
+    // Only determine animation state if we haven't been forcibly set
+    if (!this.isAttacking && isMoving !== undefined) {
+      // CRITICAL FIX: Only update animation state if not attacking
+      this.updateAnimationState(isMoving, velocity);
+    }
     
-    // Only update animation frames for animated states (WALK and ATTACK)
-    // or if we've just changed states (to reset the frame)
-    if ((this.currentState === this.states.WALK || 
-         this.currentState === this.states.ATTACK) && 
+    // CRITICAL FIX: Only update animation frames for animated states
+    // But NEVER animate when in IDLE state (even after state changes)
+    if ((this.currentState === this.states.WALK || this.currentState === this.states.ATTACK) && 
         this.frameTimer >= this.frameDuration) {
       
       this.frameTimer = 0;
@@ -143,7 +146,8 @@ export class EntityAnimator {
         }
       }
     } else {
-      // Only reset to idle if we're not attacking
+      // Not attacking and not moving - reset to idle
+      // Only reset to idle if we're not attacking and currently walking
       if (this.currentState === this.states.WALK) {
         this.resetToIdle();
       }
@@ -186,6 +190,56 @@ export class EntityAnimator {
     }
     this.frameIndex = 0;
     this.frameTimer = 0;
+  }
+  
+  /**
+   * Set the current state
+   * @param {string} state - State name (use this.states constants)
+   */
+  setCurrentState(state) {
+    if (Object.values(this.states).includes(state)) {
+      this.currentState = state;
+      this.frameIndex = 0;
+      this.frameTimer = 0;
+    }
+  }
+  
+  /**
+   * Set the entity's direction
+   * @param {number} direction - Direction index (0=down, 1=left, 2=up, 3=right)
+   */
+  setDirection(direction) {
+    if (direction >= 0 && direction <= 3) {
+      this.direction = direction;
+    }
+  }
+  
+  /**
+   * Set direction based on an angle (in radians)
+   * @param {number} angle - Direction angle in radians
+   */
+  setDirectionFromAngle(angle) {
+    // Convert angle to direction: 0=down, 1=left, 2=up, 3=right
+    // Normalize angle to 0-2π range
+    const normalizedAngle = (angle + 2 * Math.PI) % (2 * Math.PI);
+    
+    // Map angle to 4 directions
+    // Down: -π/4 to π/4
+    // Left: π/4 to 3π/4
+    // Up: 3π/4 to 5π/4
+    // Right: 5π/4 to 7π/4
+    let direction;
+    if (normalizedAngle >= 7 * Math.PI / 4 || normalizedAngle < Math.PI / 4) {
+      direction = 0; // Down
+    } else if (normalizedAngle >= Math.PI / 4 && normalizedAngle < 3 * Math.PI / 4) {
+      direction = 1; // Left
+    } else if (normalizedAngle >= 3 * Math.PI / 4 && normalizedAngle < 5 * Math.PI / 4) {
+      direction = 2; // Up
+    } else {
+      direction = 3; // Right
+    }
+    
+    this.direction = direction;
   }
   
   /**

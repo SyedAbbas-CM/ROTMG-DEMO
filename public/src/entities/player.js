@@ -78,19 +78,34 @@ export class Player {
         if (this.lastShotTime < 0) this.lastShotTime = 0;
       }
       
-      // Make sure movement properties are set correctly for animation
-      const isMoving = this.isMoving || (Math.abs(this.moveDirection.x) > 0.01 || Math.abs(this.moveDirection.y) > 0.01);
+      // CRITICAL FIX: Double-check if we're really moving based on moveDirection
+      const actuallyMoving = Math.abs(this.moveDirection.x) > 0.01 || Math.abs(this.moveDirection.y) > 0.01;
       
-      // Log animation state for debugging
-      if (isMoving) {
-        console.log(`[Player.update] Moving: ${isMoving}, Direction: ${this.animator.direction}, MoveDir: ${JSON.stringify(this.moveDirection)}`);
+      // Handle any discrepancy between isMoving flag and actual movement
+      if (this.isMoving !== actuallyMoving) {
+        // Force consistency between the flag and actual state
+        this.isMoving = actuallyMoving;
+        
+        // If we're truly stopped but animation says otherwise, force a reset
+        if (!actuallyMoving && this.animator && 
+            this.animator.currentState === this.animator.states.WALK) {
+          // Double-check safety: directly force back to idle state
+          this.animator.resetToIdle();
+        }
       }
       
-      // Update animator with clear movement state
+      // Make absolutely sure animation state exactly matches movement state
+      if (!this.isMoving && this.animator && 
+          this.animator.currentState === this.animator.states.WALK) {
+        // Force back to idle state if somehow we still have a walk animation
+        this.animator.resetToIdle();
+      }
+      
+      // Update animator with all protection layers applied
       this.animator.update(
         deltaTime, 
-        isMoving, 
-        this.moveDirection // Pass move direction vector directly 
+        this.isMoving,  // Corrected movement state
+        this.moveDirection
       );
     }
     
@@ -101,36 +116,52 @@ export class Player {
      * @param {number} deltaTime - Time elapsed since last update in seconds
      */
     move(dx, dy, deltaTime) {
+      // CRITICAL FIX: Detect if we're trying to stop
+      const tryingToStop = Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001;
+      
       // Normalize direction if moving diagonally
-      if (dx !== 0 && dy !== 0) {
+      if (!tryingToStop && dx !== 0 && dy !== 0) {
         const length = Math.sqrt(dx * dx + dy * dy);
         dx /= length;
         dy /= length;
       }
       
-      // Set movement state
-      this.isMoving = (dx !== 0 || dy !== 0);
-      
-      // Save move direction
-      this.moveDirection.x = dx;
-      this.moveDirection.y = dy;
-      
-      // Update animator direction based on movement
-      if (this.isMoving && this.animator) {
-        // Determine dominant direction
-        if (Math.abs(dx) > Math.abs(dy)) {
-          // Horizontal movement is dominant
-          this.animator.direction = dx < 0 ? 1 : 3; // 1 = left, 3 = right
-        } else {
-          // Vertical movement is dominant
-          this.animator.direction = dy < 0 ? 2 : 0; // 2 = up, 0 = down
+      // CRITICAL FIX: More aggressive handling of the stopped state
+      if (tryingToStop) {
+        // If we're stopping, explicitly reset everything
+        this.isMoving = false;
+        this.moveDirection.x = 0;
+        this.moveDirection.y = 0;
+        
+        // Explicitly reset to idle animation if we were walking
+        if (this.animator && this.animator.currentState === this.animator.states.WALK) {
+          this.animator.resetToIdle();
         }
+      } else {
+        // Set movement state for normal movement
+        this.isMoving = true;
+        
+        // Save move direction
+        this.moveDirection.x = dx;
+        this.moveDirection.y = dy;
+        
+        // Update animator direction based on movement
+        if (this.animator) {
+          // Determine dominant direction
+          if (Math.abs(dx) > Math.abs(dy)) {
+            // Horizontal movement is dominant
+            this.animator.direction = dx < 0 ? 1 : 3; // 1 = left, 3 = right
+          } else {
+            // Vertical movement is dominant
+            this.animator.direction = dy < 0 ? 2 : 0; // 2 = up, 0 = down
+          }
+        }
+        
+        // Apply movement
+        const distance = this.speed * deltaTime;
+        this.x += dx * distance;
+        this.y += dy * distance;
       }
-      
-      // Apply movement
-      const distance = this.speed * deltaTime;
-      this.x += dx * distance;
-      this.y += dy * distance;
     }
     
     /**
