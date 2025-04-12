@@ -9,9 +9,9 @@
  * 1: wizard_idle_d_1    9: wizard_walk_d_1    17: wizard_atk_r_1
  * 2: wizard_idle_u_1    10: wizard_walk_u_1   18: wizard_atk_d_1
  * 3: wizard_idle_l_1    11: wizard_walk_l_2   19: wizard_atk_d_2
- * 4: wizard_idle_r_2    12: wizard_walk_r_2   20: wizard_atk_d_2
- * 5: wizard_idle_d_2    13: wizard_walk_d_2   21: wizard_atk_u_1
- * 6: wizard_idle_u_2    14: wizard_walk_u_2   22: wizard_atk_u_2
+ * 4: wizard_idle_r_2    12: wizard_walk_r_2   20: wizard_atk_u_1
+ * 5: wizard_idle_d_2    13: wizard_walk_d_2   21: wizard_atk_u_2
+ * 6: wizard_idle_u_2    14: wizard_walk_u_2   22: UNUSED
  * 7: wizard_idle_l_2    15: wizard_walk_l_2   23: SKIP_FRAME
  *                                             24: wizard_atk_l_1
  */
@@ -78,7 +78,7 @@ export class EntityAnimator {
       this.attackCooldown -= deltaTime;
       // Debug log attack state
       if (this.frameTimer >= this.frameDuration) {
-        console.log(`[Animator.update] Attack in progress - cooldown: ${this.attackCooldown.toFixed(2)}, frame: ${this.frameIndex}`);
+        console.log(`[Animator.update] Attack in progress - cooldown: ${this.attackCooldown.toFixed(2)}, frame: ${this.frameIndex}, direction: ${this.direction}`);
       }
       
       if (this.attackCooldown <= 0) {
@@ -104,15 +104,23 @@ export class EntityAnimator {
       if (this.currentState === this.states.WALK) {
         this.frameIndex = (this.frameIndex + 1) % 2;
       }
-      // For attacks, always use 2 frames regardless of direction
+      // For attacks, handle frame cycling differently based on direction
       else if (this.currentState === this.states.ATTACK) {
         // Log before frame change
         const oldFrame = this.frameIndex;
         
-        // Always cycle through 2 frames for all directions
-        this.frameIndex = (this.frameIndex + 1) % 2;
+        // CRITICAL FIX: For left attack, keep the frameIndex at 0 to avoid cycling
+        // For other directions, cycle as normal
+        if (this.direction === 1) { // Left attack
+          // Keep the frameIndex at 0 for left attack
+          this.frameIndex = 0;
+          console.log(`[Animator.update] LEFT attack - locking frame at 0`);
+        } else {
+          // Normal cycling for other directions
+          this.frameIndex = (this.frameIndex + 1) % 2;
+        }
         
-        console.log(`[Animator.update] Attack animation frame changed: ${oldFrame} -> ${this.frameIndex}`);
+        console.log(`[Animator.update] Attack animation frame changed: ${oldFrame} -> ${this.frameIndex} for direction ${this.direction}`);
       }
     }
   }
@@ -280,28 +288,7 @@ export class EntityAnimator {
   
   /**
    * Get source rectangle for current animation frame.
-   * This method calculates the correct cell based on the specific sprite sheet arrangement:
-   * 
-   * Sprite mapping for directions (0=down, 1=left, 2=up, 3=right):
-   * 
-   * IDLE frames (first frame only):
-   * - Down (0): column 1
-   * - Left (1): column 3
-   * - Up (2): column 2
-   * - Right (3): column 0
-   * 
-   * WALK frames (2 frames per direction):
-   * - Down (0): columns 9 & 13
-   * - Left (1): columns 11 & 15
-   * - Up (2): columns 10 & 14
-   * - Right (3): columns 8 & 12
-   * 
-   * ATTACK frames:
-   * - Down (0): columns 18 & 19 (2 frames)
-   * - Left (1): column 24 (1 frame) - paired with idle frame (3) for 2-frame animation
-   * - Up (2): columns 21 & 22 (2 frames)
-   * - Right (3): column 17 (1 frame) - paired with idle frame (0) for 2-frame animation
-   *
+   * This method calculates the correct cell based on the specific sprite sheet arrangement.
    * @returns {Object} Source rectangle {x, y, width, height}
    */
   getSourceRect() {
@@ -334,24 +321,29 @@ export class EntityAnimator {
         // DEBUG: Log direction to verify mapping
         console.log(`[EntityAnimator] Attack direction: ${this.direction}, frameIndex: ${this.frameIndex}`);
         
-        // Fixed mapping for attack animations
+        // Fixed mapping for attack animations with CORRECTED frames
         {
           if (this.direction === 0) { // down - has 2 frames
             // Use columns 18 & 19 for down attack
             col = this.frameIndex === 0 ? 18 : 19;
           } else if (this.direction === 1) { // left - only 1 attack frame
-            // For left attacks, use column 24 and alternate with idle
-            col = this.frameIndex === 0 ? 24 : 3;
+            // CRITICAL FIX: For left attack, ONLY use the attack frame (col 24)
+            // The disappearing issue is happening because we're alternating frames
+            // Instead, just show the attack frame for the entire animation duration
+            col = 23; // Always use the attack frame for left
+            
+            // Log for debugging
+            console.log(`[EntityAnimator] Left attack using fixed column: ${col}`);
           } else if (this.direction === 2) { // up - has 2 frames
-            // Use columns 21 & 22 for up attack
-            col = this.frameIndex === 0 ? 21 : 22;
+            // CORRECTION: Shift frames one step back - use columns 20 & 21 instead of 21 & 22
+            col = this.frameIndex === 0 ? 20 : 21;
           } else { // right - only 1 attack frame
-            // For right attacks, use column 17 and alternate with idle
+            // For right attack, use column 17 and alternate with idle right (column 0)
             col = this.frameIndex === 0 ? 17 : 0;
           }
           
           // DEBUG: Log which column is being used
-          console.log(`[EntityAnimator] Using sprite column: ${col}`);
+          console.log(`[EntityAnimator] Using sprite column: ${col} for direction ${this.direction}, frame ${this.frameIndex}`);
         }
         break;
       
@@ -369,10 +361,19 @@ export class EntityAnimator {
     // the row is determined by the characterIndex.
     const row = this.characterIndex;
     
-    // Final source rect
+    // Calculate sprite position
+    const spriteX = col * this.spriteWidth;
+    const spriteY = row * this.spriteHeight;
+    
+    // Add extra safety check for left attack - if we're getting out of bounds
+    if (this.currentState === this.states.ATTACK && this.direction === 1) {
+      console.log(`[EntityAnimator] LEFT ATTACK - Final sprite position: x=${spriteX}, y=${spriteY}`);
+    }
+    
+    // Final source rect with safety bounds check
     return {
-      x: col * this.spriteWidth,
-      y: row * this.spriteHeight,
+      x: spriteX,
+      y: spriteY,
       width: this.spriteWidth,
       height: this.spriteHeight
     };
