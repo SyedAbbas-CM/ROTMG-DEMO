@@ -12,9 +12,9 @@ function throttledLog(key, message, data, interval = 1000) {
     if (!logThrottles[key] || now - logThrottles[key] >= interval) {
         logThrottles[key] = now;
         if (data !== undefined) {
-            console.log(message, data);
+            //console.log(message, data);
         } else {
-            console.log(message);
+            //console.log(message);
         }
         return true;
     }
@@ -41,7 +41,7 @@ export class PlayerManager {
         this.debug = true; // Enable debug by default for troubleshooting
         
         // Debug visualization - makes other players more obvious
-        this.visualDebug = false; // Turn off the pink borders
+        this.visualDebug = true; // Enable visual debug to diagnose coordinate issues
         
         console.log("PlayerManager initialized");
     }
@@ -288,40 +288,57 @@ export class PlayerManager {
         const screenWidth = ctx.canvas.width;
         const screenHeight = ctx.canvas.height;
         
-        // Define the scale factor
-        const scaleFactor = gameState.camera?.viewType === 'strategic' ? 0.5 : 1;
+        // Define the scale factor based on view type 
+        // NOTE: Keep this consistent with other entities (character, bullets, etc.)
+        const viewType = gameState.camera?.viewType || 'top-down';
+        const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
         
         // Get the view type for adjusted culling
-        const isStrategicView = gameState.camera?.viewType === 'strategic';
+        const isStrategicView = viewType === 'strategic';
+        
+        // Ensure camera is available for consistent coordinate transformation
+        if (!gameState.camera || typeof gameState.camera.worldToScreen !== 'function') {
+            console.error("Cannot render players: camera's worldToScreen method not available");
+            return;
+        }
         
         // Draw each player
         for (const player of playersToRender) {
             try {
                 // Apply the same scale factor used for the main character (SCALE = 3)
-                const width = player.width * SCALE;
-                const height = player.height * SCALE;
+                const width = player.width * SCALE * viewScaleFactor;
+                const height = player.height * SCALE * viewScaleFactor;
                 
-                // Calculate screen position
-                const screenX = (player.x - cameraPosition.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
-                const screenY = (player.y - cameraPosition.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
+                // Use camera's consistent transformation method
+                const screenPos = gameState.camera.worldToScreen(
+                    player.x, 
+                    player.y, 
+                    screenWidth, 
+                    screenHeight, 
+                    TILE_SIZE
+                );
+                const screenX = screenPos.x;
+                const screenY = screenPos.y;
                 
-                // Improved offscreen culling - use larger culling distance in strategic view
-                // to prevent players from "popping" when moving quickly
-                const cullingDistance = isStrategicView ? Math.max(screenWidth, screenHeight) : width * 2;
-                
-                // Skip if off screen (with appropriate buffer)
-                if (screenX < -cullingDistance || screenX > screenWidth + cullingDistance || 
-                    screenY < -cullingDistance || screenY > screenHeight + cullingDistance) {
+                // Skip if off screen
+                if (screenX < -width || screenX > screenWidth + width || 
+                    screenY < -height || screenY > screenHeight + height) {
                     continue;
+                }
+                
+                // Debug visualization
+                if (this.visualDebug) {
+                    ctx.fillStyle = 'rgba(255, 0, 255, 0.3)';
+                    ctx.fillRect(screenX - width/2, screenY - height/2, width, height);
                 }
                 
                 // Save context for rotation
                 ctx.save();
                 
-                // Translate to player position
+                // Translate to player position for proper rotation
                 ctx.translate(screenX, screenY);
                 
-                // If player has a rotation, use it
+                // Apply rotation if player has it
                 if (typeof player.rotation === 'number') {
                     ctx.rotate(player.rotation);
                 }
@@ -418,25 +435,45 @@ export class PlayerManager {
     renderPlayersFallback(ctx, cameraPosition) {
         const screenWidth = ctx.canvas.width;
         const screenHeight = ctx.canvas.height;
-        const scaleFactor = gameState.camera.viewType === 'strategic' ? 0.5 : 1;
+        const viewType = gameState.camera?.viewType || 'top-down';
+        const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
         
         // Log only once when falling back
         console.log(`Fallback rendering for ${this.players.size} players - sprite sheet missing`);
         
+        // Ensure camera is available for consistent coordinate transformation
+        if (!gameState.camera || typeof gameState.camera.worldToScreen !== 'function') {
+            console.error("Cannot render players fallback: camera's worldToScreen method not available");
+            return;
+        }
+        
         for (const player of this.players.values()) {
             try {
                 // Use player's actual dimensions with proper scaling
-                const width = player.width * SCALE;
-                const height = player.height * SCALE;
+                const width = player.width * SCALE * viewScaleFactor;
+                const height = player.height * SCALE * viewScaleFactor;
                 
-                // Calculate screen position
-                const screenX = (player.x - cameraPosition.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
-                const screenY = (player.y - cameraPosition.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
+                // Use camera's consistent transformation method
+                const screenPos = gameState.camera.worldToScreen(
+                    player.x, 
+                    player.y, 
+                    screenWidth, 
+                    screenHeight, 
+                    TILE_SIZE
+                );
+                const screenX = screenPos.x;
+                const screenY = screenPos.y;
                 
                 // Skip if off screen
                 if (screenX < -width || screenX > screenWidth + width || 
                     screenY < -height || screenY > screenHeight + height) {
                     continue;
+                }
+                
+                // Debug visualization
+                if (this.visualDebug) {
+                    ctx.fillStyle = 'rgba(255, 0, 255, 0.3)';
+                    ctx.fillRect(screenX - width/2, screenY - height/2, width, height);
                 }
                 
                 // Save context for rotation

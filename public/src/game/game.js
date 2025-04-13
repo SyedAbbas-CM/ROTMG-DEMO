@@ -20,6 +20,10 @@ import {
 import { Player } from '../entities/player.js';
 import { TILE_SIZE, SCALE } from '../constants/constants.js';
 import * as THREE from 'three';
+import { Camera } from '../camera.js';
+import { EntityAnimator } from '../entities/EntityAnimator.js';
+import { PlayerManager } from '../entities/PlayerManager.js';
+import { initCoordinateUtils } from '../utils/coordinateUtils.js';
 
 let renderer, scene, camera;
 let lastTime = 0;
@@ -104,6 +108,10 @@ export async function initGame() {
         });
         
         console.log('All sprite sheets loaded.');
+
+        // Initialize coordinate utilities for world-to-screen transformations
+        initCoordinateUtils();
+        console.log('Coordinate utilities initialized.');
 
         // Initialize the game state
         initializeGameState();
@@ -239,6 +247,39 @@ function initializeGameState() {
     
     // IMPORTANT: Disable procedural generation to use server's map
     mapManager.proceduralEnabled = false;
+    
+    // Set the entity-to-tile correction factor to fix the "floating entities" issue
+    // This factor synchronizes the entity coordinate system with the tile coordinate system
+    if (gameState.camera && typeof gameState.camera.setEntityToTileCorrection === 'function') {
+        // The correction factor of 1/TILE_SIZE aligns entity world coordinates with tile grid positions
+        // This is because tiles are positioned at (x * TILE_SIZE) while entities are at world coordinates
+        // Try different values to find the one that stops entities from "floating" when you move
+        const CORRECTION_FACTOR = 1.0; // Start with 1.0 (no correction) and adjust if needed
+        
+        gameState.camera.setEntityToTileCorrection(CORRECTION_FACTOR);
+        console.log(`Set entity-to-tile correction factor to ${CORRECTION_FACTOR}`);
+        
+        // Add key commands to adjust the correction factor in real-time for testing
+        window.adjustCorrectionFactor = function(delta) {
+            const current = gameState.camera.entityToTileCorrection;
+            const newFactor = current + delta;
+            gameState.camera.setEntityToTileCorrection(newFactor);
+            console.log(`Adjusted correction factor to ${newFactor}`);
+            return newFactor;
+        };
+        
+        console.log("Press 'O' to decrease correction factor by 0.1");
+        console.log("Press 'P' to increase correction factor by 0.1");
+        
+        // Add key listeners for correction factor adjustment
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'KeyO') {
+                window.adjustCorrectionFactor(-0.1);
+            } else if (event.code === 'KeyP') {
+                window.adjustCorrectionFactor(0.1);
+            }
+        });
+    }
     
     // Create network manager with proper handlers
     networkManager = new ClientNetworkManager(SERVER_URL, {

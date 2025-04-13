@@ -46,34 +46,57 @@ export class ClientBulletManager {
         if (this.activeBullets === 0) return;
         
         // Import constants if needed
-        const TILE_SIZE = 24; // Ensure this matches your constant value from constants.js
+        const TILE_SIZE = 12; // Ensure this matches your constant value from constants.js
         
         // Get sprite manager if available
         const spriteManager = window.spriteManager || null;
         
         // Get screen center coordinates
-        const screenCenterX = ctx.canvas.width / 2;
-        const screenCenterY = ctx.canvas.height / 2;
+        const screenWidth = ctx.canvas.width;
+        const screenHeight = ctx.canvas.height;
+        
+        // Get the camera viewType for proper scaling
+        const viewType = window.gameState?.camera?.viewType || 'top-down';
+        const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
+        
+        // Use camera's worldToScreen method if available for consistent rendering
+        const useCamera = window.gameState?.camera && typeof window.gameState.camera.worldToScreen === 'function';
         
         // Render each active bullet - important to use this.capacity to check all slots
         for (let i = 0; i < this.capacity; i++) {
             // Skip inactive bullets
             if (!this.active[i]) continue;
             
-            // Calculate screen coordinates properly using TILE_SIZE
-            const screenX = (this.x[i] - camera.x) * TILE_SIZE + screenCenterX;
-            const screenY = (this.y[i] - camera.y) * TILE_SIZE + screenCenterY;
+            // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
+            let screenX, screenY;
+            
+            if (useCamera) {
+                // Use camera's consistent transformation method
+                const screenPos = window.gameState.camera.worldToScreen(
+                    this.x[i],
+                    this.y[i],
+                    screenWidth,
+                    screenHeight,
+                    TILE_SIZE
+                );
+                screenX = screenPos.x;
+                screenY = screenPos.y;
+            } else {
+                // Fallback to direct calculation if camera method not available
+                screenX = (this.x[i] - camera.x) * TILE_SIZE * viewScaleFactor + screenWidth / 2;
+                screenY = (this.y[i] - camera.y) * TILE_SIZE * viewScaleFactor + screenHeight / 2;
+            }
             
             // Skip if off-screen (with slightly larger buffer for fast bullets)
             const buffer = 100;
-            if (screenX < -buffer || screenX > ctx.canvas.width + buffer || 
-                screenY < -buffer || screenY > ctx.canvas.height + buffer) {
+            if (screenX < -buffer || screenX > screenWidth + buffer || 
+                screenY < -buffer || screenY > screenHeight + buffer) {
                 continue;
             }
             
-            // Default size for bullets without dimensions
-            const width = this.width[i] || 10; // Increased size
-            const height = this.height[i] || 10; // Increased size
+            // FIXED: Scale bullet size based on view type - important for consistent appearance
+            const width = (this.width[i] || 10) * viewScaleFactor;
+            const height = (this.height[i] || 10) * viewScaleFactor;
             
             // Check if we have sprite information
             if (spriteManager && this.spriteSheet[i]) {

@@ -298,7 +298,7 @@ export class Player {
       if (this._viewScaleFactor !== undefined) {
         // Use the flag directly set on the character object
         viewScaleFactor = this._viewScaleFactor;
-        console.log(`[Player.draw] Using direct scale factor: ${viewScaleFactor}`);
+        //console.log(`[Player.draw] Using direct scale factor: ${viewScaleFactor}`);
       } else {
         // Fallback to checking the view type
         const isStrategicView = window.gameState?.camera?.viewType === 'strategic';

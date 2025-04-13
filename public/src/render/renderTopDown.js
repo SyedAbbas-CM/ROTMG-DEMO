@@ -1,7 +1,7 @@
 // src/render/renderTopDown.js
 
 import { gameState } from '../game/gamestate.js';
-import { TILE_SIZE, TILE_SPRITES } from '../constants/constants.js';
+import { TILE_SIZE, TILE_SPRITES, SCALE } from '../constants/constants.js';
 import { spriteManager } from '../assets/spriteManager.js';
 
 // Get 2D Canvas Context
@@ -12,8 +12,8 @@ const ctx = canvas2D.getContext('2d');
 canvas2D.width = window.innerWidth;
 canvas2D.height = window.innerHeight;
 
-// Rendering parameters
-const scaleFactor = 4; // Adjust scale as needed
+// Use the same SCALE constant as entities for consistent sizing
+const scaleFactor = SCALE; // Standard scale factor (5)
 
 // ANTI-FLICKERING: Add a tile cache to prevent constantly requesting the same chunks
 // Top-down view has fewer tiles, so we need a smaller cache
@@ -35,12 +35,20 @@ export function renderTopDownView() {
   // Calculate current time for throttling
   const now = performance.now();
 
-  // Determine visible tiles based on camera position
-  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE * scaleFactor));
-  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE * scaleFactor));
+  // Get the view scale factor from camera
+  const viewScaleFactor = camera.getViewScaleFactor();
+  
+  // Calculate the effective tile size with scaling applied
+  const effectiveTileSize = TILE_SIZE * scaleFactor * viewScaleFactor;
 
-  const startX = Math.floor(camera.position.x / TILE_SIZE - tilesInViewX / 2);
-  const startY = Math.floor(camera.position.y / TILE_SIZE - tilesInViewY / 2);
+  // Calculate visible tiles based on screen dimensions and tile size
+  // Add a small margin to prevent pop-in at screen edges
+  const tilesInViewX = Math.ceil(canvas2D.width / effectiveTileSize) + 2;
+  const tilesInViewY = Math.ceil(canvas2D.height / effectiveTileSize) + 2;
+
+  // Calculate the starting tile coordinates
+  const startX = Math.floor(camera.position.x - tilesInViewX / 2);
+  const startY = Math.floor(camera.position.y - tilesInViewY / 2);
   const endX = startX + tilesInViewX;
   const endY = startY + tilesInViewY;
   
@@ -49,7 +57,8 @@ export function renderTopDownView() {
   if (now - lastChunkUpdateTime > CHUNK_UPDATE_INTERVAL) {
     // If mapManager has updateVisibleChunks method, call it only periodically
     if (mapManager.updateVisibleChunks) {
-      mapManager.updateVisibleChunks(camera.position.x, camera.position.y);
+      // Request a slightly larger area than visible to prevent edge loading
+      mapManager.updateVisibleChunks(camera.position.x, camera.position.y, 5);
     }
     
     lastChunkUpdateTime = now;
@@ -58,6 +67,13 @@ export function renderTopDownView() {
   const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites");
   if (!tileSheetObj) return;
   const tileSpriteSheet = tileSheetObj.image;
+
+  // Clear the entire canvas before rendering tiles
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas2D.width, canvas2D.height);
+
+  // Debug helper to visualize the view boundaries
+  let tilesRendered = 0;
 
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
@@ -76,18 +92,43 @@ export function renderTopDownView() {
       }
       
       if (tile) {
+        tilesRendered++;
         const spritePos = TILE_SPRITES[tile.type];
-        // Draw tile
+        
+        // Convert world to screen coordinates using the same formula as entities
+        // Apply a small offset (0.5, 0.5) to center tiles on grid positions
+        const worldX = x + 0.5; // Center in tile
+        const worldY = y + 0.5; // Center in tile
+        
+        // Use standard world-to-screen transformation
+        const screenX = (worldX - camera.position.x) * TILE_SIZE * viewScaleFactor + canvas2D.width / 2;
+        const screenY = (worldY - camera.position.y) * TILE_SIZE * viewScaleFactor + canvas2D.height / 2;
+        
+        // Draw the tile centered at the screen position
         ctx.drawImage(
           tileSpriteSheet,
           spritePos.x, spritePos.y, TILE_SIZE, TILE_SIZE, // Source rectangle
-          (x * TILE_SIZE - camera.position.x) * scaleFactor + canvas2D.width / 2,
-          (y * TILE_SIZE - camera.position.y) * scaleFactor + canvas2D.height / 2,
-          TILE_SIZE * scaleFactor,
-          TILE_SIZE * scaleFactor
+          screenX - (effectiveTileSize / 2), // Center horizontally 
+          screenY - (effectiveTileSize / 2), // Center vertically
+          effectiveTileSize,
+          effectiveTileSize
         );
+        
+        // DEBUGGING: Draw tile coordinates for troubleshooting
+        if (gameState.debug && (x % 10 === 0 && y % 10 === 0)) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+          ctx.font = '10px Arial';
+          ctx.fillText(`(${x},${y})`, screenX, screenY);
+        }
       }
     }
+  }
+
+  // DEBUGGING: Show how many tiles we're rendering
+  if (gameState.debug) {
+    ctx.fillStyle = 'white';
+    ctx.font = '14px Arial';
+    ctx.fillText(`Rendering ${tilesRendered} tiles, view: ${tilesInViewX}x${tilesInViewY}`, 10, 20);
   }
 
   // ANTI-FLICKERING: Periodically clean up cache to prevent memory leaks

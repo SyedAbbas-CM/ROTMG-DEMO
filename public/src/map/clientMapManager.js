@@ -24,8 +24,8 @@ export class ClientMapManager {
         this.height = 0;
         this.visibleChunks = []; // Currently visible chunks
         this.pendingChunks = new Set(); // Chunks we're currently requesting
-        this.maxCachedChunks = 100; // Maximum chunks to keep in memory
-        this.chunkLoadDistance = 2; // How many chunks to load around player
+        this.maxCachedChunks = 400; // FIXED: Increased maximum chunks (was 100)
+        this.chunkLoadDistance = 5; // FIXED: Increased default chunks to load around player (was 2)
         
         // CRITICAL: Default to false to use server's map data
         this.proceduralEnabled = false;
@@ -186,8 +186,9 @@ export class ClientMapManager {
      * Update visible chunks based on player position
      * @param {number} playerX - Player X position in world coordinates
      * @param {number} playerY - Player Y position in world coordinates
+     * @param {number} [customChunkDistance] - Optional custom chunk load distance
      */
-    updateVisibleChunks(playerX, playerY) {
+    updateVisibleChunks(playerX, playerY, customChunkDistance) {
         if (!this.networkManager) {
             console.warn("Cannot update visible chunks: network manager not available");
             return;
@@ -200,14 +201,18 @@ export class ClientMapManager {
         const centerChunkX = Math.floor(playerX / (this.tileSize * this.chunkSize));
         const centerChunkY = Math.floor(playerY / (this.tileSize * this.chunkSize));
         
-        //console.log(`[MapManager] Center chunk: (${centerChunkX}, ${centerChunkY})`);
+        // FIXED: Use custom distance if provided, otherwise use the default
+        const effectiveChunkLoadDistance = customChunkDistance !== undefined ? 
+            customChunkDistance : this.chunkLoadDistance;
+            
+        console.log(`[MapManager] Center chunk: (${centerChunkX}, ${centerChunkY}), distance: ${effectiveChunkLoadDistance}`);
         
         // Get chunks in view distance
         const newVisibleChunks = [];
         const chunksRequested = []; // Track new chunk requests for logging
         
-        for (let dy = -this.chunkLoadDistance; dy <= this.chunkLoadDistance; dy++) {
-            for (let dx = -this.chunkLoadDistance; dx <= this.chunkLoadDistance; dx++) {
+        for (let dy = -effectiveChunkLoadDistance; dy <= effectiveChunkLoadDistance; dy++) {
+            for (let dx = -effectiveChunkLoadDistance; dx <= effectiveChunkLoadDistance; dx++) {
                 const chunkX = centerChunkX + dx;
                 const chunkY = centerChunkY + dy;
                 

@@ -26,15 +26,15 @@ export function renderCharacter() {
   }
 
   // Debug: Log the current view type to verify it's being detected correctly
-  console.log(`[renderCharacter] Current view type: ${gameState.camera?.viewType}`);
+  //console.log(`[renderCharacter] Current view type: ${gameState.camera?.viewType}`);
 
   // Determine scale factor based on view type
   let isStrategicView = gameState.camera?.viewType === 'strategic';
-  let viewScaleFactor = isStrategicView ? 0.25 : 1.0; // 50% smaller in strategic view
+  let viewScaleFactor = isStrategicView ? 0.5 : 1.0; // FIXED back to 0.5 for strategic view (was 0.25)
   let effectiveScale = SCALE * viewScaleFactor; 
 
   // Debug: Log the scale factor being used
-  console.log(`[renderCharacter] Using scale factor: ${viewScaleFactor}, effectiveScale: ${effectiveScale}`);
+  //console.log(`[renderCharacter] Using scale factor: ${viewScaleFactor}, effectiveScale: ${effectiveScale}`);
 
   // Use the player's draw method if it exists
   if (character.draw && typeof character.draw === 'function') {
@@ -151,16 +151,45 @@ export function renderEnemies() {
     return;
   }
   const enemySpriteSheet = enemySheetObj.image;
-
+  
+  // Get view scaling factor - FIXING back to 0.5 for strategic view
+  const viewType = gameState.camera?.viewType || 'top-down';
+  const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
+  
+  // Get screen dimensions
+  const screenWidth = canvas2D.width;
+  const screenHeight = canvas2D.height;
+  
+  // Ensure camera is available for consistent coordinate transformation
+  if (!gameState.camera || typeof gameState.camera.worldToScreen !== 'function') {
+    console.error("Cannot render enemies: camera's worldToScreen method not available");
+    return;
+  }
+  
   // Render each enemy
   enemies.forEach(enemy => {
     try {
-      const width = enemy.width * scaleFactor;
-      const height = enemy.height * scaleFactor;
-
-      // Calculate screen position
-      const x = (enemy.x - gameState.camera.position.x) * TILE_SIZE * scaleFactor + canvas2D.width / 2 - width / 2;
-      const y = (enemy.y - gameState.camera.position.y) * TILE_SIZE * scaleFactor + canvas2D.height / 2 - height / 2;
+      // Scale dimensions based on view type
+      const width = enemy.width * SCALE * viewScaleFactor;
+      const height = enemy.height * SCALE * viewScaleFactor;
+      
+      // Use camera's consistent transformation method
+      const screenPos = gameState.camera.worldToScreen(
+        enemy.x, 
+        enemy.y, 
+        screenWidth, 
+        screenHeight, 
+        TILE_SIZE
+      );
+      const screenX = screenPos.x;
+      const screenY = screenPos.y;
+      
+      // Skip if off screen (with buffer)
+      const buffer = width;
+      if (screenX < -buffer || screenX > screenWidth + buffer || 
+          screenY < -buffer || screenY > screenHeight + buffer) {
+        return;
+      }
 
       // Save context for rotation
       ctx.save();
@@ -169,13 +198,13 @@ export function renderEnemies() {
       if (enemy.isFlashing) {
         ctx.globalAlpha = 0.7;
         ctx.fillStyle = 'red';
-        ctx.fillRect(x, y, width, height);
+        ctx.fillRect(screenX - width/2, screenY - height/2, width, height);
         ctx.globalAlpha = 1.0;
       }
       
       // If enemy has a rotation, use it
       if (typeof enemy.rotation === 'number') {
-        ctx.translate(x + width/2, y + height/2);
+        ctx.translate(screenX, screenY);
         ctx.rotate(enemy.rotation);
         ctx.drawImage(
           enemySpriteSheet,
@@ -184,113 +213,110 @@ export function renderEnemies() {
           -width/2, -height/2, width, height
         );
       } else {
-        // Draw without rotation
+        // Draw without rotation - center at the calculated screen position
         ctx.drawImage(
           enemySpriteSheet,
           enemy.spriteX || 0, enemy.spriteY || 0, 
           enemy.width || 24, enemy.height || 24,
-          x, y, width, height
+          screenX - width/2, screenY - height/2, width, height
         );
       }
       
       // Draw health bar
-      if (enemy.health !== undefined && enemy.maxHealth !== undefined && enemy.health > 0) {
+      if (enemy.health !== undefined && enemy.maxHealth !== undefined) {
         const healthPercent = enemy.health / enemy.maxHealth;
         const barWidth = width;
         const barHeight = 4;
-        const barY = y - barHeight - 2;
         
-        // Background
+        // Draw background
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(x, barY, barWidth, barHeight);
+        ctx.fillRect(
+          screenX - barWidth/2,
+          screenY - height/2 - barHeight - 2,
+          barWidth,
+          barHeight
+        );
         
-        // Health
+        // Draw health - color based on percentage
         ctx.fillStyle = healthPercent > 0.6 ? 'green' : healthPercent > 0.3 ? 'yellow' : 'red';
-        ctx.fillRect(x, barY, barWidth * healthPercent, barHeight);
+        ctx.fillRect(
+          screenX - barWidth/2,
+          screenY - height/2 - barHeight - 2,
+          barWidth * healthPercent,
+          barHeight
+        );
       }
       
       // Restore context
       ctx.restore();
     } catch (error) {
-      console.error("Error rendering enemy:", error, enemy);
+      console.error("Error rendering enemy:", error);
     }
   });
 }
 
 /**
- * Render all bullets with sprite support
- * @param {CanvasRenderingContext2D} ctx - Canvas rendering context
+ * Render all bullets
  */
 export function renderBullets() {
-  // Get canvas context if not provided
-  const ctx = document.getElementById('gameCanvas').getContext('2d');
-  if (!ctx) return;
-  
-  // If bulletManager doesn't exist, nothing to render
-  if (!gameState.bulletManager) return;
-  
-  // Get screen center
-  const screenCenterX = ctx.canvas.width / 2;
-  const screenCenterY = ctx.canvas.height / 2;
-  
-  // Minimal logging only when needed
-  if (Math.random() < 0.01) { // Just 1% of frames
-    //console.log(`[renderBullets] Bullets count: ${gameState.bulletManager.bulletCount || 0}`);
+  // Get camera position
+  if (!gameState.camera || !gameState.projectileManager) {
+    return;
   }
   
-  // Call the bullet manager's render method with camera position
-  if (typeof gameState.bulletManager.render === 'function') {
-    gameState.bulletManager.render(ctx, gameState.camera.position);
-  } else {
-    // Fallback rendering if bullet manager lacks render method
-    const bullets = gameState.bulletManager.getBulletsForRender ? 
-                  gameState.bulletManager.getBulletsForRender() : [];
-                  
-    if (!bullets || bullets.length === 0) return;
-    
-    // Get sprite manager
-    const spriteManager = window.spriteManager || null;
-    
-    // Draw each bullet
-    bullets.forEach(bullet => {
-      // Calculate screen coordinates - ensure correct coordinate scaling with TILE_SIZE
-      const screenX = (bullet.x - gameState.camera.position.x) * TILE_SIZE + screenCenterX;
-      const screenY = (bullet.y - gameState.camera.position.y) * TILE_SIZE + screenCenterY;
-      
-      // Verify bullet is on screen before drawing to avoid rendering off-screen
-      const bulletHalfSize = (bullet.width || 8) / 2;
-      if (screenX + bulletHalfSize < 0 || screenX - bulletHalfSize > canvas2D.width || 
-          screenY + bulletHalfSize < 0 || screenY - bulletHalfSize > canvas2D.height) {
-        return; // Skip rendering off-screen bullets
-      }
-      
-      // Draw bullet
-      if (spriteManager && bullet.spriteSheet) {
-        // Render with sprite
-        spriteManager.drawSprite(
-          ctx,
-          bullet.spriteSheet,
-          bullet.spriteX || 8 * 10, // Default X position in sprite sheet (col * width)
-          bullet.spriteY || 8 * 11, // Default Y position in sprite sheet (row * height)
-          screenX - (bullet.width || 8) / 2,
-          screenY - (bullet.height || 8) / 2,
-          bullet.width || 8,
-          bullet.height || 8
-        );
-      } else {
-        // Fallback to simple but visible bullet
-        ctx.fillStyle = bullet.ownerId === gameState.playerManager?.localPlayerId ? 'yellow' : 'red';
-        ctx.beginPath();
-        ctx.arc(screenX, screenY, (bullet.width || 8) / 2, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Add highlight outline for better visibility
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-    });
+  // Get bullet data from ProjectileManager
+  const bullets = gameState.projectileManager.getBulletsForRender();
+  if (!bullets || bullets.length === 0) {
+    return;
   }
+  
+  // Get view scaling factor
+  const viewType = gameState.camera?.viewType || 'top-down';
+  const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
+  
+  // Get screen dimensions
+  const screenWidth = canvas2D.width;
+  const screenHeight = canvas2D.height;
+  
+  // Ensure camera is available for consistent coordinate transformation
+  if (!gameState.camera || typeof gameState.camera.worldToScreen !== 'function') {
+    console.error("Cannot render bullets: camera's worldToScreen method not available");
+    return;
+  }
+  
+  // Render each bullet
+  bullets.forEach(bullet => {
+    // Scale bullet dimensions based on view
+    const size = bullet.size * SCALE * viewScaleFactor;
+    
+    // Use camera's consistent transformation method
+    const screenPos = gameState.camera.worldToScreen(
+      bullet.x, 
+      bullet.y, 
+      screenWidth, 
+      screenHeight, 
+      TILE_SIZE
+    );
+    const screenX = screenPos.x;
+    const screenY = screenPos.y;
+    
+    // Skip if off screen (with a small buffer)
+    const buffer = size;
+    if (
+      screenX < -buffer || 
+      screenX > screenWidth + buffer || 
+      screenY < -buffer || 
+      screenY > screenHeight + buffer
+    ) {
+      return;
+    }
+    
+    // Draw the bullet based on its type
+    ctx.fillStyle = bullet.color || 'white';
+    ctx.beginPath();
+    ctx.arc(screenX, screenY, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
 }
 
 /**
@@ -426,4 +452,97 @@ export function renderPlayers() {
   } catch (error) {
     console.error("Error rendering players:", error);
   }
+}
+
+/**
+ * Render all items on the ground
+ */
+export function renderItems() {
+  // Get items from itemManager
+  if (!gameState.itemManager) {
+    return;
+  }
+  
+  const items = gameState.itemManager.getItemsForRender ? 
+                gameState.itemManager.getItemsForRender() : 
+                (gameState.itemManager.items || []);
+  
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return;
+  }
+  
+  // Get item sprite sheet
+  const itemSheetObj = spriteManager.getSpriteSheet('item_sprites');
+  if (!itemSheetObj) {
+    console.warn("Item sprite sheet not loaded");
+    return;
+  }
+  const itemSpriteSheet = itemSheetObj.image;
+  
+  // Get view scaling factor
+  const viewType = gameState.camera?.viewType || 'top-down';
+  const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
+  
+  // Get screen dimensions
+  const screenWidth = canvas2D.width;
+  const screenHeight = canvas2D.height;
+  
+  // Ensure camera is available for consistent coordinate transformation
+  if (!gameState.camera || typeof gameState.camera.worldToScreen !== 'function') {
+    console.error("Cannot render items: camera's worldToScreen method not available");
+    return;
+  }
+  
+  // Render each item
+  items.forEach(item => {
+    try {
+      // Scale dimensions based on view type
+      const width = item.width * SCALE * viewScaleFactor;
+      const height = item.height * SCALE * viewScaleFactor;
+      
+      // Use camera's consistent transformation method
+      const screenPos = gameState.camera.worldToScreen(
+        item.x, 
+        item.y, 
+        screenWidth, 
+        screenHeight, 
+        TILE_SIZE
+      );
+      const screenX = screenPos.x;
+      const screenY = screenPos.y;
+      
+      // Skip if off screen (with buffer)
+      const buffer = width;
+      if (screenX < -buffer || screenX > screenWidth + buffer || 
+          screenY < -buffer || screenY > screenHeight + buffer) {
+        return;
+      }
+      
+      // Draw the item
+      ctx.drawImage(
+        itemSpriteSheet,
+        item.spriteX || 0, item.spriteY || 0, 
+        item.width || 16, item.height || 16,
+        screenX - width/2, screenY - height/2, width, height
+      );
+      
+      // Draw item name for close items
+      if (gameState.player) {
+        const distanceToPlayer = Math.sqrt(
+          Math.pow(item.x - gameState.player.x, 2) + 
+          Math.pow(item.y - gameState.player.y, 2)
+        );
+        
+        // Only show names for items close to the player
+        if (distanceToPlayer < 2.5) {
+          ctx.font = '12px Arial';
+          ctx.fillStyle = 'white';
+          ctx.textAlign = 'center';
+          ctx.fillText(item.name || 'Unknown Item', screenX, screenY + height/2 + 15);
+        }
+      }
+    } catch (error) {
+      console.error("Error rendering item:", error);
+    }
+  });
 }
