@@ -160,11 +160,8 @@ export function renderEnemies() {
   const screenWidth = canvas2D.width;
   const screenHeight = canvas2D.height;
   
-  // Ensure camera is available for consistent coordinate transformation
-  if (!gameState.camera || typeof gameState.camera.worldToScreen !== 'function') {
-    console.error("Cannot render enemies: camera's worldToScreen method not available");
-    return;
-  }
+  // Use camera's worldToScreen method if available for consistent coordinate transformation
+  const useCamera = gameState.camera && typeof gameState.camera.worldToScreen === 'function';
   
   // Render each enemy
   enemies.forEach(enemy => {
@@ -173,16 +170,25 @@ export function renderEnemies() {
       const width = enemy.width * SCALE * viewScaleFactor;
       const height = enemy.height * SCALE * viewScaleFactor;
       
-      // Use camera's consistent transformation method
-      const screenPos = gameState.camera.worldToScreen(
-        enemy.x, 
-        enemy.y, 
-        screenWidth, 
-        screenHeight, 
-        TILE_SIZE
-      );
-      const screenX = screenPos.x;
-      const screenY = screenPos.y;
+      // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
+      let screenX, screenY;
+      
+      if (useCamera) {
+        // Use camera's consistent transformation method
+        const screenPos = gameState.camera.worldToScreen(
+          enemy.x, 
+          enemy.y, 
+          screenWidth, 
+          screenHeight, 
+          TILE_SIZE
+        );
+        screenX = screenPos.x;
+        screenY = screenPos.y;
+      } else {
+        // Fallback to direct calculation
+        screenX = (enemy.x - gameState.camera.position.x) * TILE_SIZE * viewScaleFactor + screenWidth / 2;
+        screenY = (enemy.y - gameState.camera.position.y) * TILE_SIZE * viewScaleFactor + screenHeight / 2;
+      }
       
       // Skip if off screen (with buffer)
       const buffer = width;
@@ -278,27 +284,33 @@ export function renderBullets() {
   const screenWidth = canvas2D.width;
   const screenHeight = canvas2D.height;
   
-  // Ensure camera is available for consistent coordinate transformation
-  if (!gameState.camera || typeof gameState.camera.worldToScreen !== 'function') {
-    console.error("Cannot render bullets: camera's worldToScreen method not available");
-    return;
-  }
+  // Use camera's worldToScreen method if available for consistent coordinate transformation
+  const useCamera = gameState.camera && typeof gameState.camera.worldToScreen === 'function';
   
   // Render each bullet
   bullets.forEach(bullet => {
     // Scale bullet dimensions based on view
     const size = bullet.size * SCALE * viewScaleFactor;
     
-    // Use camera's consistent transformation method
-    const screenPos = gameState.camera.worldToScreen(
-      bullet.x, 
-      bullet.y, 
-      screenWidth, 
-      screenHeight, 
-      TILE_SIZE
-    );
-    const screenX = screenPos.x;
-    const screenY = screenPos.y;
+    // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
+    let screenX, screenY;
+    
+    if (useCamera) {
+      // Use camera's consistent transformation method
+      const screenPos = gameState.camera.worldToScreen(
+        bullet.x, 
+        bullet.y, 
+        screenWidth, 
+        screenHeight, 
+        TILE_SIZE
+      );
+      screenX = screenPos.x;
+      screenY = screenPos.y;
+    } else {
+      // Fallback to direct calculation
+      screenX = (bullet.x - gameState.camera.position.x) * TILE_SIZE * viewScaleFactor + screenWidth / 2;
+      screenY = (bullet.y - gameState.camera.position.y) * TILE_SIZE * viewScaleFactor + screenHeight / 2;
+    }
     
     // Skip if off screen (with a small buffer)
     const buffer = size;
@@ -463,10 +475,11 @@ export function renderItems() {
     return;
   }
   
-  const items = gameState.itemManager.getItemsForRender ? 
-                gameState.itemManager.getItemsForRender() : 
-                (gameState.itemManager.items || []);
+  // Get items for rendering
+  const items = gameState.itemManager.getGroundItemsForRender ? 
+                gameState.itemManager.getGroundItemsForRender() : [];
   
+  // If no items, nothing to render
   if (!items || !Array.isArray(items) || items.length === 0) {
     return;
   }
@@ -487,11 +500,8 @@ export function renderItems() {
   const screenWidth = canvas2D.width;
   const screenHeight = canvas2D.height;
   
-  // Ensure camera is available for consistent coordinate transformation
-  if (!gameState.camera || typeof gameState.camera.worldToScreen !== 'function') {
-    console.error("Cannot render items: camera's worldToScreen method not available");
-    return;
-  }
+  // Use camera's worldToScreen method if available for consistent coordinate transformation
+  const useCamera = gameState.camera && typeof gameState.camera.worldToScreen === 'function';
   
   // Render each item
   items.forEach(item => {
@@ -500,16 +510,25 @@ export function renderItems() {
       const width = item.width * SCALE * viewScaleFactor;
       const height = item.height * SCALE * viewScaleFactor;
       
-      // Use camera's consistent transformation method
-      const screenPos = gameState.camera.worldToScreen(
-        item.x, 
-        item.y, 
-        screenWidth, 
-        screenHeight, 
-        TILE_SIZE
-      );
-      const screenX = screenPos.x;
-      const screenY = screenPos.y;
+      // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
+      let screenX, screenY;
+      
+      if (useCamera) {
+        // Use camera's consistent transformation method
+        const screenPos = gameState.camera.worldToScreen(
+          item.x, 
+          item.y, 
+          screenWidth, 
+          screenHeight, 
+          TILE_SIZE
+        );
+        screenX = screenPos.x;
+        screenY = screenPos.y;
+      } else {
+        // Fallback to direct calculation
+        screenX = (item.x - gameState.camera.position.x) * TILE_SIZE * viewScaleFactor + screenWidth / 2;
+        screenY = (item.y - gameState.camera.position.y) * TILE_SIZE * viewScaleFactor + screenHeight / 2;
+      }
       
       // Skip if off screen (with buffer)
       const buffer = width;

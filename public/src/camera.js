@@ -11,20 +11,8 @@ export class Camera {
     this.viewScaleFactors = {
       'top-down': 1.0,
       'first-person': 1.0,
-      'strategic': 0.5 // Make strategic view show more of the map
+      'strategic': 0.25 // Make strategic view show more of the map
     };
-    
-    // FIXED: Entity position correction is not needed with our new approach
-    // This correction is only applied in special cases where direct alignment is required
-    this.entityPositionCorrection = { x: 0.0, y: 0.0 };
-    
-    // FIXED: Add a proper scale ratio between tiles and entities
-    // Tiles are now 4x larger than entities in the render
-    this.tileToEntityScaleRatio = 4.0;
-    
-    // Add a correction factor to synchronize entity positions with tile grid
-    // This is a multiplier to apply to entity coordinates to align with tiles
-    this.entityToTileCorrection = 1.0;
   }
 
   move(dx, dy) {
@@ -74,82 +62,23 @@ export class Camera {
    * @param {number} screenWidth - Width of the canvas
    * @param {number} screenHeight - Height of the canvas
    * @param {number} tileSize - Tile size in pixels
-   * @param {boolean} isEntity - Whether the coordinates are for an entity (applies correction)
    * @returns {Object} Screen coordinates {x, y}
    */
-  worldToScreen(worldX, worldY, screenWidth, screenHeight, tileSize, isEntity = true) {
-    const viewScaleFactor = this.getViewScaleFactor();
-    
-    // Apply entity correction if needed
-    let correctedWorldX = worldX;
-    let correctedWorldY = worldY;
-    
-    if (isEntity && this.entityPositionCorrection) {
-      // Only apply correction if needed
-      correctedWorldX += this.entityPositionCorrection.x;
-      correctedWorldY += this.entityPositionCorrection.y;
-    }
-    
-    // FIXED: Account for the different scale between tiles and entities
-    // Entities use the base scale, while tiles use a 4x larger scale
-    let scaleFactor = viewScaleFactor;
-    if (!isEntity) {
-      // When rendering tiles, they need to be larger
-      scaleFactor *= this.tileToEntityScaleRatio;
-    }
-    
-    // Apply consistent formula for world-to-screen coordinate transformation
-    const screenX = (correctedWorldX - this.position.x) * tileSize * scaleFactor + screenWidth / 2;
-    const screenY = (correctedWorldY - this.position.y) * tileSize * scaleFactor + screenHeight / 2;
-    
+  worldToScreen(worldX, worldY, screenWidth, screenHeight, tileSize) {
+    const scaleFactor = this.getViewScaleFactor();
+    // Revert to original formula which is correct for entity rendering
+    const screenX = (worldX - this.position.x) * tileSize * scaleFactor + screenWidth / 2;
+    const screenY = (worldY - this.position.y) * tileSize * scaleFactor + screenHeight / 2;
     return { x: screenX, y: screenY };
   }
   
   /**
    * Get the scaling factor to apply to entity sizes based on view type
    * @param {number} baseScale - Base scale factor (usually SCALE constant)
-   * @param {boolean} isTile - Whether this is for a tile (applies tile-to-entity ratio)
    * @returns {number} Effective scale to use for entity rendering
    */
-  getEntityScaleFactor(baseScale = 1, isTile = false) {
-    let scale = baseScale * this.getViewScaleFactor();
-    if (isTile) {
-      scale *= this.tileToEntityScaleRatio;
-    }
-    return scale;
-  }
-  
-  /**
-   * Sets the correction factor to align entity coordinate system with tile coordinate system
-   * @param {number} factor - The correction factor (multiplier)
-   */
-  setEntityToTileCorrection(factor) {
-    if (typeof factor === 'number' && !isNaN(factor) && factor > 0) {
-      this.entityToTileCorrection = factor;
-      console.log(`Camera: Set entity-to-tile correction factor to ${factor}`);
-    }
-  }
-  
-  /**
-   * Sets the position correction to align entities with tiles
-   * @param {Object} correction - Correction values { x, y }
-   */
-  setEntityPositionCorrection(correction) {
-    if (correction && typeof correction.x === 'number' && typeof correction.y === 'number') {
-      this.entityPositionCorrection = correction;
-      console.log(`Camera: Set entity position correction to x:${correction.x}, y:${correction.y}`);
-    }
-  }
-  
-  /**
-   * Sets the scale ratio between tiles and entities
-   * @param {number} ratio - The scale ratio (tiles:entities)
-   */
-  setTileToEntityScaleRatio(ratio) {
-    if (typeof ratio === 'number' && !isNaN(ratio) && ratio > 0) {
-      this.tileToEntityScaleRatio = ratio;
-      console.log(`Camera: Set tile-to-entity scale ratio to ${ratio}`);
-    }
+  getEntityScaleFactor(baseScale = 1) {
+    return baseScale * this.getViewScaleFactor();
   }
   
   /**
@@ -162,18 +91,11 @@ export class Camera {
    * @param {number} screenHeight - Height of the canvas
    * @param {number} tileSize - Tile size in pixels
    * @param {number} buffer - Extra buffer to add around screen (for culling)
-   * @param {boolean} isEntity - Whether this is an entity (uses different scale)
    * @returns {boolean} Whether the entity is on screen
    */
-  isOnScreen(worldX, worldY, width, height, screenWidth, screenHeight, tileSize, buffer = 0, isEntity = true) {
-    const screen = this.worldToScreen(worldX, worldY, screenWidth, screenHeight, tileSize, isEntity);
-    const viewScaleFactor = this.getViewScaleFactor();
-    
-    // Apply the correct scale factor depending on whether this is an entity or tile
-    let scaleFactor = viewScaleFactor;
-    if (!isEntity) {
-      scaleFactor *= this.tileToEntityScaleRatio;
-    }
+  isOnScreen(worldX, worldY, width, height, screenWidth, screenHeight, tileSize, buffer = 0) {
+    const screen = this.worldToScreen(worldX, worldY, screenWidth, screenHeight, tileSize);
+    const scaleFactor = this.getViewScaleFactor();
     
     // Extend buffer in strategic view
     const viewBuffer = this.viewType === 'strategic' ? buffer * 2 : buffer;

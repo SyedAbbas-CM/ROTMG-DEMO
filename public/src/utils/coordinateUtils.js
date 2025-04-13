@@ -26,41 +26,18 @@ export function getViewScaleFactor(viewType) {
  * @param {Object} camera - Camera object with position and view type
  * @param {number} screenWidth - Width of the canvas
  * @param {number} screenHeight - Height of the canvas
- * @param {boolean} isEntity - Whether the coordinates are for an entity (applies correction)
  * @returns {Object} Screen coordinates {x, y}
  */
-export function worldToScreen(worldX, worldY, camera, screenWidth, screenHeight, isEntity = true) {
-  const viewScaleFactor = getViewScaleFactor(camera.viewType);
+export function worldToScreen(worldX, worldY, camera, screenWidth, screenHeight) {
+  const scaleFactor = getViewScaleFactor(camera.viewType);
   
   // Ensure we're using camera.position.x and camera.position.y, not camera.x/y
   const cameraX = camera.position ? camera.position.x : camera.x;
   const cameraY = camera.position ? camera.position.y : camera.y;
   
-  // Get position correction from camera or use default
-  const correction = camera.entityPositionCorrection || { x: 0.0, y: 0.0 };
-  
-  // Apply correction for entities if needed
-  let correctedWorldX = worldX;
-  let correctedWorldY = worldY;
-  
-  if (isEntity && correction) {
-    correctedWorldX += correction.x;
-    correctedWorldY += correction.y;
-  }
-  
-  // Get the tile-to-entity scale ratio from camera or use default of 4.0
-  const tileToEntityRatio = camera.tileToEntityScaleRatio || 4.0;
-  
-  // Apply the appropriate scale factor based on whether this is an entity or tile
-  let scaleFactor = viewScaleFactor;
-  if (!isEntity) {
-    // Tiles use a larger scale than entities
-    scaleFactor *= tileToEntityRatio;
-  }
-  
-  // Apply consistent formula for world-to-screen coordinate transformation
-  const screenX = (correctedWorldX - cameraX) * TILE_SIZE * scaleFactor + screenWidth / 2;
-  const screenY = (correctedWorldY - cameraY) * TILE_SIZE * scaleFactor + screenHeight / 2;
+  // Calculate screen coordinates
+  const screenX = (worldX - cameraX) * TILE_SIZE * scaleFactor + screenWidth / 2;
+  const screenY = (worldY - cameraY) * TILE_SIZE * scaleFactor + screenHeight / 2;
   
   return { x: screenX, y: screenY };
 }
@@ -69,18 +46,10 @@ export function worldToScreen(worldX, worldY, camera, screenWidth, screenHeight,
  * Get the scaling factor to apply to entity sizes based on view type
  * @param {string} viewType - Camera view type
  * @param {number} baseScale - Base scale factor (usually SCALE constant)
- * @param {boolean} isTile - Whether this is for a tile (applies tile-to-entity ratio)
  * @returns {number} Effective scale to use for entity rendering
  */
-export function getEntityScaleFactor(viewType, baseScale = SCALE, isTile = false) {
-  let scale = baseScale * getViewScaleFactor(viewType);
-  
-  // Apply tile-to-entity ratio if this is for a tile
-  if (isTile) {
-    scale *= 4.0; // Default tile-to-entity ratio
-  }
-  
-  return scale;
+export function getEntityScaleFactor(viewType, baseScale = SCALE) {
+  return baseScale * getViewScaleFactor(viewType);
 }
 
 /**
@@ -93,19 +62,11 @@ export function getEntityScaleFactor(viewType, baseScale = SCALE, isTile = false
  * @param {number} screenWidth - Width of the canvas
  * @param {number} screenHeight - Height of the canvas
  * @param {number} buffer - Extra buffer to add around screen (for culling)
- * @param {boolean} isEntity - Whether this is an entity (uses different scale)
  * @returns {boolean} Whether the entity is on screen
  */
-export function isOnScreen(worldX, worldY, width, height, camera, screenWidth, screenHeight, buffer = 0, isEntity = true) {
-  const screen = worldToScreen(worldX, worldY, camera, screenWidth, screenHeight, isEntity);
-  const viewScaleFactor = getViewScaleFactor(camera.viewType);
-  
-  // Apply the appropriate scale factor
-  let scaleFactor = viewScaleFactor;
-  if (!isEntity) {
-    const tileToEntityRatio = camera.tileToEntityScaleRatio || 4.0;
-    scaleFactor *= tileToEntityRatio;
-  }
+export function isOnScreen(worldX, worldY, width, height, camera, screenWidth, screenHeight, buffer = 0) {
+  const screen = worldToScreen(worldX, worldY, camera, screenWidth, screenHeight);
+  const scaleFactor = getViewScaleFactor(camera.viewType);
   
   // Extend buffer in strategic view
   const viewBuffer = camera.viewType === 'strategic' ? buffer * 2 : buffer;

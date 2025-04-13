@@ -100,12 +100,30 @@ export function renderStrategicView() {
       
       if (tile) {
         const spritePos = TILE_SPRITES[tile.type];
-        // Draw tile with strategic scaling
+        
+        // FIX: Change tile rendering to match entity rendering coordinate system
+        // OLD formula: (x * TILE_SIZE - camera.position.x) * scaleFactor + canvas2D.width / 2
+        // NEW formula: Use worldToScreen to ensure consistency with entities
+        
+        // Convert tile grid position to world position
+        const worldX = x; // Tile coordinates correspond to world units
+        const worldY = y;
+        
+        // Use the camera's worldToScreen method for consistency with entities
+        const screenPos = camera.worldToScreen(
+          worldX, 
+          worldY, 
+          canvas2D.width, 
+          canvas2D.height, 
+          TILE_SIZE
+        );
+        
+        // Draw tile using the consistent screen position
         ctx.drawImage(
           tileSpriteSheet,
           spritePos.x, spritePos.y, TILE_SIZE, TILE_SIZE, // Source rectangle
-          (x * TILE_SIZE - camera.position.x) * scaleFactor + canvas2D.width / 2,
-          (y * TILE_SIZE - camera.position.y) * scaleFactor + canvas2D.height / 2,
+          screenPos.x - (TILE_SIZE * scaleFactor / 2), // Center the tile at the screen position
+          screenPos.y - (TILE_SIZE * scaleFactor / 2),
           TILE_SIZE * scaleFactor,
           TILE_SIZE * scaleFactor
         );
