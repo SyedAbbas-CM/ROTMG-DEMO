@@ -24,6 +24,7 @@ import { Camera } from '../camera.js';
 import { EntityAnimator } from '../entities/EntityAnimator.js';
 import { PlayerManager } from '../entities/PlayerManager.js';
 import { initCoordinateUtils } from '../utils/coordinateUtils.js';
+import { initLogger, setLogLevel, LOG_LEVELS } from '../utils/logger.js';
 
 let renderer, scene, camera;
 let lastTime = 0;
@@ -42,6 +43,24 @@ const SERVER_URL = 'ws://localhost:3000'; // Change if your server is on a diffe
 export async function initGame() {
     try {
         console.log('Starting game initialization...');
+        
+        // Initialize the logger system
+        const logger = initLogger();
+        console.log('Logger system initialized');
+        
+        // Set default log levels for different modules - turning almost everything off
+        setLogLevel('default', LOG_LEVELS.NONE);
+        setLogLevel('player', LOG_LEVELS.ERROR);
+        setLogLevel('input', LOG_LEVELS.ERROR);
+        setLogLevel('camera', LOG_LEVELS.ERROR);
+        setLogLevel('render', LOG_LEVELS.ERROR);
+        setLogLevel('movement', LOG_LEVELS.ERROR);
+        setLogLevel('network', LOG_LEVELS.ERROR);
+        setLogLevel('collision', LOG_LEVELS.ERROR);
+        setLogLevel('coordinate', LOG_LEVELS.ERROR);
+        
+        // Display current log levels
+        logger.displayLogLevels();
         
         // Initialize sprite sheets
         console.log('Loading sprite sheets...');

@@ -12,8 +12,11 @@ const ctx = canvas2D.getContext('2d');
 canvas2D.width = window.innerWidth;
 canvas2D.height = window.innerHeight;
 
-// Rendering parameters
-const scaleFactor = 4; // Adjust scale as needed
+const camera = gameState.camera;
+const scaleFactor = camera.getViewScaleFactor();
+
+// Debug flags
+const DEBUG_RENDERING = false;
 
 // ANTI-FLICKERING: Add a tile cache to prevent constantly requesting the same chunks
 // Top-down view has fewer tiles, so we need a smaller cache
@@ -39,8 +42,8 @@ export function renderTopDownView() {
   const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE * scaleFactor));
   const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE * scaleFactor));
 
-  const startX = Math.floor(camera.position.x / TILE_SIZE - tilesInViewX / 2);
-  const startY = Math.floor(camera.position.y / TILE_SIZE - tilesInViewY / 2);
+  const startX = Math.floor(camera.position.x - tilesInViewX / 2);
+  const startY = Math.floor(camera.position.y - tilesInViewY / 2);
   const endX = startX + tilesInViewX;
   const endY = startY + tilesInViewY;
   
@@ -78,21 +81,19 @@ export function renderTopDownView() {
       if (tile) {
         const spritePos = TILE_SPRITES[tile.type];
         
-        // FIX: Change tile rendering to match entity rendering coordinate system
-        // OLD formula: (x * TILE_SIZE - camera.position.x) * scaleFactor + canvas2D.width / 2
-        // NEW formula: Use worldToScreen to ensure consistency with entities
-        
         // Convert tile grid position to world position
-        const worldX = x; // Tile coordinates correspond to world units
+        // In this game, tile coordinates are the same as world coordinates
+        const worldX = x;
         const worldY = y;
         
-        // Use the camera's worldToScreen method for consistency with entities
+        // FIX: Use correct TILE_SIZE parameter (not multiplied by scaleFactor)
+        // This was causing the double scaling issue
         const screenPos = camera.worldToScreen(
           worldX, 
           worldY, 
           canvas2D.width, 
           canvas2D.height, 
-          TILE_SIZE
+          TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
         );
         
         // Draw tile using the consistent screen position
@@ -104,6 +105,30 @@ export function renderTopDownView() {
           TILE_SIZE * scaleFactor,
           TILE_SIZE * scaleFactor
         );
+        
+        // Add debug visualization to help with alignment
+        if (DEBUG_RENDERING) {
+          // Draw a grid outline in red
+          ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            screenPos.x - (TILE_SIZE * scaleFactor / 2),
+            screenPos.y - (TILE_SIZE * scaleFactor / 2),
+            TILE_SIZE * scaleFactor,
+            TILE_SIZE * scaleFactor
+          );
+          
+          // Draw tile coordinates for reference (only every few tiles to avoid clutter)
+          if ((x % 5 === 0 && y % 5 === 0) || (x === 0 && y === 0)) {
+            ctx.fillStyle = 'white';
+            ctx.font = '8px Arial';
+            ctx.fillText(
+              `(${x},${y})`, 
+              screenPos.x - (TILE_SIZE * scaleFactor / 2) + 2,
+              screenPos.y - (TILE_SIZE * scaleFactor / 2) + 8
+            );
+          }
+        }
       }
     }
   }

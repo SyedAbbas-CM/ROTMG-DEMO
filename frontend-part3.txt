@@ -1,0 +1,2107 @@
+
+
+// =========================================
+// FILE: public/src/render/renderFirstPerson.js
+// =========================================
+
+// src/render/renderFirstPerson.js
+
+import { gameState } from '../game/gamestate.js';
+import { TILE_SIZE, TILE_IDS, SCALE, TILE_SPRITES } from '../constants/constants.js';
+import { map } from '../map/map.js';
+import { spriteManager } from '../assets/spriteManager.js';
+import * as THREE from 'three';
+
+const VIEW_RADIUS = 200; // Radius in tiles around the player that will be rendered
+const Scaling3D = 12.8
+// InstancedMeshes for different tile types
+let floorInstancedMesh, wallInstancedMesh, obstacleInstancedMesh, waterInstancedMesh, mountainInstancedMesh;
+
+// Fallback colors for different tile types
+const FALLBACK_COLORS = {
+  [TILE_IDS.FLOOR]: 0x808080,      // Gray
+  [TILE_IDS.WALL]: 0x303030,       // Dark Gray
+  [TILE_IDS.OBSTACLE]: 0xFF0000,   // Red
+  [TILE_IDS.WATER]: 0x0000FF,      // Blue
+  [TILE_IDS.MOUNTAIN]: 0x00FF00,   // Green
+};
+
+/**
+ * Initializes and adds first-person elements to the scene.
+ * @param {THREE.Scene} scene - The Three.js scene to add elements to.
+ * @param {Function} callback - Function to call once elements are added.
+ */
+export function addFirstPersonElements(scene, callback) {
+  console.log('Adding first-person elements to the scene.');
+
+
+
+  // Create a THREE.Texture from the loaded Image
+   const tileSheetObj = spriteManager.getSpriteSheet('tile_sprites');
+ if (!tileSheetObj) {
+   useFallbackMaterials(scene);
+   if (callback) callback();
+   return;
+ }
+ const tileTexture = new THREE.Texture(tileSheetObj.image);
+ tileTexture.needsUpdate = true;
+  tileTexture.needsUpdate = true; // Update the texture
+  console.log('Created THREE.Texture from tile sprite sheet.');
+
+  // Create materials for each tile type
+  const floorMaterial = createTileMaterial(tileTexture, TILE_IDS.FLOOR);
+  const wallMaterial = createTileMaterial(tileTexture, TILE_IDS.WALL);
+  const obstacleMaterial = createTileMaterial(tileTexture, TILE_IDS.OBSTACLE);
+  const waterMaterial = createTileMaterial(tileTexture, TILE_IDS.WATER);
+  const mountainMaterial = createTileMaterial(tileTexture, TILE_IDS.MOUNTAIN);
+
+  // Define geometry for floor and walls
+  const floorGeometry = new THREE.PlaneGeometry( Scaling3D, Scaling3D);
+  floorGeometry.rotateX(-Math.PI / 2); // Rotate the plane to face upwards
+
+  const wallGeometry = new THREE.BoxGeometry(Scaling3D, Scaling3D*3, Scaling3D);
+
+  // Calculate maxInstances based on square area
+  const maxInstances = Math.pow((2 * VIEW_RADIUS + 1), 2); // (2*32+1)^2 = 4225
+
+  console.log(`Creating InstancedMeshes with maxInstances: ${maxInstances}`);
+
+  try {
+    // Initialize InstancedMeshes for each tile type
+    floorInstancedMesh = new THREE.InstancedMesh(floorGeometry, floorMaterial, maxInstances);
+    floorInstancedMesh.receiveShadow = true;
+    floorInstancedMesh.name = 'floorInstancedMesh';
+    scene.add(floorInstancedMesh);
+    console.log('Added floorInstancedMesh to the scene:', floorInstancedMesh);
+
+    wallInstancedMesh = new THREE.InstancedMesh(wallGeometry, wallMaterial, maxInstances);
+    wallInstancedMesh.castShadow = true;
+    wallInstancedMesh.receiveShadow = true;
+    wallInstancedMesh.name = 'wallInstancedMesh';
+    scene.add(wallInstancedMesh);
+    console.log('Added wallInstancedMesh to the scene:', wallInstancedMesh);
+
+    obstacleInstancedMesh = new THREE.InstancedMesh(wallGeometry, obstacleMaterial, maxInstances);
+    obstacleInstancedMesh.castShadow = true;
+    obstacleInstancedMesh.receiveShadow = true;
+    obstacleInstancedMesh.name = 'obstacleInstancedMesh';
+    scene.add(obstacleInstancedMesh);
+    console.log('Added obstacleInstancedMesh to the scene:', obstacleInstancedMesh);
+
+    waterInstancedMesh = new THREE.InstancedMesh(floorGeometry, waterMaterial, maxInstances);
+    waterInstancedMesh.receiveShadow = true;
+    waterInstancedMesh.name = 'waterInstancedMesh';
+    scene.add(waterInstancedMesh);
+    console.log('Added waterInstancedMesh to the scene:', waterInstancedMesh);
+
+    mountainInstancedMesh = new THREE.InstancedMesh(wallGeometry, mountainMaterial, maxInstances);
+    mountainInstancedMesh.castShadow = true;
+    mountainInstancedMesh.receiveShadow = true;
+    mountainInstancedMesh.name = 'mountainInstancedMesh';
+    scene.add(mountainInstancedMesh);
+    console.log('Added mountainInstancedMesh to the scene:', mountainInstancedMesh);
+
+    // Initial render of tiles around the character
+    updateVisibleTiles();
+    console.log('Initial tiles rendered around the character.');
+  } catch (error) {
+    console.error('Error creating InstancedMeshes:', error);
+    useFallbackMaterials(scene);
+  }
+
+  // Call the callback function to signal that elements are added
+  if (callback) callback();
+}
+
+/**
+ * Creates a material for a specific tile type from a tile sprite sheet.
+ * @param {THREE.Texture} texture - The loaded texture for the sprite sheet.
+ * @param {number} tileType - The TILE_IDS value for which to create the material.
+ * @returns {THREE.MeshStandardMaterial} - The created material.
+ */
+function createTileMaterial(texture, tileType) {
+  const spritePos = TILE_SPRITES[tileType];
+  const spriteSize = TILE_SIZE; // Assuming square tiles
+
+  if (!spritePos) {
+    console.error(`No sprite position defined for tile type ${tileType}. Using fallback color.`);
+    // Use a fallback color material
+    return new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS[tileType] || 0xffffff, side: THREE.DoubleSide });
+  }
+
+  try {
+    // Clone the texture to allow independent offsets
+    const tileTexture = texture.clone();
+
+    // Ensure texture wrapping mode is correct
+    tileTexture.wrapS = THREE.ClampToEdgeWrapping;
+    tileTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+    // Calculate UV offsets based on sprite position
+    tileTexture.offset.set(
+      spritePos.x / texture.image.width,
+      1 - (spritePos.y + spriteSize) / texture.image.height
+    );
+    tileTexture.repeat.set(
+      spriteSize / texture.image.width,
+      spriteSize / texture.image.height
+    );
+    tileTexture.needsUpdate = true;
+
+    // Log texture properties for debugging
+    console.log(`Creating material for tileType ${tileType}:`, {
+      offset: tileTexture.offset,
+      repeat: tileTexture.repeat
+    });
+
+    // Create material with cloned texture
+    const material = new THREE.MeshStandardMaterial({
+      map: tileTexture,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+
+    return material;
+  } catch (error) {
+    console.error(`Error creating material for tileType ${tileType}:`, error);
+    // Fallback to solid color
+    return new THREE.MeshStandardMaterial({ color: FALLBACK_COLORS[tileType] || 0xffffff, side: THREE.DoubleSide });
+  }
+}
+
+/**
+ * Fallback function to create and add basic colored materials if texture loading fails.
+ * @param {THREE.Scene} scene - The Three.js scene to add fallback meshes to.
+ */
+function useFallbackMaterials(scene) {
+  console.log('Using fallback materials for first-person view.');
+
+  try {
+    // Define fallback materials
+    const floorMaterial = new THREE.MeshBasicMaterial({ color: FALLBACK_COLORS[TILE_IDS.FLOOR] || 0x808080 });
+    const wallMaterial = new THREE.MeshBasicMaterial({ color: FALLBACK_COLORS[TILE_IDS.WALL] || 0x303030 });
+    const obstacleMaterial = new THREE.MeshBasicMaterial({ color: FALLBACK_COLORS[TILE_IDS.OBSTACLE] || 0xFF0000 });
+    const waterMaterial = new THREE.MeshBasicMaterial({ color: FALLBACK_COLORS[TILE_IDS.WATER] || 0x0000FF });
+    const mountainMaterial = new THREE.MeshBasicMaterial({ color: FALLBACK_COLORS[TILE_IDS.MOUNTAIN] || 0x00FF00 });
+
+    // Define geometry for floor and walls
+    const floorGeometry = new THREE.PlaneGeometry(Scaling3D, Scaling3D);
+    floorGeometry.rotateX(-Math.PI / 2); // Rotate the plane to face upwards
+
+    const wallGeometry = new THREE.BoxGeometry(Scaling3D, Scaling3D* 2,Scaling3D);
+
+    // Calculate maxInstances based on square area
+    const maxInstances = Math.pow((2 * VIEW_RADIUS + 1), 2); // (2*32+1)^2 = 4225
+
+    console.log(`Creating fallback InstancedMeshes with maxInstances: ${maxInstances}`);
+
+    // Initialize InstancedMeshes for each tile type with fallback materials
+    floorInstancedMesh = new THREE.InstancedMesh(floorGeometry, floorMaterial, maxInstances);
+    floorInstancedMesh.receiveShadow = true;
+    floorInstancedMesh.name = 'fallbackFloorInstancedMesh';
+    scene.add(floorInstancedMesh);
+    console.log('Added fallbackFloorInstancedMesh to the scene:', floorInstancedMesh);
+
+    wallInstancedMesh = new THREE.InstancedMesh(wallGeometry, wallMaterial, maxInstances);
+    wallInstancedMesh.castShadow = true;
+    wallInstancedMesh.receiveShadow = true;
+    wallInstancedMesh.name = 'fallbackWallInstancedMesh';
+    scene.add(wallInstancedMesh);
+    console.log('Added fallbackWallInstancedMesh to the scene:', wallInstancedMesh);
+
+    obstacleInstancedMesh = new THREE.InstancedMesh(wallGeometry, obstacleMaterial, maxInstances);
+    obstacleInstancedMesh.castShadow = true;
+    obstacleInstancedMesh.receiveShadow = true;
+    obstacleInstancedMesh.name = 'fallbackObstacleInstancedMesh';
+    scene.add(obstacleInstancedMesh);
+    console.log('Added fallbackObstacleInstancedMesh to the scene:', obstacleInstancedMesh);
+
+    waterInstancedMesh = new THREE.InstancedMesh(floorGeometry, waterMaterial, maxInstances);
+    waterInstancedMesh.receiveShadow = true;
+    waterInstancedMesh.name = 'fallbackWaterInstancedMesh';
+    scene.add(waterInstancedMesh);
+    console.log('Added fallbackWaterInstancedMesh to the scene:', waterInstancedMesh);
+
+    mountainInstancedMesh = new THREE.InstancedMesh(wallGeometry, mountainMaterial, maxInstances);
+    mountainInstancedMesh.castShadow = true;
+    mountainInstancedMesh.receiveShadow = true;
+    mountainInstancedMesh.name = 'fallbackMountainInstancedMesh';
+    scene.add(mountainInstancedMesh);
+    console.log('Added fallbackMountainInstancedMesh to the scene:', mountainInstancedMesh);
+
+    // Initial render of tiles around the character
+    updateVisibleTiles();
+    console.log('Initial fallback tiles rendered around the character.');
+  } catch (error) {
+    console.error('Error creating fallback InstancedMeshes:', error);
+  }
+}
+
+/**
+ * Updates the visible tiles around the character's position.
+ * Only renders tiles within the VIEW_RADIUS of the character.
+ */
+/**
+ * Updates the visible tiles around the character's position.
+ * Only renders tiles within the VIEW_RADIUS of the character.
+ */
+function updateVisibleTiles() {
+  const character = gameState.character;
+  const cameraTileX = Math.floor(character.x);
+  const cameraTileY = Math.floor(character.y);
+
+  // Temporary arrays to store matrix transformations for each tile type
+  const floorMatrices = [];
+  const wallMatrices = [];
+  const obstacleMatrices = [];
+  const waterMatrices = [];
+  const mountainMatrices = [];
+
+  console.log(`Updating visible tiles around position (${cameraTileX}, ${cameraTileY}).`);
+
+  for (let dx = -VIEW_RADIUS; dx <= VIEW_RADIUS; dx++) {
+    for (let dy = -VIEW_RADIUS; dy <= VIEW_RADIUS; dy++) {
+      const tileX = cameraTileX + dx;
+      const tileY = cameraTileY + dy;
+      const tile = map.getTile(tileX, tileY);
+
+      if (tile) {
+        const position = new THREE.Vector3(
+          tileX*Scaling3D,
+          tile.height || 0,
+          tileY*Scaling3D
+        );
+        const matrix = new THREE.Matrix4().makeTranslation(position.x, position.y, position.z);
+
+        switch (tile.type) {
+          case TILE_IDS.FLOOR:
+            floorMatrices.push(matrix);
+            break;
+          case TILE_IDS.WALL:
+            wallMatrices.push(matrix);
+            break;
+          case TILE_IDS.OBSTACLE:
+            obstacleMatrices.push(matrix);
+            break;
+          case TILE_IDS.WATER:
+            waterMatrices.push(matrix);
+            break;
+          case TILE_IDS.MOUNTAIN:
+            mountainMatrices.push(matrix);
+            break;
+          default:
+            console.warn(`Unknown tile type: ${tile.type} at (${tileX}, ${tileY})`);
+        }
+      }
+    }
+  }
+
+  // Function to update InstancedMesh with given matrices
+  const updateInstancedMesh = (instancedMesh, matrices) => {
+    const count = Math.min(matrices.length, instancedMesh.count);
+    instancedMesh.count = count;
+    for (let i = 0; i < count; i++) {
+      instancedMesh.setMatrixAt(i, matrices[i]);
+    }
+    instancedMesh.instanceMatrix.needsUpdate = true;
+    console.log(`Updated ${instancedMesh.name} with ${count} instances.`);
+  };
+
+  // Update each InstancedMesh
+  if (floorInstancedMesh) {
+    updateInstancedMesh(floorInstancedMesh, floorMatrices);
+  }
+  if (wallInstancedMesh) {
+    updateInstancedMesh(wallInstancedMesh, wallMatrices);
+  }
+  if (obstacleInstancedMesh) {
+    updateInstancedMesh(obstacleInstancedMesh, obstacleMatrices);
+  }
+  if (waterInstancedMesh) {
+    updateInstancedMesh(waterInstancedMesh, waterMatrices);
+  }
+  if (mountainInstancedMesh) {
+    updateInstancedMesh(mountainInstancedMesh, mountainMatrices);
+  }
+
+  console.log('Visible tiles updated.');
+}
+
+
+/**
+ * Updates the camera's position and rotation based on the character's state.
+ * @param {THREE.PerspectiveCamera} camera - The Three.js camera to update.
+ */
+export function updateFirstPerson(camera) {
+  const character = gameState.character;
+
+  // Position camera according to tile coordinates
+  camera.position.set(
+    character.x ,
+    character.z || 1.5, // Default eye height
+    character.y 
+  );
+
+  // Set camera rotation based on character's yaw
+  camera.rotation.y = character.rotation.yaw || 0;
+  camera.rotation.x = 0; // Pitch control can be added if needed
+  camera.rotation.z = 0;
+
+  // Note: Removed camera position and rotation logs to prevent spamming
+
+  // Update tiles only if character moves a full tile distance
+  if (
+    Math.abs(character.x - gameState.lastUpdateX) >= 1 ||
+    Math.abs(character.y - gameState.lastUpdateY) >= 1
+  ) {
+    updateVisibleTiles();
+    gameState.lastUpdateX = character.x;
+    gameState.lastUpdateY = character.y;
+  }
+  console.log(`FPS View - Character Position: (${character.x}, ${character.y}, ${character.z || 1.5})`);
+  console.log(`FPS View - Camera Position: (${camera.position.x}, ${camera.position.y}, ${camera.position.z})`);
+}
+
+
+// =========================================
+// FILE: public/src/render/renderStrategic.js
+// =========================================
+
+// src/render/renderStrategic.js
+
+import { gameState } from '../game/gamestate.js';
+import { TILE_SIZE, TILE_SPRITES } from '../constants/constants.js';
+import { spriteManager } from '../assets/spriteManager.js';
+
+// Get 2D Canvas Context
+const canvas2D = document.getElementById('gameCanvas');
+const ctx = canvas2D.getContext('2d');
+
+// Resize canvas to match window size
+canvas2D.width = window.innerWidth;
+canvas2D.height = window.innerHeight;
+const camera = gameState.camera;
+const scaleFactor = camera.getViewScaleFactor();
+
+// Enable debug rendering to help diagnose issues
+const DEBUG_RENDERING = true;
+
+// ANTI-FLICKERING: Add a tile cache to prevent constantly requesting the same chunks
+const strategicTileCache = new Map();
+
+// Track when we last updated chunks to limit request frequency
+let lastChunkUpdateTime = 0;
+const CHUNK_UPDATE_INTERVAL = 1000;
+
+export function renderStrategicView() {
+  const camera = gameState.camera;
+  const mapManager = gameState.map;
+
+  if (!mapManager) {
+    console.warn("Cannot render map: map manager not available");
+    return;
+  }
+
+  // Calculate current time for throttling
+  const now = performance.now();
+
+  // For strategic view, we want to see more of the map
+  // so we'll show more tiles based on the smaller scale factor
+  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE )) + 4; // Add buffer
+  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE )) + 4;
+
+  const startX = Math.floor(camera.position.x - tilesInViewX / 2);
+  const startY = Math.floor(camera.position.y - tilesInViewY / 2);
+  const endX = startX + tilesInViewX;
+  const endY = startY + tilesInViewY;
+  
+  // Only update visible chunks periodically to reduce network/CPU load
+  if (now - lastChunkUpdateTime > CHUNK_UPDATE_INTERVAL) {
+    if (mapManager.updateVisibleChunks) {
+      mapManager.updateVisibleChunks(camera.position.x, camera.position.y);
+    }
+    lastChunkUpdateTime = now;
+  }
+  
+  const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites");
+  if (!tileSheetObj) return;
+  const tileSpriteSheet = tileSheetObj.image;
+
+  for (let y = startY; y <= endY; y++) {
+    for (let x = startX; x <= endX; x++) {
+      // ANTI-FLICKERING: Check cache first before requesting tile
+      const tileKey = `${x},${y}`;
+      let tile = strategicTileCache.get(tileKey);
+      
+      if (!tile) {
+        // Get the tile from map manager if not in cache
+        tile = mapManager.getTile ? mapManager.getTile(x, y) : null;
+        
+        // Store in cache if valid
+        if (tile) {
+          strategicTileCache.set(tileKey, tile);
+        }
+      }
+      
+      if (tile) {
+        const spritePos = TILE_SPRITES[tile.type];
+        
+        // Convert tile grid position to world position
+        // In this game, tile coordinates are the same as world coordinates
+        const worldX = x;
+        const worldY = y;
+        
+        // FIX: Use correct TILE_SIZE parameter (not multiplied by scaleFactor)
+        const screenPos = camera.worldToScreen(
+          worldX, 
+          worldY, 
+          canvas2D.width, 
+          canvas2D.height, 
+          TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
+        );
+        
+        // Draw tile using the consistent screen position
+        ctx.drawImage(
+          tileSpriteSheet,
+          spritePos.x, spritePos.y, TILE_SIZE, TILE_SIZE, // Source rectangle
+          screenPos.x - (TILE_SIZE * scaleFactor / 2), // Center the tile at the screen position
+          screenPos.y - (TILE_SIZE * scaleFactor / 2),
+          TILE_SIZE * scaleFactor,
+          TILE_SIZE * scaleFactor
+        );
+        
+        // Add debug visualization to help with alignment
+        if (DEBUG_RENDERING) {
+          // Draw a grid outline in red (less visible in strategic view)
+          ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            screenPos.x - (TILE_SIZE * scaleFactor / 2),
+            screenPos.y - (TILE_SIZE * scaleFactor / 2),
+            TILE_SIZE * scaleFactor,
+            TILE_SIZE * scaleFactor
+          );
+          
+          // Draw tile coordinates for reference (only every several tiles to avoid clutter)
+          if ((x % 10 === 0 && y % 10 === 0) || (x === 0 && y === 0)) {
+            ctx.fillStyle = 'white';
+            ctx.font = '6px Arial';
+            ctx.fillText(
+              `(${x},${y})`, 
+              screenPos.x - (TILE_SIZE * scaleFactor / 2) + 1,
+              screenPos.y - (TILE_SIZE * scaleFactor / 2) + 6
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // ANTI-FLICKERING: Periodically clean up cache to prevent memory leaks
+  // Clean up every ~30 seconds
+  if (now % 30000 < 16) {
+    // Keep this light - just clear old tiles far outside the view
+    const cacheCleanupDistance = Math.max(tilesInViewX, tilesInViewY) * 2;
+    
+    for (const [key, _] of strategicTileCache) {
+      const [tileX, tileY] = key.split(',').map(Number);
+      const dx = Math.abs(tileX - startX - tilesInViewX/2);
+      const dy = Math.abs(tileY - startY - tilesInViewY/2);
+      
+      if (dx > cacheCleanupDistance || dy > cacheCleanupDistance) {
+        strategicTileCache.delete(key);
+      }
+    }
+  }
+}
+
+// Make sure this function is defined in window scope
+window.renderStrategicView = renderStrategicView;
+
+// Log when the file loads to verify it's being included
+console.log("Strategic view render system initialized. Function available:", typeof window.renderStrategicView === 'function');
+
+
+// =========================================
+// FILE: public/src/render/renderTopDown.js
+// =========================================
+
+// src/render/renderTopDown.js
+
+import { gameState } from '../game/gamestate.js';
+import { TILE_SIZE, TILE_SPRITES } from '../constants/constants.js';
+import { spriteManager } from '../assets/spriteManager.js';
+
+// Get 2D Canvas Context
+const canvas2D = document.getElementById('gameCanvas');
+const ctx = canvas2D.getContext('2d');
+
+// Resize canvas to match window size
+canvas2D.width = window.innerWidth;
+canvas2D.height = window.innerHeight;
+
+const camera = gameState.camera;
+const scaleFactor = camera.getViewScaleFactor();
+
+// Enable debug rendering to help diagnose issues
+const DEBUG_RENDERING = true;
+
+// ANTI-FLICKERING: Add a tile cache to prevent constantly requesting the same chunks
+// Top-down view has fewer tiles, so we need a smaller cache
+const topDownTileCache = new Map();
+
+// Track when we last updated chunks to limit request frequency
+let lastChunkUpdateTime = 0;
+const CHUNK_UPDATE_INTERVAL = 2000; // Only update chunks every 2 seconds for top-down (less frequently needed)
+
+export function renderTopDownView() {
+  const camera = gameState.camera;
+  const mapManager = gameState.map;
+
+  if (!mapManager) {
+    console.warn("Cannot render map: map manager not available");
+    return;
+  }
+
+  // Calculate current time for throttling
+  const now = performance.now();
+
+  // Determine visible tiles based on camera position
+  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE * scaleFactor));
+  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE * scaleFactor));
+
+  const startX = Math.floor(camera.position.x - tilesInViewX / 2);
+  const startY = Math.floor(camera.position.y - tilesInViewY / 2);
+  const endX = startX + tilesInViewX;
+  const endY = startY + tilesInViewY;
+  
+  // ANTI-FLICKERING: Only update visible chunks periodically, not every frame
+  // Top-down view needs much less frequent updates since it shows fewer tiles
+  if (now - lastChunkUpdateTime > CHUNK_UPDATE_INTERVAL) {
+    // If mapManager has updateVisibleChunks method, call it only periodically
+    if (mapManager.updateVisibleChunks) {
+      mapManager.updateVisibleChunks(camera.position.x, camera.position.y);
+    }
+    
+    lastChunkUpdateTime = now;
+  }
+  
+  const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites");
+  if (!tileSheetObj) return;
+  const tileSpriteSheet = tileSheetObj.image;
+
+  for (let y = startY; y <= endY; y++) {
+    for (let x = startX; x <= endX; x++) {
+      // ANTI-FLICKERING: Check cache first before requesting tile
+      const tileKey = `${x},${y}`;
+      let tile = topDownTileCache.get(tileKey);
+      
+      if (!tile) {
+        // Get the tile from map manager if not in cache
+        tile = mapManager.getTile ? mapManager.getTile(x, y) : null;
+        
+        // Store in cache if valid
+        if (tile) {
+          topDownTileCache.set(tileKey, tile);
+        }
+      }
+      
+      if (tile) {
+        const spritePos = TILE_SPRITES[tile.type];
+        
+        // Convert tile grid position to world position
+        // In this game, tile coordinates are the same as world coordinates
+        const worldX = x;
+        const worldY = y;
+        
+        // FIX: Use correct TILE_SIZE parameter (not multiplied by scaleFactor)
+        // This was causing the double scaling issue
+        const screenPos = camera.worldToScreen(
+          worldX, 
+          worldY, 
+          canvas2D.width, 
+          canvas2D.height, 
+          TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
+        );
+        
+        // Draw tile using the consistent screen position
+        ctx.drawImage(
+          tileSpriteSheet,
+          spritePos.x, spritePos.y, TILE_SIZE, TILE_SIZE, // Source rectangle
+          screenPos.x - (TILE_SIZE * scaleFactor / 2), // Center the tile at the screen position
+          screenPos.y - (TILE_SIZE * scaleFactor / 2),
+          TILE_SIZE * scaleFactor,
+          TILE_SIZE * scaleFactor
+        );
+        
+        // Add debug visualization to help with alignment
+        if (DEBUG_RENDERING) {
+          // Draw a grid outline in red
+          ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            screenPos.x - (TILE_SIZE * scaleFactor / 2),
+            screenPos.y - (TILE_SIZE * scaleFactor / 2),
+            TILE_SIZE * scaleFactor,
+            TILE_SIZE * scaleFactor
+          );
+          
+          // Draw tile coordinates for reference (only every few tiles to avoid clutter)
+          if ((x % 5 === 0 && y % 5 === 0) || (x === 0 && y === 0)) {
+            ctx.fillStyle = 'white';
+            ctx.font = '8px Arial';
+            ctx.fillText(
+              `(${x},${y})`, 
+              screenPos.x - (TILE_SIZE * scaleFactor / 2) + 2,
+              screenPos.y - (TILE_SIZE * scaleFactor / 2) + 8
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // ANTI-FLICKERING: Periodically clean up cache to prevent memory leaks
+  // Clean up less frequently for top-down view
+  if (now % 60000 < 16) { // Every minute
+    const cacheCleanupDistance = Math.max(tilesInViewX, tilesInViewY) * 2;
+    
+    for (const [key, _] of topDownTileCache) {
+      const [tileX, tileY] = key.split(',').map(Number);
+      const dx = Math.abs(tileX - startX - tilesInViewX/2);
+      const dy = Math.abs(tileY - startY - tilesInViewY/2);
+      
+      if (dx > cacheCleanupDistance || dy > cacheCleanupDistance) {
+        topDownTileCache.delete(key);
+      }
+    }
+  }
+}
+
+// Export to window object to avoid circular references
+window.renderTopDownView = renderTopDownView;
+
+// Log the export to ensure it's registered globally
+console.log("TopDown view render function registered:", window.renderTopDownView ? "Success" : "Failed");
+
+
+// =========================================
+// FILE: public/src/screens/groupManager.js
+// =========================================
+
+/**
+ * public/src/screens/groupManager.js
+ */
+
+import { spriteManager } from '../assets/spriteManager.js';
+
+const container = document.createElement('div');
+container.style.background = '#444';
+container.style.padding = '10px';
+container.style.margin = '10px';
+document.body.appendChild(container);
+
+const title = document.createElement('h2');
+title.textContent = 'Group Manager';
+container.appendChild(title);
+
+// group listing
+const groupList = document.createElement('div');
+container.appendChild(groupList);
+
+let currentGroup = null;
+
+function renderGroups() {
+  groupList.innerHTML = '';
+  Object.keys(spriteManager.groups).forEach(gName => {
+    const gDiv = document.createElement('div');
+    gDiv.style.cursor = 'pointer';
+    gDiv.textContent = `${gName} (${spriteManager.groups[gName].length} sprites)`;
+    gDiv.addEventListener('click', () => {
+      currentGroup = gName;
+      renderSpritesInGroup(gName);
+    });
+    groupList.appendChild(gDiv);
+  });
+}
+
+const spriteListDiv = document.createElement('div');
+spriteListDiv.style.border = '1px solid #666';
+spriteListDiv.style.marginTop = '10px';
+spriteListDiv.style.padding = '5px';
+container.appendChild(spriteListDiv);
+
+function renderSpritesInGroup(gName) {
+  spriteListDiv.innerHTML = `<h4>Sprites in group: ${gName}</h4>`;
+  spriteManager.groups[gName].forEach(sk => {
+    const item = document.createElement('div');
+    item.textContent = sk;
+    spriteListDiv.appendChild(item);
+  });
+}
+
+/**
+ * Add new group
+ */
+const newGroupBtn = document.createElement('button');
+newGroupBtn.textContent = 'New Group';
+newGroupBtn.addEventListener('click', () => {
+  const gName = prompt('Enter new group name:');
+  if (!gName) return;
+  spriteManager.groups[gName] = [];
+  renderGroups();
+});
+container.appendChild(newGroupBtn);
+
+/**
+ * Add a sprite to current group
+ */
+const addSpriteInput = document.createElement('input');
+addSpriteInput.placeholder = 'sheetName_spriteName';
+addSpriteInput.style.marginLeft = '10px';
+container.appendChild(addSpriteInput);
+
+const addSpriteBtn = document.createElement('button');
+addSpriteBtn.textContent = 'Add Sprite';
+addSpriteBtn.style.marginLeft = '5px';
+addSpriteBtn.addEventListener('click', () => {
+  if (!currentGroup) {
+    alert('Select or create a group first!');
+    return;
+  }
+  const sk = addSpriteInput.value.trim();
+  if (!spriteManager.getSprite(sk)) {
+    alert(`Sprite key "${sk}" not found in manager.`);
+    return;
+  }
+  if (!spriteManager.groups[currentGroup].includes(sk)) {
+    spriteManager.groups[currentGroup].push(sk);
+  }
+  addSpriteInput.value = '';
+  renderGroups();
+  renderSpritesInGroup(currentGroup);
+});
+container.appendChild(addSpriteBtn);
+
+/**
+ * Save all group data to "globalGroups" on the server
+ * (adjust to your own approach if you want per-sheet storage)
+ */
+const saveGroupsBtn = document.createElement('button');
+saveGroupsBtn.textContent = 'Save Groups';
+saveGroupsBtn.style.display = 'block';
+saveGroupsBtn.style.marginTop = '10px';
+saveGroupsBtn.addEventListener('click', () => {
+  const data = { groups: spriteManager.groups };
+  fetch('/assets/spritesheets/globalGroups', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+    .then(r => r.json())
+    .then(resp => {
+      if (resp.success) {
+        alert('Groups saved successfully!');
+      } else {
+        alert('Failed to save groups.');
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Error saving groups data.');
+    });
+});
+container.appendChild(saveGroupsBtn);
+
+renderGroups();
+
+
+// =========================================
+// FILE: public/src/screens/mainMenu.js
+// =========================================
+
+
+
+// =========================================
+// FILE: public/src/screens/previewScreen.js
+// =========================================
+
+/**
+ * public/src/screens/previewScreen.js
+ */
+
+import { spriteManager } from '../assets/spriteManager.js';
+
+const container = document.createElement('div');
+container.style.background = '#444';
+container.style.padding = '10px';
+container.style.margin = '10px';
+document.body.appendChild(container);
+
+const title = document.createElement('h2');
+title.textContent = 'Preview Screen';
+container.appendChild(title);
+
+const previewCanvas = document.createElement('canvas');
+previewCanvas.width = 400;
+previewCanvas.height = 300;
+previewCanvas.style.border = '1px solid #999';
+container.appendChild(previewCanvas);
+
+const ctx = previewCanvas.getContext('2d');
+
+let currentGroup = null;
+let frameIndex = 0;
+let frameInterval = 250;
+let loopId = null;
+
+/**
+ * Render the current frame
+ */
+function renderFrame() {
+  ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+  if (!currentGroup) return;
+
+  const spriteKeys = spriteManager.getGroupSprites(currentGroup);
+  if (!spriteKeys || spriteKeys.length === 0) return;
+
+  const spriteKey = spriteKeys[frameIndex];
+  const sprite = spriteManager.getSprite(spriteKey);
+  if (!sprite) return;
+
+  const image = spriteManager.getSheetImage(spriteKey);
+  if (!image) return;
+
+  // draw in the center of the canvas
+  const dx = previewCanvas.width / 2 - sprite.width / 2;
+  const dy = previewCanvas.height / 2 - sprite.height / 2;
+
+  ctx.drawImage(
+    image,
+    sprite.x, sprite.y, sprite.width, sprite.height,
+    dx, dy, sprite.width, sprite.height
+  );
+
+  frameIndex = (frameIndex + 1) % spriteKeys.length;
+}
+
+/**
+ * Start animation
+ */
+function startAnimation() {
+  if (loopId) clearInterval(loopId);
+  loopId = setInterval(renderFrame, frameInterval);
+}
+
+/**
+ * Stop animation
+ */
+function stopAnimation() {
+  if (loopId) clearInterval(loopId);
+  loopId = null;
+}
+
+/**
+ * UI controls
+ */
+const controlsDiv = document.createElement('div');
+controlsDiv.style.marginTop = '10px';
+container.appendChild(controlsDiv);
+
+// group selector
+const groupSelect = document.createElement('select');
+groupSelect.style.marginRight = '5px';
+function populateGroupList() {
+  groupSelect.innerHTML = '';
+  Object.keys(spriteManager.groups).forEach(gName => {
+    const opt = document.createElement('option');
+    opt.value = gName;
+    opt.textContent = gName;
+    groupSelect.appendChild(opt);
+  });
+}
+populateGroupList();
+controlsDiv.appendChild(groupSelect);
+
+// speed input
+const speedLabel = document.createElement('label');
+speedLabel.textContent = ' Interval (ms): ';
+controlsDiv.appendChild(speedLabel);
+
+const speedInput = document.createElement('input');
+speedInput.type = 'number';
+speedInput.value = frameInterval.toString();
+speedLabel.appendChild(speedInput);
+
+// start button
+const startBtn = document.createElement('button');
+startBtn.textContent = 'Play';
+startBtn.style.marginLeft = '5px';
+startBtn.addEventListener('click', () => {
+  currentGroup = groupSelect.value;
+  frameInterval = parseInt(speedInput.value, 10) || 250;
+  frameIndex = 0;
+  startAnimation();
+});
+controlsDiv.appendChild(startBtn);
+
+// stop button
+const stopBtn = document.createElement('button');
+stopBtn.textContent = 'Stop';
+stopBtn.style.marginLeft = '5px';
+stopBtn.addEventListener('click', stopAnimation);
+controlsDiv.appendChild(stopBtn);
+
+/**
+ * If you add or rename groups after this script loaded,
+ * just call populateGroupList() again to refresh the dropdown.
+ */
+
+
+// =========================================
+// FILE: public/src/screens/settingScreen.js
+// =========================================
+
+/**
+ * public/src/screens/settingsScreen.js
+ */
+
+export const defaultSettings = {
+    gridSize: 32,
+    autosave: false,
+    assetPath: '/assets/spritesheets'
+  };
+  
+  export function initSettingsScreen() {
+    const container = document.createElement('div');
+    container.id = 'settingsContainer';
+    container.style.position = 'fixed';
+    container.style.top = '10px';
+    container.style.right = '10px';
+    container.style.background = '#333';
+    container.style.color = '#fff';
+    container.style.padding = '10px';
+    container.style.zIndex = '9999';
+  
+    const heading = document.createElement('h3');
+    heading.textContent = 'Settings';
+    container.appendChild(heading);
+  
+    // Grid Size
+    const gridLabel = document.createElement('label');
+    gridLabel.textContent = 'Grid Size: ';
+    const gridInput = document.createElement('input');
+    gridInput.type = 'number';
+    gridInput.value = defaultSettings.gridSize.toString();
+    gridInput.addEventListener('change', () => {
+      defaultSettings.gridSize = parseInt(gridInput.value, 10);
+    });
+    gridLabel.appendChild(gridInput);
+    container.appendChild(gridLabel);
+    container.appendChild(document.createElement('br'));
+  
+    // Autosave
+    const autosaveLabel = document.createElement('label');
+    autosaveLabel.textContent = 'Autosave: ';
+    const autosaveChk = document.createElement('input');
+    autosaveChk.type = 'checkbox';
+    autosaveChk.checked = defaultSettings.autosave;
+    autosaveChk.addEventListener('change', () => {
+      defaultSettings.autosave = autosaveChk.checked;
+    });
+    autosaveLabel.appendChild(autosaveChk);
+    container.appendChild(autosaveLabel);
+    container.appendChild(document.createElement('br'));
+  
+    // Asset Path
+    const pathLabel = document.createElement('label');
+    pathLabel.textContent = 'Asset Path: ';
+    const pathInput = document.createElement('input');
+    pathInput.type = 'text';
+    pathInput.value = defaultSettings.assetPath;
+    pathInput.addEventListener('change', () => {
+      defaultSettings.assetPath = pathInput.value;
+    });
+    pathLabel.appendChild(pathInput);
+    container.appendChild(pathLabel);
+    container.appendChild(document.createElement('br'));
+  
+    // Close
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'Close Settings';
+    closeBtn.addEventListener('click', () => {
+      document.body.removeChild(container);
+    });
+    container.appendChild(closeBtn);
+  
+    document.body.appendChild(container);
+  }
+  
+
+// =========================================
+// FILE: public/src/screens/spriteEditor.js
+// =========================================
+
+// src/screens/spriteEditor.js
+
+import { spriteManager } from '../assets/spriteManager.js';
+
+// We'll wrap all UI creation in a container so we can show/hide the editor.
+let editorContainer = null;
+
+export function openSpriteEditor() {
+  // If the editor is already open, do nothing.
+  if (document.getElementById('spriteEditorContainer')) return;
+
+  // Create a container for the sprite editor UI.
+  editorContainer = document.createElement('div');
+  editorContainer.id = 'spriteEditorContainer';
+  editorContainer.style.position = 'fixed';
+  editorContainer.style.top = '50px';
+  editorContainer.style.left = '50px';
+  editorContainer.style.background = '#222';
+  editorContainer.style.padding = '10px';
+  editorContainer.style.zIndex = '10000';
+  editorContainer.style.maxHeight = '90vh';
+  editorContainer.style.overflowY = 'auto';
+  document.body.appendChild(editorContainer);
+
+  // Create and append a title.
+  const title = document.createElement('h2');
+  title.textContent = 'Sprite Editor';
+  title.style.color = 'white';
+  editorContainer.appendChild(title);
+
+  // Create the editor canvas.
+  const editorCanvas = document.createElement('canvas');
+  editorCanvas.id = 'spriteEditorCanvas';
+  editorCanvas.width = 800;
+  editorCanvas.height = 600;
+  editorCanvas.style.border = '1px solid #999';
+  editorContainer.appendChild(editorCanvas);
+  const ctx = editorCanvas.getContext('2d');
+
+  // Variables to hold current sheet data.
+  let currentSheetName = null; // e.g. "hero_sprites"
+  let spriteData = { name: '', path: '', sprites: [], groups: {} };
+  let boundingBoxes = [];
+
+  let isDrawing = false;
+  let startX = 0;
+  let startY = 0;
+
+  // --- UI for choosing a sprite sheet ---
+  async function loadSpriteSheetList() {
+    try {
+      const sheetNames = await fetch('/assets/spritesheets').then(r => r.json());
+      const dropdown = document.createElement('select');
+      dropdown.id = 'spriteSheetDropdown';
+
+      const placeholderOpt = document.createElement('option');
+      placeholderOpt.value = '';
+      placeholderOpt.textContent = 'Select a sprite sheet...';
+      dropdown.appendChild(placeholderOpt);
+
+      sheetNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        dropdown.appendChild(option);
+      });
+
+      dropdown.addEventListener('change', e => {
+        if (!e.target.value) return;
+        loadSpriteSheet(e.target.value);
+      });
+
+      editorContainer.appendChild(dropdown);
+    } catch (err) {
+      console.error('Failed to load sprite sheet list:', err);
+    }
+  }
+
+  // --- Load a specific sprite sheet (image + JSON data) ---
+  async function loadSpriteSheet(sheetName) {
+    currentSheetName = sheetName;
+
+    // (a) Load the image into spriteManager.
+    const config = { name: sheetName, path: `/assets/spritesheets/${sheetName}.png`, 
+      defaultSpriteWidth: 8, defaultSpriteHeight: 8, spritesPerRow: 16, spritesPerColumn: 16 
+    };
+    await spriteManager.loadSpriteSheet(config);
+
+    // (b) Try to fetch existing JSON data.
+    const jsonUrl = `/assets/spritesheets/${sheetName}.json`;
+    try {
+      const data = await fetch(jsonUrl).then(r => r.json());
+      spriteData = data;
+    } catch {
+      // If no JSON is found, initialize with an empty structure.
+      spriteData = { name: sheetName, path: config.path, sprites: [], groups: {} };
+    }
+
+    // (c) Convert sprite definitions into bounding boxes for the editor.
+    boundingBoxes = spriteData.sprites.map(s => ({
+      x: s.x, y: s.y,
+      width: s.width, height: s.height,
+      name: s.name || ''
+    }));
+
+    renderSpriteSheet();
+  }
+
+  // --- Render the sprite sheet with bounding boxes ---
+  function renderSpriteSheet() {
+    if (!currentSheetName) return;
+    ctx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+
+    const sheetObj = spriteManager.getSpriteSheet(currentSheetName);
+    if (!sheetObj) return;
+
+    // Draw the sprite sheet image.
+    ctx.drawImage(sheetObj.image, 0, 0);
+
+    // Draw bounding boxes.
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    boundingBoxes.forEach(box => {
+      ctx.strokeRect(box.x, box.y, box.width, box.height);
+      if (box.name) {
+        ctx.font = '12px sans-serif';
+        ctx.fillStyle = 'yellow';
+        ctx.fillText(box.name, box.x + 2, box.y - 4);
+      }
+    });
+  }
+
+  // --- Handle mouse events for drawing bounding boxes ---
+  editorCanvas.addEventListener('mousedown', e => {
+    isDrawing = true;
+    const rect = editorCanvas.getBoundingClientRect();
+    startX = e.clientX - rect.left;
+    startY = e.clientY - rect.top;
+  });
+
+  editorCanvas.addEventListener('mousemove', e => {
+    if (!isDrawing) return;
+    renderSpriteSheet();
+    const rect = editorCanvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    ctx.strokeStyle = 'blue';
+    ctx.strokeRect(startX, startY, mouseX - startX, mouseY - startY);
+  });
+
+  editorCanvas.addEventListener('mouseup', e => {
+    if (!isDrawing) return;
+    isDrawing = false;
+    const rect = editorCanvas.getBoundingClientRect();
+    const endX = e.clientX - rect.left;
+    const endY = e.clientY - rect.top;
+    const width = endX - startX;
+    const height = endY - startY;
+    const boxName = prompt('Enter sprite name:', `sprite_${boundingBoxes.length}`);
+    boundingBoxes.push({ x: startX, y: startY, width, height, name: boxName || '' });
+    renderSpriteSheet();
+  });
+
+  // --- Save sprite data to server ---
+  function saveSpriteData() {
+    if (!currentSheetName) return;
+    spriteData.sprites = boundingBoxes.map((b, i) => ({
+      id: i,
+      name: b.name,
+      x: b.x, y: b.y,
+      width: b.width, height: b.height
+    }));
+    fetch(`/assets/spritesheets/${currentSheetName}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(spriteData),
+    })
+      .then(r => r.json())
+      .then(resp => {
+        if (resp.success) {
+          alert('Sprite data saved!');
+          // Update the SpriteManager with the new definitions.
+          spriteManager.defineSprites(currentSheetName, spriteData);
+        } else {
+          alert('Failed to save sprite data.');
+        }
+      })
+      .catch(err => {
+        console.error('Save error:', err);
+        alert('Error saving sprite data.');
+      });
+  }
+
+  // --- Create a Save button ---
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Save Sprites';
+  saveBtn.style.display = 'block';
+  saveBtn.style.marginTop = '10px';
+  saveBtn.addEventListener('click', saveSpriteData);
+  editorContainer.appendChild(saveBtn);
+
+  // Load the sprite sheet list to populate the dropdown.
+  loadSpriteSheetList();
+
+  // Optionally, add a Close button to dismiss the editor.
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Close Sprite Editor';
+  closeBtn.style.display = 'block';
+  closeBtn.style.marginTop = '10px';
+  closeBtn.addEventListener('click', closeSpriteEditor);
+  editorContainer.appendChild(closeBtn);
+}
+
+export function closeSpriteEditor() {
+  const container = document.getElementById('spriteEditorContainer');
+  if (container) {
+    container.remove();
+  }
+}
+
+
+// =========================================
+// FILE: public/src/shared/spatialGrid.js
+// =========================================
+
+/**
+ * SpatialGrid.js
+ * Spatial partitioning grid for efficient collision detection.
+ * Compatible with both client and server environments.
+ */
+
+class SpatialGrid {
+    /**
+     * Creates a new spatial grid for collision optimization
+     * @param {number} cellSize - Size of each grid cell
+     * @param {number} width - Total width of the grid in world units
+     * @param {number} height - Total height of the grid in world units
+     */
+    constructor(cellSize, width, height) {
+      this.cellSize = cellSize;
+      this.width = width;
+      this.height = height;
+      
+      // Calculate grid dimensions in cells
+      this.gridWidth = Math.ceil(width / cellSize);
+      this.gridHeight = Math.ceil(height / cellSize);
+      
+      // Initialize empty grid cells
+      this.grid = new Array(this.gridWidth);
+      for (let x = 0; x < this.gridWidth; x++) {
+        this.grid[x] = new Array(this.gridHeight);
+        for (let y = 0; y < this.gridHeight; y++) {
+          this.grid[x][y] = {
+            bullets: [],
+            enemies: []
+          };
+        }
+      }
+    }
+    
+    /**
+     * Clears all entities from the grid
+     */
+    clear() {
+      for (let x = 0; x < this.gridWidth; x++) {
+        for (let y = 0; y < this.gridHeight; y++) {
+          this.grid[x][y].bullets = [];
+          this.grid[x][y].enemies = [];
+        }
+      }
+    }
+    
+    /**
+     * Determines which cells an object overlaps
+     * @param {number} x - World X position of entity
+     * @param {number} y - World Y position of entity
+     * @param {number} width - Width of entity
+     * @param {number} height - Height of entity
+     * @returns {Object} Min/max cell coordinates that entity overlaps
+     */
+    getCellsForEntity(x, y, width, height) {
+      // Clamp to grid boundaries
+      const minCellX = Math.max(0, Math.floor(x / this.cellSize));
+      const minCellY = Math.max(0, Math.floor(y / this.cellSize));
+      const maxCellX = Math.min(this.gridWidth - 1, Math.floor((x + width) / this.cellSize));
+      const maxCellY = Math.min(this.gridHeight - 1, Math.floor((y + height) / this.cellSize));
+      
+      return { minCellX, minCellY, maxCellX, maxCellY };
+    }
+    
+    /**
+     * Adds a bullet to all cells it overlaps
+     * @param {number} index - Bullet index in the manager
+     * @param {number} x - Bullet X position
+     * @param {number} y - Bullet Y position
+     * @param {number} width - Bullet width
+     * @param {number} height - Bullet height
+     */
+    insertBullet(index, x, y, width, height) {
+      const { minCellX, minCellY, maxCellX, maxCellY } = this.getCellsForEntity(x, y, width, height);
+      
+      for (let cellX = minCellX; cellX <= maxCellX; cellX++) {
+        for (let cellY = minCellY; cellY <= maxCellY; cellY++) {
+          this.grid[cellX][cellY].bullets.push(index);
+        }
+      }
+    }
+    
+    /**
+     * Adds an enemy to all cells it overlaps
+     * @param {number} index - Enemy index in the manager
+     * @param {number} x - Enemy X position
+     * @param {number} y - Enemy Y position
+     * @param {number} width - Enemy width
+     * @param {number} height - Enemy height
+     */
+    insertEnemy(index, x, y, width, height) {
+      const { minCellX, minCellY, maxCellX, maxCellY } = this.getCellsForEntity(x, y, width, height);
+      
+      for (let cellX = minCellX; cellX <= maxCellX; cellX++) {
+        for (let cellY = minCellY; cellY <= maxCellY; cellY++) {
+          this.grid[cellX][cellY].enemies.push(index);
+        }
+      }
+    }
+    
+    /**
+     * Gets all potential bullet-enemy collision pairs
+     * @returns {Array} Array of [bulletIndex, enemyIndex] pairs
+     */
+    getPotentialCollisionPairs() {
+      const potentialPairs = [];
+      const processed = new Set(); // Avoid duplicate pairs
+      
+      // Check each grid cell
+      for (let cellX = 0; cellX < this.gridWidth; cellX++) {
+        for (let cellY = 0; cellY < this.gridHeight; cellY++) {
+          const cell = this.grid[cellX][cellY];
+          
+          // For each bullet-enemy pair in this cell
+          for (const bulletIndex of cell.bullets) {
+            for (const enemyIndex of cell.enemies) {
+              // Unique identifier for this pair
+              const pairKey = `${bulletIndex},${enemyIndex}`;
+              
+              // Only add if not already processed
+              if (!processed.has(pairKey)) {
+                potentialPairs.push([bulletIndex, enemyIndex]);
+                processed.add(pairKey);
+              }
+            }
+          }
+        }
+      }
+      
+      return potentialPairs;
+    }
+  }
+  
+  // Export for both browser and Node.js environments
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = SpatialGrid;
+  } else {
+    if (typeof window !== 'undefined') {
+      window.SpatialGrid = SpatialGrid;
+    }
+  }
+  
+  // Allow ES modules import
+  export default SpatialGrid;
+
+// =========================================
+// FILE: public/src/sprite/spriteEditor.js
+// =========================================
+
+/**
+ * Initialize the sprite editor
+ */
+export function initSpriteEditor() {
+    const editorContainer = document.getElementById('spriteEditorContainer');
+    if (!editorContainer) {
+        console.error('Sprite editor container not found');
+        return;
+    }
+    
+    // Create a close button
+    const closeButton = document.createElement('button');
+    closeButton.textContent = 'Close Editor (ESC)';
+    closeButton.className = 'sprite-editor-close-button';
+    closeButton.style.position = 'absolute';
+    closeButton.style.top = '10px';
+    closeButton.style.right = '10px';
+    closeButton.style.padding = '5px 10px';
+    closeButton.style.backgroundColor = '#d33';
+    closeButton.style.color = 'white';
+    closeButton.style.border = 'none';
+    closeButton.style.borderRadius = '3px';
+    closeButton.style.cursor = 'pointer';
+    
+    closeButton.addEventListener('click', closeSpriteEditor);
+    editorContainer.appendChild(closeButton);
+    
+    // Add ESC key handler to close the editor
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && editorContainer.style.display === 'block') {
+            closeSpriteEditor();
+        }
+    });
+    
+    // ... existing initialization code ...
+}
+
+/**
+ * Open the sprite editor
+ */
+export function openSpriteEditor() {
+    const editorContainer = document.getElementById('spriteEditorContainer');
+    if (!editorContainer) {
+        console.error('Sprite editor container not found');
+        return;
+    }
+    
+    editorContainer.style.display = 'block';
+    
+    // Populate sprite sheets dropdown
+    populateSpriteSheets();
+    
+    console.log('Sprite editor opened');
+}
+
+/**
+ * Close the sprite editor
+ */
+export function closeSpriteEditor() {
+    const editorContainer = document.getElementById('spriteEditorContainer');
+    if (!editorContainer) {
+        console.error('Sprite editor container not found');
+        return;
+    }
+    
+    editorContainer.style.display = 'none';
+    
+    // Restore focus to the game canvas
+    const gameCanvas = document.getElementById('gameCanvas');
+    if (gameCanvas) {
+        gameCanvas.focus();
+    }
+    
+    console.log('Sprite editor closed');
+} 
+
+// =========================================
+// FILE: public/src/ui/DebugOverlay.js
+// =========================================
+
+// public/src/ui/DebugOverlay.js
+
+/**
+ * Debug overlay for monitoring game status and performance
+ */
+export class DebugOverlay {
+    /**
+     * Create a new debug overlay
+     */
+    constructor() {
+        this.container = document.createElement('div');
+        this.container.style.position = 'absolute';
+        this.container.style.top = '40px';
+        this.container.style.left = '10px';
+        this.container.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        this.container.style.color = '#fff';
+        this.container.style.padding = '10px';
+        this.container.style.borderRadius = '5px';
+        this.container.style.fontFamily = 'monospace';
+        this.container.style.fontSize = '12px';
+        this.container.style.zIndex = '1000';
+        this.container.style.maxWidth = '300px';
+        this.container.style.display = 'none'; // Hidden by default
+        
+        // Create sections
+        this.fpsSection = this.createSection('FPS');
+        this.networkSection = this.createSection('Network');
+        this.entitiesSection = this.createSection('Entities');
+        this.playerSection = this.createSection('Player');
+        this.mapSection = this.createSection('Map');
+        
+        // Add to document
+        document.body.appendChild(this.container);
+        
+        // Performance monitoring
+        this.frameCount = 0;
+        this.lastFpsUpdate = 0;
+        this.fps = 0;
+        
+        // Toggle with F3 key
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'F3') {
+                this.toggle();
+            }
+        });
+
+        // Basic constructor
+        this.enabled = false;
+    }
+    
+    /**
+     * Create a section in the debug overlay
+     * @param {string} title - Section title
+     * @returns {Object} Section elements
+     */
+    createSection(title) {
+        const section = document.createElement('div');
+        section.style.marginBottom = '5px';
+        
+        const titleElem = document.createElement('div');
+        titleElem.textContent = title;
+        titleElem.style.borderBottom = '1px solid #aaa';
+        titleElem.style.marginBottom = '2px';
+        
+        const content = document.createElement('div');
+        content.style.marginLeft = '10px';
+        
+        section.appendChild(titleElem);
+        section.appendChild(content);
+        this.container.appendChild(section);
+        
+        return { section, title: titleElem, content };
+    }
+    
+    /**
+     * Show the debug overlay
+     */
+    show() {
+        this.container.style.display = 'block';
+    }
+    
+    /**
+     * Hide the debug overlay
+     */
+    hide() {
+        this.container.style.display = 'none';
+    }
+    
+    /**
+     * Toggle the debug overlay
+     */
+    toggle() {
+        if (this.container.style.display === 'none') {
+            this.show();
+        } else {
+            this.hide();
+        }
+    }
+    
+    /**
+     * Update the debug overlay with current game state
+     * @param {Object} gameState - Current game state
+     * @param {number} time - Current timestamp
+     */
+    update(gameState, time) {
+        // Stub method
+        if (!this.enabled) return;
+        
+        // Basic update
+        //console.log("Debug overlay updated", time);
+        
+        // Update FPS counter
+        this.frameCount++;
+        
+        if (time - this.lastFpsUpdate >= 1000) {
+            this.fps = Math.round(this.frameCount * 1000 / (time - this.lastFpsUpdate));
+            this.frameCount = 0;
+            this.lastFpsUpdate = time;
+        }
+        
+        // Update sections
+        this.updateFpsSection();
+        this.updateNetworkSection(gameState);
+        this.updateEntitiesSection(gameState);
+        this.updatePlayerSection(gameState);
+        this.updateMapSection(gameState);
+    }
+    
+    /**
+     * Update FPS section
+     */
+    updateFpsSection() {
+        this.fpsSection.content.textContent = `${this.fps} FPS`;
+        
+        // Color code based on performance
+        if (this.fps >= 50) {
+            this.fpsSection.content.style.color = '#8f8';
+        } else if (this.fps >= 30) {
+            this.fpsSection.content.style.color = '#ff8';
+        } else {
+            this.fpsSection.content.style.color = '#f88';
+        }
+    }
+    
+    /**
+     * Update network section
+     * @param {Object} gameState - Current game state
+     */
+    updateNetworkSection(gameState) {
+        const network = gameState.networkManager;
+        
+        if (!network) {
+            this.networkSection.content.textContent = 'Network manager not initialized';
+            return;
+        }
+        
+        const status = network.isConnected() ? 'Connected' : 'Disconnected';
+        const clientId = network.getClientId() || 'Unknown';
+        
+        this.networkSection.content.innerHTML = 
+            `Status: ${status}<br>` +
+            `Client ID: ${clientId}`;
+    }
+    
+    /**
+     * Update entities section
+     * @param {Object} gameState - Current game state
+     */
+    updateEntitiesSection(gameState) {
+        const bulletCount = gameState.bulletManager ? gameState.bulletManager.bulletCount : 0;
+        const enemyCount = gameState.enemyManager ? gameState.enemyManager.enemyCount : 0;
+        
+        this.entitiesSection.content.innerHTML = 
+            `Bullets: ${bulletCount}<br>` +
+            `Enemies: ${enemyCount}`;
+    }
+    
+    /**
+     * Update player section
+     * @param {Object} gameState - Current game state
+     */
+    updatePlayerSection(gameState) {
+        const character = gameState.character;
+        
+        if (!character) {
+            this.playerSection.content.textContent = 'Player not initialized';
+            return;
+        }
+        
+        this.playerSection.content.innerHTML = 
+            `Position: (${character.x.toFixed(1)}, ${character.y.toFixed(1)})<br>` +
+            `Health: ${character.health}<br>` +
+            `Rotation: ${(character.rotation.yaw || 0).toFixed(2)} rad`;
+    }
+    
+    /**
+     * Update map section
+     * @param {Object} gameState - Current game state
+     */
+    updateMapSection(gameState) {
+        const map = gameState.map;
+        
+        if (!map) {
+            this.mapSection.content.textContent = 'Map not initialized';
+            return;
+        }
+        
+        const chunkX = Math.floor(gameState.character.x / (map.chunkSize * map.tileSize));
+        const chunkY = Math.floor(gameState.character.y / (map.chunkSize * map.tileSize));
+        const chunksLoaded = map.chunks ? map.chunks.size : 0;
+        
+        this.mapSection.content.innerHTML = 
+            `Current Chunk: (${chunkX}, ${chunkY})<br>` +
+            `Chunks Loaded: ${chunksLoaded}<br>` +
+            `View: ${gameState.camera.viewType}`;
+    }
+}
+
+// Create a singleton instance
+export const debugOverlay = new DebugOverlay();
+
+// =========================================
+// FILE: public/src/utils/coordinateUtils.js
+// =========================================
+
+/**
+ * coordinateUtils.js
+ * Utility functions for handling world-to-screen coordinate transformations
+ */
+
+import { TILE_SIZE, SCALE } from '../constants/constants.js';
+
+/**
+ * CoordinateUtils - Helper for transforming between coordinate systems
+ */
+export class CoordinateUtils {
+  constructor() {
+    this.tileSize = TILE_SIZE;
+    this.debugMode = false;
+  }
+  
+  /**
+   * Convert grid coordinates to world coordinates
+   * In our game, grid and world coordinates are the same numerically,
+   * but they have different semantic meanings
+   */
+  gridToWorld(gridX, gridY) {
+    return {
+      x: gridX,
+      y: gridY
+    };
+  }
+  
+  /**
+   * Convert world coordinates to grid coordinates
+   * For fractional world coordinates, this returns the grid cell the coordinates are in
+   */
+  worldToGrid(worldX, worldY) {
+    return {
+      x: Math.floor(worldX),
+      y: Math.floor(worldY)
+    };
+  }
+  
+  /**
+   * Convert grid coordinates to screen coordinates
+   * @param {number} gridX - X position in grid space
+   * @param {number} gridY - Y position in grid space
+   * @param {Object} camera - Camera with position and view type
+   * @param {number} screenWidth - Screen width in pixels
+   * @param {number} screenHeight - Screen height in pixels
+   * @returns {Object} Screen coordinates {x, y}
+   */
+  gridToScreen(gridX, gridY, camera, screenWidth, screenHeight) {
+    // First convert to world coordinates
+    const worldPos = this.gridToWorld(gridX, gridY);
+    
+    // Then use world to screen
+    return this.worldToScreen(worldPos.x, worldPos.y, camera, screenWidth, screenHeight);
+  }
+  
+  /**
+   * Convert world coordinates to screen coordinates
+   * @param {number} worldX - X position in world space
+   * @param {number} worldY - Y position in world space
+   * @param {Object} camera - Camera with position and view type
+   * @param {number} screenWidth - Screen width in pixels
+   * @param {number} screenHeight - Screen height in pixels
+   * @returns {Object} Screen coordinates {x, y}
+   */
+  worldToScreen(worldX, worldY, camera, screenWidth, screenHeight) {
+    const viewType = camera.viewType || 'top-down';
+    let scaleFactor = 1.0;
+    
+    // Get scale factor based on view type
+    if (viewType === 'strategic') {
+      scaleFactor = 0.5;
+    } else if (viewType === 'top-down') {
+      scaleFactor = 1.0;
+    }
+    
+    // Calculate screen coordinates
+    const screenX = (worldX - camera.position.x) * this.tileSize * scaleFactor + screenWidth / 2;
+    const screenY = (worldY - camera.position.y) * this.tileSize * scaleFactor + screenHeight / 2;
+    
+    if (this.debugMode) {
+      console.log(`World (${worldX}, ${worldY}) -> Screen (${screenX}, ${screenY})`);
+    }
+    
+    return { x: screenX, y: screenY };
+  }
+  
+  /**
+   * Convert screen coordinates to world coordinates
+   * @param {number} screenX - X position in screen space
+   * @param {number} screenY - Y position in screen space
+   * @param {Object} camera - Camera with position and view type
+   * @param {number} screenWidth - Screen width in pixels
+   * @param {number} screenHeight - Screen height in pixels
+   * @returns {Object} World coordinates {x, y}
+   */
+  screenToWorld(screenX, screenY, camera, screenWidth, screenHeight) {
+    const viewType = camera.viewType || 'top-down';
+    let scaleFactor = 1.0;
+    
+    // Get scale factor based on view type
+    if (viewType === 'strategic') {
+      scaleFactor = 0.5;
+    } else if (viewType === 'top-down') {
+      scaleFactor = 1.0;
+    }
+    
+    // Calculate world coordinates
+    const worldX = ((screenX - screenWidth / 2) / (this.tileSize * scaleFactor)) + camera.position.x;
+    const worldY = ((screenY - screenHeight / 2) / (this.tileSize * scaleFactor)) + camera.position.y;
+    
+    return { x: worldX, y: worldY };
+  }
+  
+  /**
+   * Convert screen coordinates to grid coordinates
+   * @param {number} screenX - X position in screen space
+   * @param {number} screenY - Y position in screen space
+   * @param {Object} camera - Camera with position and view type
+   * @param {number} screenWidth - Screen width in pixels
+   * @param {number} screenHeight - Screen height in pixels
+   * @returns {Object} Grid coordinates {x, y}
+   */
+  screenToGrid(screenX, screenY, camera, screenWidth, screenHeight) {
+    // First convert to world coordinates
+    const worldPos = this.screenToWorld(screenX, screenY, camera, screenWidth, screenHeight);
+    
+    // Then convert to grid
+    return this.worldToGrid(worldPos.x, worldPos.y);
+  }
+  
+  /**
+   * Toggle debug mode
+   * @returns {boolean} New debug mode state
+   */
+  toggleDebug() {
+    this.debugMode = !this.debugMode;
+    return this.debugMode;
+  }
+}
+
+// Create and export singleton instance
+export const coordinateUtils = new CoordinateUtils();
+
+/**
+ * Initialize coordinate utilities and make them available globally
+ * This makes the utilities accessible to all parts of the codebase
+ */
+export function initCoordinateUtils() {
+  console.log('Coordinate utilities initialized');
+  
+  // Add to window for debugging if needed
+  window.coordinateUtils = coordinateUtils;
+  
+  return coordinateUtils;
+}
+
+// Auto-initialize when imported
+initCoordinateUtils();
+
+/**
+ * Run a visual test of the coordinate system
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {Object} camera - Camera object
+ */
+export function testCoordinateSystem(ctx, camera) {
+  const screenWidth = ctx.canvas.width;
+  const screenHeight = ctx.canvas.height;
+  
+  // Draw a grid of test points
+  ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+  ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)';
+  ctx.lineWidth = 1;
+  ctx.font = '10px Arial';
+  
+  // Draw test points in a grid around the camera
+  const gridSize = 5; // Draw a 5x5 grid
+  for (let x = -gridSize; x <= gridSize; x++) {
+    for (let y = -gridSize; y <= gridSize; y++) {
+      // Get grid position relative to camera
+      const gridX = Math.floor(camera.position.x) + x;
+      const gridY = Math.floor(camera.position.y) + y;
+      
+      // Convert to screen coordinates
+      const screenPos = coordinateUtils.gridToScreen(gridX, gridY, camera, screenWidth, screenHeight);
+      
+      // Draw point
+      ctx.beginPath();
+      ctx.arc(screenPos.x, screenPos.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw grid coordinates (only on some points to avoid clutter)
+      if (x % 2 === 0 && y % 2 === 0) {
+        ctx.fillText(`(${gridX},${gridY})`, screenPos.x + 5, screenPos.y - 5);
+      }
+      
+      // Draw tile outline
+      const tileSize = TILE_SIZE * (camera.viewType === 'strategic' ? 0.5 : 1.0);
+      ctx.strokeRect(
+        screenPos.x - tileSize / 2,
+        screenPos.y - tileSize / 2,
+        tileSize,
+        tileSize
+      );
+    }
+  }
+  
+  // Draw camera position
+  const cameraPosScreen = {
+    x: screenWidth / 2,
+    y: screenHeight / 2
+  };
+  
+  ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+  ctx.beginPath();
+  ctx.arc(cameraPosScreen.x, cameraPosScreen.y, 5, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Draw text for camera position
+  ctx.fillText(`Camera: (${camera.position.x.toFixed(1)},${camera.position.y.toFixed(1)})`, 
+               cameraPosScreen.x + 10, cameraPosScreen.y);
+} 
+
+// =========================================
+// FILE: public/src/utils/textureUtils.js
+// =========================================
+
+// src/utils/textureUtils.js
+
+/**
+ * Creates a material with a specific sprite from a loaded sprite sheet.
+ * @param {Image} image - The loaded Image object of the sprite sheet.
+ * @param {Object} spritePosition - { x, y } position of the sprite in pixels.
+ * @param {number} tileSize - Size of the tile in pixels.
+ * @returns {THREE.MeshStandardMaterial} - The created material.
+ */
+export function createSpriteMaterial(image, spritePosition, tileSize) {
+  if (!image || !image.width || !image.height) {
+    console.error('Invalid image provided to createSpriteMaterial.');
+    return new THREE.MeshStandardMaterial();
+  }
+
+  const texture = new THREE.Texture(image);
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  
+  const tilesPerRow = image.width / tileSize;
+  const tilesPerColumn = image.height / tileSize;
+  
+  texture.repeat.set(1 / tilesPerRow, 1 / tilesPerColumn);
+  
+  texture.offset.set(
+    spritePosition.x / image.width,
+    1 - (spritePosition.y + tileSize) / image.height
+  ); // Flip Y axis
+  
+  texture.needsUpdate = true;
+
+  return new THREE.MeshStandardMaterial({ map: texture, transparent: true });
+}
+
+/**
+ * Gets the UV offset for a specific tile type in the texture atlas.
+ * @param {number} tileType - The type of tile (e.g., FLOOR, WALL).
+ * @returns {Object} - UV offset for the tile in the texture atlas.
+ */
+export function getUVOffsetForTileType(tileType) {
+  const spritePos = TILE_SPRITES[tileType];
+  const uvOffset = {
+    u: spritePos.x / assets.tileSpriteSheet.width,
+    v: spritePos.y / assets.tileSpriteSheet.height,
+  };
+  return uvOffset;
+}
+
+// =========================================
+// FILE: public/src/utils/utils.js
+// =========================================
+
+// src/utils/utils.js
+
+export function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+
+// =========================================
+// FILE: public/src/utils/uuid.js
+// =========================================
+
+/**
+ * Simple UUID generator
+ * Not cryptographically secure, but sufficient for client-side IDs
+ * @returns {string} A UUID v4 format string
+ */
+export function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+} 
+
+// =========================================
+// FILE: public/src/wasm/clientWasmLoader.js
+// =========================================
+
+/**
+ * clientWasmLoader.js
+ * Handles loading and interfacing with WebAssembly modules in the browser.
+ * This replaces the server-side WASM loading with browser-compatible fetch.
+ */
+
+// Singleton instance of loaded WASM module
+let collisionWasm = null;
+let wasmMemory = null;
+
+/**
+ * Loads the collision WASM module for the browser
+ * @returns {Promise<Object>} WebAssembly module exports
+ */
+export async function loadCollisionWasm() {
+  // Return cached module if already loaded
+  if (collisionWasm) return collisionWasm;
+  
+  try {
+    // Fetch the WASM binary
+    const response = await fetch('/wasm/collision.wasm');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch WASM: ${response.statusText}`);
+    }
+    
+    const wasmBuffer = await response.arrayBuffer();
+    
+    // Create shared memory
+    wasmMemory = new WebAssembly.Memory({ 
+      initial: 10,  // 10 pages = 640KB
+      maximum: 100  // 100 pages = 6.4MB
+    });
+    
+    // Instantiate the WebAssembly module
+    const result = await WebAssembly.instantiate(wasmBuffer, {
+      env: {
+        memory: wasmMemory,
+      }
+    });
+    
+    // Store module exports
+    collisionWasm = result.instance.exports;
+    console.log('Collision WASM module loaded successfully');
+    
+    return collisionWasm;
+  } catch (error) {
+    console.error('Failed to load collision WASM module:', error);
+    return null;
+  }
+}
+
+/**
+ * Gets the WebAssembly memory buffer
+ * @returns {WebAssembly.Memory} WASM memory
+ */
+export function getWasmMemory() {
+  return wasmMemory;
+}
+
+// =========================================
+// FILE: public/styles/styles.css
+// =========================================
+
+/* styles/styles.css */
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #000;
+  }
+  
+  canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  

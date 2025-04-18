@@ -393,6 +393,19 @@ export function renderGame() {
   
   // Draw UI elements
   renderUI();
+  
+  // Run coordinate system test if debug mode is enabled
+  if (gameState.camera && gameState.camera.debugMode) {
+    try {
+      // Import directly to avoid circular dependencies
+      const { testCoordinateSystem } = window.coordinateUtils;
+      if (typeof testCoordinateSystem === 'function') {
+        testCoordinateSystem(ctx, gameState.camera);
+      }
+    } catch (error) {
+      console.error("Error testing coordinate system:", error);
+    }
+  }
 }
 
 /**

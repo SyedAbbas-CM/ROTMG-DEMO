@@ -1,4 +1,8 @@
 // src/camera.js
+import { createLogger } from './utils/logger.js';
+
+// Create a logger for the camera module
+const logger = createLogger('camera');
 
 export class Camera {
   constructor(viewType, position = { x: 0, y: 0 }, zoom = 1) {
@@ -9,10 +13,13 @@ export class Camera {
     
     // View scaling factors based on view type
     this.viewScaleFactors = {
-      'top-down': 1.0,
+      'top-down': 4.0,
       'first-person': 1.0,
-      'strategic': 0.25 // Make strategic view show more of the map
+      'strategic': 0.5 // Make strategic view show more of the map
     };
+    
+    // Debug mode - set to false by default
+    this.debugMode = false;
   }
 
   move(dx, dy) {
@@ -36,6 +43,11 @@ export class Camera {
   updatePosition(newPosition) {
     if (newPosition.x !== undefined) this.position.x = newPosition.x;
     if (newPosition.y !== undefined) this.position.y = newPosition.y;
+    
+    // Log camera position when in debug mode
+    if (this.debugMode) {
+      console.log(`Camera position updated to: (${this.position.x.toFixed(2)}, ${this.position.y.toFixed(2)})`);
+    }
   }
 
   /**
@@ -66,10 +78,31 @@ export class Camera {
    */
   worldToScreen(worldX, worldY, screenWidth, screenHeight, tileSize) {
     const scaleFactor = this.getViewScaleFactor();
-    // Revert to original formula which is correct for entity rendering
+    // This formula transforms world coordinates to screen coordinates
     const screenX = (worldX - this.position.x) * tileSize * scaleFactor + screenWidth / 2;
     const screenY = (worldY - this.position.y) * tileSize * scaleFactor + screenHeight / 2;
+    
+    // Debug logging (only occasionally to avoid spamming console)
+    if (this.debugMode && Math.random() < 0.01) {
+      console.log(`worldToScreen: 
+        World (${worldX}, ${worldY}) 
+        Camera (${this.position.x}, ${this.position.y}) 
+        Screen (${screenX}, ${screenY})
+        TileSize: ${tileSize}, ScaleFactor: ${scaleFactor}
+      `);
+    }
+    
     return { x: screenX, y: screenY };
+  }
+  
+  /**
+   * Toggle debug mode
+   * @returns {boolean} The new debug mode state
+   */
+  toggleDebugMode() {
+    this.debugMode = !this.debugMode;
+    logger.info(`Camera debug mode ${this.debugMode ? 'enabled' : 'disabled'}`);
+    return this.debugMode;
   }
   
   /**

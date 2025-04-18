@@ -1,8 +1,12 @@
 // src/game/updateCharacter.js
 
-import { getKeysPressed, getMoveSpeed } from './input.js';
+import { getKeysPressed } from './input.js';
 import { gameState } from './gamestate.js';
 import { TILE_SIZE, TILE_IDS } from '../constants/constants.js';
+import { createLogger, LOG_LEVELS } from '../utils/logger.js';
+
+// Create a logger for this module
+const logger = createLogger('movement');
 
 /**
  * Updates the character's position based on input and handles collision.
@@ -10,8 +14,12 @@ import { TILE_SIZE, TILE_IDS } from '../constants/constants.js';
  */
 export function updateCharacter(delta) {
   const character = gameState.character;
-  const speed = getMoveSpeed(); // Get speed from input settings
+  // Use character's own speed instead of global MOVE_SPEED
+  const speed = character.speed || 6.0; // Fallback to 6.0 if character speed isn't defined
   const keysPressed = getKeysPressed();
+
+  // Debug log for speed value occasionally
+  logger.occasional(0.01, LOG_LEVELS.DEBUG, `Character speed: ${speed}`);
 
   // Calculate movement direction
   let moveX = 0;
@@ -103,11 +111,11 @@ export function updateCharacter(delta) {
       }
     }
     
-    // If we moved, log the new position
+    // If we moved, log the new position occasionally
     if (Math.abs(character.x - originalX) > 0.001 || Math.abs(character.y - originalY) > 0.001) {
       // Only log position every 10 units to avoid spam
       if (Math.floor(character.x) % 10 === 0 && Math.floor(character.y) % 10 === 0) {
-        console.log(`Position: (${character.x.toFixed(2)}, ${character.y.toFixed(2)})`);
+        logger.debug(`Position: (${character.x.toFixed(2)}, ${character.y.toFixed(2)})`);
       }
     }
   }
@@ -186,7 +194,7 @@ function isPointColliding(x, y) {
       tile.type === TILE_IDS.WATER
     );
   } catch (error) {
-    console.error("Error in collision detection:", error);
+    logger.error("Error in collision detection:", error);
     // On error, default to no collision
     return false;
   }

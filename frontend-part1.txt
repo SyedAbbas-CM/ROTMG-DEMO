@@ -1,0 +1,3735 @@
+
+
+// =========================================
+// FILE: public/index.html
+// =========================================
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Client</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        
+        #glCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+        
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #loadingScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        #loadingBar {
+            width: 300px;
+            height: 20px;
+            background-color: #333;
+            margin-top: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        #loadingProgress {
+            width: 0%;
+            height: 100%;
+            background-color: #0f0;
+            transition: width 0.3s ease;
+        }
+        
+        #connectionStatus {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+        }
+        
+        #playerStatus {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+        }
+        
+        #controlsHelp {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen">
+        <h1>Loading Game...</h1>
+        <div id="loadingBar">
+            <div id="loadingProgress"></div>
+        </div>
+    </div>
+    
+    <!-- Connection Status -->
+    <div id="connectionStatus">Connecting...</div>
+    
+    <!-- Player Status -->
+    <div id="playerStatus">Initializing...</div>
+    
+    <!-- Controls Help -->
+    <div id="controlsHelp">
+        WASD: Move | Click: Shoot | V: Switch View | F3: Debug | E: Sprite Editor
+    </div>
+    
+    <!-- 3D Canvas (for first-person view) -->
+    <canvas id="glCanvas"></canvas>
+    
+    <!-- 2D Canvas (for top-down and strategic views) -->
+    <canvas id="gameCanvas"></canvas>
+    
+    <!-- Sprite Editor Container -->
+    <div id="spriteEditorContainer" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 1000;">
+      <!-- Sprite editor content will go here -->
+    </div>
+    
+    <!-- Three.js Library (ES Module) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/"
+        }
+      }
+    </script>
+    
+    <!-- Game Scripts -->
+    <script type="module">
+        import { initGame } from './src/game/game.js';
+        
+        // Set up loading progress
+        let loadingProgress = 0;
+        const progressBar = document.getElementById('loadingProgress');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const connectionStatus = document.getElementById('connectionStatus');
+        
+        // Update loading progress
+        function updateLoadingProgress(progress) {
+            loadingProgress = progress;
+            progressBar.style.width = `${loadingProgress}%`;
+            
+            if (loadingProgress >= 100) {
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+            }
+        }
+        
+        // Update connection status
+        function updateConnectionStatus(status) {
+            connectionStatus.textContent = status;
+            
+            switch (status) {
+                case 'Connected':
+                    connectionStatus.style.backgroundColor = 'rgba(0, 128, 0, 0.5)';
+                    break;
+                case 'Disconnected':
+                    connectionStatus.style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
+                    break;
+                case 'Connecting...':
+                    connectionStatus.style.backgroundColor = 'rgba(255, 165, 0, 0.5)';
+                    break;
+                default:
+                    connectionStatus.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            }
+        }
+        
+        // Update player status
+        function updatePlayerStatus(status) {
+            const playerStatusElement = document.getElementById('playerStatus');
+            if (playerStatusElement) {
+                playerStatusElement.textContent = status;
+            }
+        }
+        
+        // Expose functions globally
+        window.updateLoadingProgress = updateLoadingProgress;
+        window.updateConnectionStatus = updateConnectionStatus;
+        window.updatePlayerStatus = updatePlayerStatus;
+        
+        // Initialize game when page loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Start loading progress simulation
+            let progress = 0;
+            const loadingInterval = setInterval(() => {
+                progress += 5;
+                updateLoadingProgress(progress);
+                
+                if (progress >= 90) {
+                    clearInterval(loadingInterval);
+                }
+            }, 100);
+            
+            // Initialize the game
+            initGame().then(() => {
+                updateLoadingProgress(100);
+                updateConnectionStatus('Connected');
+            }).catch((error) => {
+                console.error('Game initialization error:', error);
+                updateLoadingProgress(100);
+                updateConnectionStatus('Error');
+                
+                // Show error message
+                alert('Failed to initialize the game. Please check the console for details.');
+            });
+        });
+    </script>
+</body>
+</html>
+
+// =========================================
+// FILE: public/main.js
+// =========================================
+
+// main.js
+import { Game } from './src/game/game.js';
+
+// Server URL (change for production)
+const SERVER_URL = 'ws://localhost:3000';
+
+// Create and initialize game
+const game = new Game(SERVER_URL);
+
+// Wait for DOM content to load
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    // Initialize game
+    const success = await game.init();
+    
+    if (success) {
+      console.log('Game initialized successfully');
+    } else {
+      console.error('Failed to initialize game');
+      showConnectionError();
+    }
+  } catch (error) {
+    console.error('Error initializing game:', error);
+    showConnectionError();
+  }
+});
+
+// Show connection error message
+function showConnectionError() {
+  const errorMessage = document.createElement('div');
+  errorMessage.style.position = 'fixed';
+  errorMessage.style.top = '50%';
+  errorMessage.style.left = '50%';
+  errorMessage.style.transform = 'translate(-50%, -50%)';
+  errorMessage.style.padding = '20px';
+  errorMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+  errorMessage.style.color = 'white';
+  errorMessage.style.borderRadius = '10px';
+  errorMessage.style.zIndex = '1000';
+  errorMessage.innerHTML = `
+    <h2>Connection Error</h2>
+    <p>Could not connect to the game server.</p>
+    <p>Please check your connection and try again.</p>
+    <button id="retryButton" style="padding: 8px 16px; margin-top: 10px;">Retry</button>
+  `;
+  
+  document.body.appendChild(errorMessage);
+  
+  // Add retry button functionality
+  document.getElementById('retryButton').addEventListener('click', async () => {
+    document.body.removeChild(errorMessage);
+    try {
+      const success = await game.init();
+      if (!success) {
+        showConnectionError();
+      }
+    } catch (error) {
+      console.error('Error reconnecting:', error);
+      showConnectionError();
+    }
+  });
+}
+
+// Handle page visibility changes
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // Page is hidden, pause game
+    game.stop();
+  } else {
+    // Page is visible again, resume game
+    game.start();
+  }
+});
+
+// Handle window unload
+window.addEventListener('beforeunload', () => {
+  game.cleanup();
+});
+
+// =========================================
+// FILE: public/src/camera.js
+// =========================================
+
+// src/camera.js
+
+export class Camera {
+  constructor(viewType, position = { x: 0, y: 0 }, zoom = 1) {
+    this.viewType = viewType; // 'top-down', 'first-person', 'strategic'
+    this.position = position; // { x, y }
+    this.zoom = zoom; // For top-down and strategic views
+    this.rotation = { pitch: 0, yaw: 0 }; // For first-person view
+    
+    // View scaling factors based on view type
+    this.viewScaleFactors = {
+      'top-down': 4.0,
+      'first-person': 1.0,
+      'strategic': 0.5 // Make strategic view show more of the map
+    };
+    
+    // Debug mode - set to false by default
+    this.debugMode = false;
+  }
+
+  move(dx, dy) {
+    this.position.x += dx;
+    this.position.y += dy;
+  }
+
+  setZoom(zoomLevel) {
+    this.zoom = zoomLevel;
+  }
+
+  setRotation(pitch, yaw) {
+    this.rotation.pitch = pitch;
+    this.rotation.yaw = yaw;
+  }
+
+  /**
+   * Updates the camera's position to the specified coordinates.
+   * @param {Object} newPosition - { x, y } coordinates to set the camera position.
+   */
+  updatePosition(newPosition) {
+    if (newPosition.x !== undefined) this.position.x = newPosition.x;
+    if (newPosition.y !== undefined) this.position.y = newPosition.y;
+    
+    // Log camera position when in debug mode
+    if (this.debugMode) {
+      console.log(`Camera position updated to: (${this.position.x.toFixed(2)}, ${this.position.y.toFixed(2)})`);
+    }
+  }
+
+  /**
+   * Updates the camera's rotation to the specified values.
+   * @param {Object} newRotation - { pitch, yaw } angles in radians.
+   */
+  updateRotation(newRotation) {
+    if (newRotation.pitch !== undefined) this.rotation.pitch = newRotation.pitch;
+    if (newRotation.yaw !== undefined) this.rotation.yaw = newRotation.yaw;
+  }
+  
+  /**
+   * Gets the current view scale factor based on view type
+   * @returns {number} The scale factor for the current view
+   */
+  getViewScaleFactor() {
+    return this.viewScaleFactors[this.viewType] || 1.0;
+  }
+  
+  /**
+   * Converts world coordinates to screen coordinates.
+   * @param {number} worldX - X coordinate in world space
+   * @param {number} worldY - Y coordinate in world space
+   * @param {number} screenWidth - Width of the canvas
+   * @param {number} screenHeight - Height of the canvas
+   * @param {number} tileSize - Tile size in pixels
+   * @returns {Object} Screen coordinates {x, y}
+   */
+  worldToScreen(worldX, worldY, screenWidth, screenHeight, tileSize) {
+    const scaleFactor = this.getViewScaleFactor();
+    // This formula transforms world coordinates to screen coordinates
+    const screenX = (worldX - this.position.x) * tileSize * scaleFactor + screenWidth / 2;
+    const screenY = (worldY - this.position.y) * tileSize * scaleFactor + screenHeight / 2;
+    
+    // Debug logging (only occasionally to avoid spamming console)
+    if (this.debugMode && Math.random() < 0.01) {
+      console.log(`worldToScreen: 
+        World (${worldX}, ${worldY}) 
+        Camera (${this.position.x}, ${this.position.y}) 
+        Screen (${screenX}, ${screenY})
+        TileSize: ${tileSize}, ScaleFactor: ${scaleFactor}
+      `);
+    }
+    
+    return { x: screenX, y: screenY };
+  }
+  
+  /**
+   * Toggle debug mode
+   * @returns {boolean} The new debug mode state
+   */
+  toggleDebugMode() {
+    this.debugMode = !this.debugMode;
+    console.log(`Camera debug mode ${this.debugMode ? 'enabled' : 'disabled'}`);
+    return this.debugMode;
+  }
+  
+  /**
+   * Get the scaling factor to apply to entity sizes based on view type
+   * @param {number} baseScale - Base scale factor (usually SCALE constant)
+   * @returns {number} Effective scale to use for entity rendering
+   */
+  getEntityScaleFactor(baseScale = 1) {
+    return baseScale * this.getViewScaleFactor();
+  }
+  
+  /**
+   * Determines if a world coordinate is visible on screen
+   * @param {number} worldX - X coordinate in world space
+   * @param {number} worldY - Y coordinate in world space
+   * @param {number} width - Entity width in world units
+   * @param {number} height - Entity height in world units
+   * @param {number} screenWidth - Width of the canvas
+   * @param {number} screenHeight - Height of the canvas
+   * @param {number} tileSize - Tile size in pixels
+   * @param {number} buffer - Extra buffer to add around screen (for culling)
+   * @returns {boolean} Whether the entity is on screen
+   */
+  isOnScreen(worldX, worldY, width, height, screenWidth, screenHeight, tileSize, buffer = 0) {
+    const screen = this.worldToScreen(worldX, worldY, screenWidth, screenHeight, tileSize);
+    const scaleFactor = this.getViewScaleFactor();
+    
+    // Extend buffer in strategic view
+    const viewBuffer = this.viewType === 'strategic' ? buffer * 2 : buffer;
+    
+    // Use the scaled entity dimensions
+    const scaledWidth = width * tileSize * scaleFactor;
+    const scaledHeight = height * tileSize * scaleFactor;
+    
+    return screen.x + scaledWidth/2 + viewBuffer >= 0 && 
+           screen.x - scaledWidth/2 - viewBuffer <= screenWidth &&
+           screen.y + scaledHeight/2 + viewBuffer >= 0 && 
+           screen.y - scaledHeight/2 - viewBuffer <= screenHeight;
+  }
+}
+
+
+// =========================================
+// FILE: public/src/collision/ClientCollisionManager.js
+// =========================================
+
+// public/src/collision/ClientCollisionManager.js
+
+import SpatialGrid from '../shared/spatialGrid.js';
+
+/**
+ * ClientCollisionManager
+ * Handles collision detection on the client side and reports to server
+ */
+export class ClientCollisionManager {
+    /**
+     * Create a new client collision manager
+     * @param {Object} options - Collision manager options
+     */
+    constructor(options = {}) {
+        this.bulletManager = options.bulletManager;
+        this.enemyManager = options.enemyManager;
+        this.mapManager = options.mapManager;
+        this.networkManager = options.networkManager;
+        this.localPlayerId = options.localPlayerId;
+        
+        // Spatial partitioning for efficient collision detection
+        this.gridCellSize = 64; // Size of each grid cell
+        this.grid = new SpatialGrid(this.gridCellSize, 2000, 2000);
+        
+        // Collision tracking to prevent duplicates
+        this.processedCollisions = new Map(); // collisionId -> timestamp
+        this.collisionTimeout = 500; // ms until a collision can be processed again
+        
+        // Setup cleanup interval
+        this.cleanupInterval = setInterval(() => this.cleanupProcessedCollisions(), 5000);
+    }
+    
+    /**
+     * Update collision detection
+     * @param {number} deltaTime - Time since last update in seconds
+     */
+    update(deltaTime) {
+        if (!this.bulletManager || !this.enemyManager) return;
+        
+        // Clear the spatial grid
+        this.grid.clear();
+        
+        // Insert bullets into grid
+        for (let i = 0; i < this.bulletManager.bulletCount; i++) {
+            // Skip bullets fired by enemies
+            if (this.bulletManager.ownerId && 
+                this.bulletManager.ownerId[i] && 
+                typeof this.bulletManager.ownerId[i] === 'string' &&
+                this.bulletManager.ownerId[i].startsWith('enemy_')) {
+                continue;
+            }
+            
+            this.grid.insertBullet(
+                i,
+                this.bulletManager.x[i],
+                this.bulletManager.y[i],
+                this.bulletManager.width[i],
+                this.bulletManager.height[i]
+            );
+        }
+        
+        // Insert enemies into grid
+        for (let i = 0; i < this.enemyManager.enemyCount; i++) {
+            // Skip dead enemies
+            if (this.enemyManager.health[i] <= 0) continue;
+            
+            this.grid.insertEnemy(
+                i,
+                this.enemyManager.x[i],
+                this.enemyManager.y[i],
+                this.enemyManager.width[i],
+                this.enemyManager.height[i]
+            );
+        }
+        
+        // Get potential collision pairs
+        const potentialPairs = this.grid.getPotentialCollisionPairs();
+        
+        // Check each potential collision
+        for (const [bulletIndex, enemyIndex] of potentialPairs) {
+            // Verify bullet and enemy still exist
+            if (bulletIndex >= this.bulletManager.bulletCount || 
+                enemyIndex >= this.enemyManager.enemyCount) {
+                continue;
+            }
+            
+            // Skip bullets fired by enemies
+            if (this.bulletManager.ownerId &&
+                this.bulletManager.ownerId[bulletIndex] &&
+                typeof this.bulletManager.ownerId[bulletIndex] === 'string' &&
+                this.bulletManager.ownerId[bulletIndex].startsWith('enemy_')) {
+                continue;
+            }
+            
+            // Skip dead enemies
+            if (this.enemyManager.health[enemyIndex] <= 0) continue;
+            
+            // Full AABB collision check
+            if (this.checkAABBCollision(
+                this.bulletManager.x[bulletIndex],
+                this.bulletManager.y[bulletIndex],
+                this.bulletManager.width[bulletIndex],
+                this.bulletManager.height[bulletIndex],
+                this.enemyManager.x[enemyIndex],
+                this.enemyManager.y[enemyIndex],
+                this.enemyManager.width[enemyIndex],
+                this.enemyManager.height[enemyIndex]
+            )) {
+                // Process this collision
+                this.handleCollision(bulletIndex, enemyIndex);
+            }
+        }
+        
+        // Check for bullet-wall collisions if map manager exists
+        this.checkBulletWallCollisions();
+    }
+    
+    /**
+     * AABB collision test
+     * @param {number} ax - First rect X
+     * @param {number} ay - First rect Y
+     * @param {number} awidth - First rect width
+     * @param {number} aheight - First rect height
+     * @param {number} bx - Second rect X
+     * @param {number} by - Second rect Y
+     * @param {number} bwidth - Second rect width
+     * @param {number} bheight - Second rect height
+     * @returns {boolean} True if colliding
+     */
+    checkAABBCollision(ax, ay, awidth, aheight, bx, by, bwidth, bheight) {
+        return (
+            ax < bx + bwidth &&
+            ax + awidth > bx &&
+            ay < by + bheight &&
+            ay + aheight > by
+        );
+    }
+    
+    /**
+     * Check for bullet-wall collisions
+     */
+    checkBulletWallCollisions() {
+        if (!this.mapManager || !this.bulletManager) return;
+        
+        for (let i = 0; i < this.bulletManager.bulletCount; i++) {
+            const x = this.bulletManager.x[i];
+            const y = this.bulletManager.y[i];
+            
+            // Check if position is wall or out of bounds
+            if (this.mapManager.isWallOrObstacle(x, y)) {
+                // Mark bullet for removal - handle case where markForRemoval doesn't exist
+                if (this.bulletManager.markForRemoval) {
+                    this.bulletManager.markForRemoval(i);
+                } else if (this.bulletManager.removeBulletById && this.bulletManager.id) {
+                    // Alternative method: remove by ID
+                    this.bulletManager.removeBulletById(this.bulletManager.id[i]);
+                } else if (this.bulletManager.life) {
+                    // Last resort: set lifetime to 0
+                    this.bulletManager.life[i] = 0;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Handle a bullet-enemy collision
+     * @param {number} bulletIndex - Bullet index
+     * @param {number} enemyIndex - Enemy index
+     */
+    handleCollision(bulletIndex, enemyIndex) {
+        const bulletId = this.bulletManager.id[bulletIndex];
+        const enemyId = this.enemyManager.id[enemyIndex];
+        
+        // Generate a unique collision ID
+        const collisionId = `${bulletId}_${enemyId}`;
+        
+        // Check if this collision was already processed recently
+        if (this.processedCollisions.has(collisionId)) {
+            return;
+        }
+        
+        // Mark as processed
+        this.processedCollisions.set(collisionId, Date.now());
+        
+        // Apply client-side prediction
+        this.applyClientPrediction(bulletIndex, enemyIndex);
+        
+        // Report collision to server if we have network manager
+        if (this.networkManager && this.networkManager.isConnected()) {
+            this.networkManager.sendCollision({
+                bulletId,
+                enemyId,
+                clientId: this.localPlayerId,
+                timestamp: Date.now()
+            });
+        }
+    }
+    
+    /**
+     * Apply client-side prediction for immediate feedback
+     * @param {number} bulletIndex - Bullet index
+     * @param {number} enemyIndex - Enemy index
+     */
+    applyClientPrediction(bulletIndex, enemyIndex) {
+        // Mark bullet for removal
+        this.bulletManager.markForRemoval(bulletIndex);
+        
+        // Apply hit effect to enemy
+        if (this.enemyManager.applyHitEffect) {
+            this.enemyManager.applyHitEffect(enemyIndex);
+        }
+    }
+    
+    /**
+     * Clean up old processed collisions
+     */
+    cleanupProcessedCollisions() {
+        const now = Date.now();
+        
+        for (const [id, timestamp] of this.processedCollisions.entries()) {
+            if (now - timestamp > this.collisionTimeout) {
+                this.processedCollisions.delete(id);
+            }
+        }
+    }
+    
+    /**
+     * Clean up resources
+     */
+    cleanup() {
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+            this.cleanupInterval = null;
+        }
+    }
+}
+
+// =========================================
+// FILE: public/src/collision/collisionSystem.js
+// =========================================
+
+/**
+ * CollisionSystem.js
+ * Integrates WebAssembly-based collision detection for better performance
+ */
+
+/**
+ * Base class for collision systems
+ */
+class CollisionSystem {
+    /**
+     * Create a collision system
+     * @param {Object} options - System options
+     * @param {BulletManager} options.bulletManager - Bullet manager
+     * @param {EnemyManager} options.enemyManager - Enemy manager
+     * @param {MapManager} options.mapManager - Map manager
+     */
+    constructor(options = {}) {
+      this.bulletManager = options.bulletManager;
+      this.enemyManager = options.enemyManager;
+      this.mapManager = options.mapManager;
+      this.enabled = true;
+      this.lastUpdateTime = 0;
+      this.updateInterval = 1000 / 60; // 60Hz default update rate
+      this.callbacks = {
+        onBulletEnemyCollision: null,
+        onBulletWallCollision: null
+      };
+    }
+    
+    /**
+     * Update collision detection
+     * @param {number} currentTime - Current timestamp
+     */
+    update(currentTime) {
+      if (!this.enabled) return;
+      
+      // Check if we should update based on interval
+      if (currentTime - this.lastUpdateTime < this.updateInterval) {
+        return;
+      }
+      
+      this.lastUpdateTime = currentTime;
+      
+      // Check bullet-wall collisions
+      this.checkBulletWallCollisions();
+      
+      // Check bullet-enemy collisions
+      this.checkBulletEnemyCollisions();
+    }
+    
+    /**
+     * Set callback for bullet-enemy collisions
+     * @param {Function} callback - Callback function(bulletIndex, enemyIndex)
+     */
+    setOnBulletEnemyCollision(callback) {
+      this.callbacks.onBulletEnemyCollision = callback;
+    }
+    
+    /**
+     * Set callback for bullet-wall collisions
+     * @param {Function} callback - Callback function(bulletIndex)
+     */
+    setOnBulletWallCollision(callback) {
+      this.callbacks.onBulletWallCollision = callback;
+    }
+    
+    /**
+     * Check for bullet-enemy collisions
+     * Implemented by subclasses
+     */
+    checkBulletEnemyCollisions() {
+      throw new Error('Method not implemented');
+    }
+    
+    /**
+     * Check for bullet-wall collisions
+     * Implemented by subclasses
+     */
+    checkBulletWallCollisions() {
+      throw new Error('Method not implemented');
+    }
+  }
+  
+  /**
+   * JavaScript-based collision system (fallback)
+   */
+  class JSCollisionSystem extends CollisionSystem {
+    /**
+     * Create a JS-based collision system
+     * @param {Object} options - System options
+     */
+    constructor(options = {}) {
+      super(options);
+      this.gridCellSize = options.gridCellSize || 64;
+      this.grid = new SpatialGrid(this.gridCellSize, 2000, 2000); // Adjust size as needed
+    }
+    
+    /**
+     * Check for bullet-enemy collisions
+     */
+    checkBulletEnemyCollisions() {
+      if (!this.bulletManager || !this.enemyManager) return;
+      
+      // Clear grid
+      this.grid.clear();
+      
+      // Insert bullets and enemies into grid
+      for (let i = 0; i < this.bulletManager.bulletCount; i++) {
+        this.grid.insertBullet(
+          i,
+          this.bulletManager.x[i],
+          this.bulletManager.y[i],
+          this.bulletManager.width[i] || 5,
+          this.bulletManager.height[i] || 5
+        );
+      }
+      
+      for (let i = 0; i < this.enemyManager.enemyCount; i++) {
+        this.grid.insertEnemy(
+          i,
+          this.enemyManager.x[i],
+          this.enemyManager.y[i],
+          this.enemyManager.width[i] || 20,
+          this.enemyManager.height[i] || 20
+        );
+      }
+      
+      // Get potential collision pairs
+      const pairs = this.grid.getPotentialCollisionPairs();
+      
+      // Check each pair
+      for (const [bulletIndex, enemyIndex] of pairs) {
+        // Skip invalid indices
+        if (bulletIndex >= this.bulletManager.bulletCount || 
+            enemyIndex >= this.enemyManager.enemyCount) {
+          continue;
+        }
+        
+        // Full AABB collision test
+        if (this.checkAABBCollision(
+          this.bulletManager.x[bulletIndex],
+          this.bulletManager.y[bulletIndex],
+          this.bulletManager.width[bulletIndex] || 5,
+          this.bulletManager.height[bulletIndex] || 5,
+          this.enemyManager.x[enemyIndex],
+          this.enemyManager.y[enemyIndex],
+          this.enemyManager.width[enemyIndex] || 20,
+          this.enemyManager.height[enemyIndex] || 20
+        )) {
+          // Invoke collision callback
+          if (this.callbacks.onBulletEnemyCollision) {
+            this.callbacks.onBulletEnemyCollision(bulletIndex, enemyIndex);
+          }
+        }
+      }
+    }
+    
+    /**
+     * Check for bullet-wall collisions
+     */
+    checkBulletWallCollisions() {
+      if (!this.bulletManager || !this.mapManager) return;
+      
+      // Check each bullet
+      for (let i = 0; i < this.bulletManager.bulletCount; i++) {
+        const x = this.bulletManager.x[i];
+        const y = this.bulletManager.y[i];
+        
+        // Check if bullet collides with wall
+        if (this.mapManager.isWallOrObstacle(x, y)) {
+          // Invoke collision callback
+          if (this.callbacks.onBulletWallCollision) {
+            this.callbacks.onBulletWallCollision(i);
+          }
+        }
+      }
+    }
+    
+    /**
+     * Check AABB collision between two rectangles
+     * @param {number} ax - First rect X
+     * @param {number} ay - First rect Y
+     * @param {number} awidth - First rect width
+     * @param {number} aheight - First rect height
+     * @param {number} bx - Second rect X
+     * @param {number} by - Second rect Y
+     * @param {number} bwidth - Second rect width
+     * @param {number} bheight - Second rect height
+     * @returns {boolean} True if colliding
+     */
+    checkAABBCollision(ax, ay, awidth, aheight, bx, by, bwidth, bheight) {
+      return (
+        ax < bx + bwidth &&
+        ax + awidth > bx &&
+        ay < by + bheight &&
+        ay + aheight > by
+      );
+    }
+  }
+  
+  /**
+   * WebAssembly-based collision system
+   */
+  class WASMCollisionSystem extends CollisionSystem {
+    /**
+     * Create a WASM-based collision system
+     * @param {Object} options - System options
+     */
+    constructor(options = {}) {
+      super(options);
+      this.wasm = null;
+      this.memory = null;
+      this.isLoaded = false;
+      this.gridCellSize = options.gridCellSize || 64;
+      this.maxCollisions = options.maxCollisions || 1000;
+      
+      // Arrays to store collision results
+      this.collisionPairs = new Int32Array(this.maxCollisions * 2);
+      
+      // Load WASM module
+      this.loadWASM();
+    }
+    
+    /**
+     * Load WASM module
+     */
+    async loadWASM() {
+      try {
+        const response = await fetch('/wasm/collision.wasm');
+        const buffer = await response.arrayBuffer();
+        
+        // Create memory
+        this.memory = new WebAssembly.Memory({
+          initial: 10, // 10 pages = 640 KB
+          maximum: 100 // 100 pages = 6.4 MB
+        });
+        
+        // Instantiate module
+        const result = await WebAssembly.instantiate(buffer, {
+          env: {
+            memory: this.memory
+          }
+        });
+        
+        // Get exports
+        this.wasm = result.instance.exports;
+        this.isLoaded = true;
+        console.log('WASM collision module loaded');
+      } catch (error) {
+        console.error('Failed to load WASM collision module:', error);
+      }
+    }
+    
+    /**
+     * Check for bullet-enemy collisions using WASM
+     */
+    checkBulletEnemyCollisions() {
+      if (!this.isLoaded || !this.bulletManager || !this.enemyManager) {
+        // Fall back to JS implementation if WASM not ready
+        return super.checkBulletEnemyCollisions();
+      }
+      
+      // Get entity counts
+      const bulletCount = this.bulletManager.bulletCount;
+      const enemyCount = this.enemyManager.enemyCount;
+      
+      if (bulletCount === 0 || enemyCount === 0) {
+        return;
+      }
+      
+      // Prepare memory
+      const FLOAT_SIZE = 4;
+      const INT_SIZE = 4;
+      
+      // Calculate memory needs
+      const bulletsSize = bulletCount * 4 * FLOAT_SIZE; // x, y, width, height
+      const enemiesSize = enemyCount * 4 * FLOAT_SIZE; // x, y, width, height
+      const resultsSize = this.maxCollisions * 2 * INT_SIZE;
+      const totalSize = bulletsSize + enemiesSize + resultsSize;
+      
+      // Ensure memory is large enough
+      const currentPages = this.memory.buffer.byteLength / 65536;
+      const requiredPages = Math.ceil(totalSize / 65536) + 1;
+      
+      if (currentPages < requiredPages) {
+        this.memory.grow(requiredPages - currentPages);
+      }
+      
+      // Get direct buffer view
+      const buffer = new ArrayBuffer(this.memory.buffer.byteLength);
+      new Uint8Array(buffer).set(new Uint8Array(this.memory.buffer));
+      
+      const dataView = new DataView(buffer);
+      
+      // Calculate offsets
+      let offset = 0;
+      
+      const bulletXPtr = offset;
+      offset += bulletCount * FLOAT_SIZE;
+      
+      const bulletYPtr = offset;
+      offset += bulletCount * FLOAT_SIZE;
+      
+      const bulletWidthPtr = offset;
+      offset += bulletCount * FLOAT_SIZE;
+      
+      const bulletHeightPtr = offset;
+      offset += bulletCount * FLOAT_SIZE;
+      
+      const enemyXPtr = offset;
+      offset += enemyCount * FLOAT_SIZE;
+      
+      const enemyYPtr = offset;
+      offset += enemyCount * FLOAT_SIZE;
+      
+      const enemyWidthPtr = offset;
+      offset += enemyCount * FLOAT_SIZE;
+      
+      const enemyHeightPtr = offset;
+      offset += enemyCount * FLOAT_SIZE;
+      
+      const collisionResultsPtr = offset;
+      
+      // Copy bullet data to WASM memory
+      for (let i = 0; i < bulletCount; i++) {
+        dataView.setFloat32(bulletXPtr + i * FLOAT_SIZE, this.bulletManager.x[i], true);
+        dataView.setFloat32(bulletYPtr + i * FLOAT_SIZE, this.bulletManager.y[i], true);
+        dataView.setFloat32(bulletWidthPtr + i * FLOAT_SIZE, this.bulletManager.width[i] || 5, true);
+        dataView.setFloat32(bulletHeightPtr + i * FLOAT_SIZE, this.bulletManager.height[i] || 5, true);
+      }
+      
+      // Copy enemy data to WASM memory
+      for (let i = 0; i < enemyCount; i++) {
+        dataView.setFloat32(enemyXPtr + i * FLOAT_SIZE, this.enemyManager.x[i], true);
+        dataView.setFloat32(enemyYPtr + i * FLOAT_SIZE, this.enemyManager.y[i], true);
+        dataView.setFloat32(enemyWidthPtr + i * FLOAT_SIZE, this.enemyManager.width[i] || 20, true);
+        dataView.setFloat32(enemyHeightPtr + i * FLOAT_SIZE, this.enemyManager.height[i] || 20, true);
+      }
+      
+      // Call WASM function to detect collisions
+      const collisionCount = this.wasm.detectCollisions(
+        bulletXPtr / FLOAT_SIZE,
+        bulletYPtr / FLOAT_SIZE,
+        bulletWidthPtr / FLOAT_SIZE,
+        bulletHeightPtr / FLOAT_SIZE,
+        bulletCount,
+        
+        enemyXPtr / FLOAT_SIZE,
+        enemyYPtr / FLOAT_SIZE,
+        enemyWidthPtr / FLOAT_SIZE,
+        enemyHeightPtr / FLOAT_SIZE,
+        enemyCount,
+        
+        this.gridCellSize,
+        
+        collisionResultsPtr / INT_SIZE,
+        this.maxCollisions
+      );
+      
+      // Process collision results
+      for (let i = 0; i < collisionCount; i++) {
+        const bulletIndex = dataView.getInt32(collisionResultsPtr + i * 2 * INT_SIZE, true);
+        const enemyIndex = dataView.getInt32(collisionResultsPtr + i * 2 * INT_SIZE + INT_SIZE, true);
+        
+        // Invoke collision callback
+        if (this.callbacks.onBulletEnemyCollision) {
+          this.callbacks.onBulletEnemyCollision(bulletIndex, enemyIndex);
+        }
+      }
+    }
+    
+    /**
+     * Check for bullet-wall collisions with batch processing
+     */
+    checkBulletWallCollisions() {
+      if (!this.bulletManager || !this.mapManager) return;
+      
+      // We can use WASM for this too, but for simplicity, just use JS
+      // In a future iteration, we could optimize this further with WASM
+      for (let i = 0; i < this.bulletManager.bulletCount; i++) {
+        const x = this.bulletManager.x[i];
+        const y = this.bulletManager.y[i];
+        
+        if (this.mapManager.isWallOrObstacle(x, y)) {
+          if (this.callbacks.onBulletWallCollision) {
+            this.callbacks.onBulletWallCollision(i);
+          }
+        }
+      }
+    }
+  }
+  
+  /**
+   * Collision system factory - creates the best available system
+   * @param {Object} options - System options
+   * @returns {CollisionSystem} Collision system instance
+   */
+  function createCollisionSystem(options = {}) {
+    if (typeof WebAssembly !== 'undefined') {
+      return new WASMCollisionSystem(options);
+    } else {
+      console.log('WebAssembly not supported, using JS collision system');
+      return new JSCollisionSystem(options);
+    }
+  }
+  
+  // Export modules
+  export { 
+    CollisionSystem, 
+    JSCollisionSystem,
+    WASMCollisionSystem,
+    createCollisionSystem
+  };
+  
+  // For browser
+  if (typeof window !== 'undefined') {
+    window.CollisionSystem = CollisionSystem;
+    window.JSCollisionSystem = JSCollisionSystem;
+    window.WASMCollisionSystem = WASMCollisionSystem;
+    window.createCollisionSystem = createCollisionSystem;
+  }
+
+// =========================================
+// FILE: public/src/constants/constants.js
+// =========================================
+
+// src/constants/constants.js
+
+export const TILE_SIZE = 12; // Size of each tile in pixels
+export const CHARACTER_SPRITE_SIZE = 12; // Size of each character sprite in pixels
+export const SCALE = 5; // Scale factor for sprites
+export const SCALE_S = 2;
+export const CANVAS_WIDTH = window.innerWidth;
+export const CANVAS_HEIGHT = window.innerHeight;
+
+
+export const TILE_IDS = {
+  FLOOR: 0,
+  WALL: 1,
+  OBSTACLE: 2,
+  WATER: 3,
+  MOUNTAIN: 4,
+};
+
+// Sprite grid dimensions for tile sprite sheet
+export const TILE_SPRITES_PER_ROW = 24;
+export const TILE_SPRITES_PER_COLUMN = 11;
+
+// Generate array for all tile sprites (no spacing)
+export const ALL_TILE_SPRITES = [];
+for (let row = 0; row < TILE_SPRITES_PER_COLUMN; row++) {
+  for (let col = 0; col < TILE_SPRITES_PER_ROW; col++) {
+    ALL_TILE_SPRITES.push({
+      x: col * TILE_SIZE,
+      y: row * TILE_SIZE,
+    });
+  }
+}
+
+// Map TILE_SPRITES with specific indices for each TILE_ID
+export const TILE_SPRITES = {
+  [TILE_IDS.FLOOR]: ALL_TILE_SPRITES[0],       // Example: Use the first sprite for FLOOR
+  [TILE_IDS.WALL]: ALL_TILE_SPRITES[1],        // Use the second sprite for WALL
+  [TILE_IDS.OBSTACLE]: ALL_TILE_SPRITES[2],    // Use the third sprite for OBSTACLE
+  [TILE_IDS.WATER]: ALL_TILE_SPRITES[3],       // Use the fourth sprite for WATER
+  [TILE_IDS.MOUNTAIN]: ALL_TILE_SPRITES[4],    // Use the fifth sprite for MOUNTAIN
+};
+
+// Character sprite sheet configuration
+const CHARACTER_SPRITES_PER_ROW = 16;
+const CHARACTER_SPRITES_PER_COLUMN = 15;
+const CHARACTER_HORIZONTAL_SPACING = 0;
+const CHARACTER_VERTICAL_SPACING = 0;
+
+// Generate array for all character sprites with spacing
+export const ALL_CHARACTER_SPRITES = [];
+for (let row = 0; row < CHARACTER_SPRITES_PER_COLUMN; row++) {
+  for (let col = 0; col < CHARACTER_SPRITES_PER_ROW; col++) {
+    ALL_CHARACTER_SPRITES.push({
+      x: col * (CHARACTER_SPRITE_SIZE + CHARACTER_HORIZONTAL_SPACING),
+      y: row * (CHARACTER_SPRITE_SIZE + CHARACTER_VERTICAL_SPACING),
+    });
+  }
+}
+
+// Numbered CHARACTER_SPRITE_POSITIONS
+export const CHARACTER_SPRITE_POSITIONS = {};
+ALL_CHARACTER_SPRITES.forEach((sprite, index) => {
+  CHARACTER_SPRITE_POSITIONS[`SPRITE_${index + 1}`] = sprite;
+});
+
+// Enemy sprite positions within enemySpriteSheet
+export const ENEMY_SPRITE_POSITIONS = {
+  DEFAULT: { x: 0, y: 0 },
+};
+
+// Wall sprite positions within wallSpriteSheet
+export const WALL_SPRITE_POSITIONS = {
+  DEFAULT: { x: 0, y: 0 },
+};
+
+// Chunking Constants
+export const CHUNK_SIZE = 16; // Size of each chunk (e.g., 16x16 tiles)
+
+
+// =========================================
+// FILE: public/src/controllers/PlayerController.js
+// =========================================
+
+/**
+ * PlayerController.js
+ * Handles input for controlling the AnimatedPlayer
+ */
+
+export class PlayerController {
+  /**
+   * Create a new player controller
+   * @param {AnimatedPlayer} player - The player to control
+   */
+  constructor(player) {
+    this.player = player;
+    this.keys = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      attack: false
+    };
+    
+    // Movement vector
+    this.movement = { x: 0, y: 0 };
+    
+    // Bind event listeners
+    this.bindEvents();
+  }
+  
+  /**
+   * Bind keyboard event listeners
+   */
+  bindEvents() {
+    // Keyboard down event
+    window.addEventListener('keydown', (e) => {
+      this.handleKeyDown(e);
+    });
+    
+    // Keyboard up event
+    window.addEventListener('keyup', (e) => {
+      this.handleKeyUp(e);
+    });
+  }
+  
+  /**
+   * Handle key down events
+   * @param {KeyboardEvent} e - Keyboard event
+   */
+  handleKeyDown(e) {
+    switch (e.key.toLowerCase()) {
+      case 'w':
+      case 'arrowup':
+        this.keys.up = true;
+        break;
+      case 's':
+      case 'arrowdown':
+        this.keys.down = true;
+        break;
+      case 'a':
+      case 'arrowleft':
+        this.keys.left = true;
+        break;
+      case 'd':
+      case 'arrowright':
+        this.keys.right = true;
+        break;
+      case ' ':
+      case 'shift':
+        if (!this.keys.attack) {
+          this.keys.attack = true;
+          this.player.attack();
+        }
+        break;
+    }
+    
+    // Update movement vector
+    this.updateMovement();
+  }
+  
+  /**
+   * Handle key up events
+   * @param {KeyboardEvent} e - Keyboard event
+   */
+  handleKeyUp(e) {
+    switch (e.key.toLowerCase()) {
+      case 'w':
+      case 'arrowup':
+        this.keys.up = false;
+        break;
+      case 's':
+      case 'arrowdown':
+        this.keys.down = false;
+        break;
+      case 'a':
+      case 'arrowleft':
+        this.keys.left = false;
+        break;
+      case 'd':
+      case 'arrowright':
+        this.keys.right = false;
+        break;
+      case ' ':
+      case 'shift':
+        this.keys.attack = false;
+        break;
+    }
+    
+    // Update movement vector
+    this.updateMovement();
+  }
+  
+  /**
+   * Update the movement vector based on key states
+   */
+  updateMovement() {
+    this.movement.x = 0;
+    this.movement.y = 0;
+    
+    if (this.keys.right) this.movement.x += 1;
+    if (this.keys.left) this.movement.x -= 1;
+    if (this.keys.down) this.movement.y += 1;
+    if (this.keys.up) this.movement.y -= 1;
+    
+    // Normalize diagonal movement
+    if (this.movement.x !== 0 && this.movement.y !== 0) {
+      const length = Math.sqrt(this.movement.x * this.movement.x + this.movement.y * this.movement.y);
+      this.movement.x /= length;
+      this.movement.y /= length;
+    }
+  }
+  
+  /**
+   * Update the controller state
+   * @param {number} deltaTime - Time elapsed since last frame in seconds
+   */
+  update(deltaTime) {
+    // Update the player with the current movement vector
+    this.player.update(deltaTime, this.movement);
+  }
+  
+  /**
+   * Clean up event listeners
+   */
+  destroy() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('keyup', this.handleKeyUp);
+  }
+} 
+
+// =========================================
+// FILE: public/src/debug/debugMenu.js
+// =========================================
+
+createButton('Toggle Debug Lines') {
+    gameState.debug.showDebugLines = !gameState.debug.showDebugLines;
+},
+
+createButton('Visualize Map') {
+    if (gameState.clientMapManager) {
+        gameState.clientMapManager.visualizeMap();
+    } else {
+        console.error('Client map manager not available');
+    }
+}, 
+
+// =========================================
+// FILE: public/src/entities/ClientBulletManager.js
+// =========================================
+
+/**
+ * ClientBulletManager class handles all bullet creation, updates and rendering
+ */
+export class ClientBulletManager {
+    /**
+     * Create a new BulletManager
+     * @param {number} capacity - Maximum number of bullets to track
+     */
+    constructor(capacity = 1000) {
+        this.capacity = capacity;
+        
+        // Initialize arrays
+        this.active = new Array(capacity).fill(false);
+        this.ids = new Array(capacity).fill(0);
+        this.x = new Float32Array(capacity);
+        this.y = new Float32Array(capacity);
+        this.vx = new Float32Array(capacity);
+        this.vy = new Float32Array(capacity);
+        this.lifetime = new Float32Array(capacity);
+        this.createTime = new Float64Array(capacity);
+        this.ownerId = new Array(capacity).fill(0);
+        this.damage = new Float32Array(capacity);
+        this.width = new Float32Array(capacity);
+        this.height = new Float32Array(capacity);
+        
+        // Add sprite information arrays
+        this.spriteSheet = new Array(capacity).fill(null);
+        this.spriteX = new Float32Array(capacity);
+        this.spriteY = new Float32Array(capacity);
+        this.spriteWidth = new Float32Array(capacity);
+        this.spriteHeight = new Float32Array(capacity);
+        
+        this.activeBullets = 0;
+        this.nextId = 1;
+        
+        console.log(`ClientBulletManager initialized with capacity: ${capacity}`);
+    }
+    
+    /**
+     * Render all active bullets
+     * @param {CanvasRenderingContext2D} ctx - Canvas rendering context
+     * @param {Object} camera - Camera object with x,y position
+     */
+    render(ctx, camera) {
+        // Early return if no bullets
+        if (this.activeBullets === 0) return;
+        
+        // Import constants if needed
+        const TILE_SIZE = 12; // Ensure this matches your constant value from constants.js
+        
+        // Get sprite manager if available
+        const spriteManager = window.spriteManager || null;
+        
+        // Get screen center coordinates
+        const screenWidth = ctx.canvas.width;
+        const screenHeight = ctx.canvas.height;
+        
+        // Get the camera viewType for proper scaling
+        const viewType = window.gameState?.camera?.viewType || 'top-down';
+        const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
+        
+        // Use camera's worldToScreen method if available for consistent rendering
+        const useCamera = window.gameState?.camera && typeof window.gameState.camera.worldToScreen === 'function';
+        
+        // Render each active bullet - important to use this.capacity to check all slots
+        for (let i = 0; i < this.capacity; i++) {
+            // Skip inactive bullets
+            if (!this.active[i]) continue;
+            
+            // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
+            let screenX, screenY;
+            
+            if (useCamera) {
+                // Use camera's consistent transformation method
+                const screenPos = window.gameState.camera.worldToScreen(
+                    this.x[i],
+                    this.y[i],
+                    screenWidth,
+                    screenHeight,
+                    TILE_SIZE
+                );
+                screenX = screenPos.x;
+                screenY = screenPos.y;
+            } else {
+                // Fallback to direct calculation if camera method not available
+                screenX = (this.x[i] - camera.x) * TILE_SIZE * viewScaleFactor + screenWidth / 2;
+                screenY = (this.y[i] - camera.y) * TILE_SIZE * viewScaleFactor + screenHeight / 2;
+            }
+            
+            // Skip if off-screen (with slightly larger buffer for fast bullets)
+            const buffer = 100;
+            if (screenX < -buffer || screenX > screenWidth + buffer || 
+                screenY < -buffer || screenY > screenHeight + buffer) {
+                continue;
+            }
+            
+            // FIXED: Scale bullet size based on view type - important for consistent appearance
+            const width = (this.width[i] || 10) * viewScaleFactor;
+            const height = (this.height[i] || 10) * viewScaleFactor;
+            
+            // Check if we have sprite information
+            if (spriteManager && this.spriteSheet[i]) {
+                // Render with sprite
+                spriteManager.drawSprite(
+                    ctx,
+                    this.spriteSheet[i],
+                    this.spriteX[i],
+                    this.spriteY[i],
+                    screenX - width/2,
+                    screenY - height/2,
+                    width,
+                    height
+                );
+            } else {
+                // Fallback to simple circle with outline for better visibility
+                ctx.fillStyle = this.ownerId[i] ? '#ffff00' : '#ff3333';
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, width/2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add white outline for better visibility
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            // Debug display only when explicitly enabled
+            if (window.debugOverlay && window.debugOverlay.enabled && window.debugOverlay.showBulletIDs) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.strokeRect(
+                    screenX - width/2,
+                    screenY - height/2,
+                    width,
+                    height
+                );
+                
+                ctx.fillStyle = 'white';
+                ctx.font = '8px Arial';
+                ctx.fillText(`${this.ids[i]}`, screenX, screenY - 10);
+            }
+        }
+    }
+    
+    /**
+     * Update all active bullets
+     * @param {number} deltaTime - Time since last update in seconds
+     */
+    update(deltaTime) {
+        // Early return if no bullets
+        if (this.activeBullets === 0) return;
+        
+        const now = Date.now();
+        
+        // Update each active bullet
+        for (let i = 0; i < this.capacity; i++) {
+            // Skip inactive bullets
+            if (!this.active[i]) continue;
+            
+            // Check if bullet has expired
+            const elapsed = (now - this.createTime[i]) / 1000;
+            if (elapsed >= this.lifetime[i]) {
+                // Mark as inactive
+                this.active[i] = false;
+                this.activeBullets--;
+                continue;
+            }
+            
+            // Update position
+            this.x[i] += this.vx[i] * deltaTime;
+            this.y[i] += this.vy[i] * deltaTime;
+        }
+        
+        // Debug info - update only occasionally to avoid console spam
+        if (this.activeBullets > 0 && Math.random() < 0.01) {
+            console.log(`Active bullets: ${this.activeBullets}`);
+        }
+    }
+    
+    /**
+     * Remove a bullet by its ID
+     * @param {number} bulletId - The ID of the bullet to remove
+     * @returns {boolean} Whether the bullet was successfully removed
+     */
+    removeBullet(bulletId) {
+        // Search for the bullet with the given ID
+        for (let i = 0; i < this.capacity; i++) {
+            if (this.active[i] && this.ids[i] === bulletId) {
+                // Mark as inactive
+                this.active[i] = false;
+                this.activeBullets--;
+                
+                if (this.debug) {
+                    console.log(`Removed bullet with ID: ${bulletId}`);
+                }
+                
+                return true;
+            }
+        }
+        
+        // Bullet not found
+        return false;
+    }
+    
+    /**
+     * Add a bullet to the manager
+     * @param {Object} bullet - Bullet data
+     * @returns {number} Bullet ID
+     */
+    addBullet(bullet) {
+        // Find an available slot
+        let index = -1;
+        for (let i = 0; i < this.capacity; i++) {
+            if (!this.active[i]) {
+                index = i;
+                break;
+            }
+        }
+        
+        // If no slots available, return error
+        if (index === -1) {
+            console.error('Bullet capacity exceeded');
+            return -1;
+        }
+        
+        // Generate ID
+        const id = this.nextId++;
+        
+        // Store bullet data
+        this.ids[index] = id;
+        this.x[index] = bullet.x;
+        this.y[index] = bullet.y;
+        this.vx[index] = bullet.vx;
+        this.vy[index] = bullet.vy;
+        this.lifetime[index] = bullet.lifetime || 3.0;
+        this.createTime[index] = Date.now();
+        this.active[index] = true;
+        this.ownerId[index] = bullet.ownerId || 0;
+        this.damage[index] = bullet.damage || 10;
+        this.width[index] = bullet.width || 5;
+        this.height[index] = bullet.height || 5;
+        
+        // Store sprite info if provided
+        this.spriteSheet[index] = bullet.spriteSheet || null;
+        this.spriteX[index] = bullet.spriteX || 0;
+        this.spriteY[index] = bullet.spriteY || 0;
+        this.spriteWidth[index] = bullet.spriteWidth || this.width[index];
+        this.spriteHeight[index] = bullet.spriteHeight || this.height[index];
+        
+        this.activeBullets++;
+        
+        return id;
+    }
+} 
+
+// =========================================
+// FILE: public/src/entities/EntityAnimator.js
+// =========================================
+
+/**
+ * EntityAnimator.js
+ * A reusable animation system for game entities like players and enemies.
+ *
+ * This updated version is specifically tailored to the provided sprite sheet:
+ * 
+ * Sprite sheet arrangement (0-indexed columns):
+ * 0: wizard_idle_r_1    8: wizard_walk_r_1    16: SKIP_FRAME
+ * 1: wizard_idle_d_1    9: wizard_walk_d_1    17: wizard_atk_r_1
+ * 2: wizard_idle_u_1    10: wizard_walk_u_1   18: wizard_atk_d_1
+ * 3: wizard_idle_l_1    11: wizard_walk_l_2   19: wizard_atk_d_2
+ * 4: wizard_idle_r_2    12: wizard_walk_r_2   20: wizard_atk_u_1
+ * 5: wizard_idle_d_2    13: wizard_walk_d_2   21: wizard_atk_u_2
+ * 6: wizard_idle_u_2    14: wizard_walk_u_2   22: UNUSED
+ * 7: wizard_idle_l_2    15: wizard_walk_l_2   23: SKIP_FRAME
+ *                                             24: wizard_atk_l_1
+ */
+export class EntityAnimator {
+  /**
+   * Create a new animator for an entity
+   * @param {Object} config - Animation configuration 
+   */
+  constructor(config = {}) {
+    // Animation states – note: DEATH is not mapped here (it will fall back to idle)
+    this.states = {
+      IDLE: 'idle',
+      WALK: 'walk',
+      ATTACK: 'attack',
+      DEATH: 'death'
+    };
+    
+    // Current state
+    this.currentState = config.defaultState || this.states.IDLE;
+    this.previousState = this.currentState; // Track previous state for transitions
+    
+    // Direction (original mapping: 0 = down, 1 = left, 2 = up, 3 = right)
+    this.direction = 0;
+    
+    // Animation properties
+    this.frameIndex = 0;
+    this.frameCount = config.frameCount || 4; // (only used for cycling in walk and attack)
+    this.frameDuration = config.frameDuration || 0.1; // Time per frame in seconds
+    this.frameTimer = 0;
+    
+    // Stop animation when idle
+    this.shouldAnimateIdle = false; // Set to false to freeze idle animation
+    
+    // Action flags
+    this.isAttacking = false;
+    this.attackCooldown = 0;
+    this.attackDuration = config.attackDuration || 0.3; // Time to complete attack animation
+    this.attackCooldownTime = config.attackCooldownTime || 0.5; // Time between attacks
+    
+    // Sprite sheet configuration
+    this.spriteWidth = config.spriteWidth || 12;
+    this.spriteHeight = config.spriteHeight || 12;
+    this.spriteSheet = config.spriteSheet || 'character_sprites';
+    
+    // For this arrangement, we expect each character's frames are in one row
+    this.characterIndex = config.characterIndex || 0;
+  }
+  
+  /**
+   * Update animation state and frame
+   * @param {number} deltaTime - Time since last frame in seconds
+   * @param {boolean} isMoving - Whether entity is moving
+   * @param {Object} velocity - Current velocity vector {x, y}
+   */
+  update(deltaTime, isMoving, velocity = { x: 0, y: 0 }) {
+    // Save previous state for comparison
+    this.previousState = this.currentState;
+    
+    // Update animation timers
+    this.frameTimer += deltaTime;
+    
+    // Update attack state
+    if (this.isAttacking) {
+      this.attackCooldown -= deltaTime;
+      // Debug log attack state
+      if (this.frameTimer >= this.frameDuration) {
+        console.log(`[Animator.update] Attack in progress - cooldown: ${this.attackCooldown.toFixed(2)}, frame: ${this.frameIndex}, direction: ${this.direction}`);
+      }
+      
+      if (this.attackCooldown <= 0) {
+        console.log(`[Animator.update] Attack completed, resetting to idle`);
+        this.isAttacking = false;
+        // Reset to idle when attack animation completes
+        this.resetToIdle();
+      }
+    }
+    
+    // Only determine animation state if not attacking
+    if (!this.isAttacking && isMoving !== undefined) {
+      this.updateAnimationState(isMoving, velocity);
+    }
+    
+    // Only update animation frames for animated states
+    if ((this.currentState === this.states.WALK || this.currentState === this.states.ATTACK) && 
+        this.frameTimer >= this.frameDuration) {
+      
+      this.frameTimer = 0;
+      
+      // For walk, cycle between frames 0 and 1
+      if (this.currentState === this.states.WALK) {
+        this.frameIndex = (this.frameIndex + 1) % 2;
+      }
+      // For attacks, handle frame cycling differently based on direction
+      else if (this.currentState === this.states.ATTACK) {
+        // Log before frame change
+        const oldFrame = this.frameIndex;
+        
+        // CRITICAL FIX: For left attack, keep the frameIndex at 0 to avoid cycling
+        // For other directions, cycle as normal
+        if (this.direction === 1) { // Left attack
+          // Keep the frameIndex at 0 for left attack
+          this.frameIndex = 0;
+          console.log(`[Animator.update] LEFT attack - locking frame at 0`);
+        } else {
+          // Normal cycling for other directions
+          this.frameIndex = (this.frameIndex + 1) % 2;
+        }
+        
+        console.log(`[Animator.update] Attack animation frame changed: ${oldFrame} -> ${this.frameIndex} for direction ${this.direction}`);
+      }
+    }
+  }
+  
+  /**
+   * Reset to idle state
+   */
+  resetToIdle() {
+    this.currentState = this.states.IDLE;
+    this.frameIndex = 0;
+    this.frameTimer = 0;
+  }
+  
+  /**
+   * Update the current animation state based on entity movement and actions
+   * @param {boolean} isMoving - Whether entity is moving
+   * @param {Object} velocity - Entity velocity {x, y}
+   */
+  updateAnimationState(isMoving, velocity) {
+    // Priority: attack -> walk -> idle
+    if (this.isAttacking) {
+      this.currentState = this.states.ATTACK;
+    } else if (isMoving) {
+      // Only change to walk if we were previously idle or already walking
+      if (this.currentState === this.states.IDLE || this.currentState === this.states.WALK) {
+        this.currentState = this.states.WALK;
+        
+        // Update direction based on movement (using original mapping: 0=down, 1=left, 2=up, 3=right)
+        if (Math.abs(velocity.x) > Math.abs(velocity.y)) {
+          this.direction = velocity.x < 0 ? 1 : 3;
+        } else {
+          this.direction = velocity.y < 0 ? 2 : 0;
+        }
+      }
+    } else {
+      // Not attacking and not moving - reset to idle
+      // Only reset to idle if we're not attacking and currently walking
+      if (this.currentState === this.states.WALK) {
+        this.resetToIdle();
+      }
+    }
+    
+    // If we changed states, reset animation frame
+    if (this.previousState !== this.currentState) {
+      this.frameIndex = 0;
+      this.frameTimer = 0;
+    }
+  }
+  
+  /**
+   * Start attack animation
+   * @param {number} direction - Optional direction override (0-3)
+   * @returns {boolean} Whether attack was started
+   */
+  attack(direction) {
+    // Check if we can attack
+    const canAttack = !this.isAttacking && this.attackCooldown <= 0;
+    console.log(`[Animator.attack] Can attack: ${canAttack}, isAttacking: ${this.isAttacking}, cooldown: ${this.attackCooldown.toFixed(2)}`);
+    
+    if (canAttack) {
+      // Set attack flags
+      this.isAttacking = true;
+      this.attackCooldown = this.attackDuration;
+      
+      // If a direction was provided, override the current direction
+      if (direction !== undefined && direction >= 0 && direction <= 3) {
+        console.log(`[Animator.attack] Overriding direction: ${this.direction} -> ${direction}`);
+        this.direction = direction;
+      }
+      
+      console.log(`[Animator.attack] Starting attack in direction: ${this.direction} (${['down', 'left', 'up', 'right'][this.direction]})`);
+      
+      // Always set the animation state to ATTACK
+      this.currentState = this.states.ATTACK;
+      
+      // Reset animation frame and timer to start the sequence
+      this.frameIndex = 0;
+      this.frameTimer = 0;
+      
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Force a specific animation state
+   * @param {string} state - State name (use this.states constants)
+   * @param {number} direction - Direction index (0-3)
+   */
+  setAnimationState(state, direction) {
+    if (Object.values(this.states).includes(state)) {
+      this.currentState = state;
+    }
+    if (direction >= 0 && direction <= 3) {
+      this.direction = direction;
+    }
+    this.frameIndex = 0;
+    this.frameTimer = 0;
+  }
+  
+  /**
+   * Set the current state
+   * @param {string} state - State name (use this.states constants)
+   */
+  setCurrentState(state) {
+    if (Object.values(this.states).includes(state)) {
+      this.currentState = state;
+      this.frameIndex = 0;
+      this.frameTimer = 0;
+    }
+  }
+  
+  /**
+   * Set the entity's direction
+   * @param {number} direction - Direction index (0=down, 1=left, 2=up, 3=right)
+   */
+  setDirection(direction) {
+    if (direction >= 0 && direction <= 3) {
+      this.direction = direction;
+    }
+  }
+  
+  /**
+   * Set direction based on an angle (in radians)
+   * @param {number} angle - Direction angle in radians
+   */
+  setDirectionFromAngle(angle) {
+    // DEBUG: Log the raw angle for diagnostic purposes
+    console.log(`[setDirectionFromAngle] Raw angle: ${angle.toFixed(2)} radians`);
+    
+    // Convert angle to direction: 0=down, 1=left, 2=up, 3=right
+    // Normalize angle to 0-2π range
+    const normalizedAngle = (angle + 2 * Math.PI) % (2 * Math.PI);
+    console.log(`[setDirectionFromAngle] Normalized angle: ${normalizedAngle.toFixed(2)} radians`);
+    
+    // CORRECTION: FIX THE ANGLE MAPPING
+    // 
+    // The angle is in standard mathematical orientation where:
+    // - 0 or 2π = right (positive X axis)
+    // - π/2 = down (positive Y axis in canvas)
+    // - π = left (negative X axis)
+    // - 3π/2 = up (negative Y axis in canvas)
+    //
+    // Map these angles to our direction indices:
+    // - Right (3): -π/4 to π/4 (around 0)
+    // - Down (0): π/4 to 3π/4 (around π/2)
+    // - Left (1): 3π/4 to 5π/4 (around π)
+    // - Up (2): 5π/4 to 7π/4 (around 3π/2)
+    
+    let direction;
+    if (normalizedAngle >= 7 * Math.PI / 4 || normalizedAngle < Math.PI / 4) {
+      direction = 3; // Right (around 0 radians)
+    } else if (normalizedAngle >= Math.PI / 4 && normalizedAngle < 3 * Math.PI / 4) {
+      direction = 0; // Down (around π/2 radians)
+    } else if (normalizedAngle >= 3 * Math.PI / 4 && normalizedAngle < 5 * Math.PI / 4) {
+      direction = 1; // Left (around π radians)
+    } else {
+      direction = 2; // Up (around 3π/2 radians)
+    }
+    
+    console.log(`[setDirectionFromAngle] Setting direction to: ${direction} (${['down', 'left', 'up', 'right'][direction]})`);
+    this.direction = direction;
+  }
+  
+  /**
+   * Get source rectangle for current animation frame.
+   * This method calculates the correct cell based on the specific sprite sheet arrangement.
+   * @returns {Object} Source rectangle {x, y, width, height}
+   */
+  getSourceRect() {
+    let col;
+    
+    switch (this.currentState) {
+      case this.states.IDLE:
+        // Idle frames are in the first 4 columns (one per direction)
+        // Map: 0 (down) -> 1, 1 (left) -> 3, 2 (up) -> 2, 3 (right) -> 0
+        {
+          const idleMap = { 0: 1, 1: 3, 2: 2, 3: 0 };
+          col = idleMap[this.direction];
+        }
+        break;
+      
+      case this.states.WALK:
+        // Walk frames are split across columns based on direction and frame
+        {
+          const walkBaseMap = { 
+            0: [9, 13],  // down: frames in columns 9 & 13
+            1: [11, 15], // left: frames in columns 11 & 15
+            2: [10, 14], // up: frames in columns 10 & 14
+            3: [8, 12]   // right: frames in columns 8 & 12
+          };
+          col = walkBaseMap[this.direction][this.frameIndex];
+        }
+        break;
+      
+      case this.states.ATTACK:
+        // DEBUG: Log direction to verify mapping
+        console.log(`[EntityAnimator] Attack direction: ${this.direction}, frameIndex: ${this.frameIndex}`);
+        
+        // Fixed mapping for attack animations with CORRECTED frames
+        {
+          if (this.direction === 0) { // down - has 2 frames
+            // Use columns 18 & 19 for down attack
+            col = this.frameIndex === 0 ? 18 : 19;
+          } else if (this.direction === 1) { // left - only 1 attack frame
+            // CRITICAL FIX: For left attack, ONLY use the attack frame (col 24)
+            // The disappearing issue is happening because we're alternating frames
+            // Instead, just show the attack frame for the entire animation duration
+            col = 23; // Always use the attack frame for left
+            
+            // Log for debugging
+            console.log(`[EntityAnimator] Left attack using fixed column: ${col}`);
+          } else if (this.direction === 2) { // up - has 2 frames
+            // CORRECTION: Shift frames one step back - use columns 20 & 21 instead of 21 & 22
+            col = this.frameIndex === 0 ? 20 : 21;
+          } else { // right - only 1 attack frame
+            // For right attack, use column 17 and alternate with idle right (column 0)
+            col = this.frameIndex === 0 ? 17 : 0;
+          }
+          
+          // DEBUG: Log which column is being used
+          console.log(`[EntityAnimator] Using sprite column: ${col} for direction ${this.direction}, frame ${this.frameIndex}`);
+        }
+        break;
+      
+      case this.states.DEATH:
+      default:
+        // Fallback to idle frames if death or unknown state
+        {
+          const idleMap = { 0: 1, 1: 3, 2: 2, 3: 0 };
+          col = idleMap[this.direction];
+        }
+        break;
+    }
+    
+    // Since all frames for a character are in one row on the sprite sheet,
+    // the row is determined by the characterIndex.
+    const row = this.characterIndex;
+    
+    // Calculate sprite position
+    const spriteX = col * this.spriteWidth;
+    const spriteY = row * this.spriteHeight;
+    
+    // Add extra safety check for left attack - if we're getting out of bounds
+    if (this.currentState === this.states.ATTACK && this.direction === 1) {
+      console.log(`[EntityAnimator] LEFT ATTACK - Final sprite position: x=${spriteX}, y=${spriteY}`);
+    }
+    
+    // Final source rect with safety bounds check
+    return {
+      x: spriteX,
+      y: spriteY,
+      width: this.spriteWidth,
+      height: this.spriteHeight
+    };
+  }
+}
+
+
+// =========================================
+// FILE: public/src/entities/PlayerManager.js
+// =========================================
+
+import { spriteManager } from '../assets/spriteManager.js';
+import { TILE_SIZE, SCALE } from '../constants/constants.js';
+import { gameState } from '../game/gamestate.js';
+import { EntityAnimator } from './EntityAnimator.js';
+
+/**
+ * Utility for throttling log messages
+ */
+const logThrottles = {};
+function throttledLog(key, message, data, interval = 1000) {
+    const now = Date.now();
+    if (!logThrottles[key] || now - logThrottles[key] >= interval) {
+        logThrottles[key] = now;
+        if (data !== undefined) {
+            //console.log(message, data);
+        } else {
+            //console.log(message);
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * PlayerManager - Manages all players in the game
+ */
+export class PlayerManager {
+    /**
+     * Create a new player manager
+     * @param {Object} options - Configuration options
+     */
+    constructor(options = {}) {
+        this.players = new Map(); // Map of player ID to player data
+        this.localPlayerId = options.localPlayerId || null;
+        this.maxPlayers = options.maxPlayers || 100;
+        
+        // Animation tracking for other players
+        this.playerAnimators = new Map(); // Map of player ID to animator
+        
+        // Debug
+        this.debug = true; // Enable debug by default for troubleshooting
+        
+        // Debug visualization - makes other players more obvious
+        this.visualDebug = true; // Enable visual debug to diagnose coordinate issues
+        
+        console.log("PlayerManager initialized");
+    }
+    
+    /**
+     * Update players with data from server
+     * @param {Object} playersData - Player data from server
+     */
+    updatePlayers(playersData) {
+        if (!playersData) return;
+        
+        // Get array of current player IDs
+        const currentPlayerIds = Array.from(this.players.keys());
+        
+        // Add or update players from server data
+        for (const [playerId, playerData] of Object.entries(playersData)) {
+            // Skip local player, it's handled separately
+            if (playerId === this.localPlayerId) continue;
+            
+            if (this.players.has(playerId)) {
+                // Update existing player
+                const player = this.players.get(playerId);
+                
+                // Save previous position for movement detection
+                const prevX = player.x;
+                const prevY = player.y;
+                
+                // Update player data
+                Object.assign(player, playerData);
+                
+                // Update player's animation if it exists
+                if (this.playerAnimators.has(playerId)) {
+                    const animator = this.playerAnimators.get(playerId);
+                    
+                    // Calculate if player is moving based on position change
+                    const isMoving = prevX !== player.x || prevY !== player.y;
+                    
+                    // Calculate velocity direction based on position change
+                    const velocity = {
+                        x: player.x - prevX,
+                        y: player.y - prevY
+                    };
+                    
+                    // Update animator
+                    animator.update(0.016, isMoving, velocity); // Use 1/60 as delta time
+                }
+            } else {
+                // Add new player with default sprite properties if they're missing
+                const enhancedPlayerData = {
+                    ...playerData,
+                    // Ensure these properties are set for rendering
+                    width: playerData.width || 10,
+                    height: playerData.height || 10,
+                    spriteX: playerData.spriteX !== undefined ? playerData.spriteX : 0,
+                    spriteY: playerData.spriteY !== undefined ? playerData.spriteY : 0,
+                    maxHealth: playerData.maxHealth || 100,
+                    name: playerData.name || `Player ${playerId}`,
+                    lastUpdate: Date.now(),
+                    // Store the current position as both current and target for interpolation
+                    _prevX: playerData.x,
+                    _prevY: playerData.y, 
+                    _targetX: playerData.x,
+                    _targetY: playerData.y,
+                    // Timestamps for interpolation
+                    lastPositionUpdate: Date.now()
+                };
+                
+                this.players.set(playerId, enhancedPlayerData);
+                
+                // Create an animator for this player
+                this.playerAnimators.set(playerId, new EntityAnimator({
+                    defaultState: 'idle',
+                    frameCount: 4,
+                    frameDuration: 0.15,
+                    spriteWidth: TILE_SIZE,
+                    spriteHeight: TILE_SIZE,
+                    spriteSheet: 'character_sprites'
+                }));
+                
+                console.log(`Added new player: ${playerId} at position (${playerData.x}, ${playerData.y})`, enhancedPlayerData);
+            }
+        }
+        
+        // Remove players that no longer exist
+        for (const playerId of currentPlayerIds) {
+            if (playerId !== this.localPlayerId && !playersData[playerId]) {
+                console.log(`Removing player: ${playerId}`);
+                this.players.delete(playerId);
+                this.playerAnimators.delete(playerId);
+            }
+        }
+        
+        // Always log player count for debugging, but throttled
+        throttledLog('player-count', `Player Manager: Now tracking ${this.players.size} other players`);
+        if (this.players.size > 0 && throttledLog('player-ids', 'Players being tracked:', Array.from(this.players.keys()), 5000)) {
+            // Log player IDs only every 5 seconds
+        }
+    }
+    
+    /**
+     * Update animations for all players
+     * @param {number} deltaTime - Time elapsed since last update in seconds
+     */
+    updatePlayerAnimations(deltaTime) {
+        // Update all player animations
+        for (const [playerId, player] of this.players.entries()) {
+            if (this.playerAnimators.has(playerId)) {
+                const animator = this.playerAnimators.get(playerId);
+                
+                // Skip update if we don't have position data
+                if (player._prevX === undefined || player._targetX === undefined) continue;
+                
+                // Calculate if player is moving based on interpolation targets
+                const isMoving = player._prevX !== player._targetX || player._prevY !== player._targetY;
+                
+                // Calculate velocity direction based on movement targets
+                const velocity = {
+                    x: player._targetX - player._prevX,
+                    y: player._targetY - player._prevY
+                };
+                
+                // Update animator
+                animator.update(deltaTime, isMoving, velocity);
+            }
+        }
+        
+        // Clean up stale player positions after some time
+        // This helps prevent "ghost" player artifacts
+        const now = Date.now();
+        for (const [playerId, player] of this.players.entries()) {
+            if (now - player.lastPositionUpdate > 10000) { // 10 seconds of no updates
+                throttledLog('stale-player', `Removing stale player ${playerId} - no updates for 10 seconds`, null, 5000);
+                this.players.delete(playerId);
+                this.playerAnimators.delete(playerId);
+            }
+        }
+    }
+    
+    /**
+     * Get all players for rendering
+     * @returns {Array} Array of player objects
+     */
+    getPlayersForRender() {
+        const allPlayers = Array.from(this.players.values());
+        
+        // Log player data and IDs, but throttled to reduce spam
+        throttledLog('players-available', `[PlayerManager] Players available: ${allPlayers.length}, Local ID: ${this.localPlayerId}`);
+        
+        if (allPlayers.length > 0 && throttledLog('player-debug', 'Player debug info', null, 10000)) {
+            // Only log detailed player data every 10 seconds
+            console.log(`[PlayerManager] Player IDs in Map: ${Array.from(this.players.keys()).join(', ')}`);
+            console.log(`[PlayerManager] First player object:`, allPlayers[0]);
+        }
+        
+        // Enhanced filter logic with more checks and debug output
+        const playersToRender = allPlayers.filter(player => {
+            // Skip players without an ID (shouldn't happen but check anyway)
+            if (!player.id) {
+                throttledLog('player-no-id', `[PlayerManager] Player without ID found, will render:`, player, 5000);
+                return true;
+            }
+            
+            // Convert both IDs to strings for comparison (in case of type mismatch)
+            const playerId = String(player.id);
+            const localId = this.localPlayerId ? String(this.localPlayerId) : null;
+            
+            // Skip the local player - this is the key filtering logic
+            const isLocalPlayer = localId && playerId === localId;
+            
+            if (isLocalPlayer) {
+                throttledLog('filter-local', `[PlayerManager] Filtering out local player with ID: ${playerId}`, null, 5000);
+                return false;
+            }
+            
+            // Keep this player for rendering
+            return true;
+        });
+        
+        // Log filtering results with throttling
+        throttledLog('render-count', `[PlayerManager] Rendering ${playersToRender.length} out of ${allPlayers.length} players`);
+        
+        if (playersToRender.length > 0 && throttledLog('render-ids', 'Players to render IDs', null, 5000)) {
+            console.log(`[PlayerManager] Players to render IDs: ${playersToRender.map(p => p.id).join(', ')}`);
+        } else if (allPlayers.length > 0 && playersToRender.length === 0 && throttledLog('all-filtered', 'All players filtered warning', null, 5000)) {
+            console.log(`[PlayerManager] WARNING: All players filtered out! Check if localPlayerId (${this.localPlayerId}) matches all player IDs`);
+        }
+        
+        return playersToRender;
+    }
+    
+    /**
+     * Set the client ID to exclude from rendering (since local player is rendered separately)
+     * @param {string} clientId - The local player's client ID
+     */
+    setLocalPlayerId(clientId) {
+        this.localPlayerId = clientId;
+        console.log(`PlayerManager: Set local player ID to ${clientId}`);
+    }
+    
+    /**
+     * Render players on canvas
+     * @param {CanvasRenderingContext2D} ctx - Canvas context
+     * @param {Object} cameraPosition - Camera position
+     */
+    render(ctx, cameraPosition) {
+        if (!ctx) {
+            console.warn("Cannot render players: no canvas context provided");
+            return;
+        }
+        
+        // Throttle this log to reduce spam
+        throttledLog('render-players', `PlayerManager rendering ${this.players.size} players`, null, 5000);
+        
+        // Get list of players to render (filtered)
+        const playersToRender = this.getPlayersForRender();
+        
+        // Get character sprite sheet - try both possible names for the sprite sheet
+        let spriteSheetObj = spriteManager.getSpriteSheet('character_sprites');
+        if (!spriteSheetObj) {
+            spriteSheetObj = spriteManager.getSpriteSheet('enemy_sprites'); // Fallback to enemy sprites
+            
+            // As a last resort, try to use any available sprite sheet
+            if (!spriteSheetObj && spriteManager.spriteSheets) {
+                const sheetNames = Object.keys(spriteManager.spriteSheets);
+                if (sheetNames.length > 0) {
+                    spriteSheetObj = spriteManager.getSpriteSheet(sheetNames[0]);
+                    console.log(`Falling back to first available sprite sheet: ${sheetNames[0]}`);
+                }
+            }
+        }
+
+        // Debug logging for sprite sheet only if missing
+        if (!spriteSheetObj) {
+            console.error("Character sprite sheet not loaded - switching to fallback rendering!");
+            // Use fallback rendering
+            this.renderPlayersFallback(ctx, cameraPosition);
+            return;
+        }
+        
+        // We have a sprite sheet, render players with it
+        const characterSpriteSheet = spriteSheetObj.image;
+        
+        // Get screen dimensions
+        const screenWidth = ctx.canvas.width;
+        const screenHeight = ctx.canvas.height;
+        
+        // Define the scale factor based on view type 
+        // NOTE: Keep this consistent with other entities (character, bullets, etc.)
+        const viewType = gameState.camera?.viewType || 'top-down';
+        const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
+        
+        // Get the view type for adjusted culling
+        const isStrategicView = viewType === 'strategic';
+        
+        // Use the camera's worldToScreen method if available for consistent coordinates
+        const useCamera = gameState.camera && typeof gameState.camera.worldToScreen === 'function';
+        
+        // Draw each player
+        for (const player of playersToRender) {
+            try {
+                // Apply the same scale factor used for the main character (SCALE = 3)
+                const width = player.width * SCALE * viewScaleFactor;
+                const height = player.height * SCALE * viewScaleFactor;
+                
+                // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
+                let screenX, screenY;
+                
+                if (useCamera) {
+                    // Use camera's consistent transformation method
+                    const screenPos = gameState.camera.worldToScreen(
+                        player.x, 
+                        player.y, 
+                        screenWidth, 
+                        screenHeight, 
+                        TILE_SIZE
+                    );
+                    screenX = screenPos.x;
+                    screenY = screenPos.y;
+                } else {
+                    // Fallback to direct calculation if camera method not available
+                    console.log('Fallback to direct calculation');
+                    screenX = (player.x - cameraPosition.x) * TILE_SIZE * viewScaleFactor + screenWidth / 2;
+                    screenY = (player.y - cameraPosition.y) * TILE_SIZE * viewScaleFactor + screenHeight / 2;
+                }
+                
+                // Debug visualization to help diagnose coordinate issues
+                if (this.visualDebug) {
+                    ctx.fillStyle = 'rgba(255, 0, 255, 0.3)';
+                    ctx.fillRect(screenX - width/2, screenY - height/2, width, height);
+                    
+                    // Draw world coordinates for debugging
+                    ctx.fillStyle = 'white';
+                    ctx.font = '10px Arial';
+                    ctx.fillText(`(${player.x.toFixed(1)},${player.y.toFixed(1)})`, screenX, screenY - height/2 - 15);
+                }
+                
+                // Improved offscreen culling - use larger culling distance in strategic view
+                // to prevent players from "popping" when moving quickly
+                const cullingDistance = isStrategicView ? Math.max(screenWidth, screenHeight) : width * 2;
+                
+                // Skip if off screen (with appropriate buffer)
+                if (screenX < -cullingDistance || screenX > screenWidth + cullingDistance || 
+                    screenY < -cullingDistance || screenY > screenHeight + cullingDistance) {
+                    continue;
+                }
+                
+                // Save context for rotation
+                ctx.save();
+                
+                // Translate to player position
+                ctx.translate(screenX, screenY);
+                
+                // If player has a rotation, use it
+                if (typeof player.rotation === 'number') {
+                    ctx.rotate(player.rotation);
+                }
+                
+                // Get player animator
+                const animator = this.playerAnimators.get(player.id);
+                
+                if (animator) {
+                    // Get animation source rect
+                    const sourceRect = animator.getSourceRect();
+                    
+                    // Draw player sprite with animation
+                    ctx.drawImage(
+                        characterSpriteSheet,
+                        sourceRect.x, sourceRect.y,
+                        sourceRect.width, sourceRect.height,
+                        -width/2, -height/2,
+                        width, height
+                    );
+                } else {
+                    // Fallback to old rendering without animation
+                    ctx.drawImage(
+                        characterSpriteSheet,
+                        player.spriteX || 0, player.spriteY || 0, 
+                        TILE_SIZE, TILE_SIZE,
+                        -width/2, -height/2,
+                        width, height
+                    );
+                }
+
+                // Draw player name
+                if (player.name) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.textAlign = 'center';
+                    ctx.font = '12px Arial';
+                    ctx.strokeText(player.name, 0, -height/2 - 5);
+                    ctx.fillText(player.name, 0, -height/2 - 5);
+                }
+                
+                // Draw health bar if health is defined
+                if (player.health !== undefined && player.maxHealth !== undefined) {
+                    const healthPercent = player.health / player.maxHealth;
+                    const barWidth = width;
+                    const barHeight = 3;
+                    const barY = height/2 + 5;
+                    
+                    // Background
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fillRect(-barWidth/2, barY, barWidth, barHeight);
+                    
+                    // Health
+                    ctx.fillStyle = healthPercent > 0.6 ? 'green' : healthPercent > 0.3 ? 'yellow' : 'red';
+                    ctx.fillRect(-barWidth/2, barY, barWidth * healthPercent, barHeight);
+                }
+                
+                // Restore context
+                ctx.restore();
+            } catch (error) {
+                // Only log errors occasionally to prevent spam
+                if (Math.random() < 0.1) {
+                    console.error("Error rendering player:", error, player);
+                }
+            }
+        }
+        
+        // Clear stale players if moving in strategic view
+        if (isStrategicView && gameState.character) {
+            const staticThreshold = 0.1; // Distance threshold to consider movement significant
+            const characterMoved = 
+                Math.abs(gameState.character.x - (gameState.lastUpdateX || 0)) > staticThreshold || 
+                Math.abs(gameState.character.y - (gameState.lastUpdateY || 0)) > staticThreshold;
+                
+            if (characterMoved) {
+                gameState.lastUpdateX = gameState.character.x;
+                gameState.lastUpdateY = gameState.character.y;
+                
+                // Force clear canvas next frame to remove any ghost artifacts
+                if (!this._lastClearCanvas) {
+                    this._lastClearCanvas = Date.now();
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(0, 0, screenWidth, screenHeight);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Fallback rendering for players when sprite sheet is not available
+     * @param {CanvasRenderingContext2D} ctx 
+     * @param {Object} cameraPosition 
+     */
+    renderPlayersFallback(ctx, cameraPosition) {
+        const screenWidth = ctx.canvas.width;
+        const screenHeight = ctx.canvas.height;
+        const viewType = gameState.camera?.viewType || 'top-down';
+        const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
+        
+        // Log only once when falling back
+        console.log(`Fallback rendering for ${this.players.size} players - sprite sheet missing`);
+        
+        // Use the camera's worldToScreen method if available for consistent coordinates
+        const useCamera = gameState.camera && typeof gameState.camera.worldToScreen === 'function';
+        
+        for (const player of this.players.values()) {
+            try {
+                // Use player's actual dimensions with proper scaling
+                const width = player.width * SCALE * viewScaleFactor;
+                const height = player.height * SCALE * viewScaleFactor;
+                
+                // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
+                let screenX, screenY;
+                
+                if (useCamera) {
+                    // Use camera's consistent transformation method
+                    const screenPos = gameState.camera.worldToScreen(
+                        player.x, 
+                        player.y, 
+                        screenWidth, 
+                        screenHeight, 
+                        TILE_SIZE
+                    );
+                    screenX = screenPos.x;
+                    screenY = screenPos.y;
+                } else {
+                    // Fallback to direct calculation if camera method not available
+                    screenX = (player.x - cameraPosition.x) * TILE_SIZE * viewScaleFactor + screenWidth / 2;
+                    screenY = (player.y - cameraPosition.y) * TILE_SIZE * viewScaleFactor + screenHeight / 2;
+                }
+                
+                // Skip if off screen
+                if (screenX < -width || screenX > screenWidth + width || 
+                    screenY < -height || screenY > screenHeight + height) {
+                    continue;
+                }
+                
+                // Debug visualization
+                if (this.visualDebug) {
+                    ctx.fillStyle = 'rgba(255, 0, 255, 0.3)';
+                    ctx.fillRect(screenX - width/2, screenY - height/2, width, height);
+                }
+                
+                // Save context for rotation
+                ctx.save();
+                
+                // Translate to player position for proper rotation
+                ctx.translate(screenX, screenY);
+                
+                // Apply rotation if player has it
+                if (typeof player.rotation === 'number') {
+                    ctx.rotate(player.rotation);
+                }
+                
+                // Draw simple colored rectangle
+                ctx.fillStyle = 'blue';
+                ctx.fillRect(-width/2, -height/2, width, height);
+                
+                // Draw simple direction indicator
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(width/2, 0);
+                ctx.stroke();
+                
+                // Draw player name
+                if (player.name) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.textAlign = 'center';
+                    ctx.font = '12px Arial';
+                    ctx.strokeText(player.name, 0, -height/2 - 5);
+                    ctx.fillText(player.name, 0, -height/2 - 5);
+                }
+                
+                // Restore context
+                ctx.restore();
+            } catch (error) {
+                console.error("Error rendering player fallback:", error);
+            }
+        }
+    }
+} 
+
+// =========================================
+// FILE: public/src/entities/character.js
+// =========================================
+
+// src/entities/character.js
+
+import { TILE_SIZE, CHARACTER_SPRITE_POSITIONS } from '../constants/constants.js';
+
+export const character = {
+  x: 62.5, // Starting X position in tile coordinates
+  y: 62.5, // Starting Y position in tile coordinates
+  z: 5.0,  // Increased Player height in the 3D world for first-person view
+  speed: 50, // Tile units per second
+  spriteX: CHARACTER_SPRITE_POSITIONS.SPRITE_1.x,
+  spriteY: CHARACTER_SPRITE_POSITIONS.SPRITE_1.y,
+  width: TILE_SIZE,
+  height: TILE_SIZE,
+  rotation: {
+    yaw: 0, // Rotation around Y-axis in radians
+  },
+  health: 100,
+};
+
+
+// =========================================
+// FILE: public/src/entities/enemy.js
+// =========================================
+
+// src/entities/enemy.js
+
+import { TILE_SIZE, ENEMY_SPRITE_POSITIONS } from '../constants/constants.js';
+
+export class Enemy {
+  constructor(x, y) {
+    this.x = x; // X position in world coordinates
+    this.y = y; // Y position in world coordinates
+    this.z = 5; // Height for 3D rendering
+    this.speed = 1.5; // Units per second
+    this.health = 50; // Enemy health
+    this.width = TILE_SIZE;
+    this.height = TILE_SIZE;
+    this.spriteX = ENEMY_SPRITE_POSITIONS.DEFAULT.x; // X position on the sprite sheet
+    this.spriteY = ENEMY_SPRITE_POSITIONS.DEFAULT.y; // Y position on the sprite sheet
+    this.rotation = { yaw: 0 }; // Rotation for directional movement
+    this.sprite = null; // Linked Three.js sprite (for 3D rendering)
+  }
+
+  // Method to update enemy behavior
+  update(delta, player) {
+    // Simple AI: Move towards the player
+    const dx = player.x - this.x;
+    const dy = player.y - this.y;
+    const distance = Math.hypot(dx, dy);
+
+    if (distance > 1) { // Avoid overlapping
+      const moveX = (dx / distance) * this.speed * delta;
+      const moveY = (dy / distance) * this.speed * delta;
+
+      // Update position
+      this.x += moveX;
+      this.y += moveY;
+
+      // Update rotation to face the player
+      this.rotation.yaw = Math.atan2(dy, dx);
+
+      // Update Three.js sprite position if it exists
+      if (this.sprite) {
+        this.sprite.position.set(this.x, this.z, this.y);
+        this.sprite.rotation.y = -this.rotation.yaw;
+      }
+    }
+
+    // Additional behaviors (e.g., attacking) can be implemented here
+  }
+
+  // Method to create Three.js sprite for the enemy
+  createSprite(scene, enemyTexture) {
+    const spriteMaterial = new THREE.SpriteMaterial({ map: enemyTexture, transparent: true });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.position.set(this.x, this.z, this.y);
+    sprite.scale.set(this.width, this.height, 1); // Adjust scale as needed
+    sprite.castShadow = true;
+    scene.add(sprite);
+    this.sprite = sprite;
+  }
+
+  // Method to remove the enemy's sprite from the scene
+  removeSprite(scene) {
+    if (this.sprite) {
+      scene.remove(this.sprite);
+      this.sprite = null;
+    }
+  }
+}
+
+
+// =========================================
+// FILE: public/src/entities/entities.js
+// =========================================
+
+import { gameState } from '../game/gamestate.js';
+import { PlayerManager } from './PlayerManager.js';
+import { Player } from '../entities/player.js';
+import { TILE_SIZE } from '../constants/constants.js';
+
+/**
+ * Utility for throttling log messages
+ */
+const logThrottles = {};
+function throttledLog(key, message, data, interval = 1000) {
+    const now = Date.now();
+    if (!logThrottles[key] || now - logThrottles[key] >= interval) {
+        logThrottles[key] = now;
+        if (data !== undefined) {
+            console.log(message, data);
+        } else {
+            console.log(message);
+        }
+        return true;
+    }
+    return false;
+}
+
+// Create a playerManager instance
+const playerManager = new PlayerManager();
+
+// Track all bullets in the game
+const bullets = [];
+
+/**
+ * Update players based on server data
+ * @param {Object} playerData - Player data from server
+ */
+export function updatePlayers(playerData) {
+    if (!playerData) {
+        console.warn("updatePlayers called with no playerData");
+        return;
+    }
+    
+    // Log raw data received (throttled)
+    if (throttledLog('update-players-raw', '[updatePlayers] Raw data received:', null, 5000)) {
+        console.log(JSON.stringify(playerData));
+        console.log(`[updatePlayers] Player IDs in data: ${Object.keys(playerData).join(', ')}`);
+        console.log(`[updatePlayers] Local player ID: ${playerManager.localPlayerId}, Character ID: ${gameState.character?.id}`);
+    }
+    
+    // CRITICAL FIX: Filter out the metadata properties that aren't players
+    // Skip properties like 'timestamp' and 'players' which aren't player objects
+    const actualPlayerData = {};
+    for (const [id, data] of Object.entries(playerData)) {
+        // Verify this is actually a player object with coordinates, not metadata
+        if (data && typeof data === 'object' && data.x !== undefined && data.y !== undefined) {
+            actualPlayerData[id] = data;
+        } else {
+            throttledLog('skip-non-player', `Skipping non-player property: ${id}`, null, 5000);
+        }
+    }
+    
+    // Print the filtered player data (throttled)
+    const playerCount = Object.keys(actualPlayerData).length;
+    throttledLog('player-count', `[updatePlayers] Processing ${playerCount} players after filtering metadata properties`);
+    
+    if (throttledLog('player-ids-filtered', 'Filtered player IDs', null, 5000)) {
+        console.log(`[updatePlayers] Player IDs after filtering: ${Object.keys(actualPlayerData).join(', ')}`);
+    }
+    
+    // IMPORTANT: Ensure localPlayerId is properly set
+    if (gameState.character && gameState.character.id) {
+        if (!playerManager.localPlayerId || playerManager.localPlayerId !== gameState.character.id) {
+            playerManager.setLocalPlayerId(gameState.character.id);
+            console.log(`[updatePlayers] Updated playerManager.localPlayerId to match character.id: ${gameState.character.id}`);
+        }
+    }
+    
+    // IMPORTANT: Make sure playerManager is registered with gameState
+    if (gameState && !gameState.playerManager) {
+        gameState.playerManager = playerManager;
+        console.log("Registered playerManager with gameState");
+    }
+    
+    // Update players
+    playerManager.updatePlayers(actualPlayerData);
+    
+    // Log summary of current player count after update (throttled)
+    throttledLog('update-complete', `[updatePlayers] Update complete, playerManager now has ${playerManager.players.size} players`);
+    
+    if (playerManager.players.size > 0 && throttledLog('player-ids-current', 'Current player IDs', null, 5000)) {
+        console.log(`[updatePlayers] Current player IDs: ${Array.from(playerManager.players.keys()).join(', ')}`);
+    }
+}
+
+/**
+ * Update bullets based on server data
+ * @param {Array} bulletsData - Bullet data from server
+ */
+export function updateBullets(bulletsData) {
+    if (!bulletsData || !Array.isArray(bulletsData)) return;
+    
+    // Clear bullets array and repopulate with server data
+    bullets.length = 0;
+    
+    for (const bulletData of bulletsData) {
+        // Add sprite properties if missing
+        const enhancedBullet = {
+            ...bulletData,
+            lastUpdated: Date.now(),
+            // Add these properties if missing
+            width: bulletData.width || 8,
+            height: bulletData.height || 8,
+            // For rendering
+            spriteSheet: bulletData.spriteSheet || 'bullet_sprites',
+            spriteX: bulletData.spriteX !== undefined ? bulletData.spriteX : 8 * 10, // Default X position in sprite sheet
+            spriteY: bulletData.spriteY !== undefined ? bulletData.spriteY : 8 * 11, // Default Y position in sprite sheet
+        };
+        
+        bullets.push(enhancedBullet);
+    }
+    
+    // Log for debugging (only occasionally to reduce console spam)
+    if (bulletsData.length > 0 && Math.random() < 0.05) {
+        console.log(`Updated ${bulletsData.length} bullets in entities module`);
+        console.log(`Current bullet owners: ${[...new Set(bulletsData.map(b => b.ownerId))].join(', ')}`);
+    }
+}
+
+/**
+ * Render other players - called from the render system
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ */
+export function renderOtherPlayers(ctx) {
+    if (!playerManager) return;
+    
+    // Use the PlayerManager for rendering
+    playerManager.render(ctx, gameState.camera.position);
+}
+
+/**
+ * Render bullets from all players - can be used as an alternative to bulletManager rendering
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ */
+export function renderAllBullets(ctx) {
+    if (!ctx || bullets.length === 0) return;
+    
+    const screenCenterX = ctx.canvas.width / 2;
+    const screenCenterY = ctx.canvas.height / 2;
+    const scaleFactor = gameState.camera.viewType === 'strategic' ? 0.5 : 1;
+    
+    // Get sprite manager
+    const spriteManager = window.spriteManager || null;
+    
+    // Only log bullet rendering very rarely to reduce spam
+    if (Math.random() < 0.001) {  // Log only 0.1% of the time
+        console.log(`Rendering ${bullets.length} bullets through renderAllBullets`);
+    }
+    
+    for (const bullet of bullets) {
+        try {
+            // Calculate screen coordinates - use TILE_SIZE to scale properly
+            const screenX = (bullet.x - gameState.camera.position.x) * TILE_SIZE * scaleFactor + screenCenterX;
+            const screenY = (bullet.y - gameState.camera.position.y) * TILE_SIZE * scaleFactor + screenCenterY;
+            
+            // Skip if the bullet is way off screen
+            if (screenX < -50 || screenX > ctx.canvas.width + 50 || 
+                screenY < -50 || screenY > ctx.canvas.height + 50) {
+                continue;
+            }
+            
+            // Get bullet color based on owner
+            const isLocalBullet = bullet.ownerId === playerManager.localPlayerId;
+            
+            // Check if we have sprite information for this bullet
+            let spriteSuccess = false;
+            if (spriteManager && bullet.spriteSheet) {
+                try {
+                    // Width and height in pixels for rendering
+                    const width = (bullet.width || 8) * scaleFactor;
+                    const height = (bullet.height || 8) * scaleFactor;
+                    
+                    // Render with sprite
+                    spriteManager.drawSprite(
+                        ctx,
+                        bullet.spriteSheet,
+                        bullet.spriteX, 
+                        bullet.spriteY,
+                        screenX - width / 2,
+                        screenY - height / 2,
+                        width,
+                        height
+                    );
+                    spriteSuccess = true;
+                } catch (spriteError) {
+                    // Silently handle sprite errors - will use fallback
+                    spriteSuccess = false;
+                }
+            }
+            
+            // Fallback to a more visible circle if sprite fails
+            if (!spriteSuccess) {
+                const bulletSize = (bullet.width || 8) * scaleFactor;
+                
+                // Draw a glow effect for better visibility
+                const gradient = ctx.createRadialGradient(
+                    screenX, screenY, 0,
+                    screenX, screenY, bulletSize
+                );
+                
+                if (isLocalBullet) {
+                    // Yellow/orange glow for player bullets
+                    gradient.addColorStop(0, 'rgb(255, 255, 120)');
+                    gradient.addColorStop(0.7, 'rgb(255, 160, 0)');
+                    gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+                } else {
+                    // Red/purple glow for enemy bullets
+                    gradient.addColorStop(0, 'rgb(255, 100, 255)');
+                    gradient.addColorStop(0.7, 'rgb(255, 0, 100)');
+                    gradient.addColorStop(1, 'rgba(200, 0, 0, 0)');
+                }
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, bulletSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add a white center for better visibility
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, bulletSize * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } catch (error) {
+            // Silently handle errors to avoid console spam
+        }
+    }
+}
+
+/**
+ * Get bullet data (for other systems that need it)
+ * @returns {Array} Array of bullet objects
+ */
+export function getBullets() {
+    return bullets;
+}
+
+/**
+ * Initialize player system
+ * @param {string} localPlayerId - ID of the local player
+ */
+export function initializePlayers(localPlayerId) {
+    if (playerManager) {
+        playerManager.setLocalPlayerId(localPlayerId);
+        console.log(`Initialized player system with local player ID: ${localPlayerId}`);
+    }
+}
+
+/**
+ * Update player position interpolation
+ * @param {number} deltaTime - Delta time in seconds
+ */
+export function updatePlayerInterpolation(deltaTime) {
+    if (!playerManager) return;
+    
+    // Interpolate positions for smooth movement
+    for (const player of playerManager.players.values()) {
+        // Skip if we don't have interpolation data
+        if (player._prevX === undefined || player._targetX === undefined) continue;
+        
+        // Current position - use lerp for interpolation between prev and target
+        player.x = lerp(player._prevX, player._targetX, Math.min(1, (Date.now() - player.lastPositionUpdate) / 100));
+        player.y = lerp(player._prevY, player._targetY, Math.min(1, (Date.now() - player.lastPositionUpdate) / 100));
+    }
+    
+    // Update player animations
+    playerManager.updatePlayerAnimations(deltaTime);
+}
+
+// Linear interpolation helper
+function lerp(start, end, t) {
+    return start + t * (end - start);
+}
+
+// Export bullets array for direct access if needed
+export { bullets, playerManager }; 
+
+// =========================================
+// FILE: public/src/entities/player.js
+// =========================================
+
+/**
+ * Player.js
+ * Represents the local player character
+ */
+import { generateUUID } from '../utils/uuid.js';
+import { EntityAnimator } from './EntityAnimator.js';
+import { spriteManager } from '../assets/spriteManager.js';
+import { SCALE, TILE_SIZE } from '../constants/constants.js';
+
+// ROTMG-like speed calculation constants
+const BASE_SPEED = 3; // Base speed stat (extremely slow)
+const SPEED_MULTIPLIER = 2.5; // Further reduced multiplier
+const MIN_SPEED = 0.01; // Minimum speed
+const MAX_SPEED = 0.01; // Maximum speed
+
+export class Player {
+    /**
+     * Create a new player
+     * @param {Object} options - Player options
+     */
+    constructor(options = {}) {
+      // Generate a unique ID for this player
+      // NOTE: This will be overridden by the server-assigned ID when connected
+      this.id = options.id || generateUUID();
+      
+      // Log the generated ID to help with debugging
+      console.log(`[Player] Created new player with initial ID: ${this.id}`);
+      
+      // Core properties
+      this.name = options.name || 'Player';
+      this.x = options.x || 0;
+      this.y = options.y || 0;
+      this.width = options.width || 10;
+      this.height = options.height || 10;
+      this.rotation = 0;
+      
+      // Movement - ROTMG-style stats
+      this.speedStat = options.speedStat || BASE_SPEED; // Base speed stat (0-75 in ROTMG)
+      this.speed = this.calculateSpeed(this.speedStat); // Calculated actual speed
+      this.vx = 0;
+      this.vy = 0;
+      this.isMoving = false;
+      this.moveDirection = { x: 0, y: 0 };
+      
+      // Combat
+      this.health = options.health !== undefined ? options.health : 100;
+      this.maxHealth = options.maxHealth || 100;
+      this.damage = options.damage || 10;
+      this.projectileSpeed = options.projectileSpeed || 200;
+      this.shootCooldown = options.shootCooldown || 0.5; // Seconds
+      this.lastShotTime = 0;
+      
+      // Visual
+      this.spriteX = options.spriteX || 0;
+      this.spriteY = options.spriteY || 0;
+      
+      // State
+      this.isDead = false;
+      
+      // Network properties
+      this.isLocal = options.isLocal !== undefined ? options.isLocal : true;
+      this.lastUpdate = Date.now();
+      
+      // Initialize the animator
+      this.animator = new EntityAnimator({
+        defaultState: 'idle',
+        frameCount: 4,
+        frameDuration: 0.15,
+        attackDuration: 0.3,
+        attackCooldownTime: this.shootCooldown,
+        spriteWidth: TILE_SIZE,
+        spriteHeight: TILE_SIZE,
+        spriteSheet: 'character_sprites'
+      });
+    }
+    
+    /**
+     * Calculate actual movement speed from speed stat
+     * @param {number} speedStat - The speed stat value (ROTMG-like)
+     * @returns {number} - The actual movement speed in pixels per second
+     */
+    calculateSpeed(speedStat) {
+      // Clamp speed stat between MIN_SPEED and MAX_SPEED
+      const clampedStat = Math.max(MIN_SPEED, Math.min(MAX_SPEED, speedStat));
+      
+      // ROTMG-like formula: Convert stat to actual speed
+      return clampedStat * SPEED_MULTIPLIER;
+    }
+    
+    /**
+     * Set the player's speed stat
+     * @param {number} newSpeedStat - New speed stat value
+     */
+    setSpeedStat(newSpeedStat) {
+      this.speedStat = newSpeedStat;
+      this.speed = this.calculateSpeed(this.speedStat);
+      console.log(`[Player] Speed stat set to ${this.speedStat}, actual speed: ${this.speed.toFixed(1)} px/s`);
+    }
+    
+    /**
+     * Update player
+     * @param {number} deltaTime - Time elapsed since last update in seconds
+     */
+    update(deltaTime) {
+      // Update cooldowns
+      if (this.lastShotTime > 0) {
+        this.lastShotTime -= deltaTime;
+        if (this.lastShotTime < 0) this.lastShotTime = 0;
+      }
+      
+      // CRITICAL FIX: Double-check if we're really moving based on moveDirection
+      const actuallyMoving = Math.abs(this.moveDirection.x) > 0.01 || Math.abs(this.moveDirection.y) > 0.01;
+      
+      // Handle any discrepancy between isMoving flag and actual movement
+      if (this.isMoving !== actuallyMoving) {
+        // Force consistency between the flag and actual state
+        this.isMoving = actuallyMoving;
+        
+        // If we're truly stopped but animation says otherwise, force a reset
+        if (!actuallyMoving && this.animator && 
+            this.animator.currentState === this.animator.states.WALK) {
+          // Double-check safety: directly force back to idle state
+          this.animator.resetToIdle();
+        }
+      }
+      
+      // Make absolutely sure animation state exactly matches movement state
+      if (!this.isMoving && this.animator && 
+          this.animator.currentState === this.animator.states.WALK) {
+        // Force back to idle state if somehow we still have a walk animation
+        this.animator.resetToIdle();
+      }
+      
+      // Update animator with all protection layers applied
+      this.animator.update(
+        deltaTime, 
+        this.isMoving,  // Corrected movement state
+        this.moveDirection
+      );
+    }
+    
+    /**
+     * Move player
+     * @param {number} dx - X direction (-1 to 1)
+     * @param {number} dy - Y direction (-1 to 1)
+     * @param {number} deltaTime - Time elapsed since last update in seconds
+     */
+    move(dx, dy, deltaTime) {
+      // CRITICAL FIX: Detect if we're trying to stop
+      const tryingToStop = Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001;
+      
+      // Normalize direction if moving diagonally
+      if (!tryingToStop && dx !== 0 && dy !== 0) {
+        const length = Math.sqrt(dx * dx + dy * dy);
+        dx /= length;
+        dy /= length;
+      }
+      
+      // CRITICAL FIX: More aggressive handling of the stopped state
+      if (tryingToStop) {
+        // If we're stopping, explicitly reset everything
+        this.isMoving = false;
+        this.moveDirection.x = 0;
+        this.moveDirection.y = 0;
+        
+        // Explicitly reset to idle animation if we were walking
+        if (this.animator && this.animator.currentState === this.animator.states.WALK) {
+          this.animator.resetToIdle();
+        }
+      } else {
+        // Set movement state for normal movement
+        this.isMoving = true;
+        
+        // Save move direction
+        this.moveDirection.x = dx;
+        this.moveDirection.y = dy;
+        
+        // Update animator direction based on movement
+        if (this.animator) {
+          // Determine dominant direction
+          if (Math.abs(dx) > Math.abs(dy)) {
+            // Horizontal movement is dominant
+            this.animator.direction = dx < 0 ? 1 : 3; // 1 = left, 3 = right
+          } else {
+            // Vertical movement is dominant
+            this.animator.direction = dy < 0 ? 2 : 0; // 2 = up, 0 = down
+          }
+        }
+        
+        // Apply movement
+        const distance = this.speed * deltaTime;
+        this.x += dx * distance;
+        this.y += dy * distance;
+      }
+    }
+    
+    /**
+     * Rotate player to face a position
+     * @param {number} targetX - Target X position
+     * @param {number} targetY - Target Y position
+     */
+    rotateTo(targetX, targetY) {
+      const dx = targetX - this.x;
+      const dy = targetY - this.y;
+      this.rotation = Math.atan2(dy, dx);
+      
+      // Update animator direction based on rotation
+      if (Math.abs(dx) > Math.abs(dy)) {
+        this.animator.direction = dx < 0 ? 1 : 3; // Left or right
+      } else {
+        this.animator.direction = dy < 0 ? 2 : 0; // Up or down
+      }
+    }
+    
+    /**
+     * Check if player can shoot
+     * @returns {boolean} True if player can shoot
+     */
+    canShoot() {
+      return this.lastShotTime <= 0;
+    }
+    
+    /**
+     * Start shoot cooldown
+     */
+    startShootCooldown() {
+      this.lastShotTime = this.shootCooldown;
+    }
+    
+    /**
+     * Set the last shot time directly
+     * @param {number} time - The timestamp of the last shot
+     * @param {boolean} skipAnimation - Whether to skip triggering the attack animation
+     */
+    setLastShotTime(time, skipAnimation = false) {
+      console.log(`[Player.setLastShotTime] Setting cooldown: ${this.shootCooldown.toFixed(2)}, skipAnimation: ${skipAnimation}`);
+      this.lastShotTime = this.shootCooldown;
+      
+      // Only trigger attack animation if not skipped
+      // This allows handleShoot to control the attack animation with the correct direction
+      if (!skipAnimation && this.animator && typeof this.animator.attack === 'function') {
+        console.log(`[Player.setLastShotTime] Triggering attack animation`);
+        this.animator.attack();
+      }
+    }
+    
+    /**
+     * Apply damage to player
+     * @param {number} amount - Amount of damage
+     * @returns {number} Remaining health
+     */
+    takeDamage(amount) {
+      this.health -= amount;
+      
+      if (this.health <= 0) {
+        this.health = 0;
+        this.isDead = true;
+        
+        // Set death animation
+        this.animator.setAnimationState(this.animator.states.DEATH, this.animator.direction);
+      }
+      
+      return this.health;
+    }
+    
+    /**
+     * Heal player
+     * @param {number} amount - Amount to heal
+     * @returns {number} New health
+     */
+    heal(amount) {
+      this.health += amount;
+      
+      if (this.health > this.maxHealth) {
+        this.health = this.maxHealth;
+      }
+      
+      if (this.isDead && this.health > 0) {
+        this.isDead = false;
+        // Reset animation to idle
+        this.animator.setAnimationState(this.animator.states.IDLE, this.animator.direction);
+      }
+      
+      return this.health;
+    }
+    
+    /**
+     * Convert to network-friendly format
+     * @returns {Object} Serialized player data
+     */
+    serialize() {
+      return {
+        id: this.id,
+        name: this.name,
+        x: this.x,
+        y: this.y,
+        rotation: this.rotation,
+        health: this.health,
+        maxHealth: this.maxHealth,
+        spriteX: this.spriteX,
+        spriteY: this.spriteY
+      };
+    }
+    
+    /**
+     * Draw the player on the canvas
+     * @param {CanvasRenderingContext2D} ctx - Canvas rendering context
+     * @param {Object} cameraPosition - Camera position {x, y}
+     */
+    draw(ctx, cameraPosition) {
+      if (!ctx) return;
+      
+      // Get sprite sheet
+      const spriteSheetObj = spriteManager.getSpriteSheet(this.animator.spriteSheet);
+      if (!spriteSheetObj) {
+        this.drawDebugRect(ctx, cameraPosition);
+        return;
+      }
+      
+      const spriteSheet = spriteSheetObj.image;
+      
+      // Get screen dimensions
+      const screenWidth = ctx.canvas.width;
+      const screenHeight = ctx.canvas.height;
+      
+      // Check for direct view scaling flags set by renderCharacter
+      let viewScaleFactor;
+      if (this._viewScaleFactor !== undefined) {
+        // Use the flag directly set on the character object
+        viewScaleFactor = this._viewScaleFactor;
+        //console.log(`[Player.draw] Using direct scale factor: ${viewScaleFactor}`);
+      } else {
+        // Fallback to checking the view type
+        const isStrategicView = window.gameState?.camera?.viewType === 'strategic';
+        viewScaleFactor = isStrategicView ? 0.5 : 1.0; // 50% smaller in strategic view
+        console.log(`[Player.draw] Using fallback scale factor: ${viewScaleFactor}, view: ${window.gameState?.camera?.viewType}`);
+      }
+      
+      // Define scale based on view type
+      const scaleFactor = viewScaleFactor;
+      
+      // Calculate screen position
+      const screenX = (this.x - cameraPosition.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
+      const screenY = (this.y - cameraPosition.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
+      
+      // Apply the appropriate scale factor for rendering
+      const width = this.width * SCALE * viewScaleFactor;
+      const height = this.height * SCALE * viewScaleFactor;
+      
+      // Save context for rotation
+      ctx.save();
+      
+      // Translate to player position
+      ctx.translate(screenX, screenY);
+      
+      // If player has a rotation, use it
+      if (typeof this.rotation === 'number') {
+        ctx.rotate(this.rotation);
+      }
+      
+      // Get animation source rect
+      const sourceRect = this.animator.getSourceRect();
+      
+      // Draw player sprite
+      ctx.drawImage(
+        spriteSheet,
+        sourceRect.x, sourceRect.y,
+        sourceRect.width, sourceRect.height,
+        -width/2, -height/2,
+        width, height
+      );
+      
+      // Draw player name
+      if (this.name) {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.font = '12px Arial';
+        ctx.strokeText(this.name, 0, -height/2 - 5);
+        ctx.fillText(this.name, 0, -height/2 - 5);
+      }
+      
+      // Draw health bar if health is defined
+      if (this.health !== undefined && this.maxHealth !== undefined) {
+        const healthPercent = this.health / this.maxHealth;
+        const barWidth = width;
+        const barHeight = 3;
+        const barY = height/2 + 5;
+        
+        // Background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(-barWidth/2, barY, barWidth, barHeight);
+        
+        // Health
+        ctx.fillStyle = healthPercent > 0.6 ? 'green' : healthPercent > 0.3 ? 'yellow' : 'red';
+        ctx.fillRect(-barWidth/2, barY, barWidth * healthPercent, barHeight);
+      }
+      
+      // Restore context
+      ctx.restore();
+    }
+    
+    /**
+     * Draw a simple rectangle for debugging
+     * @param {CanvasRenderingContext2D} ctx - Canvas rendering context
+     * @param {Object} cameraPosition - Camera position {x, y}
+     */
+    drawDebugRect(ctx, cameraPosition) {
+      // Get screen dimensions
+      const screenWidth = ctx.canvas.width;
+      const screenHeight = ctx.canvas.height;
+      
+      // Determine view scaling factor based on view type
+      const isStrategicView = window.gameState?.camera?.viewType === 'strategic';
+      const viewScaleFactor = isStrategicView ? 0.5 : 1.0; // 50% smaller in strategic view
+      
+      // Define scale based on view type
+      const scaleFactor = viewScaleFactor;
+      
+      // Calculate screen position
+      const screenX = (this.x - cameraPosition.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
+      const screenY = (this.y - cameraPosition.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
+      
+      // Apply the appropriate scale factor for rendering
+      const width = this.width * SCALE * viewScaleFactor;
+      const height = this.height * SCALE * viewScaleFactor;
+      
+      // Draw debug rectangle
+      ctx.fillStyle = 'red';
+      ctx.fillRect(
+        screenX - width/2,
+        screenY - height/2,
+        width, height
+      );
+      
+      // Draw player name
+      if (this.name) {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.font = '12px Arial';
+        ctx.strokeText(this.name, screenX, screenY - height/2 - 5);
+        ctx.fillText(this.name, screenX, screenY - height/2 - 5);
+      }
+    }
+}
+
+// =========================================
+// FILE: public/src/entities/projectile.js
+// =========================================
+
+// src/entities/projectile.js
+export class Projectile {
+    constructor(x, y, z, velocity, damage, lifespan, owner) {
+      this.x = x; // World coordinates
+      this.y = y;
+      this.z = z; // For 3D rendering
+      this.velocity = velocity; // { x: dx, y: dy, z: dz }
+      this.damage = damage;
+      this.lifespan = lifespan; // Time in seconds before the projectile disappears
+      this.owner = owner; // Reference to the entity that fired the projectile
+      this.age = 0; // Time since the projectile was fired
+      this.sprite = null; // For 3D rendering
+    }
+  
+    update(delta) {
+      // Update position
+      this.x += this.velocity.x * delta;
+      this.y += this.velocity.y * delta;
+      this.z += this.velocity.z * delta;
+  
+      // Update age
+      this.age += delta;
+  
+      // Update sprite position if in 3D view
+      if (this.sprite) {
+        this.sprite.position.set(this.x, this.z, this.y);
+      }
+    }
+  
+    isExpired() {
+      return this.age >= this.lifespan;
+    }
+  
+    // Additional methods for collision detection can be added here
+  }
+  
+
+// =========================================
+// FILE: public/src/game/ClientBulletManager.js
+// =========================================
+
+/**
+ * ClientBulletManager.js
+ * Client-side manager for bullets with client prediction and reconciliation
+ */
+export class ClientBulletManager {
+  /**
+   * Creates a client-side bullet manager
+   * @param {number} maxBullets - Maximum number of bullets to support
+   */
+  constructor(maxBullets = 10000) {
+    this.maxBullets = maxBullets;
+    this.bulletCount = 0;
+    
+    // Structure of Arrays for performance
+    this.id = new Array(maxBullets);        // Unique bullet IDs
+    this.x = new Float32Array(maxBullets);  // X position
+    this.y = new Float32Array(maxBullets);  // Y position
+    this.vx = new Float32Array(maxBullets); // X velocity
+    this.vy = new Float32Array(maxBullets); // Y velocity
+    this.life = new Float32Array(maxBullets); // Remaining life in seconds
+    this.width = new Float32Array(maxBullets);  // Width for collision
+    this.height = new Float32Array(maxBullets); // Height for collision
+    this.ownerId = new Array(maxBullets);   // Who fired this bullet
+    this.damage = new Float32Array(maxBullets); // Damage value
+    
+    // Visual properties
+    this.sprite = new Array(maxBullets);    // Sprite or null
+    
+    // Mapping from ID to index for fast lookups
+    this.idToIndex = new Map();
+    
+    // Local prediction bullets (client-created, not yet confirmed by server)
+    this.localBullets = new Set();
+    
+    console.log("ClientBulletManager initialized with capacity for", maxBullets, "bullets");
+  }
+  
+  /**
+   * Add a new bullet
+   * @param {Object} bulletData - Bullet properties
+   * @returns {string} Bullet ID
+   */
+  addBullet(bulletData) {
+    if (this.bulletCount >= this.maxBullets) {
+      console.warn('ClientBulletManager: Maximum bullet capacity reached');
+      return null;
+    }
+    
+    const index = this.bulletCount++;
+    const bulletId = bulletData.id || `local_${Date.now()}_${index}`;
+    
+    // Store bullet properties
+    this.id[index] = bulletId;
+    this.x[index] = bulletData.x;
+    this.y[index] = bulletData.y;
+    this.vx[index] = bulletData.vx;
+    this.vy[index] = bulletData.vy;
+    this.life[index] = bulletData.lifetime || 3.0; // Default 3 seconds
+    this.width[index] = bulletData.width || 5;
+    this.height[index] = bulletData.height || 5;
+    this.ownerId[index] = bulletData.ownerId || null;
+    this.damage[index] = bulletData.damage || 10;
+    this.sprite[index] = bulletData.sprite || null;
+    
+    // Store index for lookup
+    this.idToIndex.set(bulletId, index);
+    
+    // If this is a local prediction bullet (client-created)
+    if (bulletId.startsWith('local_')) {
+      this.localBullets.add(bulletId);
+    }
+    
+    return bulletId;
+  }
+  
+  /**
+   * Update all bullets
+   * @param {number} deltaTime - Time elapsed since last update in seconds
+   */
+  update(deltaTime) {
+    if (deltaTime <= 0) {
+      return; // Skip if delta time is zero or negative
+    }
+    
+    let count = this.bulletCount;
+    
+    for (let i = 0; i < count; i++) {
+      // Update position
+      this.x[i] += this.vx[i] * deltaTime;
+      this.y[i] += this.vy[i] * deltaTime;
+      
+      // Decrement lifetime
+      this.life[i] -= deltaTime;
+      
+      // Remove expired bullets
+      if (this.life[i] <= 0) {
+        this.swapRemove(i);
+        count--;
+        i--;
+      }
+    }
+    
+    this.bulletCount = count;
+  }
+  
+  /**
+   * Remove a bullet using swap-and-pop technique
+   * @param {number} index - Index of bullet to remove
+   */
+  swapRemove(index) {
+    if (index < 0 || index >= this.bulletCount) return;
+    
+    // Remove from ID mapping and local bullets set
+    const bulletId = this.id[index];
+    this.idToIndex.delete(bulletId);
+    this.localBullets.delete(bulletId);
+    
+    // Swap with the last bullet (if not already the last)
+    const lastIndex = this.bulletCount - 1;
+    if (index !== lastIndex) {
+      // Copy properties from last bullet to this position
+      this.id[index] = this.id[lastIndex];
+      this.x[index] = this.x[lastIndex];
+      this.y[index] = this.y[lastIndex];
+      this.vx[index] = this.vx[lastIndex];
+      this.vy[index] = this.vy[lastIndex];
+      this.life[index] = this.life[lastIndex];
+      this.width[index] = this.width[lastIndex];
+      this.height[index] = this.height[lastIndex];
+      this.ownerId[index] = this.ownerId[lastIndex];
+      this.damage[index] = this.damage[lastIndex];
+      this.sprite[index] = this.sprite[lastIndex];
+      
+      // Update index in mapping
+      this.idToIndex.set(this.id[index], index);
+    }
+    
+    this.bulletCount--;
+  }
+  
+  /**
+   * Find bullet index by ID
+   * @param {string} bulletId - ID of bullet to find
+   * @returns {number} Index of bullet or -1 if not found
+   */
+  findIndexById(bulletId) {
+    const index = this.idToIndex.get(bulletId);
+    return index !== undefined ? index : -1;
+  }
+  
+  /**
+   * Remove a bullet by ID
+   * @param {string} bulletId - ID of bullet to remove
+   * @returns {boolean} True if bullet was found and removed
+   */
+  removeBulletById(bulletId) {
+    const index = this.findIndexById(bulletId);
+    if (index !== -1) {
+      this.swapRemove(index);
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Mark a bullet for removal
+   * @param {number} index - Index of bullet to remove
+   */
+  markForRemoval(index) {
+    if (index >= 0 && index < this.bulletCount) {
+      this.life[index] = 0;
+    }
+  }
+  
+  /**
+   * Set initial bullets list from server
+   * @param {Array} bullets - Array of bullet data from server
+   */
+  setBullets(bullets) {
+    // Clear existing bullets except local predictions
+    this.clearNonLocalBullets();
+    
+    // Add new bullets from server
+    for (const bullet of bullets) {
+      // Skip if we already have a local prediction for this ID
+      if (this.findIndexById(bullet.id) !== -1) continue;
+      
+      // Make sure all required properties are set
+      const bulletData = {
+        ...bullet,
+        width: bullet.width || 5,
+        height: bullet.height || 5,
+        damage: bullet.damage || 10
+      };
+      
+      this.addBullet(bulletData);
+    }
+    
+    console.log(`Set ${bullets.length} bullets from server, total bullets: ${this.bulletCount}`);
+  }
+  
+  /**
+   * Clear all non-local (server confirmed) bullets
+   */
+  clearNonLocalBullets() {
+    // Remove bullets that aren't local predictions
+    for (let i = 0; i < this.bulletCount; i++) {
+      if (!this.localBullets.has(this.id[i])) {
+        this.swapRemove(i);
+        i--;
+      }
+    }
+  }
+  
+  /**
+   * Update bullets based on server data
+   * @param {Array} bullets - Array of bullet data from server
+   */
+  updateBullets(bullets) {
+    if (!bullets || !Array.isArray(bullets)) {
+      console.warn("Invalid bullets data in updateBullets");
+      return;
+    }
+    
+    // Process server bullets
+    for (const bullet of bullets) {
+      const index = this.findIndexById(bullet.id);
+      
+      if (index !== -1) {
+        // Update existing bullet
+        this.x[index] = bullet.x;
+        this.y[index] = bullet.y;
+        this.vx[index] = bullet.vx;
+        this.vy[index] = bullet.vy;
+        this.life[index] = bullet.life || bullet.lifetime || 3.0;
+        this.width[index] = bullet.width || 5;
+        this.height[index] = bullet.height || 5;
+        this.damage[index] = bullet.damage || 10;
+      } else {
+        // Add new bullet if we don't have it
+        this.addBullet(bullet);
+      }
+    }
+    
+    // Remove bullets that aren't in the server update and aren't local predictions
+    const serverBulletIds = new Set(bullets.map(b => b.id));
+    
+    for (let i = 0; i < this.bulletCount; i++) {
+      const bulletId = this.id[i];
+      
+      // Keep local predictions and bullets from server update
+      if (!this.localBullets.has(bulletId) && !serverBulletIds.has(bulletId)) {
+        this.swapRemove(i);
+        i--;
+      }
+    }
+  }
+  
+  /**
+   * Get bullet rendering data
+   * @returns {Array} Array of bullet data for rendering
+   */
+  getBulletsForRender() {
+    const bullets = [];
+    
+    for (let i = 0; i < this.bulletCount; i++) {
+      bullets.push({
+        id: this.id[i],
+        x: this.x[i],
+        y: this.y[i],
+        width: this.width[i],
+        height: this.height[i],
+        isLocal: this.localBullets.has(this.id[i])
+      });
+    }
+    
+    return bullets;
+  }
+  
+  /**
+   * Clean up resources
+   */
+  cleanup() {
+    this.bulletCount = 0;
+    this.idToIndex.clear();
+    this.localBullets.clear();
+  }
+}

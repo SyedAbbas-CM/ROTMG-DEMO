@@ -6,6 +6,16 @@ import { generateUUID } from '../utils/uuid.js';
 import { EntityAnimator } from './EntityAnimator.js';
 import { spriteManager } from '../assets/spriteManager.js';
 import { SCALE, TILE_SIZE } from '../constants/constants.js';
+import { createLogger, LOG_LEVELS } from '../utils/logger.js';
+
+// Create a logger for this module
+const logger = createLogger('player');
+
+// ROTMG-like speed calculation constants
+const BASE_SPEED = 3; // Base speed stat (extremely slow)
+const SPEED_MULTIPLIER = 2.0; // Further reduced multiplier
+const MIN_SPEED = 2; // Minimum speed
+const MAX_SPEED = 10; // Maximum speed
 
 export class Player {
     /**
@@ -18,7 +28,7 @@ export class Player {
       this.id = options.id || generateUUID();
       
       // Log the generated ID to help with debugging
-      console.log(`[Player] Created new player with initial ID: ${this.id}`);
+      logger.info(`Created new player with initial ID: ${this.id}`);
       
       // Core properties
       this.name = options.name || 'Player';
@@ -28,8 +38,11 @@ export class Player {
       this.height = options.height || 10;
       this.rotation = 0;
       
-      // Movement
-      this.speed = options.speed || 100; // Pixels per second
+      // Movement - ROTMG-style stats
+      this.speedStat = options.speedStat || BASE_SPEED; // Base speed stat (0-75 in ROTMG)
+      this.speed = this.calculateSpeed(this.speedStat); // Calculated actual speed
+      logger.info(`Initial speed set to ${this.speed} pixels/sec (from stat: ${this.speedStat})`);
+      
       this.vx = 0;
       this.vy = 0;
       this.isMoving = false;
@@ -65,6 +78,31 @@ export class Player {
         spriteHeight: TILE_SIZE,
         spriteSheet: 'character_sprites'
       });
+    }
+    
+    /**
+     * Calculate actual movement speed from speed stat
+     * @param {number} speedStat - The speed stat value (ROTMG-like)
+     * @returns {number} - The actual movement speed in pixels per second
+     */
+    calculateSpeed(speedStat) {
+      // Clamp speed stat between MIN_SPEED and MAX_SPEED
+      const clampedStat = Math.max(MIN_SPEED, Math.min(MAX_SPEED, speedStat));
+      
+      // ROTMG-like formula: Convert stat to actual speed
+      const calculatedSpeed = clampedStat * SPEED_MULTIPLIER;
+      logger.debug(`Speed stat: ${speedStat}, Clamped: ${clampedStat}, Final Speed: ${calculatedSpeed}`);
+      return calculatedSpeed;
+    }
+    
+    /**
+     * Set the player's speed stat
+     * @param {number} newSpeedStat - New speed stat value
+     */
+    setSpeedStat(newSpeedStat) {
+      this.speedStat = newSpeedStat;
+      this.speed = this.calculateSpeed(this.speedStat);
+      logger.info(`Speed stat set to ${this.speedStat}, actual speed: ${this.speed.toFixed(1)} px/s`);
     }
     
     /**
@@ -159,6 +197,13 @@ export class Player {
         
         // Apply movement
         const distance = this.speed * deltaTime;
+        
+        // Debug log movement occasionally
+        logger.occasional(0.01, LOG_LEVELS.DEBUG, 
+          `Speed: ${this.speed.toFixed(2)}, DeltaTime: ${deltaTime.toFixed(4)}, Distance this frame: ${distance.toFixed(4)}`);
+        logger.occasional(0.01, LOG_LEVELS.VERBOSE, 
+          `Actual move: dx=${dx.toFixed(2)}, dy=${dy.toFixed(2)}, resulting in +${(dx * distance).toFixed(4)}, +${(dy * distance).toFixed(4)}`);
+        
         this.x += dx * distance;
         this.y += dy * distance;
       }
@@ -203,13 +248,13 @@ export class Player {
      * @param {boolean} skipAnimation - Whether to skip triggering the attack animation
      */
     setLastShotTime(time, skipAnimation = false) {
-      console.log(`[Player.setLastShotTime] Setting cooldown: ${this.shootCooldown.toFixed(2)}, skipAnimation: ${skipAnimation}`);
+      logger.debug(`Setting cooldown: ${this.shootCooldown.toFixed(2)}, skipAnimation: ${skipAnimation}`);
       this.lastShotTime = this.shootCooldown;
       
       // Only trigger attack animation if not skipped
       // This allows handleShoot to control the attack animation with the correct direction
       if (!skipAnimation && this.animator && typeof this.animator.attack === 'function') {
-        console.log(`[Player.setLastShotTime] Triggering attack animation`);
+        logger.debug(`Triggering attack animation`);
         this.animator.attack();
       }
     }
@@ -298,12 +343,12 @@ export class Player {
       if (this._viewScaleFactor !== undefined) {
         // Use the flag directly set on the character object
         viewScaleFactor = this._viewScaleFactor;
-        //console.log(`[Player.draw] Using direct scale factor: ${viewScaleFactor}`);
+        logger.verbose(`Using direct scale factor: ${viewScaleFactor}`);
       } else {
         // Fallback to checking the view type
         const isStrategicView = window.gameState?.camera?.viewType === 'strategic';
         viewScaleFactor = isStrategicView ? 0.5 : 1.0; // 50% smaller in strategic view
-        console.log(`[Player.draw] Using fallback scale factor: ${viewScaleFactor}, view: ${window.gameState?.camera?.viewType}`);
+        logger.debug(`Using fallback scale factor: ${viewScaleFactor}, view: ${window.gameState?.camera?.viewType}`);
       }
       
       // Define scale based on view type

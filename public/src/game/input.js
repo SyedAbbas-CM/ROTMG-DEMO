@@ -5,9 +5,13 @@ import { openSpriteEditor } from '../screens/spriteEditor.js';
 import { handleShoot } from './game.js';
 import { TILE_SIZE, SCALE } from '../constants/constants.js';
 import { Camera } from '../camera.js';
+import { createLogger, LOG_LEVELS, setGlobalLogLevel } from '../utils/logger.js';
+
+// Create a logger for this module
+const logger = createLogger('input');
 
 // Track currently pressed keys
-export const keysPressed = {};
+let keysPressed = {};
 
 // Mouse position
 let mouseX = 0;
@@ -15,7 +19,7 @@ let mouseY = 0;
 
 // Sensitivity and speed settings
 const MOUSE_SENSITIVITY = 0.002;
-const MOVE_SPEED = 100.0; // Increased movement speed for better responsiveness
+const MOVE_SPEED = 6.0; // Very slow movement speed for ROTMG-like feel
 
 /**
  * Initialize game controls
@@ -54,6 +58,32 @@ export function initControls() {
             const targetY = gameState.character.y + Math.sin(rotation) * distance;
             
             handleShoot(targetX, targetY);
+        }
+
+        // Add F3 key to toggle debug mode
+        if (e.code === 'F3') {
+          if (gameState.camera) {
+            const debugEnabled = gameState.camera.toggleDebugMode();
+            logger.info(`Debug mode ${debugEnabled ? 'enabled' : 'disabled'}`);
+            
+            // Also toggle debug overlay if it exists
+            if (window.debugOverlay && typeof window.debugOverlay.toggle === 'function') {
+              window.debugOverlay.toggle();
+            }
+          }
+        }
+        
+        // Add F4 key to toggle logging verbosity
+        if (e.code === 'F4') {
+            // If current log level is set to VERBOSE, set it to INFO
+            // Otherwise, set it to VERBOSE for troubleshooting
+            const currentLevel = window.gameLogger?.currentLevel || LOG_LEVELS.INFO;
+            const newLevel = currentLevel === LOG_LEVELS.VERBOSE ? LOG_LEVELS.INFO : LOG_LEVELS.VERBOSE;
+            
+            setGlobalLogLevel(newLevel);
+            window.gameLogger.currentLevel = newLevel;
+            
+            logger.info(`Logging verbosity set to ${newLevel === LOG_LEVELS.INFO ? 'NORMAL' : 'VERBOSE'}`);
         }
     });
 
@@ -104,7 +134,7 @@ export function initControls() {
             return;
         }
         
-        console.log("Mouse click detected");
+        logger.debug("Mouse click detected");
         
         // Get click position in game world
         const rect = e.target.getBoundingClientRect();
@@ -220,7 +250,7 @@ function switchView() {
     toggleViews();
     
     // Log available render functions for debugging
-    console.log(`[switchView] Render functions available:
+    logger.debug(`Render functions available:
     - Top-down: ${typeof window.renderTopDownView === 'function'}
     - Strategic: ${typeof window.renderStrategicView === 'function'}
     Current view: ${gameState.camera.viewType}`);
@@ -273,25 +303,25 @@ export function getMousePosition() {
  */
 function toggleViewMode() {
   if (!gameState.camera) {
-    console.error("Cannot toggle view: gameState.camera is not defined");
+    logger.error("Cannot toggle view: gameState.camera is not defined");
     return;
   }
   
   const currentView = gameState.camera.viewType;
-  console.log(`[input] Toggling view from: ${currentView}`);
+  logger.info(`Toggling view from: ${currentView}`);
   
   // Cycle through view types
   if (gameState.camera.viewType === 'first-person') {
     gameState.camera.viewType = 'top-down';
     
-    console.log(`[input] Switched to top-down view. render function available: ${typeof window.renderTopDownView === 'function'}`);
+    logger.debug(`Switched to top-down view. render function available: ${typeof window.renderTopDownView === 'function'}`);
   } else if (gameState.camera.viewType === 'top-down') {
     gameState.camera.viewType = 'strategic';
-    console.log(`[input] Switched to strategic view. render function available: ${typeof window.renderStrategicView === 'function'}`);
+    logger.debug(`Switched to strategic view. render function available: ${typeof window.renderStrategicView === 'function'}`);
   } else {
     gameState.camera.viewType = 'first-person';
-    console.log(`[input] Switched to first-person view`);
+    logger.debug(`Switched to first-person view`);
   }
   
-  console.log(`[input] New view type: ${gameState.camera.viewType}`);
+  logger.info(`New view type: ${gameState.camera.viewType}`);
 }

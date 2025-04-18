@@ -11,16 +11,18 @@ const ctx = canvas2D.getContext('2d');
 // Resize canvas to match window size
 canvas2D.width = window.innerWidth;
 canvas2D.height = window.innerHeight;
+const camera = gameState.camera;
+const scaleFactor = camera.getViewScaleFactor();
 
-// Rendering parameters for strategic view (zoomed out)
-const scaleFactor = 0.5; // Smaller scale for strategic view
+// Debug flags
+const DEBUG_RENDERING = false;
 
 // ANTI-FLICKERING: Add a tile cache to prevent constantly requesting the same chunks
 const strategicTileCache = new Map();
 
 // Track when we last updated chunks to limit request frequency
 let lastChunkUpdateTime = 0;
-const CHUNK_UPDATE_INTERVAL = 1000; // Only update chunks every 1 second
+const CHUNK_UPDATE_INTERVAL = 1000;
 
 export function renderStrategicView() {
   const camera = gameState.camera;
@@ -34,47 +36,21 @@ export function renderStrategicView() {
   // Calculate current time for throttling
   const now = performance.now();
 
-  // Determine visible tiles based on camera position
-  // For strategic view, we show more tiles due to the smaller scale
-  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE * scaleFactor));
-  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE * scaleFactor));
+  // For strategic view, we want to see more of the map
+  // so we'll show more tiles based on the smaller scale factor
+  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE )) + 4; // Add buffer
+  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE )) + 4;
 
-  // Add buffer tiles to avoid visual gaps at edges
-  const bufferTiles = 4;
-  const startX = Math.floor(camera.position.x / TILE_SIZE - tilesInViewX / 2) - bufferTiles;
-  const startY = Math.floor(camera.position.y / TILE_SIZE - tilesInViewY / 2) - bufferTiles;
-  const endX = startX + tilesInViewX + bufferTiles * 2;
-  const endY = startY + tilesInViewY + bufferTiles * 2;
+  const startX = Math.floor(camera.position.x - tilesInViewX / 2);
+  const startY = Math.floor(camera.position.y - tilesInViewY / 2);
+  const endX = startX + tilesInViewX;
+  const endY = startY + tilesInViewY;
   
-  // ANTI-FLICKERING: Only update visible chunks periodically, not every frame
+  // Only update visible chunks periodically to reduce network/CPU load
   if (now - lastChunkUpdateTime > CHUNK_UPDATE_INTERVAL) {
-    // If mapManager has updateVisibleChunks method, call it only periodically
     if (mapManager.updateVisibleChunks) {
-      // Temporarily disable network requests if possible
-      const originalNetworkManager = mapManager.networkManager;
-      const wasAutoUpdating = mapManager.autoUpdateChunks;
-      
-      try {
-        // Disable automatic chunk updates during rendering to prevent flickering
-        mapManager.autoUpdateChunks = false;
-        
-        // Update visible chunks without network requests if possible
-        if (mapManager.updateVisibleChunksLocally) {
-          mapManager.updateVisibleChunksLocally(camera.position.x, camera.position.y);
-        } else {
-          // If no local update method, use regular update but disable network temporarily
-          mapManager.networkManager = null; // Temporarily disable network requests
-          mapManager.updateVisibleChunks(camera.position.x, camera.position.y);
-          mapManager.networkManager = originalNetworkManager; // Restore network manager
-        }
-      } catch (err) {
-        console.error("Error updating chunks:", err);
-        // Restore values in case of error
-        mapManager.autoUpdateChunks = wasAutoUpdating;
-        mapManager.networkManager = originalNetworkManager;
-      }
+      mapManager.updateVisibleChunks(camera.position.x, camera.position.y);
     }
-    
     lastChunkUpdateTime = now;
   }
   
@@ -101,21 +77,18 @@ export function renderStrategicView() {
       if (tile) {
         const spritePos = TILE_SPRITES[tile.type];
         
-        // FIX: Change tile rendering to match entity rendering coordinate system
-        // OLD formula: (x * TILE_SIZE - camera.position.x) * scaleFactor + canvas2D.width / 2
-        // NEW formula: Use worldToScreen to ensure consistency with entities
-        
         // Convert tile grid position to world position
-        const worldX = x; // Tile coordinates correspond to world units
+        // In this game, tile coordinates are the same as world coordinates
+        const worldX = x;
         const worldY = y;
         
-        // Use the camera's worldToScreen method for consistency with entities
+        // FIX: Use correct TILE_SIZE parameter (not multiplied by scaleFactor)
         const screenPos = camera.worldToScreen(
           worldX, 
           worldY, 
           canvas2D.width, 
           canvas2D.height, 
-          TILE_SIZE
+          TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
         );
         
         // Draw tile using the consistent screen position
@@ -127,6 +100,30 @@ export function renderStrategicView() {
           TILE_SIZE * scaleFactor,
           TILE_SIZE * scaleFactor
         );
+        
+        // Add debug visualization to help with alignment
+        if (DEBUG_RENDERING) {
+          // Draw a grid outline in red (less visible in strategic view)
+          ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            screenPos.x - (TILE_SIZE * scaleFactor / 2),
+            screenPos.y - (TILE_SIZE * scaleFactor / 2),
+            TILE_SIZE * scaleFactor,
+            TILE_SIZE * scaleFactor
+          );
+          
+          // Draw tile coordinates for reference (only every several tiles to avoid clutter)
+          if ((x % 10 === 0 && y % 10 === 0) || (x === 0 && y === 0)) {
+            ctx.fillStyle = 'white';
+            ctx.font = '6px Arial';
+            ctx.fillText(
+              `(${x},${y})`, 
+              screenPos.x - (TILE_SIZE * scaleFactor / 2) + 1,
+              screenPos.y - (TILE_SIZE * scaleFactor / 2) + 6
+            );
+          }
+        }
       }
     }
   }
