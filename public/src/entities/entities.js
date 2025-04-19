@@ -253,50 +253,83 @@ export function initializePlayers(localPlayerId) {
 }
 
 /**
- * Update player position interpolation
- * @param {number} deltaTime - Delta time in seconds
+ * Update other players position interpolation
+ * @param {number} deltaTime - Time elapsed since last update in seconds
  */
 export function updatePlayerInterpolation(deltaTime) {
     if (!playerManager) return;
     
+    // Skip if delta time is invalid
+    if (!deltaTime || isNaN(deltaTime) || deltaTime <= 0) return;
+    
+    // Get players to update
+    const players = Array.from(playerManager.players.values());
+    
+    if (players.length === 0) {
+        return; // No players to update
+    }
+    
     // Current time for interpolation calculations
     const now = Date.now();
     
-    // Interpolate positions for smooth movement
-    for (const player of playerManager.players.values()) {
-        // Skip if we don't have interpolation data
-        if (player._prevX === undefined || player._targetX === undefined) continue;
+    // First pass: interpolate positions - this is critical for smooth movement
+    for (const player of players) {
+        // Skip position update if we don't have all the data we need
+        if (player._targetX === undefined || player._prevX === undefined) {
+            continue;
+        }
         
-        // Calculate time since last server update
-        const timeSinceUpdate = now - player.lastPositionUpdate;
+        // Store original position to detect movement
+        const oldX = player.x;
+        const oldY = player.y;
         
-        // IMPROVED: Use longer interpolation time (300ms instead of 100ms)
-        // This gives smoother movement with the 30fps server updates
-        const interpolationDuration = 300;
+        // Calculate time elapsed since last position update
+        const timeElapsed = now - player.lastPositionUpdate;
         
-        // Calculate interpolation progress (0-1)
-        let t = Math.min(1, timeSinceUpdate / interpolationDuration);
+        // Get interpolation progress (0 to 1) - use a longer interpolation time for smoother movement
+        // Using 300ms for smoother transitions at potentially lower network update rates
+        const interpolationTime = 300; // ms
+        const t = Math.min(timeElapsed / interpolationTime, 1.0);
         
-        // Apply ease-out interpolation for smoother stops
-        t = 1 - Math.pow(1 - t, 2); // Quadratic ease-out
+        // Apply position interpolation with easing for smoother stops
+        // Use quadratic easing out for natural movement
+        const ease = 1 - Math.pow(1 - t, 2);
+        player.x = player._prevX + (player._targetX - player._prevX) * ease;
+        player.y = player._prevY + (player._targetY - player._prevY) * ease;
         
-        // Basic position interpolation
-        player.x = lerp(player._prevX, player._targetX, t);
-        player.y = lerp(player._prevY, player._targetY, t);
+        // Calculate actual movement this frame
+        const dx = player.x - oldX;
+        const dy = player.y - oldY;
         
-        // IMPROVED: If we've reached the target but have velocity,
-        // use extrapolation to predict continued movement
-        if (t === 1 && (player.vx !== 0 || player.vy !== 0)) {
-            // Only extrapolate for a short time to avoid excessive prediction
-            const extrapolationTime = Math.min(timeSinceUpdate - interpolationDuration, 100);
+        // Check for actual movement (not just interpolation artifacts)
+        const movementThreshold = 0.00005; // Very small threshold to catch subtle movement
+        const isMovingThisFrame = Math.abs(dx) > movementThreshold || Math.abs(dy) > movementThreshold;
+        
+        // Update movement state - but avoid flickering by requiring a few frames of no movement
+        if (isMovingThisFrame) {
+            // Currently moving - reset the stop timer
+            player.movementStopTimer = 0;
+            player.isMoving = true;
             
-            if (extrapolationTime > 0) {
-                // Gradually reduce velocity for natural slowdown
-                const slowdownFactor = Math.max(0, 1 - extrapolationTime / 200);
-                
-                // Apply extrapolation
-                player.x += player.vx * extrapolationTime * slowdownFactor;
-                player.y += player.vy * extrapolationTime * slowdownFactor;
+            // Update velocity for animation direction
+            player.moveVelocity = { 
+                x: dx / deltaTime, 
+                y: dy / deltaTime 
+            };
+            
+            // Save the facing direction based on current movement
+            if (Math.abs(dx) > Math.abs(dy)) {
+                player.lastFacingDirection = dx > 0 ? 3 : 1; // right or left
+            } else {
+                player.lastFacingDirection = dy > 0 ? 0 : 2; // down or up
+            }
+        } else {
+            // Not moving this frame - increment stop timer
+            player.movementStopTimer = (player.movementStopTimer || 0) + deltaTime;
+            
+            // Only change to stopped state after a short delay (100ms) to avoid flickering
+            if (player.movementStopTimer > 0.1) {
+                player.isMoving = false;
             }
         }
     }

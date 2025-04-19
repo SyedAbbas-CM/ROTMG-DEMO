@@ -446,34 +446,43 @@ console.log("Map save function available. Use window.saveMapData() in the consol
  */
 export class ClientNetworkManager {
     /**
-     * Creates the client networking manager
+     * Create a client network manager
      * @param {string} serverUrl - WebSocket server URL
-     * @param {Object} game - Reference to the main game object
+     * @param {Object} game - Game reference
      */
     constructor(serverUrl, game) {
         this.serverUrl = serverUrl;
-        this.game = game;
         this.socket = null;
         this.connected = false;
         this.connecting = false;
         this.clientId = null;
-        this.lastServerTime = 0;
-        this.serverTimeOffset = 0;
+        this.messageQueue = [];
+        this.lastPingTime = 0;
+        this.pingInterval = null;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 2000; // ms
-        this.lastPingTime = Date.now(); // For debugging
+        this.timeOffset = 0; // Client-server time offset
         
-        // Message queue for messages that should be sent once connected
-        this.messageQueue = [];
+        // Store game reference for callbacks
+        this.game = game || {};
         
-        // Register message handlers for different message types
+        // Try to get playerManager from game or gameState
+        if (game && game.playerManager) {
+            this.playerManager = game.playerManager;
+        } else if (window.gameState && window.gameState.playerManager) {
+            this.playerManager = window.gameState.playerManager;
+            // Also add to game for reference
+            this.game.playerManager = this.playerManager;
+        }
+        
+        // Message handlers - default empty functions
         this.handlers = {};
         Object.values(MessageType).forEach(type => {
             this.handlers[type] = () => {};
         });
         
-        // Set up specific handlers
+        // Setup message handlers
         this.setupMessageHandlers();
         
         console.log("ClientNetworkManager initialized with server URL:", serverUrl);
@@ -532,9 +541,54 @@ export class ClientNetworkManager {
                 console.log(`Sample player data for ${samplePlayerId}:`, samplePlayer);
             }
             
-            // Call game's setPlayers handler with the correct players data
+            // Process player data to ensure it has all properties needed for animation
+            const enhancedPlayersData = {};
+            
+            // Track position changes to detect movement
+            const positionChanges = new Map();
+            
+            for (const [playerId, playerData] of Object.entries(playersData)) {
+                // Skip null/undefined players
+                if (!playerData) continue;
+                
+                // Get previous position data if available
+                let previousData = null;
+                if (this.playerManager && this.playerManager.players) {
+                    previousData = this.playerManager.players.get(playerId);
+                }
+                
+                // Check if position changed from previous update
+                let positionChanged = true; // Assume movement by default
+                if (previousData) {
+                    positionChanged = 
+                        previousData.x !== playerData.x || 
+                        previousData.y !== playerData.y;
+                    
+                    // Store whether position changed
+                    positionChanges.set(playerId, positionChanged);
+                }
+                
+                // Create enhanced player data with animation properties
+                enhancedPlayersData[playerId] = {
+                    ...playerData,
+                    // Ensure these essential properties exist
+                    id: playerId,
+                    x: playerData.x || 0,
+                    y: playerData.y || 0,
+                    rotation: playerData.rotation || 0,
+                    health: playerData.health !== undefined ? playerData.health : 100,
+                    maxHealth: playerData.maxHealth || 100,
+                    // Animation properties for EntityAnimator
+                    width: playerData.width || 10,
+                    height: playerData.height || 10,
+                    // Flag for animation system
+                    isMoving: positionChanged
+                };
+            }
+            
+            // Call game's setPlayers handler with the enhanced players data
             if (this.game.setPlayers) {
-                this.game.setPlayers(playersData);
+                this.game.setPlayers(enhancedPlayersData);
             } else {
                 console.error("PLAYER_LIST handler called but this.game.setPlayers not defined!");
             }

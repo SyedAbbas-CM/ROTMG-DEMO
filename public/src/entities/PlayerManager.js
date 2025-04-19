@@ -41,7 +41,7 @@ export class PlayerManager {
         this.debug = true; // Enable debug by default for troubleshooting
         
         // Debug visualization - makes other players more obvious
-        this.visualDebug = true; // Enable visual debug to diagnose coordinate issues
+        this.visualDebug = true; // Always enable visual debug to diagnose animation issues
         
         console.log("PlayerManager initialized");
     }
@@ -130,49 +130,95 @@ export class PlayerManager {
     
     /**
      * Update animations for all players
-     * @param {number} deltaTime - Time elapsed since last update in seconds
+     * @param {number} deltaTime - Time since last frame in seconds
      */
     updatePlayerAnimations(deltaTime) {
-        // Update animations based on velocity
+        // Skip if no delta time
+        if (!deltaTime) return;
+        
+        // Early return on edge cases
+        if (!this.players || this.players.size === 0) return;
+        
+        // Get current time for calculations
+        const now = Date.now();
+        
+        // Update each player's animation
         for (const [playerId, player] of this.players.entries()) {
+            // Skip local player
+            if (playerId === this.localPlayerId) continue;
+            
+            // Skip if no animator
             const animator = this.playerAnimators.get(playerId);
-            if (!animator) continue;
+            if (!animator) {
+                // Try to create animator if it doesn't exist
+                this.createAnimatorForPlayer(playerId);
+                continue;
+            }
             
-            // Calculate if player is actually moving based on velocity
-            const velocity = { 
-                x: player.vx || 0, 
-                y: player.vy || 0 
-            };
-            
-            // Consider the player moving if velocity exceeds a small threshold
-            const speedThreshold = 0.0001; // Units per millisecond
-            const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-            const isMoving = speed > speedThreshold;
-            
-            // Update animator state
-            if (isMoving) {
-                // Determine dominant direction for animation
-                if (Math.abs(velocity.x) > Math.abs(velocity.y)) {
-                    // Horizontal movement is dominant
-                    animator.direction = velocity.x < 0 ? 1 : 3; // 1 = left, 3 = right
-                } else {
-                    // Vertical movement is dominant
-                    animator.direction = velocity.y < 0 ? 2 : 0; // 2 = up, 0 = down
+            // Interpolate position
+            if (player._targetX !== undefined && player._prevX !== undefined) {
+                // Store old position to detect movement
+                const oldX = player.x;
+                const oldY = player.y;
+                
+                // Calculate interpolation progress
+                const t = Math.min((now - player.lastPositionUpdate) / 100, 1.0);
+                
+                // Apply interpolation
+                player.x = player._prevX + (player._targetX - player._prevX) * t;
+                player.y = player._prevY + (player._targetY - player._prevY) * t;
+                
+                // Calculate movement this frame
+                const dx = player.x - oldX;
+                const dy = player.y - oldY;
+                
+                // Consider the player moving only if there's substantial movement
+                const movementThreshold = 0.0001;
+                player.isMoving = Math.abs(dx) > movementThreshold || Math.abs(dy) > movementThreshold;
+                
+                // Store movement direction for animation
+                if (player.isMoving) {
+                    // Update movement velocity (for direction calculation)
+                    player.moveVelocity = { 
+                        x: dx / deltaTime, 
+                        y: dy / deltaTime 
+                    };
+                    
+                    // Determine dominant direction for when player stops
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        player.lastFacingDirection = dx > 0 ? 3 : 1; // right or left
+                    } else {
+                        player.lastFacingDirection = dy > 0 ? 0 : 2; // down or up
+                    }
+                }
+                
+                // Check if we've reached the target position
+                const reachedTarget = Math.abs(player.x - player._targetX) < 0.01 && 
+                                     Math.abs(player.y - player._targetY) < 0.01;
+                
+                // If we've reached the target, stop moving
+                if (reachedTarget) {
+                    player.isMoving = false;
                 }
             }
             
-            // Update animator with movement state
-            animator.update(deltaTime, isMoving, velocity);
-        }
-        
-        // Clean up stale player positions after some time
-        // This helps prevent "ghost" player artifacts
-        const now = Date.now();
-        for (const [playerId, player] of this.players.entries()) {
-            if (now - player.lastPositionUpdate > 10000) { // 10 seconds of no updates
-                throttledLog('stale-player', `Removing stale player ${playerId} - no updates for 10 seconds`, null, 5000);
-                this.players.delete(playerId);
-                this.playerAnimators.delete(playerId);
+            // Update animator state
+            if (player.isMoving && player.moveVelocity) {
+                // Moving - update animation with movement direction
+                animator.update(deltaTime, true, player.moveVelocity);
+            } else {
+                // Not moving - update with stationary state
+                // Pass false for movement, but make sure we're facing the last direction
+                animator.update(deltaTime, false);
+                
+                // Set animator direction to the last facing direction
+                if (player.lastFacingDirection !== undefined) {
+                    animator.direction = player.lastFacingDirection;
+                }
+                
+                // Explicitly set to idle state to prevent any walk animation
+                animator.currentState = animator.states.IDLE;
+                animator.frameIndex = 0;
             }
         }
     }
@@ -333,6 +379,23 @@ export class PlayerManager {
                     ctx.fillStyle = 'white';
                     ctx.font = '10px Arial';
                     ctx.fillText(`(${player.x.toFixed(1)},${player.y.toFixed(1)})`, screenX, screenY - height/2 - 15);
+                    
+                    // Animation state visualization
+                    const animator = this.playerAnimators.get(player.id);
+                    if (animator) {
+                        const animState = animator.currentState || 'none';
+                        const dir = animator.direction;
+                        const frame = animator.frameIndex;
+                        const dirName = ['down', 'left', 'up', 'right'][dir];
+                        
+                        ctx.fillStyle = 'yellow';
+                        ctx.font = '8px Arial';
+                        ctx.fillText(`${animState}:${dirName}(${frame})`, screenX, screenY - height/2 - 5);
+                        
+                        // Draw moving state indicator
+                        ctx.fillStyle = player.isMoving ? 'lime' : 'red';
+                        ctx.fillRect(screenX - 2, screenY - height/2 - 22, 4, 4);
+                    }
                 }
                 
                 // Improved offscreen culling - use larger culling distance in strategic view
@@ -542,7 +605,10 @@ export class PlayerManager {
      * @param {Object} data - New player data from server
      */
     updatePlayerData(player, data) {
-        // Store the previous position for interpolation
+        // Calculate if this is a position change
+        const positionChanged = data.x !== player.x || data.y !== player.y;
+        
+        // Store the previous position for interpolation before updating
         player._prevX = player.x;
         player._prevY = player.y;
         
@@ -556,6 +622,30 @@ export class PlayerManager {
                 // Units per millisecond
                 player.vx = dx / timeDiff;
                 player.vy = dy / timeDiff;
+                
+                // Calculate if player is moving significantly
+                const speed = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
+                const MOVEMENT_THRESHOLD = 0.0001; // Lower threshold to detect smaller movements
+                const wasMoving = player.isMoving;
+                player.isMoving = speed > MOVEMENT_THRESHOLD;
+                
+                // Always store movement velocity for animation direction
+                player.moveVelocity = { x: player.vx, y: player.vy };
+                
+                // If player just started or stopped moving, log it for debugging
+                if (wasMoving !== player.isMoving) {
+                    console.log(`Player ${player.id} ${player.isMoving ? 'started' : 'stopped'} moving`);
+                }
+                
+                // Update player's facing direction
+                if (player.isMoving) {
+                    // Determine dominant direction and save it
+                    if (Math.abs(player.vx) > Math.abs(player.vy)) {
+                        player.lastFacingDirection = player.vx > 0 ? 3 : 1; // right or left
+                    } else {
+                        player.lastFacingDirection = player.vy > 0 ? 0 : 2; // down or up
+                    }
+                }
             }
         }
         
@@ -586,5 +676,38 @@ export class PlayerManager {
             spriteHeight: TILE_SIZE,
             spriteSheet: 'character_sprites'
         }));
+    }
+
+    /**
+     * Debug method to force animate a player for testing
+     * @param {string} playerId - Player ID to animate
+     */
+    forceAnimatePlayer(playerId) {
+        const player = this.players.get(playerId);
+        if (!player) return;
+        
+        // Get animator
+        const animator = this.playerAnimators.get(playerId);
+        if (!animator) {
+            this.createAnimatorForPlayer(playerId);
+            return;
+        }
+        
+        // Force animator state to walk
+        animator.currentState = animator.states.WALK;
+        
+        // Force moving state
+        player.isMoving = true;
+        
+        // Create a velocity for animation direction
+        player.moveVelocity = { x: Math.random() - 0.5, y: Math.random() - 0.5 };
+        
+        // Set the position to simulate movement
+        player._prevX = player.x;
+        player._prevY = player.y;
+        player._targetX = player.x + player.moveVelocity.x;
+        player._targetY = player.y + player.moveVelocity.y;
+        
+        console.log(`Forced animation for player ${playerId}`);
     }
 } 

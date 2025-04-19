@@ -6,11 +6,11 @@ import { WebSocketServer } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { MapManager } from './Managers/MapManager.js';
-import { BinaryPacket, MessageType } from './Managers/NetworkManager.js';
-import BulletManager from './Managers/BulletManager.js';
-import EnemyManager from './Managers/EnemyManager.js';
-import CollisionManager from './Managers/CollisionManager.js';
+import { MapManager } from './src/MapManager.js';
+import { BinaryPacket, MessageType } from './src/NetworkManager.js';
+import BulletManager from './src/BulletManager.js';
+import EnemyManager from './src/EnemyManager.js';
+import CollisionManager from './src/CollisionManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

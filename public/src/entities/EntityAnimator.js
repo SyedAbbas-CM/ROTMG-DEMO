@@ -76,13 +76,8 @@ export class EntityAnimator {
     // Update attack state
     if (this.isAttacking) {
       this.attackCooldown -= deltaTime;
-      // Debug log attack state
-      if (this.frameTimer >= this.frameDuration) {
-        console.log(`[Animator.update] Attack in progress - cooldown: ${this.attackCooldown.toFixed(2)}, frame: ${this.frameIndex}, direction: ${this.direction}`);
-      }
       
       if (this.attackCooldown <= 0) {
-        console.log(`[Animator.update] Attack completed, resetting to idle`);
         this.isAttacking = false;
         // Reset to idle when attack animation completes
         this.resetToIdle();
@@ -90,48 +85,69 @@ export class EntityAnimator {
     }
     
     // Only determine animation state if not attacking
-    if (!this.isAttacking && isMoving !== undefined) {
-      this.updateAnimationState(isMoving, velocity);
+    if (!this.isAttacking) {
+      // Handle movement state
+      if (isMoving) {
+        // Set to walk state
+        this.currentState = this.states.WALK;
+        
+        // Update direction based on movement
+        if (Math.abs(velocity.x) > Math.abs(velocity.y)) {
+          this.direction = velocity.x < 0 ? 1 : 3; // 1=left, 3=right
+        } else {
+          this.direction = velocity.y < 0 ? 2 : 0; // 2=up, 0=down
+        }
+      } else {
+        // Not moving, set to idle
+        this.currentState = this.states.IDLE;
+        // Note: we don't change direction when stopping - we keep facing last direction
+      }
     }
     
-    // Only update animation frames for animated states
-    if ((this.currentState === this.states.WALK || this.currentState === this.states.ATTACK) && 
-        this.frameTimer >= this.frameDuration) {
+    // Only cycle animation frames if we're in a state that has animation
+    if (this.currentState === this.states.WALK || this.currentState === this.states.ATTACK) {
+      // Use different frame durations based on animation state
+      const frameDurationToUse = (this.currentState === this.states.WALK) ? 
+                                 this.frameDuration * 0.5 : // Walk faster for smoother animation
+                                 this.frameDuration;       // Normal speed for attack
       
-      this.frameTimer = 0;
-      
-      // For walk, cycle between frames 0 and 1
-      if (this.currentState === this.states.WALK) {
-        this.frameIndex = (this.frameIndex + 1) % 2;
-      }
-      // For attacks, handle frame cycling differently based on direction
-      else if (this.currentState === this.states.ATTACK) {
-        // Log before frame change
-        const oldFrame = this.frameIndex;
+      // Update frame when timer exceeds duration
+      if (this.frameTimer >= frameDurationToUse) {
+        // Reset frame timer
+        this.frameTimer = 0;
         
-        // CRITICAL FIX: For left attack, keep the frameIndex at 0 to avoid cycling
-        // For other directions, cycle as normal
-        if (this.direction === 1) { // Left attack
-          // Keep the frameIndex at 0 for left attack
-          this.frameIndex = 0;
-          console.log(`[Animator.update] LEFT attack - locking frame at 0`);
-        } else {
-          // Normal cycling for other directions
+        // Cycle frames based on state
+        if (this.currentState === this.states.WALK) {
+          // Cycle between frames for walk animation
           this.frameIndex = (this.frameIndex + 1) % 2;
+        } 
+        else if (this.currentState === this.states.ATTACK) {
+          // For attack animation
+          if (this.direction === 1) { // Left attack
+            // Keep the frameIndex at 0 for left attack
+            this.frameIndex = 0;
+          } else {
+            // Cycle between frames for other directions
+            this.frameIndex = (this.frameIndex + 1) % 2;
+          }
         }
-        
-        console.log(`[Animator.update] Attack animation frame changed: ${oldFrame} -> ${this.frameIndex} for direction ${this.direction}`);
       }
+    } else {
+      // For idle state, we don't animate - just use frame 0
+      this.frameIndex = 0;
     }
   }
   
   /**
-   * Reset to idle state
+   * Reset to idle animation
+   * This is a critical helper method for forcing the character back to idle state
    */
   resetToIdle() {
     this.currentState = this.states.IDLE;
     this.frameIndex = 0;
     this.frameTimer = 0;
+    this.isAttacking = false;
+    // Note: we don't reset direction here, so character keeps facing last direction
   }
   
   /**
@@ -318,32 +334,21 @@ export class EntityAnimator {
         break;
       
       case this.states.ATTACK:
-        // DEBUG: Log direction to verify mapping
-        console.log(`[EntityAnimator] Attack direction: ${this.direction}, frameIndex: ${this.frameIndex}`);
-        
-        // Fixed mapping for attack animations with CORRECTED frames
+        // Fixed mapping for attack animations
         {
           if (this.direction === 0) { // down - has 2 frames
             // Use columns 18 & 19 for down attack
             col = this.frameIndex === 0 ? 18 : 19;
           } else if (this.direction === 1) { // left - only 1 attack frame
-            // CRITICAL FIX: For left attack, ONLY use the attack frame (col 24)
-            // The disappearing issue is happening because we're alternating frames
-            // Instead, just show the attack frame for the entire animation duration
-            col = 23; // Always use the attack frame for left
-            
-            // Log for debugging
-            console.log(`[EntityAnimator] Left attack using fixed column: ${col}`);
+            // For left attack, ONLY use the attack frame (col 24)
+            col = 24; 
           } else if (this.direction === 2) { // up - has 2 frames
-            // CORRECTION: Shift frames one step back - use columns 20 & 21 instead of 21 & 22
+            // Use columns 20 & 21
             col = this.frameIndex === 0 ? 20 : 21;
           } else { // right - only 1 attack frame
             // For right attack, use column 17 and alternate with idle right (column 0)
             col = this.frameIndex === 0 ? 17 : 0;
           }
-          
-          // DEBUG: Log which column is being used
-          console.log(`[EntityAnimator] Using sprite column: ${col} for direction ${this.direction}, frame ${this.frameIndex}`);
         }
         break;
       
@@ -365,12 +370,7 @@ export class EntityAnimator {
     const spriteX = col * this.spriteWidth;
     const spriteY = row * this.spriteHeight;
     
-    // Add extra safety check for left attack - if we're getting out of bounds
-    if (this.currentState === this.states.ATTACK && this.direction === 1) {
-      console.log(`[EntityAnimator] LEFT ATTACK - Final sprite position: x=${spriteX}, y=${spriteY}`);
-    }
-    
-    // Final source rect with safety bounds check
+    // Final source rect
     return {
       x: spriteX,
       y: spriteY,
