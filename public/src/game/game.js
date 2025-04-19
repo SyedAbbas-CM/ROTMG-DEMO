@@ -731,7 +731,11 @@ export function handleShoot(x, y) {
         spriteHeight: 8
     };
     
+    // Log the bullet data with sprite info
     console.log("Creating bullet with data:", bulletData);
+    console.log("Sprite info: sheet:", bulletData.spriteSheet, 
+                "coords:", bulletData.spriteX, bulletData.spriteY);
+                
     const bulletId = bulletManager.addBullet(bulletData);
     
     // Send to server

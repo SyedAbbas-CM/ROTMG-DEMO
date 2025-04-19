@@ -264,71 +264,87 @@ export function renderEnemies() {
 /**
  * Render all bullets
  */
+// src/render/render.js
+
 export function renderBullets() {
-  // Get camera position
-  if (!gameState.camera || !gameState.projectileManager) {
+  const bm = gameState.bulletManager;
+  if (!bm) {
+    // no bullet manager attached
     return;
   }
-  
-  // Get bullet data from ProjectileManager
-  const bullets = gameState.projectileManager.getBulletsForRender();
-  if (!bullets || bullets.length === 0) {
-    return;
-  }
-  
-  // Get view scaling factor
+
+  // If nothing active, skip
+  if (bm.bulletCount === 0) return;
+
+  const spriteManager = window.spriteManager;
   const viewType = gameState.camera?.viewType || 'top-down';
-  const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
-  
-  // Get screen dimensions
-  const screenWidth = canvas2D.width;
-  const screenHeight = canvas2D.height;
-  
-  // Use camera's worldToScreen method if available for consistent coordinate transformation
-  const useCamera = gameState.camera && typeof gameState.camera.worldToScreen === 'function';
-  
-  // Render each bullet
-  bullets.forEach(bullet => {
-    // Scale bullet dimensions based on view
-    const size = bullet.size * SCALE * viewScaleFactor;
-    
-    // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
-    let screenX, screenY;
-    
-    if (useCamera) {
-      // Use camera's consistent transformation method
-      const screenPos = gameState.camera.worldToScreen(
-        bullet.x, 
-        bullet.y, 
-        screenWidth, 
-        screenHeight, 
-        TILE_SIZE
-      );
-      screenX = screenPos.x;
-      screenY = screenPos.y;
+  const viewScale = viewType === 'strategic' ? 0.5 : 1.0;
+
+  const W = canvas2D.width;
+  const H = canvas2D.height;
+  const useCam = gameState.camera && typeof gameState.camera.worldToScreen === 'function';
+
+  for (let i = 0; i < bm.bulletCount; i++) {
+    // world → screen
+    let sx, sy;
+    if (useCam) {
+      ({ x: sx, y: sy } = gameState.camera.worldToScreen(
+        bm.x[i], bm.y[i], W, H, TILE_SIZE
+      ));
     } else {
-      // Fallback to direct calculation
-      screenX = (bullet.x - gameState.camera.position.x) * TILE_SIZE * viewScaleFactor + screenWidth / 2;
-      screenY = (bullet.y - gameState.camera.position.y) * TILE_SIZE * viewScaleFactor + screenHeight / 2;
+      sx = (bm.x[i] - gameState.camera.position.x) * TILE_SIZE * viewScale + W/2;
+      sy = (bm.y[i] - gameState.camera.position.y) * TILE_SIZE * viewScale + H/2;
     }
-    
-    // Skip if off screen (with a small buffer)
-    const buffer = size;
-    if (
-      screenX < -buffer || 
-      screenX > screenWidth + buffer || 
-      screenY < -buffer || 
-      screenY > screenHeight + buffer
-    ) {
-      return;
+
+    // cull
+    if (sx < -100 || sx > W+100 || sy < -100 || sy > H+100) continue;
+
+    // size
+    const w = (bm.width[i]  || 8) * viewScale;
+    const h = (bm.height[i] || 8) * viewScale;
+
+    // try sprite draw
+    if (spriteManager && bm.sprite && bm.sprite[i]) {
+      try {
+        // Use the bullet's sprite information
+        const sprite = bm.sprite[i];
+        spriteManager.drawSprite(
+          ctx,
+          sprite.spriteSheet || 'bullet_sprites',
+          sprite.spriteX || 0, sprite.spriteY || 0,
+          sx - w/2, sy - h/2,
+          w, h
+        );
+        continue;
+      } catch (e) {
+        console.error("Error rendering bullet sprite:", e);
+        // fall through to circle
+      }
     }
-    
-    // Draw the bullet based on its type
-    ctx.fillStyle = bullet.color || 'white';
+
+    // fallback glow circle
+    const isLocal = bm.ownerId[i] === gameState.character?.id;
+    const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, w);
+    if (isLocal) {
+      grad.addColorStop(0, 'rgb(255,255,120)');
+      grad.addColorStop(0.7, 'rgb(255,160,0)');
+      grad.addColorStop(1, 'rgba(255,100,0,0)');
+    } else {
+      grad.addColorStop(0, 'rgb(255,100,255)');
+      grad.addColorStop(0.7, 'rgb(255,0,100)');
+      grad.addColorStop(1, 'rgba(200,0,0,0)');
+    }
+
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(screenX, screenY, size / 2, 0, Math.PI * 2);
+    ctx.arc(sx, sy, w, 0, Math.PI*2);
     ctx.fill();
-  });
+
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(sx, sy, w*0.3, 0, Math.PI*2);
+    ctx.fill();
+  }
 }
 
 /**

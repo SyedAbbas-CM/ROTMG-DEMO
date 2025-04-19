@@ -8,7 +8,7 @@
  * 0: wizard_idle_r_1    8: wizard_walk_r_1    16: SKIP_FRAME
  * 1: wizard_idle_d_1    9: wizard_walk_d_1    17: wizard_atk_r_1
  * 2: wizard_idle_u_1    10: wizard_walk_u_1   18: wizard_atk_d_1
- * 3: wizard_idle_l_1    11: wizard_walk_l_2   19: wizard_atk_d_2
+ * 3: wizard_idle_l_1    11: wizard_walk_l_1   19: wizard_atk_d_2
  * 4: wizard_idle_r_2    12: wizard_walk_r_2   20: wizard_atk_u_1
  * 5: wizard_idle_d_2    13: wizard_walk_d_2   21: wizard_atk_u_2
  * 6: wizard_idle_u_2    14: wizard_walk_u_2   22: UNUSED
@@ -79,14 +79,18 @@ export class EntityAnimator {
       
       if (this.attackCooldown <= 0) {
         this.isAttacking = false;
-        // Reset to idle when attack animation completes
-        this.resetToIdle();
+        // Reset to the appropriate state based on movement
+        if (isMoving) {
+          this.currentState = this.states.WALK;
+        } else {
+          this.resetToIdle();
+        }
+      } else {
+        // Ensure attack state takes priority while attacking
+        this.currentState = this.states.ATTACK;
       }
-    }
-    
-    // Only determine animation state if not attacking
-    if (!this.isAttacking) {
-      // Handle movement state
+    } else {
+      // Only determine animation state if not attacking
       if (isMoving) {
         // Set to walk state
         this.currentState = this.states.WALK;
@@ -122,12 +126,15 @@ export class EntityAnimator {
           this.frameIndex = (this.frameIndex + 1) % 2;
         } 
         else if (this.currentState === this.states.ATTACK) {
-          // For attack animation
-          if (this.direction === 1) { // Left attack
-            // Keep the frameIndex at 0 for left attack
+          // For attack animation, cycle frames based on direction
+          if (this.direction === 1) { // Left attack has only 1 frame
+            // Left attack has only 1 frame (at column 24)
+            this.frameIndex = 0; 
+          } else if (this.direction === 3) { // Right attack has only 1 frame
+            // Right attack has only 1 frame (at column 17)
             this.frameIndex = 0;
           } else {
-            // Cycle between frames for other directions
+            // Down and up attacks cycle between 2 frames
             this.frameIndex = (this.frameIndex + 1) % 2;
           }
         }
@@ -146,7 +153,6 @@ export class EntityAnimator {
     this.currentState = this.states.IDLE;
     this.frameIndex = 0;
     this.frameTimer = 0;
-    this.isAttacking = false;
     // Note: we don't reset direction here, so character keeps facing last direction
   }
   
@@ -322,14 +328,14 @@ export class EntityAnimator {
             // Use columns 18 & 19 for down attack
             col = this.frameIndex === 0 ? 18 : 19;
           } else if (this.direction === 1) { // left - only 1 attack frame
-            // For left attack, ONLY use the attack frame (col 24)
-            col = 24; 
+            // For left attack, use fixed column 24
+            col = 23;
           } else if (this.direction === 2) { // up - has 2 frames
             // Use columns 20 & 21
             col = this.frameIndex === 0 ? 20 : 21;
           } else { // right - only 1 attack frame
-            // For right attack, use column 17 and alternate with idle right (column 0)
-            col = this.frameIndex === 0 ? 17 : 0;
+            // For right attack, always use column 17
+            col = 17;
           }
         }
         break;

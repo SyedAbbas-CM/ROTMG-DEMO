@@ -351,6 +351,49 @@ export class SpriteManager {
     
     return this.groups[groupName];
   }
+
+  /**
+   * Draw a sprite from a sprite sheet at the given position
+   * @param {CanvasRenderingContext2D} ctx - The canvas context to draw on
+   * @param {string} sheetName - Name of the sprite sheet
+   * @param {number} spriteX - X position of the sprite in the sheet
+   * @param {number} spriteY - Y position of the sprite in the sheet
+   * @param {number} destX - X position to draw at
+   * @param {number} destY - Y position to draw at
+   * @param {number} destWidth - Width to draw (will scale)
+   * @param {number} destHeight - Height to draw (will scale)
+   * @param {number} [sourceWidth] - Optional width of source sprite (defaults to destWidth)
+   * @param {number} [sourceHeight] - Optional height of source sprite (defaults to destHeight)
+   */
+  drawSprite(ctx, sheetName, spriteX, spriteY, destX, destY, destWidth, destHeight, sourceWidth, sourceHeight) {
+    // Get the sprite sheet
+    const sheet = this.getSpriteSheet(sheetName);
+    if (!sheet || !sheet.image) {
+      console.warn(`Cannot draw sprite: Sheet "${sheetName}" not found or image not loaded`);
+      return;
+    }
+
+    // Handle default source dimensions
+    sourceWidth = sourceWidth || sheet.config.defaultSpriteWidth || destWidth;
+    sourceHeight = sourceHeight || sheet.config.defaultSpriteHeight || destHeight;
+
+    try {
+      // Draw the sprite
+      ctx.drawImage(
+        sheet.image,
+        spriteX, spriteY,
+        sourceWidth, sourceHeight,
+        destX, destY,
+        destWidth, destHeight
+      );
+    } catch (error) {
+      console.error(`Error drawing sprite from ${sheetName} at (${spriteX}, ${spriteY}):`, error);
+      
+      // Fallback: draw a colored rectangle for debugging
+      ctx.fillStyle = 'magenta';
+      ctx.fillRect(destX, destY, destWidth, destHeight);
+    }
+  }
 }
 
 export const spriteManager = new SpriteManager();

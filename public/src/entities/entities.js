@@ -305,4 +305,14 @@ function lerp(start, end, t) {
 }
 
 // Export bullets array for direct access if needed
-export { bullets, playerManager }; 
+export { bullets, playerManager };
+
+// Export this module to window so it can be accessed by the renderer
+window.entitiesModule = {
+    bullets,
+    renderAllBullets,
+    renderOtherPlayers,
+    updateBullets,
+    updatePlayers,
+    initializePlayers
+}; 
