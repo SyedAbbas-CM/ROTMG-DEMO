@@ -259,14 +259,46 @@ export function initializePlayers(localPlayerId) {
 export function updatePlayerInterpolation(deltaTime) {
     if (!playerManager) return;
     
+    // Current time for interpolation calculations
+    const now = Date.now();
+    
     // Interpolate positions for smooth movement
     for (const player of playerManager.players.values()) {
         // Skip if we don't have interpolation data
         if (player._prevX === undefined || player._targetX === undefined) continue;
         
-        // Current position - use lerp for interpolation between prev and target
-        player.x = lerp(player._prevX, player._targetX, Math.min(1, (Date.now() - player.lastPositionUpdate) / 100));
-        player.y = lerp(player._prevY, player._targetY, Math.min(1, (Date.now() - player.lastPositionUpdate) / 100));
+        // Calculate time since last server update
+        const timeSinceUpdate = now - player.lastPositionUpdate;
+        
+        // IMPROVED: Use longer interpolation time (300ms instead of 100ms)
+        // This gives smoother movement with the 30fps server updates
+        const interpolationDuration = 300;
+        
+        // Calculate interpolation progress (0-1)
+        let t = Math.min(1, timeSinceUpdate / interpolationDuration);
+        
+        // Apply ease-out interpolation for smoother stops
+        t = 1 - Math.pow(1 - t, 2); // Quadratic ease-out
+        
+        // Basic position interpolation
+        player.x = lerp(player._prevX, player._targetX, t);
+        player.y = lerp(player._prevY, player._targetY, t);
+        
+        // IMPROVED: If we've reached the target but have velocity,
+        // use extrapolation to predict continued movement
+        if (t === 1 && (player.vx !== 0 || player.vy !== 0)) {
+            // Only extrapolate for a short time to avoid excessive prediction
+            const extrapolationTime = Math.min(timeSinceUpdate - interpolationDuration, 100);
+            
+            if (extrapolationTime > 0) {
+                // Gradually reduce velocity for natural slowdown
+                const slowdownFactor = Math.max(0, 1 - extrapolationTime / 200);
+                
+                // Apply extrapolation
+                player.x += player.vx * extrapolationTime * slowdownFactor;
+                player.y += player.vy * extrapolationTime * slowdownFactor;
+            }
+        }
     }
     
     // Update player animations

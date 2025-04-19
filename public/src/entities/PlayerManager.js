@@ -47,97 +47,84 @@ export class PlayerManager {
     }
     
     /**
-     * Update players with data from server
+     * Update players based on server data
      * @param {Object} playersData - Player data from server
      */
     updatePlayers(playersData) {
         if (!playersData) return;
         
-        // Get array of current player IDs
-        const currentPlayerIds = Array.from(this.players.keys());
+        // Track players in current update for cleanup
+        const updatedPlayers = new Set();
         
-        // Add or update players from server data
-        for (const [playerId, playerData] of Object.entries(playersData)) {
-            // Skip local player, it's handled separately
-            if (playerId === this.localPlayerId) continue;
+        // Process each player
+        for (const [id, data] of Object.entries(playersData)) {
+            // Handle filtering of local player and ensuring player is valid
+            if (id === this.localPlayerId) {
+                throttledLog('skip-local', `Skipping local player ID: ${id}`, null, 5000);
+                continue;
+            }
             
-            if (this.players.has(playerId)) {
-                // Update existing player
-                const player = this.players.get(playerId);
-                
-                // Save previous position for movement detection
-                const prevX = player.x;
-                const prevY = player.y;
-                
-                // Update player data
-                Object.assign(player, playerData);
-                
-                // Update player's animation if it exists
-                if (this.playerAnimators.has(playerId)) {
-                    const animator = this.playerAnimators.get(playerId);
-                    
-                    // Calculate if player is moving based on position change
-                    const isMoving = prevX !== player.x || prevY !== player.y;
-                    
-                    // Calculate velocity direction based on position change
-                    const velocity = {
-                        x: player.x - prevX,
-                        y: player.y - prevY
-                    };
-                    
-                    // Update animator
-                    animator.update(0.016, isMoving, velocity); // Use 1/60 as delta time
-                }
+            // Skip if invalid data
+            if (!data || typeof data !== 'object' || data.x === undefined || data.y === undefined) {
+                throttledLog('invalid-data', `Invalid player data for ID: ${id}`, data, 5000);
+                continue;
+            }
+            
+            updatedPlayers.add(id);
+            
+            // Get existing player or create new one
+            let player = this.players.get(id);
+            
+            if (player) {
+                // Update existing player with our new method
+                this.updatePlayerData(player, data);
             } else {
-                // Add new player with default sprite properties if they're missing
-                const enhancedPlayerData = {
-                    ...playerData,
-                    // Ensure these properties are set for rendering
-                    width: playerData.width || 10,
-                    height: playerData.height || 10,
-                    spriteX: playerData.spriteX !== undefined ? playerData.spriteX : 0,
-                    spriteY: playerData.spriteY !== undefined ? playerData.spriteY : 0,
-                    maxHealth: playerData.maxHealth || 100,
-                    name: playerData.name || `Player ${playerId}`,
+                // Create new player
+                player = {
+                    id: id,
+                    x: data.x,
+                    y: data.y,
+                    _targetX: data.x,
+                    _targetY: data.y,
+                    _prevX: data.x,
+                    _prevY: data.y,
+                    rotation: data.rotation || 0,
+                    health: data.health !== undefined ? data.health : 100,
+                    maxHealth: data.maxHealth || 100,
+                    name: data.name || `Player ${id}`,
+                    width: data.width || 10,
+                    height: data.height || 10,
                     lastUpdate: Date.now(),
-                    // Store the current position as both current and target for interpolation
-                    _prevX: playerData.x,
-                    _prevY: playerData.y, 
-                    _targetX: playerData.x,
-                    _targetY: playerData.y,
-                    // Timestamps for interpolation
-                    lastPositionUpdate: Date.now()
+                    lastPositionUpdate: Date.now(),
+                    lastServerUpdate: Date.now(),
+                    vx: 0,
+                    vy: 0
                 };
                 
-                this.players.set(playerId, enhancedPlayerData);
+                // Add to players map
+                this.players.set(id, player);
                 
-                // Create an animator for this player
-                this.playerAnimators.set(playerId, new EntityAnimator({
-                    defaultState: 'idle',
-                    frameCount: 4,
-                    frameDuration: 0.15,
-                    spriteWidth: TILE_SIZE,
-                    spriteHeight: TILE_SIZE,
-                    spriteSheet: 'character_sprites'
-                }));
+                // Initialize animator
+                this.createAnimatorForPlayer(id);
                 
-                console.log(`Added new player: ${playerId} at position (${playerData.x}, ${playerData.y})`, enhancedPlayerData);
+                throttledLog('new-player', `Added new player: ${id} at (${data.x.toFixed(1)}, ${data.y.toFixed(1)})`);
             }
         }
         
-        // Remove players that no longer exist
-        for (const playerId of currentPlayerIds) {
-            if (playerId !== this.localPlayerId && !playersData[playerId]) {
-                console.log(`Removing player: ${playerId}`);
-                this.players.delete(playerId);
-                this.playerAnimators.delete(playerId);
+        // Remove players not in update after a timeout
+        // This helps with temporary network issues
+        if (updatedPlayers.size > 0) {
+            // Clean up players that haven't been updated for too long
+            const staleTimeout = 10000; // 10 seconds
+            const now = Date.now();
+            
+            for (const [id, player] of this.players.entries()) {
+                if (!updatedPlayers.has(id) && now - player.lastServerUpdate > staleTimeout) {
+                    this.players.delete(id);
+                    this.playerAnimators.delete(id);
+                    throttledLog('remove-player', `Removed stale player: ${id}`);
+                }
             }
-        }
-        
-        // Always log player count for debugging, but throttled
-        throttledLog('player-count', `Player Manager: Now tracking ${this.players.size} other players`);
-        if (this.players.size > 0 && throttledLog('player-ids', 'Players being tracked:', Array.from(this.players.keys()), 5000)) {
-            // Log player IDs only every 5 seconds
         }
     }
     
@@ -146,26 +133,36 @@ export class PlayerManager {
      * @param {number} deltaTime - Time elapsed since last update in seconds
      */
     updatePlayerAnimations(deltaTime) {
-        // Update all player animations
+        // Update animations based on velocity
         for (const [playerId, player] of this.players.entries()) {
-            if (this.playerAnimators.has(playerId)) {
-                const animator = this.playerAnimators.get(playerId);
-                
-                // Skip update if we don't have position data
-                if (player._prevX === undefined || player._targetX === undefined) continue;
-                
-                // Calculate if player is moving based on interpolation targets
-                const isMoving = player._prevX !== player._targetX || player._prevY !== player._targetY;
-                
-                // Calculate velocity direction based on movement targets
-                const velocity = {
-                    x: player._targetX - player._prevX,
-                    y: player._targetY - player._prevY
-                };
-                
-                // Update animator
-                animator.update(deltaTime, isMoving, velocity);
+            const animator = this.playerAnimators.get(playerId);
+            if (!animator) continue;
+            
+            // Calculate if player is actually moving based on velocity
+            const velocity = { 
+                x: player.vx || 0, 
+                y: player.vy || 0 
+            };
+            
+            // Consider the player moving if velocity exceeds a small threshold
+            const speedThreshold = 0.0001; // Units per millisecond
+            const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+            const isMoving = speed > speedThreshold;
+            
+            // Update animator state
+            if (isMoving) {
+                // Determine dominant direction for animation
+                if (Math.abs(velocity.x) > Math.abs(velocity.y)) {
+                    // Horizontal movement is dominant
+                    animator.direction = velocity.x < 0 ? 1 : 3; // 1 = left, 3 = right
+                } else {
+                    // Vertical movement is dominant
+                    animator.direction = velocity.y < 0 ? 2 : 0; // 2 = up, 0 = down
+                }
             }
+            
+            // Update animator with movement state
+            animator.update(deltaTime, isMoving, velocity);
         }
         
         // Clean up stale player positions after some time
@@ -537,5 +534,57 @@ export class PlayerManager {
                 console.error("Error rendering player fallback:", error);
             }
         }
+    }
+
+    /**
+     * Update player data with latest from server
+     * @param {Object} player - Local player data to update
+     * @param {Object} data - New player data from server
+     */
+    updatePlayerData(player, data) {
+        // Store the previous position for interpolation
+        player._prevX = player.x;
+        player._prevY = player.y;
+        
+        // Calculate velocity based on position changes
+        if (player._targetX !== undefined) {
+            const dx = data.x - player._targetX;
+            const dy = data.y - player._targetY;
+            const timeDiff = Date.now() - player.lastPositionUpdate;
+            
+            if (timeDiff > 0) {
+                // Units per millisecond
+                player.vx = dx / timeDiff;
+                player.vy = dy / timeDiff;
+            }
+        }
+        
+        // Set target position for interpolation
+        player._targetX = data.x;
+        player._targetY = data.y;
+        player.lastPositionUpdate = Date.now();
+        
+        // Update other properties directly
+        player.rotation = data.rotation !== undefined ? data.rotation : player.rotation;
+        player.health = data.health !== undefined ? data.health : player.health;
+        player.maxHealth = data.maxHealth !== undefined ? data.maxHealth : (player.maxHealth || 100);
+        
+        // Update last server update time
+        player.lastServerUpdate = Date.now();
+    }
+
+    /**
+     * Create an animator for a player
+     * @param {string} playerId - Player ID
+     */
+    createAnimatorForPlayer(playerId) {
+        this.playerAnimators.set(playerId, new EntityAnimator({
+            defaultState: 'idle',
+            frameCount: 4,
+            frameDuration: 0.15,
+            spriteWidth: TILE_SIZE,
+            spriteHeight: TILE_SIZE,
+            spriteSheet: 'character_sprites'
+        }));
     }
 } 

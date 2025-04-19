@@ -172,7 +172,7 @@ let nextClientId = 1;
 const gameState = {
   mapId: defaultMapId,
   lastUpdateTime: Date.now(),
-  updateInterval: 1000 / 20, // 20 updates per second
+  updateInterval: 1000 / 30, // 30 updates per second (was 20)
   enemySpawnInterval: 30000, // 30 seconds between enemy spawns (was 10000)
   lastEnemySpawnTime: Date.now()
 };
@@ -363,12 +363,9 @@ function broadcastWorldUpdates() {
     timestamp: Date.now()
   });
   
-  // Also periodically broadcast the player list separately to ensure clients have the latest player info
-  // Only do this every 2 seconds to reduce network traffic
-  if (Date.now() % 2000 < 50) {
-    console.log(`Broadcasting player list: ${Object.keys(players).length} players`);
-    broadcast(MessageType.PLAYER_LIST, players);
-  }
+  // Always send the player list with every update for smoother movement
+  // Removed the 2-second throttling
+  broadcast(MessageType.PLAYER_LIST, players);
 }
 
 // Start game update loop

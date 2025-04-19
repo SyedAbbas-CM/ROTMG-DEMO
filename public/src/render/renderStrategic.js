@@ -11,8 +11,6 @@ const ctx = canvas2D.getContext('2d');
 // Resize canvas to match window size
 canvas2D.width = window.innerWidth;
 canvas2D.height = window.innerHeight;
-const camera = gameState.camera;
-const scaleFactor = camera.getViewScaleFactor();
 
 // Debug flags
 const DEBUG_RENDERING = false;
@@ -32,14 +30,16 @@ export function renderStrategicView() {
     console.warn("Cannot render map: map manager not available");
     return;
   }
-
+  ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
   // Calculate current time for throttling
   const now = performance.now();
 
   // For strategic view, we want to see more of the map
   // so we'll show more tiles based on the smaller scale factor
-  const tilesInViewX = Math.ceil(canvas2D.width / (TILE_SIZE )) + 4; // Add buffer
-  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE )) + 4;
+    // ② Re‑read current zoom every frame
+  const scaleFactor = camera.getViewScaleFactor();
+  const tilesInViewX = Math.ceil(canvas2D.width  / (TILE_SIZE * scaleFactor)) + 2;
+  const tilesInViewY = Math.ceil(canvas2D.height / (TILE_SIZE * scaleFactor)) + 2;
 
   const startX = Math.floor(camera.position.x - tilesInViewX / 2);
   const startY = Math.floor(camera.position.y - tilesInViewY / 2);
@@ -55,7 +55,7 @@ export function renderStrategicView() {
   }
   
   const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites");
-  if (!tileSheetObj) return;
+  if (!tileSheetObj) { console.warn('tile_sprites not loaded'); return; }
   const tileSpriteSheet = tileSheetObj.image;
 
   for (let y = startY; y <= endY; y++) {
