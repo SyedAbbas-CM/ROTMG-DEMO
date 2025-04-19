@@ -33,15 +33,7 @@ const bullets = [];
  */
 export function updatePlayers(playerData) {
     if (!playerData) {
-        console.warn("updatePlayers called with no playerData");
         return;
-    }
-    
-    // Log raw data received (throttled)
-    if (throttledLog('update-players-raw', '[updatePlayers] Raw data received:', null, 5000)) {
-        console.log(JSON.stringify(playerData));
-        console.log(`[updatePlayers] Player IDs in data: ${Object.keys(playerData).join(', ')}`);
-        console.log(`[updatePlayers] Local player ID: ${playerManager.localPlayerId}, Character ID: ${gameState.character?.id}`);
     }
     
     // CRITICAL FIX: Filter out the metadata properties that aren't players
@@ -51,42 +43,23 @@ export function updatePlayers(playerData) {
         // Verify this is actually a player object with coordinates, not metadata
         if (data && typeof data === 'object' && data.x !== undefined && data.y !== undefined) {
             actualPlayerData[id] = data;
-        } else {
-            throttledLog('skip-non-player', `Skipping non-player property: ${id}`, null, 5000);
         }
-    }
-    
-    // Print the filtered player data (throttled)
-    const playerCount = Object.keys(actualPlayerData).length;
-    throttledLog('player-count', `[updatePlayers] Processing ${playerCount} players after filtering metadata properties`);
-    
-    if (throttledLog('player-ids-filtered', 'Filtered player IDs', null, 5000)) {
-        console.log(`[updatePlayers] Player IDs after filtering: ${Object.keys(actualPlayerData).join(', ')}`);
     }
     
     // IMPORTANT: Ensure localPlayerId is properly set
     if (gameState.character && gameState.character.id) {
         if (!playerManager.localPlayerId || playerManager.localPlayerId !== gameState.character.id) {
             playerManager.setLocalPlayerId(gameState.character.id);
-            console.log(`[updatePlayers] Updated playerManager.localPlayerId to match character.id: ${gameState.character.id}`);
         }
     }
     
     // IMPORTANT: Make sure playerManager is registered with gameState
     if (gameState && !gameState.playerManager) {
         gameState.playerManager = playerManager;
-        console.log("Registered playerManager with gameState");
     }
     
     // Update players
     playerManager.updatePlayers(actualPlayerData);
-    
-    // Log summary of current player count after update (throttled)
-    throttledLog('update-complete', `[updatePlayers] Update complete, playerManager now has ${playerManager.players.size} players`);
-    
-    if (playerManager.players.size > 0 && throttledLog('player-ids-current', 'Current player IDs', null, 5000)) {
-        console.log(`[updatePlayers] Current player IDs: ${Array.from(playerManager.players.keys()).join(', ')}`);
-    }
 }
 
 /**
@@ -115,12 +88,6 @@ export function updateBullets(bulletsData) {
         
         bullets.push(enhancedBullet);
     }
-    
-    // Log for debugging (only occasionally to reduce console spam)
-    if (bulletsData.length > 0 && Math.random() < 0.05) {
-        console.log(`Updated ${bulletsData.length} bullets in entities module`);
-        console.log(`Current bullet owners: ${[...new Set(bulletsData.map(b => b.ownerId))].join(', ')}`);
-    }
 }
 
 /**
@@ -147,11 +114,6 @@ export function renderAllBullets(ctx) {
     
     // Get sprite manager
     const spriteManager = window.spriteManager || null;
-    
-    // Only log bullet rendering very rarely to reduce spam
-    if (Math.random() < 0.001) {  // Log only 0.1% of the time
-        console.log(`Rendering ${bullets.length} bullets through renderAllBullets`);
-    }
     
     for (const bullet of bullets) {
         try {
@@ -248,7 +210,6 @@ export function getBullets() {
 export function initializePlayers(localPlayerId) {
     if (playerManager) {
         playerManager.setLocalPlayerId(localPlayerId);
-        console.log(`Initialized player system with local player ID: ${localPlayerId}`);
     }
 }
 

@@ -194,7 +194,6 @@ export class EntityAnimator {
   attack(direction) {
     // Check if we can attack
     const canAttack = !this.isAttacking && this.attackCooldown <= 0;
-    console.log(`[Animator.attack] Can attack: ${canAttack}, isAttacking: ${this.isAttacking}, cooldown: ${this.attackCooldown.toFixed(2)}`);
     
     if (canAttack) {
       // Set attack flags
@@ -203,11 +202,8 @@ export class EntityAnimator {
       
       // If a direction was provided, override the current direction
       if (direction !== undefined && direction >= 0 && direction <= 3) {
-        console.log(`[Animator.attack] Overriding direction: ${this.direction} -> ${direction}`);
         this.direction = direction;
       }
-      
-      console.log(`[Animator.attack] Starting attack in direction: ${this.direction} (${['down', 'left', 'up', 'right'][this.direction]})`);
       
       // Always set the animation state to ATTACK
       this.currentState = this.states.ATTACK;
@@ -265,23 +261,10 @@ export class EntityAnimator {
    * @param {number} angle - Direction angle in radians
    */
   setDirectionFromAngle(angle) {
-    // DEBUG: Log the raw angle for diagnostic purposes
-    console.log(`[setDirectionFromAngle] Raw angle: ${angle.toFixed(2)} radians`);
-    
-    // Convert angle to direction: 0=down, 1=left, 2=up, 3=right
     // Normalize angle to 0-2π range
     const normalizedAngle = (angle + 2 * Math.PI) % (2 * Math.PI);
-    console.log(`[setDirectionFromAngle] Normalized angle: ${normalizedAngle.toFixed(2)} radians`);
     
-    // CORRECTION: FIX THE ANGLE MAPPING
-    // 
-    // The angle is in standard mathematical orientation where:
-    // - 0 or 2π = right (positive X axis)
-    // - π/2 = down (positive Y axis in canvas)
-    // - π = left (negative X axis)
-    // - 3π/2 = up (negative Y axis in canvas)
-    //
-    // Map these angles to our direction indices:
+    // Map angles to directions:
     // - Right (3): -π/4 to π/4 (around 0)
     // - Down (0): π/4 to 3π/4 (around π/2)
     // - Left (1): 3π/4 to 5π/4 (around π)
@@ -298,7 +281,6 @@ export class EntityAnimator {
       direction = 2; // Up (around 3π/2 radians)
     }
     
-    console.log(`[setDirectionFromAngle] Setting direction to: ${direction} (${['down', 'left', 'up', 'right'][direction]})`);
     this.direction = direction;
   }
   

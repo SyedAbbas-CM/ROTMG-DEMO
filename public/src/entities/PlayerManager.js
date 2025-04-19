@@ -11,11 +11,12 @@ function throttledLog(key, message, data, interval = 1000) {
     const now = Date.now();
     if (!logThrottles[key] || now - logThrottles[key] >= interval) {
         logThrottles[key] = now;
-        if (data !== undefined) {
-            //console.log(message, data);
-        } else {
-            //console.log(message);
-        }
+        // Comment out all logging to reduce console spam
+        // if (data !== undefined) {
+        //     console.log(message, data);
+        // } else {
+        //     console.log(message);
+        // }
         return true;
     }
     return false;
@@ -38,12 +39,10 @@ export class PlayerManager {
         this.playerAnimators = new Map(); // Map of player ID to animator
         
         // Debug
-        this.debug = true; // Enable debug by default for troubleshooting
+        this.debug = false; // Disable debug
         
         // Debug visualization - makes other players more obvious
-        this.visualDebug = true; // Always enable visual debug to diagnose animation issues
-        
-        console.log("PlayerManager initialized");
+        this.visualDebug = false; // Disable visual debug
     }
     
     /**
@@ -230,20 +229,10 @@ export class PlayerManager {
     getPlayersForRender() {
         const allPlayers = Array.from(this.players.values());
         
-        // Log player data and IDs, but throttled to reduce spam
-        throttledLog('players-available', `[PlayerManager] Players available: ${allPlayers.length}, Local ID: ${this.localPlayerId}`);
-        
-        if (allPlayers.length > 0 && throttledLog('player-debug', 'Player debug info', null, 10000)) {
-            // Only log detailed player data every 10 seconds
-            console.log(`[PlayerManager] Player IDs in Map: ${Array.from(this.players.keys()).join(', ')}`);
-            console.log(`[PlayerManager] First player object:`, allPlayers[0]);
-        }
-        
-        // Enhanced filter logic with more checks and debug output
+        // Enhanced filter logic with more checks
         const playersToRender = allPlayers.filter(player => {
             // Skip players without an ID (shouldn't happen but check anyway)
             if (!player.id) {
-                throttledLog('player-no-id', `[PlayerManager] Player without ID found, will render:`, player, 5000);
                 return true;
             }
             
@@ -255,22 +244,12 @@ export class PlayerManager {
             const isLocalPlayer = localId && playerId === localId;
             
             if (isLocalPlayer) {
-                throttledLog('filter-local', `[PlayerManager] Filtering out local player with ID: ${playerId}`, null, 5000);
                 return false;
             }
             
             // Keep this player for rendering
             return true;
         });
-        
-        // Log filtering results with throttling
-        throttledLog('render-count', `[PlayerManager] Rendering ${playersToRender.length} out of ${allPlayers.length} players`);
-        
-        if (playersToRender.length > 0 && throttledLog('render-ids', 'Players to render IDs', null, 5000)) {
-            console.log(`[PlayerManager] Players to render IDs: ${playersToRender.map(p => p.id).join(', ')}`);
-        } else if (allPlayers.length > 0 && playersToRender.length === 0 && throttledLog('all-filtered', 'All players filtered warning', null, 5000)) {
-            console.log(`[PlayerManager] WARNING: All players filtered out! Check if localPlayerId (${this.localPlayerId}) matches all player IDs`);
-        }
         
         return playersToRender;
     }
@@ -281,7 +260,6 @@ export class PlayerManager {
      */
     setLocalPlayerId(clientId) {
         this.localPlayerId = clientId;
-        console.log(`PlayerManager: Set local player ID to ${clientId}`);
     }
     
     /**
@@ -291,12 +269,8 @@ export class PlayerManager {
      */
     render(ctx, cameraPosition) {
         if (!ctx) {
-            console.warn("Cannot render players: no canvas context provided");
             return;
         }
-        
-        // Throttle this log to reduce spam
-        throttledLog('render-players', `PlayerManager rendering ${this.players.size} players`, null, 5000);
         
         // Get list of players to render (filtered)
         const playersToRender = this.getPlayersForRender();
@@ -311,14 +285,12 @@ export class PlayerManager {
                 const sheetNames = Object.keys(spriteManager.spriteSheets);
                 if (sheetNames.length > 0) {
                     spriteSheetObj = spriteManager.getSpriteSheet(sheetNames[0]);
-                    console.log(`Falling back to first available sprite sheet: ${sheetNames[0]}`);
                 }
             }
         }
 
         // Debug logging for sprite sheet only if missing
         if (!spriteSheetObj) {
-            console.error("Character sprite sheet not loaded - switching to fallback rendering!");
             // Use fallback rendering
             this.renderPlayersFallback(ctx, cameraPosition);
             return;
@@ -332,7 +304,6 @@ export class PlayerManager {
         const screenHeight = ctx.canvas.height;
         
         // Define the scale factor based on view type 
-        // NOTE: Keep this consistent with other entities (character, bullets, etc.)
         const viewType = gameState.camera?.viewType || 'top-down';
         const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
         
@@ -349,7 +320,7 @@ export class PlayerManager {
                 const width = player.width * SCALE * viewScaleFactor;
                 const height = player.height * SCALE * viewScaleFactor;
                 
-                // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
+                // Get screen coordinates
                 let screenX, screenY;
                 
                 if (useCamera) {
@@ -365,44 +336,12 @@ export class PlayerManager {
                     screenY = screenPos.y;
                 } else {
                     // Fallback to direct calculation if camera method not available
-                    console.log('Fallback to direct calculation');
                     screenX = (player.x - cameraPosition.x) * TILE_SIZE * viewScaleFactor + screenWidth / 2;
                     screenY = (player.y - cameraPosition.y) * TILE_SIZE * viewScaleFactor + screenHeight / 2;
                 }
                 
-                // Debug visualization to help diagnose coordinate issues
-                if (this.visualDebug) {
-                    ctx.fillStyle = 'rgba(255, 0, 255, 0.3)';
-                    ctx.fillRect(screenX - width/2, screenY - height/2, width, height);
-                    
-                    // Draw world coordinates for debugging
-                    ctx.fillStyle = 'white';
-                    ctx.font = '10px Arial';
-                    ctx.fillText(`(${player.x.toFixed(1)},${player.y.toFixed(1)})`, screenX, screenY - height/2 - 15);
-                    
-                    // Animation state visualization
-                    const animator = this.playerAnimators.get(player.id);
-                    if (animator) {
-                        const animState = animator.currentState || 'none';
-                        const dir = animator.direction;
-                        const frame = animator.frameIndex;
-                        const dirName = ['down', 'left', 'up', 'right'][dir];
-                        
-                        ctx.fillStyle = 'yellow';
-                        ctx.font = '8px Arial';
-                        ctx.fillText(`${animState}:${dirName}(${frame})`, screenX, screenY - height/2 - 5);
-                        
-                        // Draw moving state indicator
-                        ctx.fillStyle = player.isMoving ? 'lime' : 'red';
-                        ctx.fillRect(screenX - 2, screenY - height/2 - 22, 4, 4);
-                    }
-                }
-                
-                // Improved offscreen culling - use larger culling distance in strategic view
-                // to prevent players from "popping" when moving quickly
-                const cullingDistance = isStrategicView ? Math.max(screenWidth, screenHeight) : width * 2;
-                
                 // Skip if off screen (with appropriate buffer)
+                const cullingDistance = isStrategicView ? Math.max(screenWidth, screenHeight) : width * 2;
                 if (screenX < -cullingDistance || screenX > screenWidth + cullingDistance || 
                     screenY < -cullingDistance || screenY > screenHeight + cullingDistance) {
                     continue;
@@ -475,10 +414,7 @@ export class PlayerManager {
                 // Restore context
                 ctx.restore();
             } catch (error) {
-                // Only log errors occasionally to prevent spam
-                if (Math.random() < 0.1) {
-                    console.error("Error rendering player:", error, player);
-                }
+                // Silently handle errors
             }
         }
         
@@ -514,19 +450,19 @@ export class PlayerManager {
         const viewType = gameState.camera?.viewType || 'top-down';
         const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
         
-        // Log only once when falling back
-        console.log(`Fallback rendering for ${this.players.size} players - sprite sheet missing`);
-        
         // Use the camera's worldToScreen method if available for consistent coordinates
         const useCamera = gameState.camera && typeof gameState.camera.worldToScreen === 'function';
         
         for (const player of this.players.values()) {
+            // Skip local player
+            if (player.id === this.localPlayerId) continue;
+            
             try {
                 // Use player's actual dimensions with proper scaling
                 const width = player.width * SCALE * viewScaleFactor;
                 const height = player.height * SCALE * viewScaleFactor;
                 
-                // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
+                // Get screen coordinates
                 let screenX, screenY;
                 
                 if (useCamera) {
@@ -550,12 +486,6 @@ export class PlayerManager {
                 if (screenX < -width || screenX > screenWidth + width || 
                     screenY < -height || screenY > screenHeight + height) {
                     continue;
-                }
-                
-                // Debug visualization
-                if (this.visualDebug) {
-                    ctx.fillStyle = 'rgba(255, 0, 255, 0.3)';
-                    ctx.fillRect(screenX - width/2, screenY - height/2, width, height);
                 }
                 
                 // Save context for rotation
@@ -594,7 +524,7 @@ export class PlayerManager {
                 // Restore context
                 ctx.restore();
             } catch (error) {
-                console.error("Error rendering player fallback:", error);
+                // Silently handle errors
             }
         }
     }
@@ -631,11 +561,6 @@ export class PlayerManager {
                 
                 // Always store movement velocity for animation direction
                 player.moveVelocity = { x: player.vx, y: player.vy };
-                
-                // If player just started or stopped moving, log it for debugging
-                if (wasMoving !== player.isMoving) {
-                    console.log(`Player ${player.id} ${player.isMoving ? 'started' : 'stopped'} moving`);
-                }
                 
                 // Update player's facing direction
                 if (player.isMoving) {
@@ -676,38 +601,5 @@ export class PlayerManager {
             spriteHeight: TILE_SIZE,
             spriteSheet: 'character_sprites'
         }));
-    }
-
-    /**
-     * Debug method to force animate a player for testing
-     * @param {string} playerId - Player ID to animate
-     */
-    forceAnimatePlayer(playerId) {
-        const player = this.players.get(playerId);
-        if (!player) return;
-        
-        // Get animator
-        const animator = this.playerAnimators.get(playerId);
-        if (!animator) {
-            this.createAnimatorForPlayer(playerId);
-            return;
-        }
-        
-        // Force animator state to walk
-        animator.currentState = animator.states.WALK;
-        
-        // Force moving state
-        player.isMoving = true;
-        
-        // Create a velocity for animation direction
-        player.moveVelocity = { x: Math.random() - 0.5, y: Math.random() - 0.5 };
-        
-        // Set the position to simulate movement
-        player._prevX = player.x;
-        player._prevY = player.y;
-        player._targetX = player.x + player.moveVelocity.x;
-        player._targetY = player.y + player.moveVelocity.y;
-        
-        console.log(`Forced animation for player ${playerId}`);
     }
 } 
