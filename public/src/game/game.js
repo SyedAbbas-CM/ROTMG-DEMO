@@ -293,8 +293,8 @@ function initializeGameState() {
     // Create local player with complete properties
     localPlayer = new Player({
         name: 'Player',
-        x: 50,
-        y: 50,
+        x: 5,
+        y: 5,
         width: 10,
         height: 10,
         speed: 150,
