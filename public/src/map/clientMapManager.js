@@ -510,6 +510,8 @@ export class ClientMapManager {
      * @returns {boolean} True if wall or obstacle
      */
     isWallOrObstacle(x, y) {
+
+        return false;
         // Map boundary check
         if (x < 0 || y < 0 || (this.width > 0 && x >= this.width) || (this.height > 0 && y >= this.height)) {
             // Treat outside of map as wall
