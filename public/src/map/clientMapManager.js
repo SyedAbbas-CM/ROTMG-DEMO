@@ -135,20 +135,44 @@ export class ClientMapManager {
      * @returns {Array} Processed chunk data
      */
     processChunkData(chunkData) {
+        // Log the structure of the incoming data to help diagnose issues
+        console.log(`Processing chunk data: type=${typeof chunkData}`, 
+                    chunkData ? 
+                    `keys=${Object.keys(chunkData).join(',')}` : 
+                    'chunkData is null/undefined');
+                    
         // If the chunk data is already in the right format, return it
         if (Array.isArray(chunkData)) {
+            console.log(`Chunk data is already an array with ${chunkData.length} rows`);
             return chunkData;
         }
         
         // Convert from server format to client format
         const processedData = [];
         
+        // Different possible formats the server might send
+        let tilesArray = null;
+        
+        // Try to extract tiles array from different possible formats
+        if (chunkData && typeof chunkData === 'object') {
+            if (chunkData.tiles && Array.isArray(chunkData.tiles)) {
+                tilesArray = chunkData.tiles;
+                console.log(`Found tiles array in chunkData.tiles with ${tilesArray.length} rows`);
+            } else if (chunkData.data && Array.isArray(chunkData.data)) {
+                tilesArray = chunkData.data;
+                console.log(`Found tiles array in chunkData.data with ${tilesArray.length} rows`);
+            } else if (Array.isArray(chunkData.data?.tiles)) {
+                tilesArray = chunkData.data.tiles;
+                console.log(`Found tiles array in chunkData.data.tiles with ${tilesArray.length} rows`);
+            }
+        }
+        
         // Process tiles array if it exists
-        if (chunkData.tiles && Array.isArray(chunkData.tiles)) {
-            for (let y = 0; y < chunkData.tiles.length; y++) {
+        if (tilesArray && Array.isArray(tilesArray)) {
+            for (let y = 0; y < tilesArray.length; y++) {
                 const row = [];
-                for (let x = 0; x < chunkData.tiles[y].length; x++) {
-                    const tileData = chunkData.tiles[y][x];
+                for (let x = 0; x < tilesArray[y].length; x++) {
+                    const tileData = tilesArray[y][x];
                     let tileType, tileHeight;
                     
                     // Handle different possible formats
@@ -168,7 +192,11 @@ export class ClientMapManager {
                 }
                 processedData.push(row);
             }
+            
+            console.log(`Processed chunk data: ${processedData.length} rows x ${processedData[0]?.length || 0} columns`);
         } else {
+            console.warn('No valid tiles array found in chunk data, creating default floor tiles');
+            
             // Create default chunk data
             for (let y = 0; y < this.chunkSize; y++) {
                 const row = [];
@@ -177,6 +205,8 @@ export class ClientMapManager {
                 }
                 processedData.push(row);
             }
+            
+            console.log(`Created default chunk data: ${processedData.length} rows x ${processedData[0].length} columns`);
         }
         
         return processedData;
@@ -193,18 +223,36 @@ export class ClientMapManager {
             return;
         }
         
-        // Log request for debugging
-        //console.log(`[MapManager] Updating visible chunks around (${playerX.toFixed(1)}, ${playerY.toFixed(1)})`);
+        // Convert player position to tile coordinates first
+        const playerTileX = Math.floor(playerX / this.tileSize);
+        const playerTileY = Math.floor(playerY / this.tileSize);
+        
+        // Log map boundaries for debugging
+        if (Math.random() < 0.01) { // Only log occasionally
+            console.log(`Map boundaries: width=${this.width}, height=${this.height}`);
+            console.log(`Player position in tiles: (${playerTileX}, ${playerTileY})`);
+        }
+        
+        // Ensure player stays within map bounds (important!)
+        if (this.width > 0 && this.height > 0) {
+            if (playerTileX < 0 || playerTileX >= this.width || playerTileY < 0 || playerTileY >= this.height) {
+                console.warn(`Player outside map bounds: (${playerTileX}, ${playerTileY}) - Map size: ${this.width}x${this.height}`);
+                // Don't update chunks for out-of-bounds player
+                return;
+            }
+        }
         
         // Convert player position to chunk coordinates (integers)
-        const centerChunkX = Math.floor(playerX / (this.tileSize * this.chunkSize));
-        const centerChunkY = Math.floor(playerY / (this.tileSize * this.chunkSize));
-        
-        //console.log(`[MapManager] Center chunk: (${centerChunkX}, ${centerChunkY})`);
+        const centerChunkX = Math.floor(playerTileX / this.chunkSize);
+        const centerChunkY = Math.floor(playerTileY / this.chunkSize);
         
         // Get chunks in view distance
         const newVisibleChunks = [];
         const chunksRequested = []; // Track new chunk requests for logging
+        
+        // Determine valid chunk range based on map size
+        const maxChunkX = this.width > 0 ? Math.ceil(this.width / this.chunkSize) - 1 : Infinity;
+        const maxChunkY = this.height > 0 ? Math.ceil(this.height / this.chunkSize) - 1 : Infinity;
         
         for (let dy = -this.chunkLoadDistance; dy <= this.chunkLoadDistance; dy++) {
             for (let dx = -this.chunkLoadDistance; dx <= this.chunkLoadDistance; dx++) {
@@ -212,15 +260,17 @@ export class ClientMapManager {
                 const chunkY = centerChunkY + dy;
                 
                 // Skip if out of map bounds
-                if (this.mapMetadata && this.width > 0 && this.height > 0) {
-                    const chunkStartX = chunkX * this.chunkSize;
-                    const chunkStartY = chunkY * this.chunkSize;
-                    
-                    if (chunkStartX < 0 || chunkStartY < 0 || 
-                        chunkStartX >= this.width || 
-                        chunkStartY >= this.height) {
-                        continue;
-                    }
+                if (chunkX < 0 || chunkY < 0 || chunkX > maxChunkX || chunkY > maxChunkY) {
+                    continue;
+                }
+                
+                // Calculate chunk start in tile coordinates
+                const chunkStartX = chunkX * this.chunkSize;
+                const chunkStartY = chunkY * this.chunkSize;
+                
+                // Skip if entire chunk is outside map bounds
+                if (chunkStartX >= this.width || chunkStartY >= this.height) {
+                    continue;
                 }
                 
                 const key = `${chunkX},${chunkY}`;
@@ -249,6 +299,7 @@ export class ClientMapManager {
             console.log(`[MapManager] Requested ${chunksRequested.length} new chunks: ${chunksRequested.join(', ')}`);
         }
         
+        // Update visible chunks list
         this.visibleChunks = newVisibleChunks;
     }
     
@@ -387,40 +438,46 @@ export class ClientMapManager {
     }
     
     /**
-     * Get a specific tile by world coordinates
+     * Get a specific tile
      * @param {number} x - Tile X coordinate
      * @param {number} y - Tile Y coordinate
-     * @returns {Tile|null} Tile object or null if chunk not loaded
+     * @returns {Tile|null} Tile object or null if not found
      */
     getTile(x, y) {
-        // Calculate chunk coordinates
+        // STRICT MAP BOUNDARY CHECK: Only allow coordinates within map bounds
+        if (x < 0 || y < 0 || (this.width > 0 && x >= this.width) || (this.height > 0 && y >= this.height)) {
+            console.log(`Attempted to get tile outside map bounds: (${x}, ${y}), map size: ${this.width}x${this.height}`);
+            return new Tile(TILE_IDS.WALL, 0); // Return wall for out-of-bounds
+        }
+        
+        // Convert to chunk coordinates
         const chunkX = Math.floor(x / this.chunkSize);
         const chunkY = Math.floor(y / this.chunkSize);
+        const localX = ((x % this.chunkSize) + this.chunkSize) % this.chunkSize; // Handle negative values
+        const localY = ((y % this.chunkSize) + this.chunkSize) % this.chunkSize; // Handle negative values
         
         // Get chunk
         const chunk = this.getChunk(chunkX, chunkY);
+        
+        // No chunk data available
         if (!chunk) {
-            // Return a fallback tile if chunk isn't loaded
-            return this.generateFallbackTile(x, y);
+            console.log(`No chunk data for (${chunkX}, ${chunkY}), requesting from server`);
+            // Request the chunk if network manager is available
+            if (this.networkManager) {
+                this.networkManager.requestChunk(chunkX, chunkY);
+            }
+            
+            // Return wall tile instead of fallback
+            return new Tile(TILE_IDS.WALL, 0);
         }
         
-        // Calculate local coordinates within the chunk
-        const localX = ((x % this.chunkSize) + this.chunkSize) % this.chunkSize;
-        const localY = ((y % this.chunkSize) + this.chunkSize) % this.chunkSize;
-        
-        // Make sure we're within the bounds of the chunk data
-        if (chunk.length <= localY || !chunk[localY] || chunk[localY].length <= localX) {
-            console.warn(`Invalid local coordinates (${localX}, ${localY}) for chunk (${chunkX}, ${chunkY})`);
-            return this.generateFallbackTile(x, y);
-        }
-        
-        // Return tile if it exists
-        if (chunk[localY] && chunk[localY][localX]) {
+        // Get tile from chunk
+        try {
             return chunk[localY][localX];
+        } catch (e) {
+            console.error(`Error getting tile at (${x}, ${y}) from chunk (${chunkX}, ${chunkY}):`, e);
+            return new Tile(TILE_IDS.WALL, 0);
         }
-        
-        // Return fallback if tile not found
-        return this.generateFallbackTile(x, y);
     }
     
     /**
@@ -447,25 +504,27 @@ export class ClientMapManager {
     }
     
     /**
-     * Check if a position is a wall or obstacle
-     * @param {number} x - World X coordinate
-     * @param {number} y - World Y coordinate
-     * @returns {boolean} True if wall, false if not (or chunk not loaded)
+     * Check if a tile is a wall, obstacle, or out of map bounds
+     * @param {number} x - Tile X coordinate
+     * @param {number} y - Tile Y coordinate
+     * @returns {boolean} True if wall or obstacle
      */
     isWallOrObstacle(x, y) {
-        // Convert to tile coordinates
-        const tileX = Math.floor(x / this.tileSize);
-        const tileY = Math.floor(y / this.tileSize);
-        
-        // Get tile
-        const tile = this.getTile(tileX, tileY);
-        
-        // If tile not found, assume passable
-        if (!tile) {
-            return false;
+        // Map boundary check
+        if (x < 0 || y < 0 || (this.width > 0 && x >= this.width) || (this.height > 0 && y >= this.height)) {
+            // Treat outside of map as wall
+            return true;
         }
         
-        // Check if wall, obstacle, mountain, or water
+        // Get actual tile
+        const tile = this.getTile(x, y);
+        
+        // If no tile found, treat as obstacle
+        if (!tile) {
+            return true;
+        }
+        
+        // Check tile type
         return tile.type === TILE_IDS.WALL || 
                tile.type === TILE_IDS.OBSTACLE || 
                tile.type === TILE_IDS.MOUNTAIN ||
@@ -474,10 +533,12 @@ export class ClientMapManager {
     
     /**
      * Generate a fallback tile when chunk not loaded
+     * THIS FUNCTION IS DISABLED - We want to strictly respect map boundaries
      * @param {number} x - Tile X coordinate
      * @param {number} y - Tile Y coordinate
      * @returns {Tile} Fallback tile
      */
+    /* DISABLED FALLBACK TILE GENERATION
     generateFallbackTile(x, y) {
         // Use a simple pattern for fallback tiles
         // Make map edges walls, interior floor
@@ -491,6 +552,7 @@ export class ClientMapManager {
         
         return new Tile(tileType, 0);
     }
+    */
     
     /**
      * Add event listener

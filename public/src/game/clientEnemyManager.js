@@ -42,14 +42,76 @@ export class ClientEnemyManager {
       // ID to index mapping
       this.idToIndex = new Map();
       
-      // Enemy type to sprite mapping
-      this.typeToSprite = [
-        { x: 0, y: 0 },   // Type 0: Black Overlord
-        { x: 8, y: 0 },   // Type 1: Red Berserker
-        { x: 16, y: 0 },  // Type 2: Purple Illusionist
-        { x: 24, y: 0 },  // Type 3: Emerald Regenerator
-        { x: 32, y: 0 }   // Type 4: Navy Turtle
+      // Enemy type definitions with names for easier reference
+      this.enemyTypes = [
+        { 
+          name: "Basic",      
+          spriteX: 0,  
+          spriteY: 0, 
+          frames: 4,
+          behaviors: ['chase', 'shoot'],
+          moveSpeed: 20,
+          attackRange: 5,
+          attackCooldown: 2,
+          projectileSpeed: 40,
+          damagePerHit: 10
+        },  
+        { 
+          name: "Fast",       
+          spriteX: 8,  
+          spriteY: 0, 
+          frames: 4,
+          behaviors: ['chase'],
+          moveSpeed: 40,
+          attackRange: 1,
+          attackCooldown: 1,
+          damagePerHit: 5
+        },  
+        { 
+          name: "Heavy",      
+          spriteX: 16, 
+          spriteY: 0, 
+          frames: 4,
+          behaviors: ['chase', 'shoot'],
+          moveSpeed: 10,
+          attackRange: 8,
+          attackCooldown: 3,
+          projectileSpeed: 30,
+          projectileCount: 3,
+          projectileSpread: Math.PI/6,
+          damagePerHit: 15
+        },  
+        { 
+          name: "Turret",     
+          spriteX: 24, 
+          spriteY: 0, 
+          frames: 4,
+          behaviors: ['shoot'],
+          moveSpeed: 0, // Doesn't move
+          attackRange: 10,
+          attackCooldown: 2.5,
+          projectileSpeed: 60,
+          damagePerHit: 12
+        },  
+        { 
+          name: "Melee",      
+          spriteX: 32, 
+          spriteY: 0, 
+          frames: 4,
+          behaviors: ['chase'],
+          moveSpeed: 25,
+          attackRange: 1.5,
+          attackCooldown: 1,
+          damagePerHit: 20
+        }   
       ];
+      
+      // Enemy type to sprite mapping (backwards compatible)
+      this.typeToSprite = this.enemyTypes.map(type => ({ x: type.spriteX, y: type.spriteY }));
+      
+      // Log sprite mapping for debugging
+      console.log("ClientEnemyManager initialized with types:", 
+        this.enemyTypes.map(t => `${t.name}(${t.spriteX},${t.spriteY})`).join(', '));
     }
     
     /**
@@ -76,10 +138,17 @@ export class ClientEnemyManager {
       this.health[index] = enemyData.health || 100;
       this.maxHealth[index] = enemyData.maxHealth || 100;
       
-      // Initialize visual properties
-      const spriteData = this.typeToSprite[this.type[index]] || this.typeToSprite[0];
-      this.spriteX[index] = spriteData.x;
-      this.spriteY[index] = spriteData.y;
+      // Validate type to prevent out-of-bounds access
+      const validType = Math.min(this.type[index], this.enemyTypes.length - 1);
+      if (validType !== this.type[index]) {
+        console.warn(`Invalid enemy type ${this.type[index]}, defaulting to type ${validType}`);
+        this.type[index] = validType;
+      }
+      
+      // Initialize visual properties from type definition
+      const typeData = this.enemyTypes[this.type[index]];
+      this.spriteX[index] = typeData.spriteX;
+      this.spriteY[index] = typeData.spriteY;
       this.animFrame[index] = 0;
       this.animTime[index] = 0;
       this.flashTime[index] = 0;
@@ -95,6 +164,8 @@ export class ClientEnemyManager {
       // Store index for lookup
       this.idToIndex.set(enemyId, index);
       
+      console.log(`Added enemy ${enemyId} of type ${this.enemyTypes[this.type[index]].name} at (${enemyData.x}, ${enemyData.y})`);
+      
       return enemyId;
     }
     
@@ -104,14 +175,19 @@ export class ClientEnemyManager {
      */
     update(deltaTime) {
       for (let i = 0; i < this.enemyCount; i++) {
-        // Update position interpolation
-        this.updateInterpolation(i, deltaTime);
+        // Skip interpolation - enemies don't move
         
-        // Update animations
-        this.updateAnimation(i, deltaTime);
+        // Skip animations - enemies don't animate
         
-        // Update visual effects
+        // Only update visual effects (flashing and death)
         this.updateEffects(i, deltaTime);
+        
+        // UPDATE BEHAVIORS
+        // Note: By default enemies don't move on the client, but we support behaviors
+        // for custom gameplay modes where the server might not be involved
+        if (window.ALLOW_CLIENT_ENEMY_BEHAVIOR) {
+          this.updateBehaviors(i, deltaTime);
+        }
       }
     }
     
@@ -146,19 +222,13 @@ export class ClientEnemyManager {
      * @param {number} deltaTime - Time elapsed since last update
      */
     updateAnimation(index, deltaTime) {
-      // Animation timing
-      this.animTime[index] += deltaTime;
+      // DISABLED ANIMATIONS - Always use frame 0
+      this.animFrame[index] = 0;
       
-      // Change animation frame every 0.2 seconds (adjust as needed)
-      if (this.animTime[index] >= 0.2) {
-        this.animTime[index] = 0;
-        this.animFrame[index] = (this.animFrame[index] + 1) % 4; // Assuming 4 frames
-        
-        // Update sprite sheet position for animation
-        // This assumes your sprite sheet has animation frames horizontally
-        const baseX = this.typeToSprite[this.type[index]].x;
-        this.spriteX[index] = baseX + this.animFrame[index] * 8; // Assuming 8px width sprites
-      }
+      // Set sprite position based on enemy type with no animation
+      const typeData = this.enemyTypes[this.type[index]];
+      this.spriteX[index] = typeData.spriteX;
+      this.spriteY[index] = typeData.spriteY;
     }
     
     /**
@@ -327,25 +397,18 @@ export class ClientEnemyManager {
         
         if (index !== -1) {
           // Update existing enemy
-          // Store previous position for interpolation
-          this.prevX[index] = this.x[index];
-          this.prevY[index] = this.y[index];
+          // MODIFIED: Keep position static after creation - don't follow position updates
+          // This effectively "freezes" enemies in place
           
-          // Set target position (for interpolation)
-          this.targetX[index] = enemy.x;
-          this.targetY[index] = enemy.y;
-          
-          // Reset interpolation timer
-          this.interpTime[index] = 0;
-          
-          // Update health and other properties
+          // IMPORTANT: Only update health
           if (this.health[index] !== enemy.health) {
             this.setEnemyHealth(enemy.id, enemy.health);
           }
           
+          // Still update max health
           this.maxHealth[index] = enemy.maxHealth;
         } else {
-          // Add new enemy
+          // Add new enemy (only first time)
           this.addEnemy(enemy);
         }
         
@@ -396,5 +459,277 @@ export class ClientEnemyManager {
     cleanup() {
       this.enemyCount = 0;
       this.idToIndex.clear();
+    }
+    
+    /**
+     * Verify that sprite sheet and type mapping is correct
+     * Call this method after sprite sheets are loaded to validate configuration
+     */
+    verifySpriteData() {
+      // Try to get sprite sheet from global spriteManager
+      const spriteManager = window.spriteManager;
+      if (!spriteManager) {
+        console.error("Cannot verify enemy sprites: spriteManager not available");
+        return false;
+      }
+      
+      const enemySheet = spriteManager.getSpriteSheet('enemy_sprites');
+      if (!enemySheet) {
+        console.error("Cannot verify enemy sprites: enemy_sprites sheet not found");
+        return false;
+      }
+      
+      console.log("Enemy sprite sheet loaded:", enemySheet.config);
+      
+      // Verify each type's sprite coordinates are within bounds
+      const sheetWidth = enemySheet.image.width;
+      const sheetHeight = enemySheet.image.height;
+      
+      let allValid = true;
+      this.enemyTypes.forEach((type, index) => {
+        const maxX = type.spriteX + (type.frames * 8);
+        if (maxX > sheetWidth || type.spriteY + 8 > sheetHeight) {
+          console.error(`Enemy type ${index} (${type.name}) has sprite coordinates out of bounds:`,
+            `X range: ${type.spriteX}-${maxX}, Y: ${type.spriteY}`,
+            `Sheet size: ${sheetWidth}x${sheetHeight}`);
+          allValid = false;
+        }
+      });
+      
+      if (allValid) {
+        console.log("All enemy sprite mappings verified successfully");
+      } else {
+        console.error("Some enemy sprite mappings are invalid - check sprite sheet configuration");
+      }
+      
+      return allValid;
+    }
+    
+    /**
+     * Update enemy behaviors
+     * @param {number} index - Enemy index
+     * @param {number} deltaTime - Time elapsed since last update
+     */
+    updateBehaviors(index, deltaTime) {
+      // Skip if enemy is dead
+      if (this.health[index] <= 0) return;
+      
+      // Get enemy's type
+      const type = this.type[index];
+      
+      // Get type data
+      const typeData = this.enemyTypes[type];
+      if (!typeData || !typeData.behaviors) return;
+      
+      // Initialize behavior data if needed
+      if (!this.behaviorData) {
+        this.behaviorData = new Array(this.maxEnemies);
+      }
+      
+      // Create behavior data for this enemy if it doesn't exist
+      if (!this.behaviorData[index]) {
+        this.behaviorData[index] = {
+          lastAttackTime: 0,
+          targetId: null,
+          patrolPoint: null,
+          state: 'idle'
+        };
+      }
+      
+      const behaviorData = this.behaviorData[index];
+      
+      // Find target (player) if needed
+      const target = this.findClosestTarget(index);
+      
+      // Update behaviors based on type
+      for (const behavior of typeData.behaviors) {
+        switch (behavior) {
+          case 'chase':
+            this.updateChase(index, target, typeData, deltaTime, behaviorData);
+            break;
+          case 'shoot':
+            this.updateShoot(index, target, typeData, deltaTime, behaviorData);
+            break;
+          case 'patrol':
+            this.updatePatrol(index, typeData, deltaTime, behaviorData);
+            break;
+          case 'teleport':
+            this.updateTeleport(index, target, typeData, deltaTime, behaviorData);
+            break;
+          default:
+            // Unknown behavior
+            break;
+        }
+      }
+    }
+    
+    /**
+     * Find closest target for enemy
+     * @param {number} index - Enemy index
+     * @returns {Object|null} Target object or null
+     */
+    findClosestTarget(index) {
+      // In a real implementation, this would find the closest player
+      // For now, just return the local player if available
+      if (window.gameState && window.gameState.character) {
+        return window.gameState.character;
+      }
+      return null;
+    }
+    
+    /**
+     * Update chase behavior
+     * @param {number} index - Enemy index
+     * @param {Object} target - Target object
+     * @param {Object} typeData - Enemy type data
+     * @param {number} deltaTime - Time elapsed since last update
+     * @param {Object} behaviorData - Enemy behavior state
+     */
+    updateChase(index, target, typeData, deltaTime, behaviorData) {
+      // Skip if no target or enemy can't move
+      if (!target || typeData.moveSpeed <= 0) return;
+      
+      // Get current position
+      const x = this.x[index];
+      const y = this.y[index];
+      
+      // Calculate distance to target
+      const dx = target.x - x;
+      const dy = target.y - y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // Check if within attack range
+      if (distance <= typeData.attackRange) {
+        // Close enough to attack, stop moving
+        behaviorData.state = 'attacking';
+        return;
+      }
+      
+      // Calculate movement direction
+      const dirX = dx / distance;
+      const dirY = dy / distance;
+      
+      // Move towards target
+      const moveSpeed = typeData.moveSpeed * deltaTime;
+      this.x[index] = x + dirX * moveSpeed;
+      this.y[index] = y + dirY * moveSpeed;
+      
+      // Update behavior state
+      behaviorData.state = 'chasing';
+    }
+    
+    /**
+     * Update shoot behavior
+     * @param {number} index - Enemy index
+     * @param {Object} target - Target object
+     * @param {Object} typeData - Enemy type data
+     * @param {number} deltaTime - Time elapsed since last update
+     * @param {Object} behaviorData - Enemy behavior state
+     */
+    updateShoot(index, target, typeData, deltaTime, behaviorData) {
+      // Skip if no target
+      if (!target) return;
+      
+      // Get current position
+      const x = this.x[index];
+      const y = this.y[index];
+      
+      // Calculate distance to target
+      const dx = target.x - x;
+      const dy = target.y - y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // Check if within attack range
+      if (distance > typeData.attackRange) {
+        return; // Too far to attack
+      }
+      
+      // Check cooldown
+      const now = Date.now();
+      if (now - behaviorData.lastAttackTime < typeData.attackCooldown * 1000) {
+        return; // Still on cooldown
+      }
+      
+      // Fire projectile
+      this.fireProjectile(index, target, typeData);
+      
+      // Update last attack time
+      behaviorData.lastAttackTime = now;
+    }
+    
+    /**
+     * Fire a projectile
+     * @param {number} index - Enemy index
+     * @param {Object} target - Target object
+     * @param {Object} typeData - Enemy type data
+     */
+    fireProjectile(index, target, typeData) {
+      // Skip if bullet manager not available
+      if (!window.gameState || !window.gameState.bulletManager) return;
+      
+      const bulletManager = window.gameState.bulletManager;
+      
+      // Calculate angle to target
+      const x = this.x[index];
+      const y = this.y[index];
+      const dx = target.x - x;
+      const dy = target.y - y;
+      const angle = Math.atan2(dy, dx);
+      
+      // Determine number of projectiles
+      const projectileCount = typeData.projectileCount || 1;
+      const spread = typeData.projectileSpread || 0;
+      
+      for (let i = 0; i < projectileCount; i++) {
+        // Calculate angle with spread
+        let projectileAngle = angle;
+        if (projectileCount > 1) {
+          projectileAngle = angle - (spread / 2) + (spread * i / (projectileCount - 1));
+        }
+        
+        // Create bullet
+        const bulletData = {
+          x: x,
+          y: y,
+          vx: Math.cos(projectileAngle) * typeData.projectileSpeed,
+          vy: Math.sin(projectileAngle) * typeData.projectileSpeed,
+          ownerId: this.id[index],
+          damage: typeData.damagePerHit || 10,
+          lifetime: 3.0,
+          width: 8,
+          height: 8,
+          // Add sprite info if available
+          spriteSheet: 'bullet_sprites',
+          spriteX: 0, // Default sprite position
+          spriteY: 0, // Default sprite position
+          spriteWidth: 8,
+          spriteHeight: 8
+        };
+        
+        bulletManager.addBullet(bulletData);
+      }
+    }
+    
+    /**
+     * Update patrol behavior
+     * @param {number} index - Enemy index
+     * @param {Object} typeData - Enemy type data
+     * @param {number} deltaTime - Time elapsed since last update
+     * @param {Object} behaviorData - Enemy behavior state
+     */
+    updatePatrol(index, typeData, deltaTime, behaviorData) {
+      // Not implemented yet - for server-side behavior
+    }
+    
+    /**
+     * Update teleport behavior
+     * @param {number} index - Enemy index
+     * @param {Object} target - Target object
+     * @param {Object} typeData - Enemy type data
+     * @param {number} deltaTime - Time elapsed since last update
+     * @param {Object} behaviorData - Enemy behavior state
+     */
+    updateTeleport(index, target, typeData, deltaTime, behaviorData) {
+      // Not implemented yet - for server-side behavior
     }
   }

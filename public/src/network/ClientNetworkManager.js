@@ -658,7 +658,7 @@ export class ClientNetworkManager {
         };
         
         this.handlers[MessageType.CHUNK_DATA] = (data) => {
-            console.log(`Received chunk data for (${data.chunkX}, ${data.chunkY})`);
+            console.log(`Received chunk data for (${data.x}, ${data.y})`);
             
             // Create a simple global object to store map data for debugging
             if (!window.mapDebug) {
@@ -670,11 +670,11 @@ export class ClientNetworkManager {
             }
             
             // Store chunk data in the global object
-            const chunkKey = `${data.chunkX},${data.chunkY}`;
-            window.mapDebug.chunks[chunkKey] = data.chunk;
+            const chunkKey = `${data.x},${data.y}`;
+            window.mapDebug.chunks[chunkKey] = data.data;
             
             if (this.game.setChunkData) {
-                this.game.setChunkData(data.chunkX, data.chunkY, data.chunk);
+                this.game.setChunkData(data.x, data.y, data.data);
             }
         };
         
@@ -866,12 +866,12 @@ export class ClientNetworkManager {
             // Diagnostic: Always log PLAYER_LIST messages raw format for debugging
             // This will help understand exactly what the server is sending
             if (type === MessageType.PLAYER_LIST) {
-                console.log('=== RAW PLAYER_LIST MESSAGE ===');
-                console.log('Raw message data:', messageData);
-                console.log('Type of data:', typeof messageData);
-                console.log('Keys:', Object.keys(messageData));
-                console.log('Has players property:', messageData.hasOwnProperty('players'));
-                console.log('================================');
+                //console.log('=== RAW PLAYER_LIST MESSAGE ===');
+                //console.log('Raw message data:', messageData);
+                //console.log('Type of data:', typeof messageData);
+                //console.log('Keys:', Object.keys(messageData));
+                //console.log('Has players property:', messageData.hasOwnProperty('players'));
+                //console.log('================================');
                 
                 // Store the last player list message for diagnostics
                 this.lastPlayerListMessage = messageData;

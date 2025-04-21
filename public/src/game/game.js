@@ -40,6 +40,24 @@ let localPlayer;
 // Server connection settings
 const SERVER_URL = 'ws://localhost:3000'; // Change if your server is on a different port or host
 
+// Collision statistics
+const collisionStats = {
+    reported: 0,
+    validated: 0,
+    rejected: 0,
+    getValidationRate() {
+        if (this.reported === 0) return 0;
+        return ((this.validated / this.reported) * 100).toFixed(1) + '%';
+    }
+};
+
+// Debug flags
+window.DEBUG_COLLISIONS = false; // Can be toggled with 'C' key
+window.ALLOW_CLIENT_ENEMY_BEHAVIOR = false; // Can be toggled with 'B' key
+
+// Make collision stats available globally for UI
+window.collisionStats = collisionStats;
+
 export async function initGame() {
     try {
         console.log('Starting game initialization...');
@@ -228,6 +246,39 @@ export async function initGame() {
                     console.log('No map manager available');
                 }
             }
+            
+            // Toggle collision debugging on 'c' key
+            if (e.key === 'c') {
+                window.DEBUG_COLLISIONS = !window.DEBUG_COLLISIONS;
+                console.log(`Collision debugging ${window.DEBUG_COLLISIONS ? 'enabled' : 'disabled'}`);
+                
+                // Create debug canvas if needed
+                if (window.DEBUG_COLLISIONS && !document.getElementById('debugCanvas')) {
+                    const debugCanvas = document.createElement('canvas');
+                    debugCanvas.id = 'debugCanvas';
+                    debugCanvas.style.position = 'absolute';
+                    debugCanvas.style.top = '0';
+                    debugCanvas.style.left = '0';
+                    debugCanvas.style.pointerEvents = 'none';
+                    debugCanvas.style.zIndex = '1000'; // Above everything
+                    debugCanvas.width = window.innerWidth;
+                    debugCanvas.height = window.innerHeight;
+                    document.body.appendChild(debugCanvas);
+                    console.log('Created debug canvas for collision visualization');
+                }
+            }
+
+            // Toggle enemy behaviors on 'b' key
+            if (e.key === 'b') {
+                window.ALLOW_CLIENT_ENEMY_BEHAVIOR = !window.ALLOW_CLIENT_ENEMY_BEHAVIOR;
+                console.log(`Enemy behaviors ${window.ALLOW_CLIENT_ENEMY_BEHAVIOR ? 'enabled' : 'disabled'}`);
+                
+                // Reset behavior data if disabling
+                if (!window.ALLOW_CLIENT_ENEMY_BEHAVIOR && enemyManager && enemyManager.behaviorData) {
+                    enemyManager.behaviorData = null;
+                    console.log('Reset enemy behavior data');
+                }
+            }
         });
     } catch (error) {
         console.error('Error initializing the game:', error);
@@ -258,6 +309,12 @@ function initializeGameState() {
     bulletManager = new ClientBulletManager(10000);
     enemyManager = new ClientEnemyManager(1000);
     
+    // Verify enemy sprite data after loading sprite sheets
+    if (enemyManager.verifySpriteData) {
+        // Schedule this to run after all sprite sheets are loaded
+        setTimeout(() => enemyManager.verifySpriteData(), 500);
+    }
+    
     // Make bulletManager available in console for debugging
     window.bulletManager = bulletManager;
     
@@ -266,6 +323,19 @@ function initializeGameState() {
     
     // IMPORTANT: Disable procedural generation to use server's map
     mapManager.proceduralEnabled = false;
+    
+    // Initialize collision manager
+    collisionManager = new ClientCollisionManager({
+        bulletManager: bulletManager,
+        enemyManager: enemyManager,
+        mapManager: mapManager,
+        localPlayerId: localPlayer.id
+    });
+    
+    console.log("Created collision manager:", collisionManager);
+    
+    // Make collision manager available in console for debugging
+    window.collisionManager = collisionManager;
     
     // Create network manager with proper handlers
     networkManager = new ClientNetworkManager(SERVER_URL, {
@@ -352,7 +422,7 @@ function initializeGameState() {
         
         // Set all players
         setPlayers: (players) => {
-            console.log('Players received:', players);
+            //console.log('Players received:', players);
             
             // Filter out the local player to avoid the ghost sprite issue
             if (players && typeof players === 'object' && localPlayer) {
@@ -362,7 +432,7 @@ function initializeGameState() {
                 // Remove local player from the data if it exists
                 if (filteredPlayers[localPlayer.id]) {
                     delete filteredPlayers[localPlayer.id];
-                    console.log(`Filtered out local player (${localPlayer.id}) from setPlayers update`);
+                    //console.log(`Filtered out local player (${localPlayer.id}) from setPlayers update`);
                 }
                 
                 // Update players with the filtered data
@@ -375,13 +445,13 @@ function initializeGameState() {
         
         // Set initial enemies
         setEnemies: (enemies) => {
-            console.log(`Received ${enemies.length} enemies from server`);
+            //console.log(`Received ${enemies.length} enemies from server`);
             enemyManager.setEnemies(enemies);
         },
         
         // Set initial bullets
         setBullets: (bullets) => {
-            console.log(`Received ${bullets.length} bullets from server`);
+            //console.log(`Received ${bullets.length} bullets from server`);
             bulletManager.setBullets(bullets);
         },
         
@@ -483,21 +553,19 @@ function initializeGameState() {
         // Set chunk data
         setChunkData: (chunkX, chunkY, chunkData) => {
             console.log(`Received chunk data for (${chunkX}, ${chunkY})`, chunkData);
+            
+            // Verify that we have valid chunk data before proceeding
+            if (!chunkData) {
+                console.error(`Received empty or invalid chunk data for (${chunkX}, ${chunkY})`);
+                return;
+            }
+            
             mapManager.setChunkData(chunkX, chunkY, chunkData);
         }
     });
     
     // Now that network manager is created, set it in the map manager
     mapManager.networkManager = networkManager;
-    
-    // Create collision manager
-    collisionManager = new ClientCollisionManager({
-        bulletManager: bulletManager,
-        enemyManager: enemyManager,
-        mapManager: mapManager,
-        networkManager: networkManager,
-        localPlayerId: localPlayer.id
-    });
     
     // Update gameState with references
     gameState.character = localPlayer;
@@ -854,6 +922,48 @@ function debugDumpPlayerInfo() {
     
     // Return true to indicate diagnostic ran successfully
     return true;
+}
+
+/**
+ * Handle server-validated collision result
+ * @param {Object} data - Collision result data from server
+ */
+export function applyCollision(data) {
+    if (!data.valid) {
+        console.warn(`Server rejected collision: ${data.reason}`);
+        collisionStats.rejected++;
+        collisionStats.reported++;
+        console.log(`Collision stats: ${collisionStats.validated} valid / ${collisionStats.reported} total (${collisionStats.getValidationRate()})`);
+        return;
+    }
+    
+    console.log(`Server validated collision: bullet ${data.bulletId} hit enemy ${data.enemyId}, damage: ${data.damage}`);
+    collisionStats.validated++;
+    collisionStats.reported++;
+    console.log(`Collision stats: ${collisionStats.validated} valid / ${collisionStats.reported} total (${collisionStats.getValidationRate()})`);
+    
+    // Remove the bullet if it still exists
+    if (bulletManager && bulletManager.removeBulletById) {
+        bulletManager.removeBulletById(data.bulletId);
+    }
+    
+    // Update enemy health if it exists
+    if (enemyManager && data.enemyId) {
+        // Find enemy by ID
+        const enemyIndex = enemyManager.findIndexById(data.enemyId);
+        if (enemyIndex !== -1) {
+            // Update health directly with server value
+            enemyManager.health[enemyIndex] = data.enemyHealth;
+            
+            // Apply visual hit effect
+            enemyManager.applyHitEffect(enemyIndex);
+            
+            // If enemy was killed, start death animation
+            if (data.enemyKilled) {
+                enemyManager.startDeathAnimation(enemyIndex);
+            }
+        }
+    }
 }
 
 // Add this function to request player list from server

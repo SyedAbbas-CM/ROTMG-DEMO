@@ -1,5 +1,7 @@
 // File: /src/Managers/EnemyManager.js
 
+import BehaviorSystem from './BehaviorSystem.js';
+
 /**
  * EnemyManager handles enemy creation, updating, and removal.
  * Uses Structure of Arrays (SoA) for data layout optimization.
@@ -37,6 +39,12 @@ export default class EnemyManager {
     this.canChase = new Uint8Array(maxEnemies); // Whether enemy can chase (1 or 0)
     this.canShoot = new Uint8Array(maxEnemies); // Whether enemy can shoot (1 or 0)
     
+    // New fields for visual effects
+    this.flashTimer = new Float32Array(maxEnemies); // Timer for flash effect
+    this.isFlashing = new Uint8Array(maxEnemies); // Whether enemy is flashing
+    this.deathTimer = new Float32Array(maxEnemies); // Timer for death animation
+    this.isDying = new Uint8Array(maxEnemies); // Whether enemy is dying
+
     // Mapping from ID to index for fast lookups
     this.idToIndex = new Map();
     
@@ -128,6 +136,9 @@ export default class EnemyManager {
         canShoot: 0
       }
     ];
+    
+    // Initialize behavior system
+    this.behaviorSystem = new BehaviorSystem();
   }
 
   /**
@@ -178,8 +189,17 @@ export default class EnemyManager {
     this.canChase[index] = defaults.canChase;
     this.canShoot[index] = defaults.canShoot;
     
+    // Initialize visual effect timers
+    this.flashTimer[index] = 0;
+    this.isFlashing[index] = 0;
+    this.deathTimer[index] = 0;
+    this.isDying[index] = 0;
+    
     // Store ID to index mapping
     this.idToIndex.set(enemyId, index);
+    
+    // Initialize behavior for this enemy
+    this.behaviorSystem.initBehavior(index, type);
     
     console.log(`Spawned enemy ${enemyId} of type ${type} at position (${x.toFixed(2)}, ${y.toFixed(2)}), health: ${defaults.health}`);
     
@@ -197,147 +217,82 @@ export default class EnemyManager {
     // Skip update if no target or bullet manager
     if (!target) return this.getActiveEnemyCount();
     
-    // Count enemies that moved or shot
-    let movedCount = 0;
-    let shotCount = 0;
+    // Count of active enemies
+    let activeCount = 0;
     
     for (let i = 0; i < this.enemyCount; i++) {
-      // Skip inactive enemies
-      if (this.health[i] <= 0) continue;
+      // Skip dead enemies
+      if (this.health[i] <= 0) {
+        if (this.isDying[i]) {
+          // Update death animation
+          this.updateDeathAnimation(i, deltaTime);
+          activeCount++; // Still count dying enemies as active
+        }
+        continue;
+      }
+      
+      activeCount++;
       
       // Update cooldowns
       if (this.currentCooldown[i] > 0) {
         this.currentCooldown[i] -= deltaTime;
       }
       
-      // Store original position for movement tracking
-      const originalX = this.x[i];
-      const originalY = this.y[i];
-      
-      // Update chase behavior
-      if (this.canChase[i]) {
-        this.updateChase(i, target, deltaTime);
+      // Update flash effect
+      if (this.isFlashing[i]) {
+        this.updateFlashEffect(i, deltaTime);
       }
       
-      // Check if enemy moved
-      if (Math.abs(originalX - this.x[i]) > 0.01 || Math.abs(originalY - this.y[i]) > 0.01) {
-        movedCount++;
-      }
-      
-      // Update shooting behavior
-      if (this.canShoot[i] && bulletManager) {
-        const didShoot = this.updateShoot(i, target, bulletManager);
-        if (didShoot) {
-          shotCount++;
-        }
-      }
-    }
-    
-    const activeCount = this.getActiveEnemyCount();
-    // Only log if there's actual activity
-    if (movedCount > 0 || shotCount > 0) {
-      //console.log(`Enemies updated: ${activeCount} active, ${movedCount} moved, ${shotCount} shot at target`);
+      // Update enemy behavior using the behavior system
+      this.behaviorSystem.updateBehavior(i, this, bulletManager, target, deltaTime);
     }
     
     return activeCount;
   }
   
   /**
-   * Update chase behavior for an enemy
+   * Apply a hit effect (flash) to an enemy
    * @param {number} index - Enemy index
-   * @param {Object} target - Target entity
-   * @param {number} deltaTime - Time elapsed since last update
    */
-  updateChase(index, target, deltaTime) {
-    const dx = target.x - this.x[index];
-    const dy = target.y - this.y[index];
-    const distanceSquared = dx * dx + dy * dy;
-    
-    // Only chase if within chase radius
-    if (distanceSquared > this.chaseRadius[index] * this.chaseRadius[index]) {
-      return false;
-    }
-    
-    // Normalize direction
-    const distance = Math.sqrt(distanceSquared);
-    const dirX = dx / distance;
-    const dirY = dy / distance;
-    
-    // Move toward target
-    const moveAmount = this.moveSpeed[index] * deltaTime;
-    this.x[index] += dirX * moveAmount;
-    this.y[index] += dirY * moveAmount;
-    
-    return true;
+  applyHitEffect(index) {
+    this.isFlashing[index] = 1;
+    this.flashTimer[index] = 0.1; // Flash for 100ms
   }
   
   /**
-   * Update shooting behavior for an enemy
+   * Update flash effect
    * @param {number} index - Enemy index
-   * @param {Object} target - Target entity
-   * @param {Object} bulletManager - Reference to the bullet manager
-   * @returns {boolean} True if the enemy shot, false otherwise
+   * @param {number} deltaTime - Time elapsed since last update
    */
-  updateShoot(index, target, bulletManager) {
-    // Skip if on cooldown
-    if (this.currentCooldown[index] > 0) {
-      return false;
+  updateFlashEffect(index, deltaTime) {
+    if (this.flashTimer[index] > 0) {
+      this.flashTimer[index] -= deltaTime;
+    } else {
+      this.isFlashing[index] = 0;
     }
-    
-    const dx = target.x - this.x[index];
-    const dy = target.y - this.y[index];
-    const distanceSquared = dx * dx + dy * dy;
-    
-    // Only shoot if within range
-    if (distanceSquared > this.shootRange[index] * this.shootRange[index]) {
-      return false;
+  }
+  
+  /**
+   * Start the death animation for an enemy
+   * @param {number} index - Enemy index
+   */
+  startDeathAnimation(index) {
+    this.isDying[index] = 1;
+    this.deathTimer[index] = 0.5; // Death animation duration
+  }
+  
+  /**
+   * Update death animation
+   * @param {number} index - Enemy index
+   * @param {number} deltaTime - Time elapsed since last update
+   */
+  updateDeathAnimation(index, deltaTime) {
+    if (this.deathTimer[index] > 0) {
+      this.deathTimer[index] -= deltaTime;
+    } else {
+      // Animation finished, remove the enemy
+      this.removeEnemy(index);
     }
-    
-    // Calculate angle to target
-    const angle = Math.atan2(dy, dx);
-    
-    // Reset cooldown
-    this.currentCooldown[index] = this.cooldown[index];
-    
-    // Shoot multiple projectiles if needed
-    const count = this.projectileCount[index];
-    const spread = this.projectileSpread[index];
-    
-    // Single projectile case
-    if (count <= 1) {
-      bulletManager.addBullet({
-        x: this.x[index],
-        y: this.y[index],
-        vx: Math.cos(angle) * this.bulletSpeed[index],
-        vy: Math.sin(angle) * this.bulletSpeed[index],
-        ownerId: this.id[index],
-        damage: this.damage[index],
-        lifetime: 3.0,
-        isEnemy: true
-      });
-      
-      console.log(`Enemy ${this.id[index]} fired at target, angle: ${angle.toFixed(2)}`);
-      return true;
-    }
-    
-    // Multiple projectiles case
-    const startAngle = angle - (spread * (count - 1) / 2);
-    for (let i = 0; i < count; i++) {
-      const bulletAngle = startAngle + (spread * i);
-      bulletManager.addBullet({
-        x: this.x[index],
-        y: this.y[index],
-        vx: Math.cos(bulletAngle) * this.bulletSpeed[index],
-        vy: Math.sin(bulletAngle) * this.bulletSpeed[index],
-        ownerId: this.id[index],
-        damage: this.damage[index],
-        lifetime: 3.0,
-        isEnemy: true
-      });
-    }
-    
-    console.log(`Enemy ${this.id[index]} fired ${count} bullets at target in a spread pattern`);
-    return true;
   }
   
   /**
@@ -354,14 +309,18 @@ export default class EnemyManager {
     // Apply damage
     this.health[index] -= damage;
     
+    // Apply hit effect
+    this.applyHitEffect(index);
+    
     // Check if killed
     const killed = this.health[index] <= 0;
     if (killed) {
+      // Start death animation
+      this.startDeathAnimation(index);
+      
       // Call onDeath to handle death effects
       this.onDeath(index);
     }
-    
-    console.log(`Enemy ${this.id[index]} took ${damage} damage, health: ${this.health[index].toFixed(0)}/${this.maxHealth[index]}, killed: ${killed}`);
     
     return {
       valid: true,
@@ -405,6 +364,12 @@ export default class EnemyManager {
       this.canChase[index] = this.canChase[last];
       this.canShoot[index] = this.canShoot[last];
       
+      // Swap visual effect properties
+      this.flashTimer[index] = this.flashTimer[last];
+      this.isFlashing[index] = this.isFlashing[last];
+      this.deathTimer[index] = this.deathTimer[last];
+      this.isDying[index] = this.isDying[last];
+      
       // Update ID mapping for the swapped enemy
       this.idToIndex.set(this.id[index], index);
     }
@@ -429,8 +394,8 @@ export default class EnemyManager {
    * @param {string} killedBy - ID of player who killed the enemy
    */
   onDeath(index, killedBy) {
-    // Remove the enemy
-    this.removeEnemy(index);
+    // The actual removal is now handled by the death animation
+    // Additional death effects or drops can be added here
   }
 
   /**
@@ -457,6 +422,9 @@ export default class EnemyManager {
     const enemies = [];
     
     for (let i = 0; i < this.enemyCount; i++) {
+      // Skip completely dead enemies (those done with death animation)
+      if (this.health[i] <= 0 && !this.isDying[i]) continue;
+      
       enemies.push({
         id: this.id[i],
         x: this.x[i],
@@ -465,7 +433,10 @@ export default class EnemyManager {
         height: this.height[i],
         type: this.type[i],
         health: this.health[i],
-        maxHealth: this.maxHealth[i]
+        maxHealth: this.maxHealth[i],
+        isFlashing: this.isFlashing[i],
+        isDying: this.isDying[i],
+        deathStage: this.isDying[i] ? Math.floor((1 - this.deathTimer[i] / 0.5) * 4) : 0
       });
     }
     

@@ -15,6 +15,9 @@ const ctx = canvas2D.getContext('2d');
 // Rendering parameters
 const scaleFactor = SCALE;
 
+// Add a debug flag for rendering
+const DEBUG_ENEMY_SPRITES = false; // Set to false to disable sprite debugging visuals
+
 /**
  * Render the character
  */
@@ -152,6 +155,13 @@ export function renderEnemies() {
   }
   const enemySpriteSheet = enemySheetObj.image;
   
+  // Log sheet info once to help with debugging
+  if (!window.enemySpriteDebugLogged) {
+    window.enemySpriteDebugLogged = true;
+    console.log(`Enemy sprite sheet loaded: ${enemySpriteSheet.width}x${enemySpriteSheet.height}`, 
+      enemySheetObj.config);
+  }
+  
   // Get view scaling factor - FIXING back to 0.5 for strategic view
   const viewType = gameState.camera?.viewType || 'top-down';
   const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
@@ -215,7 +225,7 @@ export function renderEnemies() {
         ctx.drawImage(
           enemySpriteSheet,
           enemy.spriteX || 0, enemy.spriteY || 0, 
-          enemy.width || 24, enemy.height || 24,
+          8, 8, // Use 8x8 sprite size for source
           -width/2, -height/2, width, height
         );
       } else {
@@ -223,8 +233,44 @@ export function renderEnemies() {
         ctx.drawImage(
           enemySpriteSheet,
           enemy.spriteX || 0, enemy.spriteY || 0, 
-          enemy.width || 24, enemy.height || 24,
+          8, 8, // Use 8x8 sprite size for source
           screenX - width/2, screenY - height/2, width, height
+        );
+      }
+      
+      // Debug visualization of sprite source rectangle
+      if (DEBUG_ENEMY_SPRITES) {
+        // Draw a small version of the sprite sheet in corner for reference
+        const sheetScale = 2;
+        const sheetX = 10;
+        const sheetY = 10;
+        ctx.drawImage(
+          enemySpriteSheet,
+          sheetX, sheetY,
+          enemySpriteSheet.width * sheetScale,
+          enemySpriteSheet.height * sheetScale
+        );
+        
+        // Highlight the source rectangle used for this enemy
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
+          sheetX + (enemy.spriteX || 0) * sheetScale,
+          sheetY + (enemy.spriteY || 0) * sheetScale,
+          8 * sheetScale, 8 * sheetScale
+        );
+        
+        // Show enemy type and coordinates as text
+        ctx.fillStyle = 'white';
+        ctx.font = '12px Arial';
+        ctx.fillText(
+          `Enemy ${enemy.id} - Type: ${gameState.enemyManager.enemyTypes ? 
+            gameState.enemyManager.enemyTypes[enemy.type]?.name : enemy.type}`,
+          screenX - width/2, screenY + height/2 + 15
+        );
+        ctx.fillText(
+          `Sprite: (${enemy.spriteX},${enemy.spriteY})`,
+          screenX - width/2, screenY + height/2 + 30
         );
       }
       
@@ -469,6 +515,18 @@ function renderUI() {
     const totalPlayers = playerCount + 1; // Add 1 for local player
     ctx.fillStyle = 'white';
     ctx.fillText(`Players: ${totalPlayers} (${playerCount} others)`, canvas2D.width - 120, 40);
+    
+    // Add collision statistics if available
+    if (window.collisionStats) {
+      ctx.fillStyle = 'white';
+      ctx.fillText(`Collisions: ${window.collisionStats.validated}/${window.collisionStats.reported} (${window.collisionStats.getValidationRate()})`, canvas2D.width - 120, 60);
+    }
+
+    // Show behavior mode if enabled
+    if (window.ALLOW_CLIENT_ENEMY_BEHAVIOR !== undefined) {
+      ctx.fillStyle = window.ALLOW_CLIENT_ENEMY_BEHAVIOR ? 'yellow' : 'white';
+      ctx.fillText(`Enemy Behaviors: ${window.ALLOW_CLIENT_ENEMY_BEHAVIOR ? 'ON' : 'OFF'}`, canvas2D.width - 120, 80);
+    }
   }
 }
 

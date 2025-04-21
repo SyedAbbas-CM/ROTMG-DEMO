@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 // Paths to source directories
 const frontendDir = path.join(__dirname, 'public');
-const backendDir = path.join(__dirname);
+const backendDir = path.join(__dirname, 'src');
 
 // Output files
 const frontendPart1 = path.join(__dirname, 'frontend-part1.txt');
@@ -27,6 +27,10 @@ function shouldIgnore(filePath) {
   return filePath.includes('assets') || 
          filePath.includes('node_modules') || 
          filePath.includes('.git') ||
+         filePath.includes('package-lock.json') ||
+         filePath.includes('package.json') ||
+         filePath.includes('dist') ||
+         filePath.includes('build') ||
          filePath.endsWith('.md') ||
          filePath.endsWith('.json') ||
          filePath.endsWith('.log') ||
@@ -35,6 +39,12 @@ function shouldIgnore(filePath) {
 
 // Function to get all files recursively
 function getAllFiles(dirPath, arrayOfFiles = []) {
+  // Check if directory exists
+  if (!fs.existsSync(dirPath)) {
+    console.warn(`Directory does not exist: ${dirPath}`);
+    return arrayOfFiles;
+  }
+  
   const files = fs.readdirSync(dirPath);
 
   files.forEach(file => {
@@ -57,14 +67,14 @@ function getAllFiles(dirPath, arrayOfFiles = []) {
 // Get all frontend files (excluding assets)
 let frontendFiles = getAllFiles(frontendDir).filter(file => !file.includes('assets'));
 
-// Get all backend files
-let backendFiles = getAllFiles(backendDir).filter(file => {
-  // Exclude frontend files and our script
-  return !file.includes('public') && 
-         !file.includes('organize-code.js') &&
-         !file.includes('frontend-part') &&
-         !file.includes('backend-part');
-});
+// Get all backend files from src directory
+let backendFiles = getAllFiles(backendDir);
+
+// Also include the main server.js file
+const serverJsPath = path.join(__dirname, 'Server.js');
+if (fs.existsSync(serverJsPath)) {
+  backendFiles.push(serverJsPath);
+}
 
 // Function to append file content to output file
 function appendFileContent(filePath, outputFile) {

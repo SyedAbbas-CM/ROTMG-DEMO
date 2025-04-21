@@ -11,6 +11,19 @@ import { BinaryPacket, MessageType } from './src/NetworkManager.js';
 import BulletManager from './src/BulletManager.js';
 import EnemyManager from './src/EnemyManager.js';
 import CollisionManager from './src/CollisionManager.js';
+// Import BehaviorSystem
+import BehaviorSystem from './src/BehaviorSystem.js';
+
+// Debug flags to control logging
+const DEBUG = {
+  mapCreation: true,     // Logs related to map creation and saving
+  connections: true,     // Logs related to client connections/disconnections
+  enemySpawns: true,     // Logs related to enemy spawning
+  collisions: false,     // Logs related to collision detection
+  playerPositions: false, // Periodic logs of player positions
+  activeCounts: false,   // Periodic logs of active entities (bullets, enemies)
+  chunkRequests: false    // Logs related to map chunk requests
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,7 +97,9 @@ try {
     seed: 123456789,
     name: 'Default Map'
   });
-  console.log(`Created default map: ${defaultMapId} - This is the map ID that will be sent to clients`);
+  if (DEBUG.mapCreation) {
+    console.log(`Created default map: ${defaultMapId} - This is the map ID that will be sent to clients`);
+  }
   
   // Direct save - guaranteed to work with imported fs
   const enableDirectMapSave = false; // Set to true to enable direct map saving
@@ -177,7 +192,7 @@ const gameState = {
   lastEnemySpawnTime: Date.now()
 };
 
-// Spawn initial enemies - already set to 2 as requested
+// Spawn initial enemies for the game world
 spawnInitialEnemies(2);
 
 // WebSocket connection handler
@@ -195,11 +210,15 @@ wss.on('connection', (socket, req) => {
   // Determine which map to use (requested or default)
   let useMapId = defaultMapId;
   if (requestedMapId && storedMaps.has(requestedMapId)) {
-    console.log(`Client ${clientId} requested existing map: ${requestedMapId}`);
+    if (DEBUG.connections) {
+      console.log(`Client ${clientId} requested existing map: ${requestedMapId}`);
+    }
     useMapId = requestedMapId;
   } else if (requestedMapId) {
-    console.log(`Client ${clientId} requested unknown map: ${requestedMapId}, using default`);
-  } else {
+    if (DEBUG.connections) {
+      console.log(`Client ${clientId} requested unknown map: ${requestedMapId}, using default`);
+    }
+  } else if (DEBUG.connections) {
     console.log(`Client ${clientId} connected without map request, using default map: ${defaultMapId}`);
   }
   
@@ -218,7 +237,9 @@ wss.on('connection', (socket, req) => {
     lastUpdate: Date.now()
   });
   
-  console.log(`Client connected: ${clientId}, assigned to map: ${useMapId}`);
+  if (DEBUG.connections) {
+    console.log(`Client connected: ${clientId}, assigned to map: ${useMapId}`);
+  }
   
   // Send handshake acknowledgement
   sendToClient(socket, MessageType.HANDSHAKE_ACK, {
@@ -230,7 +251,9 @@ wss.on('connection', (socket, req) => {
   let mapMetadata;
   try {
     mapMetadata = mapManager.getMapMetadata(useMapId);
-    console.log(`Sending map info to client ${clientId} for map ${useMapId}:`, mapMetadata);
+    if (DEBUG.connections) {
+      console.log(`Sending map info to client ${clientId} for map ${useMapId}:`, mapMetadata);
+    }
   } catch (error) {
     console.error("Error getting map metadata:", error);
     mapMetadata = {
@@ -273,7 +296,7 @@ function updateGame() {
   gameState.lastUpdateTime = now;
   
   // Periodically log connected clients for debugging
-  if (now % 5000 < 50) { // Every 5 seconds
+  if (DEBUG.playerPositions && now % 30000 < 50) { // Every 30 seconds instead of 5
     console.log(`Server has ${clients.size} connected clients:`);
     clients.forEach((client, id) => {
       console.log(`- Client ${id}: pos(${client.player.x.toFixed(0)}, ${client.player.y.toFixed(0)}), hp: ${client.player.health}`);
@@ -295,19 +318,19 @@ function updateGame() {
   
   // Update bullets
   const activeBullets = bulletManager.update(deltaTime);
-  if (activeBullets > 0) {
+  if (DEBUG.activeCounts && activeBullets > 0 && now % 5000 < 50) { // Only log every 5 seconds
     console.log(`Active bullets: ${activeBullets}`);
   }
   
   // Update enemies with target
   const activeEnemies = enemyManager.update(deltaTime, bulletManager, target);
-  if (activeEnemies > 0) {
-    //console.log(`Active enemies: ${activeEnemies}, targeting position (${target.x.toFixed(2)}, ${target.y.toFixed(2)})`);
+  if (DEBUG.activeCounts && activeEnemies > 0 && now % 5000 < 50) { // Only log every 5 seconds
+    console.log(`Active enemies: ${activeEnemies}, targeting position (${target.x.toFixed(2)}, ${target.y.toFixed(2)})`);
   }
   
   // Check for collisions
   const collisions = collisionManager.checkCollisions();
-  if (collisions > 0) {
+  if (DEBUG.collisions && collisions > 0) {
     console.log(`${collisions} collisions detected by server collision system`);
   }
   
@@ -331,7 +354,9 @@ function updateGame() {
         enemyManager.spawnEnemy(type, x, y);
       }
       
-      console.log(`Spawned ${count} new enemy`);
+      if (DEBUG.enemySpawns) {
+        console.log(`Spawned ${count} new enemy`);
+      }
     }
   }
   
@@ -371,8 +396,11 @@ function broadcastWorldUpdates() {
 // Start game update loop
 setInterval(updateGame, gameState.updateInterval);
 
-// Add a separate player status logging interval (every 5 seconds)
+// Add a separate player status logging interval (every 30 seconds)
 setInterval(() => {
+  // Skip logging if debug flag is disabled
+  if (!DEBUG.playerPositions) return;
+  
   const playerCount = clients.size;
   
   if (playerCount > 0) {
@@ -395,10 +423,10 @@ setInterval(() => {
     });
     
     console.log(`Player list message would contain ${Object.keys(players).length} players: ${Object.keys(players).join(', ')}`);
-  } else {
+  } else if (DEBUG.connections) {
     console.log('[SERVER] No clients connected');
   }
-}, 5000);
+}, 30000); // Changed from 5000 to 30000 (30 seconds)
 
 // Server listen
 const PORT = process.env.PORT || 3000;
@@ -681,8 +709,14 @@ function handleMapRequest(clientId, data) {
   // Send map info to client
   const mapMetadata = mapManager.getMapMetadata(data.mapId);
   if (!mapMetadata) {
-    console.error(`Failed to get metadata for map ${data.mapId}`);
+    if (DEBUG.chunkRequests) {
+      console.log(`Client ${clientId} requested unknown map: ${data.mapId}`);
+    }
     return;
+  }
+  
+  if (DEBUG.chunkRequests) {
+    console.log(`Sent map info to client ${clientId} for map ${data.mapId}`);
   }
   
   sendToClient(client.socket, MessageType.MAP_INFO, {
@@ -719,10 +753,16 @@ function handleChunkRequest(clientId, data) {
     
     console.log(`Sending chunk (${data.chunkX}, ${data.chunkY}) for map ${client.mapId}`);
     sendToClient(client.socket, MessageType.CHUNK_DATA, {
-      chunkX: data.chunkX,
-      chunkY: data.chunkY,
-      chunk
+      mapId: client.mapId,
+      x: data.chunkX,
+      y: data.chunkY,
+      data: chunk,
+      timestamp: Date.now()
     });
+    
+    if (DEBUG.chunkRequests) {
+      console.log(`Sent chunk data to client ${clientId} for map ${client.mapId} at (${data.chunkX}, ${data.chunkY})`);
+    }
   } catch (error) {
     console.error('Error handling chunk request:', error);
     sendToClient(client.socket, MessageType.ERROR, {
@@ -738,16 +778,18 @@ function handleChunkRequest(clientId, data) {
  * @param {number} clientId - Client ID
  */
 function handleClientDisconnect(clientId) {
-  // Remove client from list
+  // Remove client
   clients.delete(clientId);
   
-  // Broadcast player leave to all clients
-  broadcast(MessageType.PLAYER_LEAVE, {
+  if (DEBUG.connections) {
+    console.log(`Client disconnected: ${clientId}`);
+  }
+  
+  // Broadcast disconnect
+  broadcastExcept(MessageType.PLAYER_LEAVE, {
     clientId,
     timestamp: Date.now()
-  });
-  
-  console.log(`Client disconnected: ${clientId}`);
+  }, clientId);
 }
 
 /**
@@ -813,23 +855,27 @@ function getClientIdFromSocket(socket) {
 }
 
 /**
- * Spawn initial enemies
+ * Spawn initial enemies for the game world
  * @param {number} count - Number of enemies to spawn
  */
 function spawnInitialEnemies(count) {
+  console.log(`Spawning ${count} initial enemies`);
+  
   for (let i = 0; i < count; i++) {
     // Random enemy type (0-4)
     const type = Math.floor(Math.random() * 5);
     
-    // Random position (away from spawn)
-    const x = Math.random() * 400 + 100;
-    const y = Math.random() * 400 + 100;
+    // Random position (around the map)
+    const x = Math.random() * 500 + 50;
+    const y = Math.random() * 500 + 50;
     
     // Spawn enemy
     enemyManager.spawnEnemy(type, x, y);
   }
   
-  console.log(`Spawned ${count} initial enemies`);
+  if (DEBUG.enemySpawns) {
+    console.log(`Spawned ${count} initial enemies`);
+  }
 }
 
 /**
