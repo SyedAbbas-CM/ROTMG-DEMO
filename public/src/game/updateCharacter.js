@@ -132,7 +132,7 @@ function isCollision(x, y) {
   if (!gameState.map) {
     return false;
   }
-  
+  return false;
   // Character dimensions (use properties if available, otherwise use defaults)
   const width = gameState.character.width || 20;
   const height = gameState.character.height || 20;
