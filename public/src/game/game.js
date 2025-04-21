@@ -38,7 +38,8 @@ let collisionManager;
 let localPlayer;
 
 // Server connection settings
-const SERVER_URL = 'ws://localhost:3000'; // Change if your server is on a different port or host
+const SERVER_PORT = 3000;
+const SERVER_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:${SERVER_PORT}`;// Change if your server is on a different port or host
 
 // Collision statistics
 const collisionStats = {
