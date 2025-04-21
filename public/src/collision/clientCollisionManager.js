@@ -287,6 +287,7 @@ export class ClientCollisionManager {
      * Check for bullet-wall collisions
      */
     checkBulletWallCollisions() {
+        return false;
         if (!this.mapManager || !this.bulletManager) return;
         
         for (let i = 0; i < this.bulletManager.bulletCount; i++) {
