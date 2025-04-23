@@ -300,7 +300,7 @@ function initializeGameState() {
         speed: 150,
         projectileSpeed: 300, // Critical for shooting
         damage: 10,
-        shootCooldown: 0.3,
+        shootCooldown: 0.1,
         sprite: 'character_sprites_sprite_1'
     });
     
@@ -652,7 +652,7 @@ function update(delta) {
     updatePlayerInterpolation(delta);
     
     // Update bullet positions
-    gameState.bulletManager.update(delta);
+    //gameState.bulletManager.update(delta);
     
     // Update game elements
     enemyManager.update(delta);
