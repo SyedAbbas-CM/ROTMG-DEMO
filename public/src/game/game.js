@@ -652,7 +652,7 @@ function update(delta) {
     updatePlayerInterpolation(delta);
     
     // Update bullet positions
-    //gameState.bulletManager.update(delta);
+    gameState.bulletManager.update(delta);
     
     // Update game elements
     enemyManager.update(delta);
@@ -794,8 +794,8 @@ export function handleShoot(x, y) {
         height: 12, // Larger size for better visibility
         // Add sprite info
         spriteSheet: 'bullet_sprites',
-        spriteX: 8 * 10, // X position in sprite sheet (col * width)
-        spriteY: 8 * 11, // Y position in sprite sheet (row * height)
+        spriteX: 8 * 0, // X position in sprite sheet (col * width)
+        spriteY: 8 * 10, // Y position in sprite sheet (row * height)
         spriteWidth: 8,
         spriteHeight: 8
     };
