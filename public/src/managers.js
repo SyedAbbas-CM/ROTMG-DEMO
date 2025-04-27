@@ -12,3 +12,10 @@ export { ClientCollisionManager } from './collision/ClientCollisionManager.js';
 
 // Other important exports
 export { debugOverlay } from './ui/DebugOverlay.js'; 
+
+// UI System Exports - Two versions available:
+// 1. Component-based UI system (recommended)
+export { UIManager, initUIManager, getUIManager, UIComponent } from './ui/UIManager.js';
+
+// 2. Legacy iframe-based UI system (kept for compatibility)
+export { GameUI, initGameUI, getGameUI } from './ui/GameUI.js'; 

@@ -97,7 +97,10 @@ class BinaryPacket {
     MAP_REQUEST: 70,
     
     // Player list request
-    PLAYER_LIST_REQUEST: 80
+    PLAYER_LIST_REQUEST: 80,
+    
+    // Chat messages
+    CHAT_MESSAGE: 90
   };
   
   /**

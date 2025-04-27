@@ -1,0 +1,275 @@
+/* Game UI Styles */
+:root {
+  --ui-bg-color: rgba(0, 0, 0, 0.7);
+  --ui-border-color: #444;
+  --ui-header-bg: #111;
+  --ui-accent-color: #f59e0b;
+  --ui-text-color: #fff;
+  --ui-button-bg: #222;
+  --ui-button-hover-bg: #333;
+  --ui-health-color: #ef4444;
+  --ui-mana-color: #3b82f6;
+}
+
+/* Common UI Components */
+.ui-component {
+  background-color: var(--ui-bg-color);
+  border: 2px solid var(--ui-border-color);
+  color: var(--ui-text-color);
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 8px;
+  border-bottom: 1px solid #333;
+  background-color: var(--ui-header-bg);
+}
+
+.panel-title {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.panel-controls {
+  display: flex;
+}
+
+.btn-minimize, .btn-close, .btn-expand {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 12px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+}
+
+.btn-minimize:hover, .btn-close:hover, .btn-expand:hover {
+  color: var(--ui-accent-color);
+}
+
+/* Resource Bars */
+.resource-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.bar-container {
+  flex-grow: 1;
+  height: 8px;
+  background-color: #222;
+  border: 1px solid #333;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+}
+
+.health-bar {
+  background-color: var(--ui-health-color);
+}
+
+.mana-bar {
+  background-color: var(--ui-mana-color);
+}
+
+.resource-text {
+  font-size: 10px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+/* Chat Panel */
+.chat-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  font-size: 12px;
+}
+
+.chat-message {
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.chat-input-container {
+  display: flex;
+  padding: 4px 8px;
+  border-top: 1px solid #333;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.chat-input {
+  flex: 1;
+  background-color: #222;
+  border: 1px solid #333;
+  color: white;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.chat-send {
+  background-color: #333;
+  border: 1px solid #444;
+  border-left: none;
+  color: var(--ui-accent-color);
+  cursor: pointer;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-tabs {
+  display: flex;
+  border-bottom: 1px solid #333;
+}
+
+.chat-tab {
+  flex: 1;
+  background-color: transparent;
+  color: #666;
+  border: none;
+  border-right: 1px solid #333;
+  padding: 4px 0;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.chat-tab.active {
+  background-color: #333;
+  color: var(--ui-accent-color);
+}
+
+/* Units */
+.unit-item {
+  width: 74px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  background-color: #222;
+  border: 1px solid #333;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.unit-item:hover {
+  border-color: var(--ui-accent-color);
+}
+
+.unit-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #333;
+}
+
+.unit-health {
+  flex: 1;
+  height: 4px;
+  background-color: #333;
+  margin-left: 4px;
+  margin-right: 4px;
+}
+
+.unit-health-bar {
+  height: 100%;
+  background-color: var(--ui-health-color);
+}
+
+.unit-count {
+  font-size: 10px;
+  color: #ddd;
+  width: 16px;
+  text-align: center;
+}
+
+/* Group styles */
+.group-item {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  margin-bottom: 4px;
+  background-color: #222;
+  border: 1px solid #444;
+  cursor: pointer;
+}
+
+.group-item.selected {
+  background-color: #333;
+  border-color: var(--ui-accent-color);
+}
+
+.group-icon {
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+/* Control bar */
+.ui-control-bar {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: auto;
+  z-index: 10;
+}
+
+.quick-access-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.main-control-bar {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: var(--ui-bg-color);
+  border-radius: 4px;
+  border: 1px solid var(--ui-border-color);
+}
+
+.command-button, .ability-button {
+  background-color: var(--ui-button-bg);
+  border: 1px solid var(--ui-border-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.command-button:hover, .ability-button:hover {
+  background-color: var(--ui-button-hover-bg);
+  border-color: var(--ui-accent-color);
+}
+
+.command-button {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.ability-button {
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+} 

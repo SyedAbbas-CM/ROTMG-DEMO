@@ -489,9 +489,22 @@ export class ClientNetworkManager {
     }
     
     /**
-     * Set up message type handlers
+     * Set up message handlers for different message types
      */
     setupMessageHandlers() {
+        // Only set up handlers if the socket exists
+        if (!this.socket) {
+            console.error('Cannot set up message handlers: Socket not initialized');
+            setTimeout(() => {
+                // Try again after socket initialization
+                if (this.socket) {
+                    console.log("Socket now available, setting up message handlers");
+                    this.setupMessageHandlers();
+                }
+            }, 1000);
+            return;
+        }
+
         this.handlers[MessageType.HANDSHAKE_ACK] = (data) => {
             this.clientId = data.clientId;
             console.log(`Received client ID: ${this.clientId}`);
@@ -690,6 +703,34 @@ export class ClientNetworkManager {
             const latency = Date.now() - this.lastPingTime;
             console.log(`Server ping: ${latency}ms`);
         };
+        
+        // Add chat message handler only if socket.on is available
+        try {
+            // Use the CHAT_MESSAGE message type constant (90) instead of 'chat' string
+            this.handlers[MessageType.CHAT_MESSAGE] = (data) => {
+                console.log('Received chat message:', data);
+                
+                // Call any registered chat handlers
+                if (this.handlers.chat) {
+                    this.handlers.chat(data);
+                }
+                
+                // Add message to UI if available
+                if (this.game && this.game.uiManager) {
+                    // Format message properly for UI manager
+                    const messageType = data.type || (data.channel === 'system' ? 'system' : 'player');
+                    this.game.uiManager.addChatMessage(
+                        data.message,
+                        messageType,
+                        data.sender || 'Unknown'
+                    );
+                }
+            };
+            
+            console.log('Chat message handler registered for type:', MessageType.CHAT_MESSAGE);
+        } catch (error) {
+            console.error('Error setting up chat message handler:', error);
+        }
     }
     
     /**
@@ -734,6 +775,9 @@ export class ClientNetworkManager {
                     this.connected = true;
                     this.connecting = false;
                     this.reconnectAttempts = 0;
+                    
+                    // Re-setup message handlers now that socket is initialized
+                    this.setupMessageHandlers();
                     
                     // Send handshake
                     this.sendHandshake();
@@ -1054,6 +1098,37 @@ export class ClientNetworkManager {
             timestamp: Date.now()
         });
     }
+    
+    /**
+     * Send a chat message to the server
+     * @param {Object} chatData - Chat message data
+     * @returns {boolean} True if sent successfully
+     */
+    sendChatMessage(chatData) {
+        if (!this.isConnected()) {
+            console.warn('Cannot send chat message: Not connected');
+            return false;
+        }
+        
+        try {
+            // Make sure socket exists before using it
+            if (!this.socket) {
+                console.error('Cannot send chat message: Socket not initialized');
+                return false;
+            }
+            
+            // Use MessageType.CHAT_MESSAGE (90) instead of the string 'chat'
+            // This ensures correct binary packet encoding
+            return this.send(MessageType.CHAT_MESSAGE, {
+                message: chatData.message,
+                channel: chatData.channel || 'All',
+                timestamp: Date.now()
+            });
+        } catch (error) {
+            console.error('Error sending chat message:', error);
+            return false;
+        }
+    }
 }
 
 /**
@@ -1158,5 +1233,8 @@ export const MessageType = {
     MAP_REQUEST: 70,
     
     // Player list request
-    PLAYER_LIST_REQUEST: 80
+    PLAYER_LIST_REQUEST: 80,
+    
+    // Chat message
+    CHAT_MESSAGE: 90
 };

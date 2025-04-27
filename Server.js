@@ -22,7 +22,8 @@ const DEBUG = {
   collisions: false,     // Logs related to collision detection
   playerPositions: false, // Periodic logs of player positions
   activeCounts: false,   // Periodic logs of active entities (bullets, enemies)
-  chunkRequests: false    // Logs related to map chunk requests
+  chunkRequests: false,   // Logs related to map chunk requests
+  chat: true             // Logs related to chat messages
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -551,6 +552,11 @@ function handleClientMessage(clientId, message) {
         handlePlayerListRequest(clientId);
         break;
         
+      case MessageType.CHAT_MESSAGE:
+        // Handle chat message
+        handleChatMessage(clientId, data);
+        break;
+        
       default:
         console.warn(`Unknown message type from client ${clientId}: ${type}`);
     }
@@ -940,4 +946,92 @@ function createSimpleTileMap(mapManager, mapId) {
   }
   
   return tileMap;
+}
+
+/**
+ * Handle a chat message from a client
+ * @param {string} clientId - Client ID
+ * @param {Object} data - Message data
+ */
+function handleChatMessage(clientId, data) {
+  // Validate message data
+  if (!data || !data.message) {
+    console.warn(`Received invalid chat message from client ${clientId}`);
+    return;
+  }
+  
+  // Get client info
+  const client = clients.get(clientId);
+  if (!client) {
+    console.warn(`Received chat message from unknown client ${clientId}`);
+    return;
+  }
+  
+  // Get player name based on client ID
+  let playerName;
+  
+  // If client has an explicitly set player name, use it
+  if (client.player && client.player.name) {
+    playerName = client.player.name;
+  }
+  // Otherwise use a default format
+  else {
+    playerName = `Player-${clientId}`;
+    
+    // Store this name in the player object for future use
+    if (client.player) {
+      client.player.name = playerName;
+    }
+  }
+  
+  if (DEBUG.chat) {
+    console.log(`Setting chat sender name to: ${playerName} for client ${clientId}`);
+  }
+  
+  // Prepare the message for broadcasting, preserving the original ID if provided
+  const chatMessage = {
+    id: data.id || Date.now(), // Preserve the ID from the client if it exists
+    message: data.message.slice(0, 200), // Limit message length
+    sender: playerName,
+    channel: data.channel || 'All',
+    timestamp: Date.now(),
+    clientId: clientId // Always include the sender's client ID
+  };
+  
+  if (DEBUG.chat) {
+    console.log(`Chat message from ${playerName} (${clientId}): ${chatMessage.message}`);
+  }
+  
+  // Broadcast to all clients in the same map
+  broadcastChat(chatMessage, client.mapId);
+}
+
+/**
+ * Broadcast a chat message to all clients in the same map
+ * @param {Object} chatMessage - Message to broadcast
+ * @param {string} mapId - Map ID
+ */
+function broadcastChat(chatMessage, mapId) {
+  const messageClientId = chatMessage.clientId;
+  
+  // Iterate through all clients
+  for (const [clientId, client] of clients.entries()) {
+    // Check if client is on the same map
+    if (client.mapId === mapId) {
+      // Create a copy of the message for each recipient
+      const messageForClient = {...chatMessage};
+      
+      // Flag if this message is being sent to the original sender
+      if (clientId === messageClientId) {
+        messageForClient.isOwnMessage = true;
+      }
+      
+      // Send chat message to client
+      sendToClient(client.socket, MessageType.CHAT_MESSAGE, messageForClient);
+    }
+  }
+  
+  if (DEBUG.chat) {
+    console.log(`Broadcast chat message to map ${mapId}: ${chatMessage.message}`);
+  }
 }

@@ -8,12 +8,42 @@ export const CANVAS_WIDTH = window.innerWidth;
 export const CANVAS_HEIGHT = window.innerHeight;
 
 
+// ENHANCED: Expanded tile type IDs with more descriptive names and additional types
 export const TILE_IDS = {
+  // Base types
   FLOOR: 0,
   WALL: 1,
   OBSTACLE: 2,
   WATER: 3,
   MOUNTAIN: 4,
+  
+  // Extended types for more variety
+  SAND: 5,
+  LAVA: 6,
+  ICE: 7,
+  GRASS: 8,
+  FOREST: 9,
+  ROAD: 10,
+  STONE: 11,
+  
+  // Add additional tile types here as needed
+  // Every type represents a different collision behavior and appearance
+};
+
+// ENHANCED: Properties for each tile type for consistent behavior
+export const TILE_PROPERTIES = {
+  [TILE_IDS.FLOOR]: { isWalkable: true, isTransparent: true, movementCost: 1.0 },
+  [TILE_IDS.WALL]: { isWalkable: false, isTransparent: false, movementCost: Infinity },
+  [TILE_IDS.OBSTACLE]: { isWalkable: false, isTransparent: true, movementCost: Infinity },
+  [TILE_IDS.WATER]: { isWalkable: false, isTransparent: true, movementCost: 2.0 },
+  [TILE_IDS.MOUNTAIN]: { isWalkable: false, isTransparent: true, movementCost: Infinity },
+  [TILE_IDS.SAND]: { isWalkable: true, isTransparent: true, movementCost: 1.5 },
+  [TILE_IDS.LAVA]: { isWalkable: false, isTransparent: true, movementCost: Infinity },
+  [TILE_IDS.ICE]: { isWalkable: true, isTransparent: true, movementCost: 0.8 },
+  [TILE_IDS.GRASS]: { isWalkable: true, isTransparent: true, movementCost: 1.2 },
+  [TILE_IDS.FOREST]: { isWalkable: true, isTransparent: true, movementCost: 1.8 },
+  [TILE_IDS.ROAD]: { isWalkable: true, isTransparent: true, movementCost: 0.9 },
+  [TILE_IDS.STONE]: { isWalkable: true, isTransparent: true, movementCost: 1.3 },
 };
 
 // Sprite grid dimensions for tile sprite sheet
@@ -31,14 +61,41 @@ for (let row = 0; row < TILE_SPRITES_PER_COLUMN; row++) {
   }
 }
 
-// Map TILE_SPRITES with specific indices for each TILE_ID
+// ENHANCED: More flexible sprite mapping with variations
+// Maps TILE_IDS to sprite indices, now supporting variations
 export const TILE_SPRITES = {
-  [TILE_IDS.FLOOR]: ALL_TILE_SPRITES[0],       // Example: Use the first sprite for FLOOR
-  [TILE_IDS.WALL]: ALL_TILE_SPRITES[1],        // Use the second sprite for WALL
-  [TILE_IDS.OBSTACLE]: ALL_TILE_SPRITES[2],    // Use the third sprite for OBSTACLE
-  [TILE_IDS.WATER]: ALL_TILE_SPRITES[3],       // Use the fourth sprite for WATER
-  [TILE_IDS.MOUNTAIN]: ALL_TILE_SPRITES[4],    // Use the fifth sprite for MOUNTAIN
+  // Base types - primary sprites
+  [TILE_IDS.FLOOR]: ALL_TILE_SPRITES[0],
+  [TILE_IDS.WALL]: ALL_TILE_SPRITES[1],
+  [TILE_IDS.OBSTACLE]: ALL_TILE_SPRITES[2],
+  [TILE_IDS.WATER]: ALL_TILE_SPRITES[3],
+  [TILE_IDS.MOUNTAIN]: ALL_TILE_SPRITES[4],
+  
+  // New types
+  [TILE_IDS.SAND]: ALL_TILE_SPRITES[5],
+  [TILE_IDS.LAVA]: ALL_TILE_SPRITES[6],
+  [TILE_IDS.ICE]: ALL_TILE_SPRITES[7],
+  [TILE_IDS.GRASS]: ALL_TILE_SPRITES[8],
+  [TILE_IDS.FOREST]: ALL_TILE_SPRITES[9],
+  [TILE_IDS.ROAD]: ALL_TILE_SPRITES[10],
+  [TILE_IDS.STONE]: ALL_TILE_SPRITES[11],
+  
+  // Variations for base types (using specific sprite indices)
+  // Format: "TYPE_VARIATION"
+  [`${TILE_IDS.FLOOR}_1`]: ALL_TILE_SPRITES[24], // Alternative floor (row 1, col 0)
+  [`${TILE_IDS.WALL}_1`]: ALL_TILE_SPRITES[25],  // Alternative wall
+  [`${TILE_IDS.WATER}_1`]: ALL_TILE_SPRITES[27], // Alternative water
 };
+
+// Helper function to get sprite for a tile type and variation
+export function getTileSpriteForVariation(tileType, variation = 0) {
+  if (variation === 0) {
+    return TILE_SPRITES[tileType];
+  }
+  
+  const variationKey = `${tileType}_${variation}`;
+  return TILE_SPRITES[variationKey] || TILE_SPRITES[tileType]; // Fallback to base sprite
+}
 
 // Character sprite sheet configuration
 const CHARACTER_SPRITES_PER_ROW = 16;

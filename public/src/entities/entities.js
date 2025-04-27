@@ -42,7 +42,29 @@ export function updatePlayers(playerData) {
     for (const [id, data] of Object.entries(playerData)) {
         // Verify this is actually a player object with coordinates, not metadata
         if (data && typeof data === 'object' && data.x !== undefined && data.y !== undefined) {
-            actualPlayerData[id] = data;
+            // CRITICAL FIX: Apply coordinate correction for the 5,5 position bug
+            // Use the helper function from game.js if available, otherwise apply inline fix
+            let correctedData = data;
+            
+            if (window.correctServerPositionCoordinates) {
+                correctedData = window.correctServerPositionCoordinates(data);
+            } else {
+                // Inline fix for the 5,5 position bug
+                if (gameState.map && Math.abs(data.x - 5) < 1 && Math.abs(data.y - 5) < 1) {
+                    // This is the problematic position - apply correction
+                    const tileSize = gameState.map.tileSize || 12;
+                    correctedData = { ...data };
+                    
+                    // Convert from probable tile coordinates to world coordinates
+                    correctedData.x = data.x * tileSize + tileSize/2;
+                    correctedData.y = data.y * tileSize + tileSize/2;
+                    
+                    console.warn(`COORDINATE FIX in entities.js: Converted probable tile coordinates (${data.x}, ${data.y}) ` +
+                                `to world coordinates (${correctedData.x}, ${correctedData.y})`);
+                }
+            }
+            
+            actualPlayerData[id] = correctedData;
         }
     }
     

@@ -29,9 +29,21 @@ export class ClientCollisionManager {
         // Setup cleanup interval
         this.cleanupInterval = setInterval(() => this.cleanupProcessedCollisions(), 5000);
         
+        // Add debug flag for coordinate system debugging
+        this.debugCoordinates = true; // Enable coordinate debugging
+        
+        // Add debug flags for collision visualization
+        this.debugWallCollisions = true; // Enable wall collision debugging
+        this.debugEntityCollisions = true; // Enable entity collision debugging
+        
+        // Debug logging frequency (0-1)
+        this.debugLogFrequency = 0.1; // Log 10% of collisions
+        
         // Check for network manager
         if (!this.networkManager) {
             console.warn("No networkManager provided to CollisionManager. Will attempt to get from gameState when needed.");
+        } else {
+            console.log("NetworkManager successfully initialized in CollisionManager");
         }
     }
     
@@ -122,7 +134,121 @@ export class ClientCollisionManager {
     }
     
     /**
+     * Debug method to check coordinate systems
+     * @param {number} x - X coordinate to check
+     * @param {number} y - Y coordinate to check
+     */
+    debugCoordinateSystem(x, y) {
+        if (!this.debugCoordinates) return;
+        
+        // Get map manager reference
+        const mapManager = this.mapManager || window.gameState?.map;
+        if (!mapManager) {
+            console.warn("Cannot debug coordinates: No map manager available");
+            return;
+        }
+        
+        // Get tile size
+        const tileSize = mapManager.tileSize || 12;
+        
+        // Calculate tile coordinates from world coordinates
+        const tileX = Math.floor(x / tileSize);
+        const tileY = Math.floor(y / tileSize);
+        
+        // Get tile info at this position if available
+        let tileInfo = "Unknown";
+        if (mapManager && mapManager.getTile) {
+            const tile = mapManager.getTile(tileX, tileY);
+            tileInfo = tile ? `Type: ${tile.type}` : "No tile";
+        }
+        
+        // Get chunk info if available
+        let chunkInfo = "Unknown";
+        if (mapManager && mapManager.getChunkCoordinates) {
+            const chunkCoords = mapManager.getChunkCoordinates(x, y);
+            chunkInfo = `Chunk (${chunkCoords.x}, ${chunkCoords.y})`;
+        } else {
+            // Calculate chunk coordinates if method not available
+            const chunkSize = mapManager.chunkSize || 16;
+            const chunkX = Math.floor(tileX / chunkSize);
+            const chunkY = Math.floor(tileY / chunkSize);
+            chunkInfo = `Estimated Chunk (${chunkX}, ${chunkY})`;
+        }
+        
+        console.log(`COORDINATE DEBUG at (${x.toFixed(2)}, ${y.toFixed(2)}):
+- World to Tile: (${tileX}, ${tileY}) [using tileSize=${tileSize}]
+- Tile: ${tileInfo}
+- ${chunkInfo}
+- Is Wall/Obstacle: ${mapManager.isWallOrObstacle?.(x, y) ? 'Yes' : 'No'}`);
+        
+        // If window.gameState exists, check camera coordinates
+        if (window.gameState && window.gameState.camera) {
+            const camera = window.gameState.camera;
+            console.log(`- Camera at (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)})`);
+            console.log(`- Distance from camera: ${Math.sqrt(
+                Math.pow(x - camera.position.x, 2) + 
+                Math.pow(y - camera.position.y, 2)
+            ).toFixed(2)} units`);
+        }
+        
+        // Check nearby walls/obstacles
+        this.debugNearbyWalls(x, y, tileX, tileY, mapManager);
+    }
+    
+    /**
+     * Debug nearby walls around a position
+     * @param {number} worldX - World X coordinate
+     * @param {number} worldY - World Y coordinate
+     * @param {number} tileX - Tile X coordinate
+     * @param {number} tileY - Tile Y coordinate
+     * @param {Object} mapManager - Map manager reference
+     */
+    debugNearbyWalls(worldX, worldY, tileX, tileY, mapManager) {
+        if (!mapManager || !mapManager.isWallOrObstacle) return;
+        
+        console.log("Checking nearby walls...");
+        const tileSize = mapManager.tileSize || 12;
+        const searchRadius = 3;
+        
+        // Check walls in a grid around the position
+        let wallsFound = 0;
+        const nearbyWalls = [];
+        
+        for (let dy = -searchRadius; dy <= searchRadius; dy++) {
+            for (let dx = -searchRadius; dx <= searchRadius; dx++) {
+                const checkTileX = tileX + dx;
+                const checkTileY = tileY + dy;
+                const checkWorldX = checkTileX * tileSize + tileSize/2;
+                const checkWorldY = checkTileY * tileSize + tileSize/2;
+                
+                if (mapManager.isWallOrObstacle(checkWorldX, checkWorldY)) {
+                    wallsFound++;
+                    nearbyWalls.push({
+                        tile: {x: checkTileX, y: checkTileY},
+                        world: {x: checkWorldX, y: checkWorldY},
+                        distance: Math.sqrt(
+                            Math.pow(worldX - checkWorldX, 2) + 
+                            Math.pow(worldY - checkWorldY, 2)
+                        ).toFixed(2)
+                    });
+                }
+            }
+        }
+        
+        if (wallsFound > 0) {
+            console.log(`Found ${wallsFound} nearby walls:`);
+            nearbyWalls.sort((a, b) => a.distance - b.distance);
+            nearbyWalls.slice(0, 5).forEach(wall => {
+                console.log(`- Wall at tile (${wall.tile.x}, ${wall.tile.y}), world (${wall.world.x.toFixed(2)}, ${wall.world.y.toFixed(2)}), distance: ${wall.distance}`);
+            });
+        } else {
+            console.log("No walls found nearby");
+        }
+    }
+    
+    /**
      * AABB collision test with precise square hitboxes
+     * This is the main collision detection logic for entities
      * @param {number} ax - First rect X
      * @param {number} ay - First rect Y
      * @param {number} awidth - First rect width
@@ -169,14 +295,19 @@ export class ClientCollisionManager {
             a_bottom >= b_top && 
             a_top <= b_bottom;
         
-        // For debugging, occassionally log collision details
-        if (colliding && Math.random() < 0.1) {
-            console.log(`Collision details:
+        // For debugging, log collision details
+        if (colliding && (Math.random() < this.debugLogFrequency || this.debugCoordinates)) {
+            console.log(`ENTITY COLLISION DETAILS:
 - Bullet center: (${acx.toFixed(2)}, ${acy.toFixed(2)}), adjusted size: ${awidthAdjusted.toFixed(2)}x${aheightAdjusted.toFixed(2)}
 - Enemy center: (${bcx.toFixed(2)}, ${bcy.toFixed(2)}), adjusted size: ${bwidthAdjusted.toFixed(2)}x${bheightAdjusted.toFixed(2)}
 - Overlap X: ${Math.min(a_right, b_right) - Math.max(a_left, b_left)}
 - Overlap Y: ${Math.min(a_bottom, b_bottom) - Math.max(a_top, b_top)}
 `);
+            
+            // Check coordinate system for the bullet position
+            if (this.debugCoordinates) {
+                this.debugCoordinateSystem(acx, acy);
+            }
         }
         
         // Add collision visualization if debug flag is enabled
@@ -287,26 +418,72 @@ export class ClientCollisionManager {
      * Check for bullet-wall collisions
      */
     checkBulletWallCollisions() {
-        return false;
         if (!this.mapManager || !this.bulletManager) return;
         
-        for (let i = 0; i < this.bulletManager.bulletCount; i++) {
+        const totalBullets = this.bulletManager.bulletCount;
+        const tileSize = this.mapManager.tileSize || 12; // Get tile size for debugging
+        let wallCollisionsDetected = 0;
+        
+        for (let i = 0; i < totalBullets; i++) {
             const x = this.bulletManager.x[i];
             const y = this.bulletManager.y[i];
             
+            // Skip if invalid position
+            if (x === undefined || y === undefined) continue;
+            
+            // Calculate tile position for debugging
+            const tileX = Math.floor(x / tileSize);
+            const tileY = Math.floor(y / tileSize);
+            
             // Check if position is wall or out of bounds
-            if (this.mapManager.isWallOrObstacle(x, y)) {
-                // Mark bullet for removal - handle case where markForRemoval doesn't exist
-                if (this.bulletManager.markForRemoval) {
-                    this.bulletManager.markForRemoval(i);
-                } else if (this.bulletManager.removeBulletById && this.bulletManager.id) {
-                    // Alternative method: remove by ID
-                    this.bulletManager.removeBulletById(this.bulletManager.id[i]);
-                } else if (this.bulletManager.life) {
-                    // Last resort: set lifetime to 0
-                    this.bulletManager.life[i] = 0;
+            if (this.mapManager.isWallOrObstacle) {
+                const isWall = this.mapManager.isWallOrObstacle(x, y);
+                
+                // Log wall collision details for debugging
+                if (isWall && (Math.random() < this.debugLogFrequency || this.debugWallCollisions)) {
+                    console.log(`WALL COLLISION DETECTED:
+- Bullet world position: (${x.toFixed(2)}, ${y.toFixed(2)})
+- Bullet tile position: (${tileX}, ${tileY}) [using tileSize=${tileSize}]
+- Bullet ID: ${this.bulletManager.id[i]}
+- Bullet owner: ${this.bulletManager.ownerId[i]}`);
+                    
+                    // Get tile type for more detail if possible
+                    if (this.mapManager.getTile) {
+                        const tile = this.mapManager.getTile(tileX, tileY);
+                        console.log(`- Tile at collision: ${JSON.stringify(tile)}`);
+                    }
+                    
+                    // Debug the coordinate system at this position
+                    if (this.debugCoordinates) {
+                        this.debugCoordinateSystem(x, y);
+                    }
+                    
+                    wallCollisionsDetected++;
+                }
+                
+                // Mark bullet for removal if collision detected
+                if (isWall) {
+                    if (this.bulletManager.markForRemoval) {
+                        this.bulletManager.markForRemoval(i);
+                    } else if (this.bulletManager.removeBulletById && this.bulletManager.id) {
+                        // Alternative method: remove by ID
+                        this.bulletManager.removeBulletById(this.bulletManager.id[i]);
+                    } else if (this.bulletManager.life) {
+                        // Last resort: set lifetime to 0
+                        this.bulletManager.life[i] = 0;
+                    }
+                }
+            } else {
+                // If method doesn't exist, log warning only occasionally to prevent spam
+                if (Math.random() < 0.01) {
+                    console.warn('Warning: mapManager.isWallOrObstacle() method not available for bullet-wall collision detection');
                 }
             }
+        }
+        
+        // Log summary if wall collisions were detected
+        if (wallCollisionsDetected > 0 && Math.random() < 0.2) {
+            console.log(`Detected ${wallCollisionsDetected} bullet-wall collisions this frame`);
         }
     }
     
@@ -343,8 +520,55 @@ export class ClientCollisionManager {
             health: this.enemyManager.health[enemyIndex]
         };
         
-        // Log collision detected with more details for debugging
-        console.log(`Collision detected: Bullet ${bulletId} (${bulletData.x.toFixed(2)},${bulletData.y.toFixed(2)}) hit Enemy ${enemyId} (${enemyData.x.toFixed(2)},${enemyData.y.toFixed(2)})`);
+        // Calculate tile coordinates for debugging
+        const mapManager = this.mapManager || window.gameState?.map;
+        const tileSize = mapManager?.tileSize || 12;
+        const bulletTileX = Math.floor(bulletData.x / tileSize);
+        const bulletTileY = Math.floor(bulletData.y / tileSize);
+        const enemyTileX = Math.floor(enemyData.x / tileSize);
+        const enemyTileY = Math.floor(enemyData.y / tileSize);
+        
+        // Enhanced collision logging with tile coordinates
+        console.log(`COLLISION DETECTED: 
+- Bullet ${bulletId} at world (${bulletData.x.toFixed(2)},${bulletData.y.toFixed(2)}), tile (${bulletTileX},${bulletTileY})
+- Enemy ${enemyId} at world (${enemyData.x.toFixed(2)},${enemyData.y.toFixed(2)}), tile (${enemyTileX},${enemyTileY})
+- Using tileSize=${tileSize}`);
+        
+        // Track entity collision in global stats
+        if (window.COLLISION_STATS) {
+            window.COLLISION_STATS.entityCollisions++;
+            
+            // Store collision details for analysis
+            if (!window.COLLISION_STATS.lastEntityCollisions) {
+                window.COLLISION_STATS.lastEntityCollisions = [];
+            }
+            
+            const collisionDetails = {
+                timestamp: Date.now(),
+                bullet: {
+                    id: bulletId,
+                    x: bulletData.x,
+                    y: bulletData.y,
+                    tileX: bulletTileX,
+                    tileY: bulletTileY,
+                    ownerId: bulletData.ownerId
+                },
+                enemy: {
+                    id: enemyId,
+                    x: enemyData.x,
+                    y: enemyData.y,
+                    tileX: enemyTileX,
+                    tileY: enemyTileY,
+                    health: enemyData.health
+                }
+            };
+            
+            // Keep only the last 10 collisions
+            window.COLLISION_STATS.lastEntityCollisions.unshift(collisionDetails);
+            if (window.COLLISION_STATS.lastEntityCollisions.length > 10) {
+                window.COLLISION_STATS.lastEntityCollisions.pop();
+            }
+        }
         
         // Mark as processed immediately to prevent duplicates
         this.processedCollisions.set(collisionId, Date.now());
@@ -352,18 +576,24 @@ export class ClientCollisionManager {
         // Apply client-side prediction for immediate feedback
         this.applyClientPrediction(bulletIndex, enemyIndex);
         
-        // Try to get networkManager from gameState if not directly available
+        // UPDATED: Better network manager handling
+        // First check direct reference in this instance
         let networkManager = this.networkManager;
-        if (!networkManager && window.gameState && window.gameState.networkManager) {
+        
+        // If not available, try to get from gameState global
+        if (!networkManager && window.gameState) {
             networkManager = window.gameState.networkManager;
-            console.log("Using networkManager from gameState");
-            // Store for future use
-            this.networkManager = networkManager;
+            
+            // If we found it in gameState, save for future use
+            if (networkManager) {
+                console.log("Found networkManager in gameState, storing for future use");
+                this.networkManager = networkManager;
+            }
         }
         
         // Report collision to server if we have network manager
         if (networkManager) {
-            if (networkManager.isConnected()) {
+            if (networkManager.isConnected && networkManager.isConnected()) {
                 try {
                     console.log(`Reporting collision to server: Bullet ${bulletId} hit Enemy ${enemyId}`);
                     networkManager.sendCollision({
@@ -372,17 +602,28 @@ export class ClientCollisionManager {
                         clientId: this.localPlayerId || (window.gameState?.character?.id),
                         timestamp: Date.now(),
                         // Include additional position data for server validation
-                        bulletPos: { x: bulletData.x, y: bulletData.y },
-                        enemyPos: { x: enemyData.x, y: enemyData.y }
+                        bulletPos: { 
+                            x: bulletData.x, 
+                            y: bulletData.y,
+                            tileX: bulletTileX,
+                            tileY: bulletTileY
+                        },
+                        enemyPos: { 
+                            x: enemyData.x, 
+                            y: enemyData.y,
+                            tileX: enemyTileX,
+                            tileY: enemyTileY
+                        }
                     });
                 } catch (error) {
                     console.error("Error sending collision to server:", error);
                 }
             } else {
-                console.warn(`Cannot report collision to server: NetworkManager disconnected`);
+                console.warn(`Cannot report collision to server: NetworkManager not connected`);
             }
         } else {
             console.warn(`Cannot report collision to server: NetworkManager not available. Make sure it's properly initialized.`);
+            console.warn(`Possible solutions: 1) Check if networkManager is created in game.js 2) Make sure it's assigned to gameState.networkManager`);
         }
     }
     

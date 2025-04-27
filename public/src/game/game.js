@@ -15,7 +15,9 @@ import {
   ClientBulletManager,
   ClientEnemyManager,
   ClientCollisionManager,
-  debugOverlay
+  debugOverlay,
+  initUIManager,
+  getUIManager
 } from '../managers.js';
 import { Player } from '../entities/player.js';
 import { TILE_SIZE, SCALE } from '../constants/constants.js';
@@ -36,6 +38,7 @@ let bulletManager;
 let enemyManager;
 let collisionManager;
 let localPlayer;
+let gameUI;
 
 // Server connection settings
 const SERVER_PORT = 3000;
@@ -195,23 +198,45 @@ export async function initGame() {
         addFirstPersonElements(scene, () => {
             console.log('First-person elements added. Connecting to server...');
             
-            // Connect to the server
+            // Initialize GameUI
+            console.log('Initializing Game UI...');
+            gameUI = initUIManager(gameState);
+            
+            // Connect to the server first, don't block game start on UI loading
             connectToServer().then(() => {
                 console.log('Connected to server. Starting the game loop.');
+                
                 // Start the Game Loop after connection is established
                 requestAnimationFrame(gameLoop);
                 
-                // Show debug overlay by default
-                debugOverlay.show();
+                // Debug overlay is enabled but not shown by default
                 debugOverlay.enabled = true;
+                
+                // Load UI after game has started
+                setTimeout(() => {
+                    gameUI.init().then(() => {
+                        console.log('Game UI loaded successfully');
+                        if (gameUI.isInitialized) {
+                            gameUI.addChatMessage('Connected to server successfully!', 'system');
+                        }
+                    }).catch(err => {
+                        console.warn('Game UI could not be loaded:', err);
+                    });
+                }, 1000); // Delay UI loading to prioritize game initialization
             }).catch(error => {
                 console.error('Failed to connect to server:', error);
                 // Start game loop anyway for offline testing
                 requestAnimationFrame(gameLoop);
                 
-                // Show debug overlay by default
-                debugOverlay.show();
+                // Debug overlay is enabled but not shown by default
                 debugOverlay.enabled = true;
+                
+                // Try to load UI after game has started
+                setTimeout(() => {
+                    gameUI.init().catch(err => {
+                        console.warn('Game UI could not be loaded:', err);
+                    });
+                }, 1000);
             });
         });
 
@@ -221,10 +246,7 @@ export async function initGame() {
 
         // Add debug key for testing player rendering
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'p') {
-                console.log('DEBUG: Creating test player');
-                spawnTestPlayer();
-            }
+            // DEBUG: 'p' key - removed test player functionality
             
             // Debug dump of player info on 'i' key
             if (e.key === 'i') {
@@ -280,7 +302,52 @@ export async function initGame() {
                     console.log('Reset enemy behavior data');
                 }
             }
+
+            // Toggle collision coordinate debugging on 'x' key
+            if (e.key === 'x') {
+                if (collisionManager) {
+                    collisionManager.debugCoordinates = !collisionManager.debugCoordinates;
+                    console.log(`DEBUG: Coordinate debugging ${collisionManager.debugCoordinates ? 'ENABLED' : 'DISABLED'}`);
+                    
+                    // If enabled, also print current coordinate system info
+                    if (collisionManager.debugCoordinates && gameState.character) {
+                        const x = gameState.character.x;
+                        const y = gameState.character.y;
+                        console.log(`Player position: (${x.toFixed(2)}, ${y.toFixed(2)})`);
+                        collisionManager.debugCoordinateSystem(x, y);
+                    }
+                } else {
+                    console.log('No collision manager available');
+                }
+            }
+            
+            // Toggle player wall collision on 'w' key
+            if (e.key === 'w' && e.altKey) {
+                // Create the flag if it doesn't exist
+                if (window.PLAYER_COLLISION_ENABLED === undefined) {
+                    window.PLAYER_COLLISION_ENABLED = true; // Default to enabled
+                }
+                
+                window.PLAYER_COLLISION_ENABLED = !window.PLAYER_COLLISION_ENABLED;
+                console.log(`Player wall collision ${window.PLAYER_COLLISION_ENABLED ? 'ENABLED' : 'DISABLED'}`);
+                
+                // Log current player position
+                if (gameState.character) {
+                    const x = gameState.character.x;
+                    const y = gameState.character.y;
+                    console.log(`Player position: (${x.toFixed(2)}, ${y.toFixed(2)})`);
+                    
+                    // Check if this position would collide with a wall
+                    if (gameState.map && gameState.map.isWallOrObstacle) {
+                        const wouldCollide = gameState.map.isWallOrObstacle(x, y);
+                        console.log(`Current position would ${wouldCollide ? '' : 'NOT '}collide with a wall`);
+                    }
+                }
+            }
         });
+
+        // Setup emergency teleport
+        setupDebugTeleport();
     } catch (error) {
         console.error('Error initializing the game:', error);
     }
@@ -308,6 +375,7 @@ function initializeGameState() {
     
     // Create managers
     bulletManager = new ClientBulletManager(10000);
+    bulletManager.bulletScale = 2.0; // Scale all bullets to be twice as large
     enemyManager = new ClientEnemyManager(1000);
     
     // Verify enemy sprite data after loading sprite sheets
@@ -325,20 +393,7 @@ function initializeGameState() {
     // IMPORTANT: Disable procedural generation to use server's map
     mapManager.proceduralEnabled = false;
     
-    // Initialize collision manager
-    collisionManager = new ClientCollisionManager({
-        bulletManager: bulletManager,
-        enemyManager: enemyManager,
-        mapManager: mapManager,
-        localPlayerId: localPlayer.id
-    });
-    
-    console.log("Created collision manager:", collisionManager);
-    
-    // Make collision manager available in console for debugging
-    window.collisionManager = collisionManager;
-    
-    // Create network manager with proper handlers
+    // Create network manager with proper handlers BEFORE collision manager
     networkManager = new ClientNetworkManager(SERVER_URL, {
         // Get client ID from server
         setClientId: (clientId) => {
@@ -568,6 +623,20 @@ function initializeGameState() {
     // Now that network manager is created, set it in the map manager
     mapManager.networkManager = networkManager;
     
+    // Initialize collision manager AFTER network manager
+    collisionManager = new ClientCollisionManager({
+        bulletManager: bulletManager,
+        enemyManager: enemyManager,
+        mapManager: mapManager,
+        networkManager: networkManager, // IMPORTANT: Pass networkManager here
+        localPlayerId: localPlayer.id
+    });
+    
+    console.log("Created collision manager with networkManager:", collisionManager);
+    
+    // Make collision manager available in console for debugging
+    window.collisionManager = collisionManager;
+    
     // Update gameState with references
     gameState.character = localPlayer;
     gameState.map = mapManager;
@@ -645,6 +714,9 @@ function gameLoop(time) {
  * @param {number} delta - Time elapsed since last frame in seconds
  */
 function update(delta) {
+    // Add emergency fix check
+    checkAndFixStuckCharacter();
+    
     // Update local player
     updateCharacter(delta);
     
@@ -701,6 +773,11 @@ function update(delta) {
         updateFirstPerson(camera);
     } else {
         gameState.camera.updatePosition({ x: gameState.character.x, y: gameState.character.y });
+    }
+
+    // Update the game UI
+    if (gameUI && gameUI.isInitialized) {
+        gameUI.update(gameState);
     }
 }
 
@@ -781,42 +858,16 @@ export function handleShoot(x, y) {
         }
     }
     
-    // Create a local bullet prediction
-    const bulletData = {
-        x: gameState.character.x,
-        y: gameState.character.y,
-        vx: Math.cos(angle) * (gameState.character.projectileSpeed * 0.3), // Slower speed (changed from 0.5 to 0.3)
-        vy: Math.sin(angle) * (gameState.character.projectileSpeed * 0.3), // Slower speed (changed from 0.5 to 0.3)
-        ownerId: gameState.character.id,
-        damage: gameState.character.damage || 10,
-        lifetime: 6.0, // Double the lifetime for better visibility (was 3.0)
-        width: 12, // Larger size for better visibility
-        height: 12, // Larger size for better visibility
-        // Add sprite info
-        spriteSheet: 'bullet_sprites',
-        spriteX: 8 * 0, // X position in sprite sheet (col * width)
-        spriteY: 8 * 10, // Y position in sprite sheet (row * height)
-        spriteWidth: 8,
-        spriteHeight: 8
-    };
-    
-    // Log the bullet data with sprite info
-    console.log("Creating bullet with data:", bulletData);
-    console.log("Sprite info: sheet:", bulletData.spriteSheet, 
-                "coords:", bulletData.spriteX, bulletData.spriteY);
-                
-    const bulletId = bulletManager.addBullet(bulletData);
-    
-    // Send to server
+    // Send to server - let server handle bullet creation
     networkManager.sendShoot({
         x: gameState.character.x,
         y: gameState.character.y,
         angle,
-        speed: gameState.character.projectileSpeed * 0.3, // Match the slower speed (changed from 0.5 to 0.3)
+        speed: gameState.character.projectileSpeed * 0.1, 
         damage: gameState.character.damage || 10
     });
     
-    console.log(`Created bullet ${bulletId} with angle ${angle.toFixed(2)}`);
+    console.log(`Sent shoot request to server with angle ${angle.toFixed(2)}`);
 }
 
 /**
@@ -839,40 +890,6 @@ export function reportCollision(bulletId, enemyId) {
     });
 }
 
-// Debug function to spawn a test player
-function spawnTestPlayer() {
-    if (!playerManager) {
-        console.error("Cannot spawn test player: playerManager not available");
-        return;
-    }
-    
-    // Generate a random ID that won't conflict with real player IDs
-    const testId = 'test-' + Math.floor(Math.random() * 9999);
-    
-    // Create test player data at a position offset from the local player
-    const testPlayerData = {
-        id: testId,
-        x: gameState.character.x + (Math.random() * 10) - 5,
-        y: gameState.character.y + (Math.random() * 10) - 5,
-        health: 100,
-        maxHealth: 100,
-        name: "Test Player",
-        // Match local player dimensions
-        width: 10,
-        height: 10,
-        // Use the same sprite as the local player
-        spriteX: 0,
-        spriteY: 0,
-        rotation: 0,
-        lastUpdate: Date.now()
-    };
-    
-    // Add to playerManager
-    playerManager.players.set(testId, testPlayerData);
-    console.log(`Created test player ${testId} at (${testPlayerData.x.toFixed(1)}, ${testPlayerData.y.toFixed(1)})`);
-    console.log(`Player manager now has ${playerManager.players.size} other players`);
-}
-
 /**
  * Debug function to dump player information
  */
@@ -890,11 +907,6 @@ function debugDumpPlayerInfo() {
         });
     } else {
         console.log('No other players currently tracked');
-        
-        // Try to manually create a test player to help diagnose rendering issues
-        console.log('Creating test player for diagnostic purposes...');
-        spawnTestPlayer();
-        console.log('After adding test player, player count is now: ' + playerManager.players.size);
     }
     
     // Add test for string vs number ID comparison
@@ -989,4 +1001,312 @@ function requestPlayerList() {
     
     // Show current player info
     debugDumpPlayerInfo();
+}
+
+/**
+ * Emergency function to detect and fix characters stuck in walls
+ * Especially targeting the 5,5 position bug
+ */
+function checkAndFixStuckCharacter() {
+  if (!gameState.character || !gameState.map) return;
+  
+  const character = gameState.character;
+  const worldX = character.x;
+  const worldY = character.y;
+  const tileSize = gameState.map.tileSize || 12;
+  
+  // Check if the character is stuck in a wall
+  if (gameState.map.isWallOrObstacle && gameState.map.isWallOrObstacle(worldX, worldY)) {
+    console.warn(`EMERGENCY FIX: Character detected in wall at position (${worldX}, ${worldY})`);
+    
+    // Special case for the known bug at position 5,5
+    if (Math.abs(worldX - 5) < 1 && Math.abs(worldY - 5) < 1) {
+      console.warn("CRITICAL: Found character at the known problematic position (5,5). Applying emergency fix...");
+      
+      // Try to move the character to a safe position
+      // First check neighboring tiles to find a floor
+      let foundSafe = false;
+      
+      // Try positions in increasing distance from current position
+      const checkPositions = [
+        { x: 12, y: 12 },   // Move to tile 1,1 in world coordinates
+        { x: 24, y: 24 },   // Move to tile 2,2 in world coordinates
+        { x: 36, y: 36 },   // Move to tile 3,3 in world coordinates
+        { x: 48, y: 48 },   // Move to tile 4,4 in world coordinates
+        { x: 60, y: 60 },   // Move to tile 5,5 in world coordinates
+        { x: 120, y: 120 }, // Move further away if needed
+      ];
+      
+      for (const pos of checkPositions) {
+        if (!gameState.map.isWallOrObstacle(pos.x, pos.y)) {
+          // Found a safe position! Move character there
+          character.x = pos.x;
+          character.y = pos.y;
+          console.log(`EMERGENCY FIX: Successfully moved character to safe position (${pos.x}, ${pos.y})`);
+          foundSafe = true;
+          break;
+        }
+      }
+      
+      if (!foundSafe) {
+        // Extreme fallback - try to move the character to (20, 20) regardless
+        character.x = 20;
+        character.y = 20;
+        console.warn("EMERGENCY FIX: Used extreme fallback position (20, 20)");
+      }
+      
+      // Update camera immediately
+      if (gameState.camera) {
+        gameState.camera.position.x = character.x;
+        gameState.camera.position.y = character.y;
+      }
+    }
+  }
+}
+
+/**
+ * Setup debug teleport key to help players escape from walls
+ */
+function setupDebugTeleport() {
+  // Add a key listener for the 'T' key to teleport
+  window.addEventListener('keydown', (event) => {
+    // Shift+T teleports to a safe location
+    if (event.shiftKey && event.code === 'KeyT') {
+      teleportToSafeLocation();
+      event.preventDefault();
+    }
+  });
+  
+  // Add to the page for mobile users
+  const addTeleportButton = () => {
+    // Check if the button already exists
+    if (document.getElementById('debug-teleport-button')) return;
+    
+    const button = document.createElement('button');
+    button.id = 'debug-teleport-button';
+    button.innerText = 'Emergency Teleport';
+    button.style.position = 'fixed';
+    button.style.bottom = '10px';
+    button.style.right = '10px';
+    button.style.padding = '10px';
+    button.style.backgroundColor = 'red';
+    button.style.color = 'white';
+    button.style.fontWeight = 'bold';
+    button.style.border = 'none';
+    button.style.borderRadius = '5px';
+    button.style.zIndex = '9999';
+    
+    button.addEventListener('click', teleportToSafeLocation);
+    
+    document.body.appendChild(button);
+  };
+  
+  // Add the button
+  setTimeout(addTeleportButton, 1000);
+}
+
+/**
+ * Teleport the character to a safe location
+ * This is an emergency function to help players who get stuck
+ */
+function teleportToSafeLocation() {
+  if (!gameState.character || !gameState.map) {
+    console.warn("Cannot teleport: Character or map is not loaded");
+    return;
+  }
+  
+  console.log("EMERGENCY TELEPORT: Attempting to move character to a safe location");
+  
+  // Try a series of positions until we find one that's not a wall
+  const safePositions = [
+    { x: 24, y: 24 },   // Try tile (2,2)
+    { x: 36, y: 36 },   // Try tile (3,3)
+    { x: 48, y: 48 },   // Try tile (4,4)
+    { x: 60, y: 60 },   // Try tile (5,5)
+    { x: 72, y: 72 },   // Try tile (6,6)
+    { x: 96, y: 96 },   // Try tile (8,8)
+    { x: 120, y: 120 }, // Try tile (10,10)
+  ];
+  
+  let teleported = false;
+  
+  for (const pos of safePositions) {
+    // Check if this position is safe
+    if (!gameState.map.isWallOrObstacle(pos.x, pos.y)) {
+      // Found a safe spot, teleport there
+      gameState.character.x = pos.x;
+      gameState.character.y = pos.y;
+      
+      // Update camera to follow
+      if (gameState.camera) {
+        gameState.camera.position.x = pos.x;
+        gameState.camera.position.y = pos.y;
+      }
+      
+      console.log(`EMERGENCY TELEPORT: Successfully teleported to (${pos.x}, ${pos.y})`);
+      
+      // Add a visual effect to show the teleport
+      addTeleportEffect(pos.x, pos.y);
+      
+      teleported = true;
+      break;
+    }
+  }
+  
+  if (!teleported) {
+    // Extreme fallback - just move to (20, 20) regardless
+    gameState.character.x = 20;
+    gameState.character.y = 20;
+    
+    // Update camera
+    if (gameState.camera) {
+      gameState.camera.position.x = 20;
+      gameState.camera.position.y = 20;
+    }
+    
+    console.warn("EMERGENCY TELEPORT: Used extreme fallback position (20, 20)");
+    addTeleportEffect(20, 20);
+  }
+  
+  // Try to tell the server about our new position if possible
+  if (gameState.networkManager && gameState.networkManager.sendPlayerPosition) {
+    gameState.networkManager.sendPlayerPosition(gameState.character.x, gameState.character.y);
+  }
+}
+
+/**
+ * Add a visual effect for teleportation
+ */
+function addTeleportEffect(x, y) {
+  // Only add if we have a canvas
+  const canvas = document.getElementById('gameCanvas');
+  if (!canvas || !gameState.camera) return;
+  
+  const ctx = canvas.getContext('2d');
+  const screenPos = gameState.camera.worldToScreen(x, y, canvas.width, canvas.height);
+  
+  // Draw a pulsing circle
+  let radius = 5;
+  let alpha = 1.0;
+  const interval = setInterval(() => {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(screenPos.x, screenPos.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 255, 255, 0.5)';
+    ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+    
+    radius += 2;
+    alpha -= 0.05;
+    
+    if (alpha <= 0) {
+      clearInterval(interval);
+    }
+  }, 20);
+}
+
+/**
+ * Check if position received from server might be in the wrong coordinate system
+ * This fixes a bug where the server might send tile coordinates (like 5,5) instead of world coordinates
+ * @param {Object} data - Position data from server
+ * @returns {Object} Corrected position data
+ */
+function correctServerPositionCoordinates(data) {
+  if (!data || !gameState.map) return data;
+  
+  // Deep clone the data to avoid modifying the original
+  const corrected = JSON.parse(JSON.stringify(data));
+  
+  // Check if x and y values exist
+  if (typeof corrected.x === 'number' && typeof corrected.y === 'number') {
+    const tileSize = gameState.map.tileSize || 12;
+    
+    // If position is suspiciously small (likely tile coordinates instead of world)
+    const suspiciouslySmall = 10; // Threshold to consider it might be a tile coordinate
+    if (corrected.x < suspiciouslySmall && corrected.y < suspiciouslySmall && corrected.x >= 0 && corrected.y >= 0) {
+      const originalX = corrected.x;
+      const originalY = corrected.y;
+      
+      // Try to check if this position would be inside a wall
+      const worldX = corrected.x * tileSize + tileSize/2; // Center of the tile
+      const worldY = corrected.y * tileSize + tileSize/2;
+      
+      // Check if this would be a wall at the world coordinates
+      if (gameState.map.isWallOrObstacle && gameState.map.isWallOrObstacle(worldX, worldY)) {
+        // It's a wall in world coordinates, so assume it's a tile coordinate and convert
+        corrected.x = worldX;
+        corrected.y = worldY;
+        
+        console.warn(`COORDINATE CORRECTION: Converted probable tile coordinates (${originalX}, ${originalY}) ` +
+                    `to world coordinates (${corrected.x}, ${corrected.y})`);
+      } else {
+        // It's not a wall, but still seems suspicious - log it
+        console.log(`Small coordinates from server: (${corrected.x}, ${corrected.y}). ` + 
+                   `This might be a tile coordinate, but the corresponding world position is not a wall.`);
+      }
+    }
+  }
+  
+  return corrected;
+}
+
+// Make the function available globally for use in other modules
+window.correctServerPositionCoordinates = correctServerPositionCoordinates;
+
+// Add chat message handling
+export function handleChatMessage(message) {
+    // Forward chat message to server or handle commands
+    if (message.startsWith('/')) {
+        handleChatCommand(message);
+    } else if (networkManager && networkManager.isConnected()) {
+        // Send to all players
+        // Add implementation based on your network protocol
+        console.log('Sending chat message:', message);
+        
+        // Display in local UI
+        if (gameUI && gameUI.isInitialized) {
+            gameUI.addChatMessage(message, 'player', 'You');
+        }
+    }
+}
+
+// Process chat commands
+function handleChatCommand(command) {
+    const parts = command.slice(1).split(' ');
+    const cmd = parts[0].toLowerCase();
+    
+    switch (cmd) {
+        case 'help':
+            if (gameUI && gameUI.isInitialized) {
+                gameUI.addChatMessage('Available commands: /help, /stats, /pos', 'system');
+            }
+            break;
+            
+        case 'stats':
+            if (gameUI && gameUI.isInitialized) {
+                const player = gameState.player;
+                if (player) {
+                    gameUI.addChatMessage(`Health: ${player.health}/${player.maxHealth}, Mana: ${player.mana}/${player.maxMana}`, 'system');
+                }
+            }
+            break;
+            
+        case 'pos':
+            if (gameUI && gameUI.isInitialized) {
+                const player = gameState.player;
+                if (player) {
+                    gameUI.addChatMessage(`Position: X=${Math.round(player.x)}, Y=${Math.round(player.y)}`, 'system');
+                }
+            }
+            break;
+            
+        default:
+            if (gameUI && gameUI.isInitialized) {
+                gameUI.addChatMessage(`Unknown command: ${cmd}`, 'system');
+            }
+    }
 }

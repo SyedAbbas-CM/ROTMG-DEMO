@@ -32,6 +32,9 @@ export class ClientBulletManager {
     // Local prediction bullets (client-created, not yet confirmed by server)
     this.localBullets = new Set();
     
+    // Scale factor for bullet rendering
+    this.bulletScale = 1.0;
+    
     console.log("ClientBulletManager initialized with capacity for", maxBullets, "bullets");
   }
   

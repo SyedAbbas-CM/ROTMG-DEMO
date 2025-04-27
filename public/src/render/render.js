@@ -310,8 +310,6 @@ export function renderEnemies() {
 /**
  * Render all bullets
  */
-// src/render/render.js
-
 export function renderBullets() {
   const bm = gameState.bulletManager;
   if (!bm) {
@@ -329,6 +327,9 @@ export function renderBullets() {
   const W = canvas2D.width;
   const H = canvas2D.height;
   const useCam = gameState.camera && typeof gameState.camera.worldToScreen === 'function';
+  
+  // Get bullet scale factor if available
+  const bulletScale = bm.bulletScale || 1.0;
 
   for (let i = 0; i < bm.bulletCount; i++) {
     // world → screen
@@ -345,9 +346,9 @@ export function renderBullets() {
     // cull
     if (sx < -100 || sx > W+100 || sy < -100 || sy > H+100) continue;
 
-    // size
-    const w = (bm.width[i]  || 8) * viewScale;
-    const h = (bm.height[i] || 8) * viewScale;
+    // Apply bullet scale to width and height
+    const w = (bm.width[i] || 8) * viewScale * bulletScale;
+    const h = (bm.height[i] || 8) * viewScale * bulletScale;
 
     // try sprite draw
     if (spriteManager && bm.sprite && bm.sprite[i]) {
@@ -425,7 +426,7 @@ export function renderGame() {
   try {
     // Log the availability of render functions (only occasionally to avoid console spam)
     if (Math.random() < 0.01) {
-      console.log(`Render functions available: topdown=${typeof window.renderTopDownView === 'function'}, strategic=${typeof window.renderStrategicView === 'function'}`);
+      //console.log(`Render functions available: topdown=${typeof window.renderTopDownView === 'function'}, strategic=${typeof window.renderStrategicView === 'function'}`);
     }
     
     if (viewType === 'top-down') {
