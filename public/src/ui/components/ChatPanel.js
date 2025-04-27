@@ -179,17 +179,60 @@ export class ChatPanel extends UIComponent {
     minimizeBtn.addEventListener('click', () => this.minimize());
     closeBtn.addEventListener('click', () => this.hide());
     
+    // Keep track of chat input focus state globally
+    window.chatInputActive = false;
+    
+    // Handle focus and blur events to toggle the chat input state
+    input.addEventListener('focus', () => {
+      window.chatInputActive = true;
+      input.style.backgroundColor = '#333'; // Darken background to indicate focus
+      input.style.borderColor = '#f59e0b'; // Add orange border when focused
+      console.log('Chat input focused - game controls temporarily disabled');
+    });
+    
+    input.addEventListener('blur', () => {
+      window.chatInputActive = false;
+      input.style.backgroundColor = '#222'; // Reset to default
+      input.style.borderColor = '#333'; // Reset to default
+      console.log('Chat input blurred - game controls restored');
+    });
+    
+    // Stop propagation of all key events when input is focused to prevent game controls from triggering
     input.addEventListener('keydown', (e) => {
+      // Always stop propagation when chat input is focused
+      e.stopPropagation();
+      
       if (e.key === 'Enter' && input.value.trim()) {
         this.sendMessage(input.value.trim());
         input.value = '';
+        
+        // Blur input after sending to restore game controls
+        input.blur();
       }
+      
+      // Handle the Escape key to exit chat input
+      if (e.key === 'Escape') {
+        input.blur();
+      }
+    });
+    
+    // Also prevent key up events from reaching the game
+    input.addEventListener('keyup', (e) => {
+      e.stopPropagation();
+    });
+    
+    // Also prevent keypress events
+    input.addEventListener('keypress', (e) => {
+      e.stopPropagation();
     });
     
     sendBtn.addEventListener('click', () => {
       if (input.value.trim()) {
         this.sendMessage(input.value.trim());
         input.value = '';
+        
+        // Blur input after sending to restore game controls
+        input.blur();
       }
     });
     

@@ -30,6 +30,22 @@ export function initControls() {
     
     // Keyboard input
     window.addEventListener('keydown', (e) => {
+        // Check for Enter key to focus chat input
+        if (e.code === 'Enter') {
+            // Find the chat input element
+            const chatInput = document.querySelector('.chat-input');
+            if (chatInput) {
+                e.preventDefault();
+                chatInput.focus();
+                return;
+            }
+        }
+        
+        // Skip game controls if chat input is active
+        if (window.chatInputActive) {
+            return;
+        }
+        
         keysPressed[e.code] = true;
         // Remove excessive logging
         // console.log(`Key pressed: ${e.code}`); // Debug log
@@ -88,6 +104,11 @@ export function initControls() {
     });
 
     window.addEventListener('keyup', (e) => {
+        // Skip game controls if chat input is active
+        if (window.chatInputActive) {
+            return;
+        }
+        
         keysPressed[e.code] = false;
     });
 
