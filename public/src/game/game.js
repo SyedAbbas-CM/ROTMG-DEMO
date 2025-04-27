@@ -3,7 +3,7 @@ import { spriteManager } from '../assets/spriteManager.js';
 import { gameState } from './gamestate.js';
 import { initControls, getKeysPressed, getMoveSpeed } from './input.js';
 import { addFirstPersonElements, updateFirstPerson } from '../render/renderFirstPerson.js';
-import { updateCharacter } from './updateCharacter.js';
+import { updateCharacter, updateCollisionVisualization, addCollisionVisualizationToggle } from './updateCharacter.js';
 import { renderTopDownView } from '../render/renderTopDown.js';
 import { renderStrategicView } from '../render/renderStrategic.js';
 import { updatePlayers, playerManager, updatePlayerInterpolation } from '../entities/entities.js';
@@ -212,6 +212,9 @@ export async function initGame() {
                 // Debug overlay is enabled but not shown by default
                 debugOverlay.enabled = true;
                 
+                // Add collision visualization toggle button
+                addCollisionVisualizationToggle();
+                
                 // Load UI after game has started
                 setTimeout(() => {
                     gameUI.init().then(() => {
@@ -230,6 +233,9 @@ export async function initGame() {
                 
                 // Debug overlay is enabled but not shown by default
                 debugOverlay.enabled = true;
+                
+                // Add collision visualization toggle button
+                addCollisionVisualizationToggle();
                 
                 // Try to load UI after game has started
                 setTimeout(() => {
@@ -719,6 +725,9 @@ function update(delta) {
     
     // Update local player
     updateCharacter(delta);
+    
+    // Update collision visualization when enabled
+    updateCollisionVisualization();
     
     // Update other players position interpolation (for smooth movement)
     updatePlayerInterpolation(delta);

@@ -11,6 +11,17 @@ const logger = createLogger('movement');
 // CHANGED: Collision debugging enabled by default
 window.DEBUG_COLLISION = true;
 
+// Initialize collision stats object at module load time
+if (!window.COLLISION_STATS) {
+  window.COLLISION_STATS = {
+    totalCollisions: 0,
+    ghostCollisions: 0,
+    collisionPositions: [],
+    entityCollisions: 0,
+    lastEntityCollisions: []
+  };
+}
+
 /**
  * Updates the character's position based on input and handles collision.
  * @param {number} delta - Time elapsed since the last frame (in seconds).
@@ -153,32 +164,19 @@ export function updateCharacter(delta) {
   if (isMoving) {
     const distance = speed * delta;
     
-    // First try moving along X axis
+    // MODIFIED: Apply movement directly since isCollision will always return false now
+    // First move along X axis
     const newX = character.x + moveX * distance;
+    character.x = newX;
     
-    if (!isCollision(newX, character.y)) {
-      character.x = newX;
-    } else {
-      // Try with smaller increments to handle edge cases
-      const smallStep = Math.sign(moveX) * Math.min(Math.abs(moveX * distance), 0.1);
-      const stepX = character.x + smallStep;
-      if (!isCollision(stepX, character.y)) {
-        character.x = stepX;
-      }
-    }
-    
-    // Now try moving along Y axis
+    // Then move along Y axis 
     const newY = character.y + moveY * distance;
-    if (!isCollision(character.x, newY)) {
-      character.y = newY;
-    } else {
-      // Try with smaller increments
-      const smallStep = Math.sign(moveY) * Math.min(Math.abs(moveY * distance), 0.1);
-      const stepY = character.y + smallStep;
-      if (!isCollision(character.x, stepY)) {
-        character.y = stepY;
-      }
-    }
+    character.y = newY;
+    
+    // ADDED: Still check for collision even though we're not stopping movement
+    // This allows the visualization and debugging features to work
+    isCollision(newX, originalY);
+    isCollision(character.x, newY);
     
     // If we moved, log the new position occasionally
     if (Math.abs(character.x - originalX) > 0.001 || Math.abs(character.y - originalY) > 0.001) {
@@ -231,26 +229,137 @@ function isCollision(x, y) {
     console.log(`Collision detection using box size: ${collisionSize.toFixed(2)}px (character: ${width}x${height}, tile: ${tileSize}px)`);
   }
   
+  // MODIFIED: Initialize a variable to track if collision would have occurred
+  let wouldCollide = false;
+  
   // Only check center and 4 cardinal points (not corners)
   // Center
-  if (isPointColliding(x, y)) return true;
+  if (isPointColliding(x, y)) wouldCollide = true;
   
   // Cardinal points (closer to center than before)
   // North
-  if (isPointColliding(x, y - halfSize)) return true;
+  if (!wouldCollide && isPointColliding(x, y - halfSize)) wouldCollide = true;
   // South
-  if (isPointColliding(x, y + halfSize)) return true;
+  if (!wouldCollide && isPointColliding(x, y + halfSize)) wouldCollide = true;
   // East
-  if (isPointColliding(x + halfSize, y)) return true;
+  if (!wouldCollide && isPointColliding(x + halfSize, y)) wouldCollide = true;
   // West
-  if (isPointColliding(x - halfSize, y)) return true;
+  if (!wouldCollide && isPointColliding(x - halfSize, y)) wouldCollide = true;
   
-  // No collision detected
+  // MODIFIED: If collision detected, log it but allow movement anyway
+  if (wouldCollide) {
+    // Track in global stats
+    if (!window.COLLISION_STATS) {
+      window.COLLISION_STATS = {
+        totalCollisions: 0,
+        ghostCollisions: 0,
+        collisionPositions: []
+      };
+    }
+    
+    // Ensure collisionPositions exists
+    if (!window.COLLISION_STATS.collisionPositions) {
+      window.COLLISION_STATS.collisionPositions = [];
+    }
+    
+    window.COLLISION_STATS.totalCollisions++;
+    window.COLLISION_STATS.ghostCollisions++;
+    
+    // Store this collision for visualization (limited to 10 recent ones)
+    const collisionData = {
+      x: x,
+      y: y,
+      time: Date.now(),
+      tileX: Math.floor(x / tileSize),
+      tileY: Math.floor(y / tileSize)
+    };
+    
+    window.COLLISION_STATS.collisionPositions.unshift(collisionData);
+    if (window.COLLISION_STATS.collisionPositions.length > 10) {
+      window.COLLISION_STATS.collisionPositions.pop();
+    }
+    
+    // Log this collision occasionally to avoid console spam
+    if (Math.random() < 0.1) {
+      console.log(`GHOST COLLISION: Character passed through wall at (${x.toFixed(2)}, ${y.toFixed(2)}), ` +
+                  `tile (${Math.floor(x / tileSize)}, ${Math.floor(y / tileSize)})`);
+    }
+  }
+  
+  // MODIFIED: Always return false to allow movement regardless of collision
   return false;
 }
 
 /**
- * ADDED: Visualize collision points for debugging
+ * ADDED: Visualize ghost collisions that occurred but didn't block movement
+ * This will show recent collision points as red X marks on the screen
+ */
+function visualizeGhostCollisions() {
+  if (!window.DEBUG_COLLISION || !window.COLLISION_STATS) {
+    return;
+  }
+  
+  // Ensure collision positions array exists
+  if (!window.COLLISION_STATS.collisionPositions) {
+    window.COLLISION_STATS.collisionPositions = [];
+    return;
+  }
+  
+  // Get debug canvas or create one if it doesn't exist
+  let canvas = document.getElementById('debugCollisionCanvas');
+  if (!canvas) {
+    return; // Canvas should already exist from visualizeCollisionPoints
+  }
+  
+  const ctx = canvas.getContext('2d');
+  const camera = gameState.camera;
+  if (!camera || !camera.worldToScreen) {
+    return;
+  }
+  
+  // Draw recent ghost collisions
+  for (const collision of window.COLLISION_STATS.collisionPositions) {
+    // Skip if too old (older than 5 seconds)
+    if (Date.now() - collision.time > 5000) {
+      continue;
+    }
+    
+    // Convert position to screen coordinates
+    const pos = camera.worldToScreen(
+      collision.x, 
+      collision.y, 
+      canvas.width, 
+      canvas.height
+    );
+    
+    // Draw a red X to mark ghost collision
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+    ctx.lineWidth = 3;
+    
+    // X mark
+    const size = 10;
+    ctx.beginPath();
+    ctx.moveTo(pos.x - size, pos.y - size);
+    ctx.lineTo(pos.x + size, pos.y + size);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(pos.x + size, pos.y - size);
+    ctx.lineTo(pos.x - size, pos.y + size);
+    ctx.stroke();
+    
+    // Add a red circle that fades with time
+    const age = (Date.now() - collision.time) / 5000; // 0 to 1
+    const alpha = 1 - age;
+    ctx.fillStyle = `rgba(255, 0, 0, ${alpha * 0.3})`;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 15, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/**
+ * ADDED: Visualization of collision points when debugging is enabled
  * @param {number} x - Center X position
  * @param {number} y - Center Y position
  * @param {number} halfSize - Half of the collision box size
@@ -361,6 +470,9 @@ function visualizeCollisionPoints(x, y, halfSize) {
     ctx.lineTo(screenEnd.x, screenEnd.y);
     ctx.stroke();
   }
+  
+  // ADDED: Draw ghost collisions on top
+  visualizeGhostCollisions();
 }
 
 /**
@@ -533,29 +645,56 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-// Create a toggle button for collision visualization
-function addCollisionVisualizationToggle() {
+// Create a more informative toggle button for collision visualization
+export function addCollisionVisualizationToggle() {
   // Check if the button already exists
   if (document.getElementById('collision-visualization-toggle')) return;
   
   const button = document.createElement('button');
   button.id = 'collision-visualization-toggle';
-  button.innerText = 'Toggle Collision View';
+  button.innerHTML = 'Collision View: <span style="color:green">ON</span>';
   button.style.position = 'fixed';
   button.style.top = '10px';
   button.style.right = '10px';
-  button.style.padding = '5px';
-  button.style.backgroundColor = window.DEBUG_COLLISION ? 'green' : 'red';
+  button.style.padding = '8px 12px';
+  button.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
   button.style.color = 'white';
   button.style.fontWeight = 'bold';
   button.style.border = 'none';
   button.style.borderRadius = '5px';
   button.style.zIndex = '9999';
+  button.style.cursor = 'pointer';
+  
+  // Add collision stats display
+  const statsDiv = document.createElement('div');
+  statsDiv.id = 'collision-stats';
+  statsDiv.style.position = 'fixed';
+  statsDiv.style.top = '45px';
+  statsDiv.style.right = '10px';
+  statsDiv.style.padding = '8px';
+  statsDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+  statsDiv.style.color = 'white';
+  statsDiv.style.fontFamily = 'monospace';
+  statsDiv.style.fontSize = '12px';
+  statsDiv.style.borderRadius = '5px';
+  statsDiv.style.zIndex = '9998';
+  statsDiv.style.display = window.DEBUG_COLLISION ? 'block' : 'none';
+  statsDiv.innerHTML = 'Ghost collisions: 0<br>Total collisions: 0';
+  
+  // Update stats periodically
+  setInterval(() => {
+    if (window.COLLISION_STATS && window.DEBUG_COLLISION) {
+      statsDiv.innerHTML = `Ghost collisions: ${window.COLLISION_STATS.ghostCollisions || 0}<br>Total collisions: ${window.COLLISION_STATS.totalCollisions || 0}`;
+    }
+  }, 500);
   
   button.addEventListener('click', () => {
     window.DEBUG_COLLISION = !window.DEBUG_COLLISION;
     console.log(`Collision visualization ${window.DEBUG_COLLISION ? 'enabled' : 'disabled'}`);
-    button.style.backgroundColor = window.DEBUG_COLLISION ? 'green' : 'red';
+    button.innerHTML = `Collision View: <span style="color:${window.DEBUG_COLLISION ? 'green' : 'red'}">${window.DEBUG_COLLISION ? 'ON' : 'OFF'}</span>`;
+    
+    // Show/hide stats
+    statsDiv.style.display = window.DEBUG_COLLISION ? 'block' : 'none';
     
     // Clean up canvas if disabled
     if (!window.DEBUG_COLLISION) {
@@ -568,7 +707,24 @@ function addCollisionVisualizationToggle() {
   });
   
   document.body.appendChild(button);
+  document.body.appendChild(statsDiv);
 }
 
-// Add this call to immediately create the button when the file is loaded
-setTimeout(addCollisionVisualizationToggle, 1000);
+// Add this function to the game loop to visualize ghost collisions
+export function updateCollisionVisualization() {
+  if (window.DEBUG_COLLISION) {
+    // Get player position for visualization
+    const character = gameState.character;
+    if (character) {
+      // Calculate collision box size
+      const width = character.width || 20;
+      const height = character.height || 20;
+      const tileSize = gameState.map?.tileSize || 12;
+      const collisionSize = Math.min(width * 0.6, tileSize * 0.8);
+      const halfSize = collisionSize / 2;
+      
+      // Visualize at player's position
+      visualizeCollisionPoints(character.x, character.y, halfSize);
+    }
+  }
+}
