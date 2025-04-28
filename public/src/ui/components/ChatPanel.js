@@ -206,8 +206,8 @@ export class ChatPanel extends UIComponent {
         this.sendMessage(input.value.trim());
         input.value = '';
         
-        // Blur input after sending to restore game controls
-        input.blur();
+        // Keep focus in the input field after sending a message
+        // Do not blur here to allow continuous chatting
       }
       
       // Handle the Escape key to exit chat input
@@ -231,8 +231,8 @@ export class ChatPanel extends UIComponent {
         this.sendMessage(input.value.trim());
         input.value = '';
         
-        // Blur input after sending to restore game controls
-        input.blur();
+        // Keep focus in the input field after sending
+        input.focus();
       }
     });
     

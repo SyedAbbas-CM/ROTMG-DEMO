@@ -155,6 +155,13 @@ export function initControls() {
             return;
         }
         
+        // Find and blur the chat input if it exists and is focused
+        const chatInput = document.querySelector('.chat-input');
+        if (chatInput && document.activeElement === chatInput) {
+            chatInput.blur();
+            return; // Don't process the click further if we were in chat
+        }
+        
         logger.debug("Mouse click detected");
         
         // Get click position in game world
@@ -190,6 +197,13 @@ export function initControls() {
         const targetId = e.target.id;
         if (targetId !== 'gameCanvas' && targetId !== 'glCanvas') {
             return;
+        }
+        
+        // Find and blur the chat input if it exists and is focused
+        const chatInput = document.querySelector('.chat-input');
+        if (chatInput && document.activeElement === chatInput) {
+            chatInput.blur();
+            return; // Don't process the touch further if we were in chat
         }
         
         // Get click position in game world
