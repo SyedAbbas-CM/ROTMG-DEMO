@@ -6,6 +6,8 @@ export class SpriteManager {
     this.sprites = {};
     // Groups (for animations, etc.)
     this.groups = {};
+    // Map of alias -> { sheetName, spriteName }
+    this.aliases = {};
   }
 
   /**
@@ -29,8 +31,25 @@ export class SpriteManager {
       const image = await this._loadImage(mergedConfig.path);
       this.spriteSheets[mergedConfig.name] = { image, config: mergedConfig };
       
-      // Extract sprites automatically
-      if (mergedConfig.autoDetect) {
+      // Process sprites based on config format
+      if (mergedConfig.sprites && mergedConfig.sprites.length > 0) {
+        // Convert row/col format to x/y format if needed
+        mergedConfig.sprites = mergedConfig.sprites.map((sprite, index) => {
+          if (sprite.row !== undefined && sprite.col !== undefined) {
+            return {
+              id: sprite.id || index,
+              name: sprite.name || `sprite_${index}`,
+              x: sprite.col * mergedConfig.defaultSpriteWidth,
+              y: sprite.row * mergedConfig.defaultSpriteHeight,
+              width: sprite.width || mergedConfig.defaultSpriteWidth,
+              height: sprite.height || mergedConfig.defaultSpriteHeight
+            };
+          }
+          return sprite;
+        });
+      }
+      // Extract sprites automatically if not provided
+      else if (mergedConfig.autoDetect) {
         mergedConfig.sprites = await this.autoDetectSprites(image, mergedConfig);
       } 
       // Fall back to grid-based extraction if sprites not provided and autoDetect is false
@@ -227,7 +246,8 @@ export class SpriteManager {
 
     // Define each sprite using key format "sheetName_spriteName"
     spriteData.sprites.forEach(sprite => {
-      const key = `${sheetName}_${sprite.name || `sprite_${sprite.id}`}`;
+      const spriteName = sprite.name || `sprite_${sprite.id}`;
+      const key = `${sheetName}_${spriteName}`;
       this.sprites[key] = {
         sheetName: sheetName,
         x: sprite.x,
@@ -235,6 +255,13 @@ export class SpriteManager {
         width: sprite.width,
         height: sprite.height
       };
+
+      // Auto-register the bare sprite name as an alias if it is unique across the project.
+      // This allows code to simply request fetchSprite('knight') without worrying about
+      // which sheet it lives on, provided there are no name collisions.
+      if (!this.aliases[spriteName]) {
+        this.aliases[spriteName] = { sheetName, spriteName };
+      }
     });
 
     // Process groups if provided
@@ -298,10 +325,9 @@ export class SpriteManager {
    * For a given sprite key, returns the associated image.
    */
   getSheetImage(spriteKey) {
-    const spr = this.getSprite(spriteKey);
-    if (!spr) return null;
-    const sheet = this.getSpriteSheet(spr.sheetName);
-    return sheet ? sheet.image : null;
+    const sprite = this.getSprite(spriteKey);
+    if (!sprite) return null;
+    return this.spriteSheets[sprite.sheetName]?.image || null;
   }
   
   /**
@@ -393,6 +419,84 @@ export class SpriteManager {
       ctx.fillStyle = 'magenta';
       ctx.fillRect(destX, destY, destWidth, destHeight);
     }
+  }
+
+  /**
+   * Convenience helper – compute a sprite region by grid coordinates rather
+   * than relying on the auto-generated sprite registry. This makes it trivial
+   * to address sprites in classic tile sheets where every tile is the same
+   * size (e.g. 8×8, 10×10, etc.) but the sheet as a whole might use any cell
+   * size and number of rows/columns.
+   *
+   * It returns an object shaped like those coming from `getSprite`, allowing
+   * it to be passed straight into the existing `drawSprite` helpers.
+   *
+   *   const region = spriteManager.getGridSprite('enemy_sprites', 3, 5);
+   *   ctx.drawImage(region.image, region.x, region.y, region.width, region.height, ...);
+   *
+   * If `spriteWidth` / `spriteHeight` are omitted the sheet's default
+   * dimensions are used (those provided in the `loadSpriteSheet` config).
+   */
+  getGridSprite(sheetName, row, col, spriteWidth = null, spriteHeight = null) {
+    const sheetObj = this.spriteSheets[sheetName];
+    if (!sheetObj) {
+      console.warn(`SpriteManager.getGridSprite: Sheet "${sheetName}" not loaded yet.`);
+      return null;
+    }
+
+    const { image, config } = sheetObj;
+    const w = spriteWidth  || config.defaultSpriteWidth;
+    const h = spriteHeight || config.defaultSpriteHeight;
+
+    return {
+      sheetName,
+      image,
+      name: `r${row}c${col}`,
+      x: col * w,
+      y: row * h,
+      width: w,
+      height: h
+    };
+  }
+
+  /**
+   * Register a human-friendly alias for a sprite definition that already exists.
+   * Example: spriteManager.registerAlias('orc', 'chars2', 'sprite_15');
+   */
+  registerAlias(alias, sheetName, spriteName) {
+    const key = `${sheetName}_${spriteName}`;
+    if (!this.sprites[key]) {
+      console.warn(`registerAlias: sprite ${key} not found`);
+      return false;
+    }
+    this.aliases[alias] = { sheetName, spriteName };
+    return true;
+  }
+
+  /**
+   * Retrieve a sprite via alias or direct key.
+   * This lets game code request sprites by simple names like 'orc'.
+   */
+  fetchSprite(name) {
+    // First check alias table
+    if (this.aliases[name]) {
+      const { sheetName, spriteName } = this.aliases[name];
+      return this.getSprite(`${sheetName}_${spriteName}`);
+    }
+    // Fall back to direct key lookup (sheet_sprite)
+    return this.getSprite(name);
+  }
+
+  /**
+   * Convenience helper: ensure a grid-based sprite exists and return it.
+   * This lets designers call spriteManager.fetchGridSprite('chars2', row, col, alias)
+   */
+  fetchGridSprite(sheetName, row, col, alias = null, spriteWidth = null, spriteHeight = null) {
+    const gridSprite = this.getGridSprite(sheetName, row, col, spriteWidth, spriteHeight);
+    if (alias) {
+      this.registerAlias(alias, sheetName, gridSprite.name);
+    }
+    return gridSprite;
   }
 }
 

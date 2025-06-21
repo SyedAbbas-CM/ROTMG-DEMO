@@ -1,0 +1,21 @@
+[
+  {
+    "id": 101,
+    "name": "Red Demon",
+    "sprite": "red_demon",
+    "hp": 350,
+    "speed": 1.2,
+    "attack": {
+      "type": "straight",
+      "cooldown": 800,
+      "bulletId": 201
+    }
+  },
+  {
+    "id": 201,
+    "name": "Red Demon Bullet",
+    "sprite": "red_demon_bullet",
+    "speed": 6,
+    "lifetime": 1500
+  }
+] 

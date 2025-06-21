@@ -1,0 +1,9 @@
+[
+  {
+    "id": 50,
+    "name": "Wooden Crate",
+    "sprite": "crate_wood",
+    "hp": 20,
+    "loot": []
+  }
+] 

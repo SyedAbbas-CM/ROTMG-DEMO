@@ -16,15 +16,23 @@ import BehaviorSystem from './src/BehaviorSystem.js';
 
 // Debug flags to control logging
 const DEBUG = {
-  mapCreation: true,     // Logs related to map creation and saving
-  connections: true,     // Logs related to client connections/disconnections
-  enemySpawns: true,     // Logs related to enemy spawning
-  collisions: false,     // Logs related to collision detection
-  playerPositions: false, // Periodic logs of player positions
-  activeCounts: false,   // Periodic logs of active entities (bullets, enemies)
-  chunkRequests: false,   // Logs related to map chunk requests
-  chat: true             // Logs related to chat messages
+  // Keep everything silent by default – we'll re-enable specific areas when
+  // we actually need them for diagnostics.
+  mapCreation: false,
+  connections: true,
+  enemySpawns: false,
+  collisions: false,
+  playerPositions: false,
+  activeCounts: false,
+  // Keep chunkRequests on so we can confirm the request-throttling fix works
+  chunkRequests: false,
+  chat: false,
+  playerMovement: false,
+  bulletEvents: false
 };
+
+// Expose debug flags globally so helper classes can reference them
+globalThis.DEBUG = DEBUG;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,9 +44,150 @@ const server = http.createServer(app);
 // Create WebSocket server
 const wss = new WebSocketServer({ server });
 
+// Prevent unhandled 'error' events (e.g. EADDRINUSE) from crashing the process
+wss.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    // HTTP server retry logic will handle incrementing the port. Just swallow here.
+    console.warn('[WSS] Underlying HTTP server port busy – waiting for retry logic.');
+    return;
+  }
+  console.error('[WSS] Unhandled error:', err);
+});
+
 // Set up middleware
 app.use(express.json());
-app.use(express.static('public'));
+
+// ---------------- Asset Browser API ----------------
+// These routes provide the Sprite Editor and other tools with lists of accessible images and
+// atlas JSON files from the /public/assets directory tree. They were previously only present
+// in Server.js (capital S) so running `node server.js` missed them – causing 404 errors in the
+// browser. Duplicated here so the lowercase entry-point serves them too.
+
+const imagesDirBase = path.join(__dirname, 'public', 'assets', 'images');
+const atlasesDirBase = path.join(__dirname, 'public', 'assets', 'atlases');
+
+// GET /api/assets/images – flat list of image paths relative to public/
+app.get('/api/assets/images', (req, res) => {
+  const images = [];
+  const walk = (dir, base = '') => {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((ent) => {
+      const full = path.join(dir, ent.name);
+      const rel = path.posix.join(base, ent.name);
+      if (ent.isDirectory()) return walk(full, rel);
+      if (/\.(png|jpe?g|gif)$/i.test(ent.name)) {
+        images.push('assets/images/' + rel);
+      }
+    });
+  };
+  try {
+    walk(imagesDirBase);
+    res.json({ images });
+  } catch (err) {
+    console.error('[ASSETS] Error generating image list', err);
+    res.status(500).json({ error: 'Failed to list images' });
+  }
+});
+
+// GET /api/assets/images/tree – nested folder tree structure
+app.get('/api/assets/images/tree', (req, res) => {
+  const buildNode = (dir) => {
+    const node = { name: path.basename(dir), type: 'folder', children: [] };
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((ent) => {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) {
+        node.children.push(buildNode(full));
+      } else if (/\.(png|jpe?g|gif)$/i.test(ent.name)) {
+        node.children.push({
+          name: ent.name,
+          type: 'image',
+          path: 'assets/images/' + path.relative(imagesDirBase, full).replace(/\\/g, '/'),
+        });
+      }
+    });
+    return node;
+  };
+  try {
+    res.json(buildNode(imagesDirBase));
+  } catch (err) {
+    console.error('[ASSETS] Error building image tree', err);
+    res.status(500).json({ error: 'Failed to build tree' });
+  }
+});
+
+// GET /api/assets/atlases – list of atlas JSON files
+app.get('/api/assets/atlases', (req, res) => {
+  try {
+    const atlases = fs
+      .readdirSync(atlasesDirBase)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => 'assets/atlases/' + f);
+    res.json({ atlases });
+  } catch (err) {
+    console.error('[ASSETS] Error listing atlases', err);
+    res.status(500).json({ error: 'Failed to list atlases' });
+  }
+});
+
+// GET /api/assets/atlas/:file – fetch a single atlas JSON by filename
+app.get('/api/assets/atlas/:file', (req, res) => {
+  const filename = req.params.file;
+  // Allow only simple filenames like "chars2.json" – prevents path traversal
+  if (!/^[\w-]+\.json$/.test(filename)) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const atlasPath = path.join(atlasesDirBase, filename);
+  if (!fs.existsSync(atlasPath)) {
+    return res.status(404).json({ error: 'Atlas not found' });
+  }
+  try {
+    const data = JSON.parse(fs.readFileSync(atlasPath, 'utf8'));
+    res.json(data);
+  } catch (err) {
+    console.error('[ASSETS] Error reading atlas', err);
+    res.status(500).json({ error: 'Failed to read atlas' });
+  }
+});
+
+// POST /api/assets/atlases/save – persist atlas JSON sent from the editor
+app.post('/api/assets/atlases/save', (req, res) => {
+  const { filename, data } = req.body || {};
+  if (!filename || !data) {
+    return res.status(400).json({ error: 'filename and data required' });
+  }
+  // Simple filename sanitisation – disallow path traversal, require .json extension
+  if (!/^[\w-]+\.json$/.test(filename)) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const atlasPath = path.join(atlasesDirBase, filename);
+  try {
+    fs.writeFileSync(atlasPath, JSON.stringify(data, null, 2));
+    res.json({ success: true, path: 'assets/atlases/' + filename });
+  } catch (err) {
+    console.error('[ASSETS] Error saving atlas', err);
+    res.status(500).json({ error: 'Failed to save atlas' });
+  }
+});
+
+// POST /api/assets/images/save – save a base64-encoded PNG image to public/assets/images
+app.post('/api/assets/images/save', (req, res) => {
+  const { path: relPath, data } = req.body || {};
+  if (!relPath || !data || !data.startsWith('data:image/png;base64,')) {
+    return res.status(400).json({ error: 'path and base64 data required' });
+  }
+  // Prevent path traversal, force .png only
+  if (relPath.includes('..') || !relPath.toLowerCase().endsWith('.png')) {
+    return res.status(400).json({ error: 'Invalid path' });
+  }
+  const abs = path.join(__dirname, 'public', relPath);
+  try {
+    const pngBuf = Buffer.from(data.split(',')[1], 'base64');
+    fs.writeFileSync(abs, pngBuf);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[ASSETS] Error saving image', err);
+    res.status(500).json({ error: 'Failed to save image' });
+  }
+});
 
 // Create server managers
 const mapManager = new MapManager({
@@ -82,6 +231,91 @@ app.get('/api/maps/:id/chunk/:x/:y', (req, res) => {
     res.json(chunk || { error: 'Chunk not found' });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// After map routes definitions
+// --- Asset listing routes for editor -----------------
+// List PNG images under public/assets/images (recursive)
+app.get('/api/assets/images', (req, res) => {
+  const imagesDir = path.join(__dirname, 'public', 'assets', 'images');
+  const images = [];
+  const walk = (dir, base='') => {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach(ent => {
+      const full = path.join(dir, ent.name);
+      const rel = path.join(base, ent.name);
+      if (ent.isDirectory()) return walk(full, rel);
+      if (/\.(png|jpg|jpeg|gif)$/i.test(ent.name)) images.push("assets/images/" + rel.replace(/\\/g,'/'));
+    });
+  };
+  try {
+    walk(imagesDir);
+    res.json({ images });
+  } catch (err) {
+    console.error('Error listing images', err);
+    res.status(500).json({ error: 'Failed to list images' });
+  }
+});
+
+// List atlas JSON files
+app.get('/api/assets/atlases', (req, res) => {
+  const atlasesDir = path.join(__dirname, 'public', 'assets', 'atlases');
+  try {
+    const files = fs.readdirSync(atlasesDir).filter(f => f.endsWith('.json'));
+    res.json({ atlases: files.map(f => 'assets/atlases/' + f) });
+  } catch (err) {
+    console.error('Error listing atlases', err);
+    res.status(500).json({ error: 'Failed to list atlases' });
+  }
+});
+
+// Return directory tree of assets/images for hierarchical UI
+app.get('/api/assets/images/tree', (req, res) => {
+  const imagesDir = path.join(__dirname, 'public', 'assets', 'images');
+
+  function walkDir(dir) {
+    const result = { name: path.basename(dir), type: 'folder', children: [] };
+    fs.readdirSync(dir, { withFileTypes: true }).forEach(ent => {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) {
+        result.children.push(walkDir(full));
+      } else if (/\.(png|jpg|jpeg|gif)$/i.test(ent.name)) {
+        result.children.push({
+          name: ent.name,
+          type: 'image',
+          path: 'assets/images/' + path.relative(imagesDir, full).replace(/\\/g, '/')
+        });
+      }
+    });
+    return result;
+  }
+
+  try {
+    const tree = walkDir(imagesDir);
+    res.json(tree);
+  } catch (err) {
+    console.error('Error building image tree', err);
+    res.status(500).json({ error: 'Failed to build tree' });
+  }
+});
+
+// Save an atlas JSON sent from the editor
+app.post('/api/assets/atlases/save', (req, res) => {
+  const { filename, data } = req.body;
+  if (!filename || !data) {
+    return res.status(400).json({ error: 'filename and data required' });
+  }
+  // Sanitize filename (no path traversal)
+  if (!/^[a-zA-Z0-9_-]+\.json$/.test(filename)) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  const atlasPath = path.join(__dirname, 'public', 'assets', 'atlases', filename);
+  try {
+    fs.writeFileSync(atlasPath, JSON.stringify(data, null, 2));
+    res.json({ success: true, path: `assets/atlases/${filename}` });
+  } catch (err) {
+    console.error('Error saving atlas', err);
+    res.status(500).json({ error: 'Failed to save atlas' });
   }
 });
 
@@ -173,6 +407,7 @@ console.log(`Created default map: ${defaultMapId}`);
 
 // Create bullet manager
 const bulletManager = new BulletManager(10000);
+console.log('bulletManager is', typeof bulletManager, bulletManager?.addBullet ? 'OK' : 'NO addBullet'); // PROBE: Check bulletManager validity
 
 // Create enemy manager
 const enemyManager = new EnemyManager(1000);
@@ -324,7 +559,7 @@ function updateGame() {
   }
   
   // Update enemies with target
-  const activeEnemies = enemyManager.update(deltaTime, bulletManager, target);
+  const activeEnemies = enemyManager.update(deltaTime, bulletManager, target, mapManager);
   if (DEBUG.activeCounts && activeEnemies > 0 && now % 5000 < 50) { // Only log every 5 seconds
     console.log(`Active enemies: ${activeEnemies}, targeting position (${target.x.toFixed(2)}, ${target.y.toFixed(2)})`);
   }
@@ -335,6 +570,67 @@ function updateGame() {
     console.log(`${collisions} collisions detected by server collision system`);
   }
   
+  /* ---------------- PLAYER HIT DETECTION ---------------- */
+  // Detect enemy bullets hitting players (simple AABB in tile units)
+  const bulletCount = bulletManager.bulletCount;
+  for (let bi = 0; bi < bulletCount; bi++) {
+    if (bulletManager.life[bi] <= 0) continue; // dead bullet
+
+    const ownerId = bulletManager.ownerId[bi];
+    // Only process bullets whose owner is an enemy (starts with "enemy_")
+    if (typeof ownerId !== 'string' || !ownerId.startsWith('enemy_')) {
+      continue;
+    }
+
+    const bx = bulletManager.x[bi];
+    const by = bulletManager.y[bi];
+    const bw = bulletManager.width[bi];
+    const bh = bulletManager.height[bi];
+
+    // Iterate over players
+    clients.forEach((client, pid) => {
+      const player = client.player;
+      if (!player || player.health <= 0) return;
+
+      const pw = 1; // player width in tile units (assume 1×1)
+      const ph = 1;
+
+      // Treat positions as centres rather than top-left corners
+      const bMinX = bx - bw / 2;
+      const bMaxX = bx + bw / 2;
+      const bMinY = by - bh / 2;
+      const bMaxY = by + bh / 2;
+
+      const pMinX = player.x - pw / 2;
+      const pMaxX = player.x + pw / 2;
+      const pMinY = player.y - ph / 2;
+      const pMaxY = player.y + ph / 2;
+
+      const hit = (
+        bMinX < pMaxX &&
+        bMaxX > pMinX &&
+        bMinY < pMaxY &&
+        bMaxY > pMinY
+      );
+
+      if (hit) {
+        // Apply damage
+        const dmg = bulletManager.damage ? bulletManager.damage[bi] : 10;
+        player.health -= dmg;
+        if (player.health < 0) player.health = 0;
+
+        // Remove bullet
+        bulletManager.markForRemoval(bi);
+
+        if (DEBUG.collisions) {
+          console.log(`Player ${pid} hit by ${ownerId} bullet (${bulletManager.id[bi]}), dmg ${dmg}, hp ${player.health}`);
+        }
+
+        // Optionally broadcast immediate hit packet (future)
+      }
+    });
+  }
+  
   // Check for enemy spawns
   if (now - gameState.lastEnemySpawnTime > gameState.enemySpawnInterval) {
     gameState.lastEnemySpawnTime = now;
@@ -343,20 +639,35 @@ function updateGame() {
     if (enemyManager.getActiveEnemyCount() < 10) { // Reduced enemy cap from 50 to 10
       const count = 1; // Fixed to 1 enemy per spawn instead of random 1-3
       
-      for (let i = 0; i < count; i++) {
-        // Random enemy type (0-4)
-        const type = Math.floor(Math.random() * 5);
+      // Get a random connected player to spawn near
+      const playerClients = Array.from(clients.values());
+      if (playerClients.length > 0) {
+        const randomPlayer = playerClients[Math.floor(Math.random() * playerClients.length)];
         
-        // Random position (around the map)
-        const x = Math.random() * 500 + 50;
-        const y = Math.random() * 500 + 50;
+        for (let i = 0; i < count; i++) {
+          // Red Demon entity ID
+          const type = 101;
+          
+          // Spawn near the selected player (within 100-200 units)
+          const distance = 100 + Math.random() * 100; // Distance from player: 100-200 units
+          const angle = Math.random() * Math.PI * 2; // Random angle
+          
+          let x = randomPlayer.player.x + Math.cos(angle) * distance;
+          let y = randomPlayer.player.y + Math.sin(angle) * distance;
+          
+          // Clamp spawn inside world bounds
+          if (mapManager) {
+            x = Math.max(1, Math.min(mapManager.width - 1, x));
+            y = Math.max(1, Math.min(mapManager.height - 1, y));
+          }
+          
+          // Spawn enemy
+          enemyManager.spawnEnemyById(type, x, y);
+        }
         
-        // Spawn enemy
-        enemyManager.spawnEnemy(type, x, y);
-      }
-      
-      if (DEBUG.enemySpawns) {
-        console.log(`Spawned ${count} new enemy`);
+        if (DEBUG.enemySpawns) {
+          console.log(`Spawned ${count} new enemy near player at (${randomPlayer.player.x.toFixed(1)}, ${randomPlayer.player.y.toFixed(1)})`);
+        }
       }
     }
   }
@@ -381,13 +692,23 @@ function broadcastWorldUpdates() {
   // Get bullet data
   const bullets = bulletManager.getBulletsData();
   
-  // Broadcast world update
-  broadcast(MessageType.WORLD_UPDATE, {
+  // Broadcast world update (include optional debug stats)
+  const worldPayload = {
     players,
     enemies,
     bullets,
     timestamp: Date.now()
-  });
+  };
+
+  if (bulletManager.stats) {
+    worldPayload.bulletStats = { ...bulletManager.stats };
+    // Reset per-tick counters so next frame starts clean
+    bulletManager.stats.wallHit = 0;
+    bulletManager.stats.entityHit = 0;
+    bulletManager.stats.created = 0;
+  }
+
+  broadcast(MessageType.WORLD_UPDATE, worldPayload);
   
   // Always send the player list with every update for smoother movement
   // Removed the 2-second throttling
@@ -430,10 +751,33 @@ setInterval(() => {
 }, 30000); // Changed from 5000 to 30000 (30 seconds)
 
 // Server listen
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const START_PORT = Number(process.env.PORT) || 3000;
+
+function tryListen(port, attemptsLeft = 5) {
+  const onError = (err) => {
+    if (err.code === 'EADDRINUSE' && attemptsLeft > 0) {
+      console.warn(`[SERVER] Port ${port} in use, trying ${port + 1}...`);
+      tryListen(port + 1, attemptsLeft - 1);
+    } else {
+      console.error('[SERVER] Failed to bind port:', err);
+      process.exit(1);
+    }
+  };
+
+  const onListening = () => {
+    const actualPort = server.address().port;
+    console.log(`[SERVER] Running on port ${actualPort}`);
+    // Remove error listener; server is good.
+    server.off('error', onError);
+    server.off('listening', onListening);
+  };
+
+  server.once('error', onError);
+  server.once('listening', onListening);
+  server.listen(port);
+}
+
+tryListen(START_PORT);
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
@@ -589,8 +933,8 @@ function handlePlayerUpdate(clientId, data) {
   
   player.lastUpdate = Date.now();
   
-  // Log player movement if position actually changed
-  if (oldX !== player.x || oldY !== player.y || oldRotation !== player.rotation) {
+  // Verbose movement trace – disable by default
+  if (globalThis.DEBUG?.playerMovement && (oldX !== player.x || oldY !== player.y || oldRotation !== player.rotation)) {
     console.log(`Player ${clientId} moved: (${oldX.toFixed(2)}, ${oldY.toFixed(2)}) → (${player.x.toFixed(2)}, ${player.y.toFixed(2)}), rotation: ${player.rotation.toFixed(2)}`);
   }
 }
@@ -614,10 +958,13 @@ function handleBulletCreate(clientId, data) {
       vy: Math.sin(data.angle) * data.speed,
       ownerId: clientId,
       damage: data.damage || 10,
-      lifetime: data.lifetime || 3.0
+      lifetime: data.lifetime || 5.0,
+      spriteName: data.spriteName || null
     });
     
-    console.log(`Player ${clientId} fired bullet ${bulletId} at angle ${data.angle.toFixed(2)}, position (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
+    if (globalThis.DEBUG?.bulletEvents) {
+      console.log(`Player ${clientId} fired bullet ${bulletId} at angle ${data.angle.toFixed(2)}, position (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
+    }
   } catch (error) {
     console.error("Error adding bullet:", error);
     return;
@@ -631,8 +978,9 @@ function handleBulletCreate(clientId, data) {
     angle: data.angle,
     speed: data.speed,
     damage: data.damage || 10,
-    lifetime: data.lifetime || 3.0,
+    lifetime: data.lifetime || 5.0,
     ownerId: clientId,
+    spriteName: data.spriteName || null,
     timestamp: Date.now()
   });
 }
@@ -653,7 +1001,9 @@ function handleCollision(clientId, data) {
       clientId
     });
     
-    console.log(`Player ${clientId} reported collision: bullet ${data.bulletId} hit enemy ${data.enemyId}, valid: ${result.valid}`);
+    if (globalThis.DEBUG?.collisions) {
+      console.log(`Player ${clientId} reported collision: bullet ${data.bulletId} hit enemy ${data.enemyId}, valid: ${result.valid}`);
+    }
   } catch (error) {
     console.error("Error validating collision:", error);
     return;
@@ -661,7 +1011,9 @@ function handleCollision(clientId, data) {
   
   // Send result to client
   if (result.valid) {
-    console.log(`Valid collision: bullet ${result.bulletId} hit enemy ${result.enemyId}, enemy health: ${result.enemyHealth}, killed: ${result.enemyKilled}`);
+    if (globalThis.DEBUG?.collisions) {
+      console.log(`Valid collision: bullet ${result.bulletId} hit enemy ${result.enemyId}, enemy health: ${result.enemyHealth}, killed: ${result.enemyKilled}`);
+    }
     
     // Broadcast valid collision to all clients
     broadcast(MessageType.COLLISION_RESULT, {
@@ -674,7 +1026,9 @@ function handleCollision(clientId, data) {
       timestamp: Date.now()
     });
   } else {
-    console.log(`Invalid collision rejected: ${result.reason}`);
+    if (globalThis.DEBUG?.collisions) {
+      console.log(`Invalid collision rejected: ${result.reason}`);
+    }
     
     // Send rejection only to the reporting client
     const client = clients.get(clientId);
@@ -865,22 +1219,32 @@ function getClientIdFromSocket(socket) {
  * @param {number} count - Number of enemies to spawn
  */
 function spawnInitialEnemies(count) {
-  console.log(`Spawning ${count} initial enemies`);
-  
-  for (let i = 0; i < count; i++) {
-    // Random enemy type (0-4)
-    const type = Math.floor(Math.random() * 5);
-    
-    // Random position (around the map)
-    const x = Math.random() * 500 + 50;
-    const y = Math.random() * 500 + 50;
-    
-    // Spawn enemy
-    enemyManager.spawnEnemy(type, x, y);
-  }
-  
+  // Use current map dimensions for a valid centre point
+  const mapMeta = mapManager.getMapMetadata(gameState.mapId);
+  const mapWidth = mapMeta?.width || 64;
+  const mapHeight = mapMeta?.height || 64;
+  const centerX = mapWidth / 2;
+  const centerY = mapHeight / 2;
+  const spawnRadius = 10; // smaller radius inside map bounds
+
   if (DEBUG.enemySpawns) {
-    console.log(`Spawned ${count} initial enemies`);
+    console.log(`Spawning ${count} initial enemies around centre (${centerX},${centerY})`);
+  }
+
+  for (let i = 0; i < count; i++) {
+    const type = 101; // Red Demon entity ID
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Math.random() * spawnRadius;
+    let x = centerX + Math.cos(angle) * distance;
+    let y = centerY + Math.sin(angle) * distance;
+
+    // Clamp spawn inside world bounds
+    if (mapManager) {
+      x = Math.max(1, Math.min(mapManager.width - 1, x));
+      y = Math.max(1, Math.min(mapManager.height - 1, y));
+    }
+
+    enemyManager.spawnEnemyById(type, x, y);
   }
 }
 
@@ -1035,3 +1399,55 @@ function broadcastChat(chatMessage, mapId) {
     console.log(`Broadcast chat message to map ${mapId}: ${chatMessage.message}`);
   }
 }
+
+// ---------------- Map Editor Endpoints -----------------
+const mapsDir = path.join(__dirname, 'public', 'maps');
+if (!fs.existsSync(mapsDir)) fs.mkdirSync(mapsDir, { recursive: true });
+
+// List maps
+app.get('/api/map-editor/maps', (req, res) => {
+  try {
+    const files = fs.readdirSync(mapsDir).filter(f=>f.endsWith('.json'));
+    res.json({ maps: files });
+  } catch(err){
+    console.error('Error listing maps', err);
+    res.status(500).json({ error:'Failed to list maps' });
+  }
+});
+
+// Save map JSON
+app.post('/api/map-editor/save', (req, res) => {
+  const { filename, data } = req.body;
+  if(!filename || !data) return res.status(400).json({ error:'filename and data required'});
+  if(!/^[a-zA-Z0-9_-]+\.json$/.test(filename)) return res.status(400).json({ error:'Invalid filename'});
+  const full = path.join(mapsDir, filename);
+  try {
+    fs.writeFileSync(full, JSON.stringify(data, null, 2));
+    res.json({ success:true, path:`maps/${filename}`});
+  }catch(err){
+    console.error('Error saving map',err);
+    res.status(500).json({error:'Failed to save map'});
+  }
+});
+
+// ---------- ENTITY DATABASE ROUTES ----------
+const entitiesDir = path.join(__dirname, 'public', 'assets', 'entities');
+app.get('/api/entities/:group', (req, res) => {
+  const group = req.params.group;
+  const safe = ['tiles', 'objects', 'enemies'];
+  if (!safe.includes(group)) return res.status(400).json({ error: 'Invalid group' });
+  const file = path.join(entitiesDir, `${group}.json`);
+  if (!fs.existsSync(file)) return res.json([]);
+  res.sendFile(file);
+});
+app.get('/api/entities', (_req, res) => {
+  const out = {};
+  ['tiles', 'objects', 'enemies'].forEach(g => {
+    const file = path.join(entitiesDir, `${g}.json`);
+    out[g] = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
+  });
+  res.json(out);
+});
+
+// ----- Static files ----- Move this BELOW asset-api so that /api/assets/* is not intercepted by serve-static
+app.use(express.static('public'));

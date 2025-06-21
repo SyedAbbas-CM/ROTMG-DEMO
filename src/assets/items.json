@@ -1,0 +1,147 @@
+[
+    {
+      "id": 1001,
+      "name": "Ironveil Sword",
+      "tier": 1,
+      "description": "A balanced blade used by border knights and hardened scouts.",
+      "type": "sword",
+      "damage": 110,
+      "rateOfFire": 1.0,
+      "projectile": null,
+      "bagType": 1,
+      "soulbound": false
+    },
+    {
+      "id": 1002,
+      "name": "Nightguard Sword",
+      "tier": 1,
+      "description": "A shadow-dark blade carried by silent watchmen along the frontier.",
+      "type": "sword",
+      "damage": 120,
+      "rateOfFire": 1.0,
+      "projectile": null,
+      "bagType": 1,
+      "soulbound": false
+    },
+    {
+      "id": 1003,
+      "name": "Moonwhite Sword",
+      "tier": 1,
+      "description": "Forged under moonlight, this blade is prized for its elegant balance.",
+      "type": "sword",
+      "damage": 125,
+      "rateOfFire": 1.0,
+      "projectile": null,
+      "bagType": 1,
+      "soulbound": false
+    },
+    {
+      "id": 1004,
+      "name": "Greenwatch Sword",
+      "tier": 2,
+      "description": "A blade gifted to forest rangers sworn to ancient groves.",
+      "type": "sword",
+      "damage": 135,
+      "rateOfFire": 1.0,
+      "projectile": null,
+      "bagType": 2,
+      "soulbound": false
+    },
+    {
+      "id": 1005,
+      "name": "Bloodmark Sword",
+      "tier": 2,
+      "description": "This crimson steel remembers every battle and every oath.",
+      "type": "sword",
+      "damage": 140,
+      "rateOfFire": 1.0,
+      "projectile": null,
+      "bagType": 2,
+      "soulbound": false
+    },
+    {
+      "id": 1006,
+      "name": "Tideworn Sword",
+      "tier": 2,
+      "description": "A sword from coastal strongholds, tempered by brine and wind.",
+      "type": "sword",
+      "damage": 145,
+      "rateOfFire": 1.0,
+      "projectile": null,
+      "bagType": 2,
+      "soulbound": false
+    },
+    {
+      "id": 1007,
+      "name": "Skysteel Sword",
+      "tier": 3,
+      "description": "A blade of celestial alloy, once wielded by the Order of the Gale.",
+      "type": "sword",
+      "damage": 160,
+      "rateOfFire": 1.0,
+      "projectile": "Sky Bolt",
+      "bagType": 3,
+      "soulbound": true
+    },
+    {
+      "id": 1008,
+      "name": "Phantomlight Sword",
+      "tier": 3,
+      "description": "An ethereal weapon used by dreamwalkers and veilcasters.",
+      "type": "sword",
+      "damage": 165,
+      "rateOfFire": 1.0,
+      "projectile": "Phantom Bolt",
+      "bagType": 3,
+      "soulbound": true
+    },
+    {
+      "id": 1009,
+      "name": "Frostvein Sword",
+      "tier": 3,
+      "description": "Cold as glacier bone, it sings with the breath of winter gods.",
+      "type": "sword",
+      "damage": 170,
+      "rateOfFire": 1.0,
+      "projectile": "Frost Bolt",
+      "bagType": 3,
+      "soulbound": true
+    },
+    {
+      "id": 1010,
+      "name": "Sunforge Sword",
+      "tier": 4,
+      "description": "Smelted from starfire in a forgotten forge beneath the mountains.",
+      "type": "sword",
+      "damage": 185,
+      "rateOfFire": 1.0,
+      "projectile": "Solar Bolt",
+      "bagType": 5,
+      "soulbound": true
+    },
+    {
+      "id": 1011,
+      "name": "Wyrmfang Sword",
+      "tier": 4,
+      "description": "This blade bears the mark of a dragon’s curse and a hero’s will.",
+      "type": "sword",
+      "damage": 190,
+      "rateOfFire": 1.0,
+      "projectile": "Dragon Bolt",
+      "bagType": 5,
+      "soulbound": true
+    },
+    {
+      "id": 1012,
+      "name": "Imperious Sword",
+      "tier": 5,
+      "description": "A blade of absolute command, once gripped by the hand of a god-king.",
+      "type": "sword",
+      "damage": 200,
+      "rateOfFire": 1.0,
+      "projectile": "Majesty Bolt",
+      "bagType": 6,
+      "soulbound": true
+    }
+  ]
+  

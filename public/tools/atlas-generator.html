@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprite Atlas Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .controls {
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-group label {
+            font-weight: bold;
+            min-width: 80px;
+        }
+        
+        input, select, button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .main-content {
+            display: flex;
+            height: 600px;
+        }
+        
+        .canvas-area {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            background: #f8f9fa;
+            border-right: 1px solid #ddd;
+        }
+        
+        .canvas-container {
+            position: relative;
+            display: inline-block;
+            margin: 20px;
+        }
+        
+        #spriteCanvas {
+            border: 2px solid #333;
+            cursor: crosshair;
+            image-rendering: pixelated;
+        }
+        
+        .selection-overlay {
+            position: absolute;
+            border: 2px solid #ff0000;
+            background: rgba(255, 0, 0, 0.1);
+            pointer-events: none;
+            display: none;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: #f8f9fa;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+        
+        .sprite-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .sprite-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .sprite-item:last-child {
+            border-bottom: none;
+        }
+        
+        .sprite-item:hover {
+            background: #f0f0f0;
+        }
+        
+        .sprite-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .sprite-coords {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        
+        .output-area {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-item {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        .grid-overlay {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+        
+        .zoom-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .zoom-btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Sprite Atlas Generator</h1>
+            <p>Click and drag to select sprites, name them, and generate atlas JSON</p>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>Image:</label>
+                <input type="file" id="imageInput" accept="image/*">
+            </div>
+            
+            <div class="control-group">
+                <label>Atlas Name:</label>
+                <input type="text" id="atlasName" value="my_atlas" placeholder="Enter atlas name">
+            </div>
+            
+            <div class="control-group">
+                <label>Sprite Size:</label>
+                <input type="number" id="spriteWidth" value="8" min="1" max="256" style="width: 60px;">
+                x
+                <input type="number" id="spriteHeight" value="8" min="1" max="256" style="width: 60px;">
+            </div>
+            
+            <div class="control-group">
+                <label>Grid:</label>
+                <input type="checkbox" id="showGrid" checked>
+                <span>Show Grid</span>
+            </div>
+            
+            <div class="control-group">
+                <label>Mode:</label>
+                <select id="selectionMode">
+                    <option value="free">Free Selection</option>
+                    <option value="grid" selected>Grid Snap</option>
+                </select>
+            </div>
+            
+            <button id="clearAll">Clear All</button>
+        </div>
+        
+        <div class="main-content">
+            <div class="canvas-area">
+                <div class="canvas-container">
+                    <canvas id="spriteCanvas"></canvas>
+                    <canvas id="gridCanvas" class="grid-overlay"></canvas>
+                    <div id="selectionOverlay" class="selection-overlay"></div>
+                    
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" id="zoomOut">−</button>
+                        <button class="zoom-btn" id="zoomIn">+</button>
+                        <button class="zoom-btn" id="zoomReset">1×</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="section">
+                    <h3>📊 Statistics</h3>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="spriteCount">0</div>
+                            <div class="stat-label">Sprites</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="imageSize">-</div>
+                            <div class="stat-label">Image Size</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>🎯 Current Selection</h3>
+                    <div class="control-group" style="margin-bottom: 10px;">
+                        <label>Name:</label>
+                        <input type="text" id="spriteName" placeholder="Enter sprite name" style="flex: 1;">
+                    </div>
+                    <div class="control-group" style="margin-bottom: 10px;">
+                        <label>Group:</label>
+                        <input type="text" id="spriteGroup" placeholder="Optional group name" style="flex: 1;">
+                    </div>
+                    <button id="addSprite" disabled>Add Sprite</button>
+                </div>
+                
+                <div class="section">
+                    <h3>📝 Sprite List</h3>
+                    <div class="sprite-list" id="spriteList">
+                        <div style="padding: 20px; text-align: center; color: #666;">
+                            No sprites added yet
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>💾 Export</h3>
+                    <button id="exportJson" style="width: 100%; margin-bottom: 10px;">Export JSON</button>
+                    <button id="copyJson" style="width: 100%;">Copy to Clipboard</button>
+                </div>
+                
+                <div class="section">
+                    <h3>🔧 Output</h3>
+                    <div class="output-area" id="outputArea">
+                        Select sprites to generate atlas JSON...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class AtlasGenerator {
+            constructor() {
+                this.canvas = document.getElementById('spriteCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.gridCanvas = document.getElementById('gridCanvas');
+                this.gridCtx = this.gridCanvas.getContext('2d');
+                
+                this.image = null;
+                this.sprites = [];
+                this.currentSelection = null;
+                this.isSelecting = false;
+                this.startPos = { x: 0, y: 0 };
+                this.zoom = 1;
+                
+                this.initializeEventListeners();
+            }
+            
+            initializeEventListeners() {
+                // File input
+                document.getElementById('imageInput').addEventListener('change', (e) => {
+                    this.loadImage(e.target.files[0]);
+                });
+                
+                // Canvas events
+                this.canvas.addEventListener('mousedown', (e) => this.startSelection(e));
+                this.canvas.addEventListener('mousemove', (e) => this.updateSelection(e));
+                this.canvas.addEventListener('mouseup', (e) => this.endSelection(e));
+                
+                // Controls
+                document.getElementById('showGrid').addEventListener('change', () => this.drawGrid());
+                document.getElementById('spriteWidth').addEventListener('input', () => this.drawGrid());
+                document.getElementById('spriteHeight').addEventListener('input', () => this.drawGrid());
+                document.getElementById('addSprite').addEventListener('click', () => this.addSprite());
+                document.getElementById('clearAll').addEventListener('click', () => this.clearAll());
+                document.getElementById('exportJson').addEventListener('click', () => this.exportJson());
+                document.getElementById('copyJson').addEventListener('click', () => this.copyToClipboard());
+                
+                // Zoom controls
+                document.getElementById('zoomIn').addEventListener('click', () => this.changeZoom(1.5));
+                document.getElementById('zoomOut').addEventListener('click', () => this.changeZoom(0.75));
+                document.getElementById('zoomReset').addEventListener('click', () => this.setZoom(1));
+                
+                // Auto-update output
+                document.getElementById('atlasName').addEventListener('input', () => this.updateOutput());
+            }
+            
+            loadImage(file) {
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.image = new Image();
+                    this.image.onload = () => {
+                        this.setupCanvas();
+                        this.drawImage();
+                        this.drawGrid();
+                        this.updateStats();
+                    };
+                    this.image.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            setupCanvas() {
+                const maxWidth = 800;
+                const maxHeight = 600;
+                
+                let { width, height } = this.image;
+                
+                // Scale down if too large
+                if (width > maxWidth || height > maxHeight) {
+                    const scale = Math.min(maxWidth / width, maxHeight / height);
+                    width *= scale;
+                    height *= scale;
+                }
+                
+                this.canvas.width = width;
+                this.canvas.height = height;
+                this.gridCanvas.width = width;
+                this.gridCanvas.height = height;
+                
+                // Position grid canvas
+                this.gridCanvas.style.left = '0';
+                this.gridCanvas.style.top = '0';
+            }
+            
+            drawImage() {
+                if (!this.image) return;
+                
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.imageSmoothingEnabled = false;
+                this.ctx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
+            }
+            
+            drawGrid() {
+                if (!document.getElementById('showGrid').checked) {
+                    this.gridCtx.clearRect(0, 0, this.gridCanvas.width, this.gridCanvas.height);
+                    return;
+                }
+                
+                const spriteWidth = parseInt(document.getElementById('spriteWidth').value);
+                const spriteHeight = parseInt(document.getElementById('spriteHeight').value);
+                
+                if (!spriteWidth || !spriteHeight) return;
+                
+                const scaleX = this.canvas.width / this.image.width;
+                const scaleY = this.canvas.height / this.image.height;
+                
+                const gridWidth = spriteWidth * scaleX;
+                const gridHeight = spriteHeight * scaleY;
+                
+                this.gridCtx.clearRect(0, 0, this.gridCanvas.width, this.gridCanvas.height);
+                this.gridCtx.strokeStyle = '#00ff00';
+                this.gridCtx.lineWidth = 1;
+                
+                // Vertical lines
+                for (let x = 0; x < this.canvas.width; x += gridWidth) {
+                    this.gridCtx.beginPath();
+                    this.gridCtx.moveTo(x, 0);
+                    this.gridCtx.lineTo(x, this.canvas.height);
+                    this.gridCtx.stroke();
+                }
+                
+                // Horizontal lines
+                for (let y = 0; y < this.canvas.height; y += gridHeight) {
+                    this.gridCtx.beginPath();
+                    this.gridCtx.moveTo(0, y);
+                    this.gridCtx.lineTo(this.canvas.width, y);
+                    this.gridCtx.stroke();
+                }
+            }
+            
+            startSelection(e) {
+                if (!this.image) return;
+                
+                const rect = this.canvas.getBoundingClientRect();
+                this.startPos = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+                
+                this.isSelecting = true;
+                this.updateSelectionOverlay();
+            }
+            
+            updateSelection(e) {
+                if (!this.isSelecting) return;
+                
+                const rect = this.canvas.getBoundingClientRect();
+                const currentPos = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+                
+                this.currentSelection = {
+                    x: Math.min(this.startPos.x, currentPos.x),
+                    y: Math.min(this.startPos.y, currentPos.y),
+                    width: Math.abs(currentPos.x - this.startPos.x),
+                    height: Math.abs(currentPos.y - this.startPos.y)
+                };
+                
+                // Snap to grid if enabled
+                if (document.getElementById('selectionMode').value === 'grid') {
+                    this.snapToGrid();
+                }
+                
+                this.updateSelectionOverlay();
+            }
+            
+            endSelection(e) {
+                this.isSelecting = false;
+                
+                if (this.currentSelection && this.currentSelection.width > 5 && this.currentSelection.height > 5) {
+                    document.getElementById('addSprite').disabled = false;
+                    document.getElementById('spriteName').focus();
+                } else {
+                    this.currentSelection = null;
+                    this.updateSelectionOverlay();
+                }
+            }
+            
+            snapToGrid() {
+                if (!this.currentSelection) return;
+                
+                const spriteWidth = parseInt(document.getElementById('spriteWidth').value);
+                const spriteHeight = parseInt(document.getElementById('spriteHeight').value);
+                
+                const scaleX = this.canvas.width / this.image.width;
+                const scaleY = this.canvas.height / this.image.height;
+                
+                const gridWidth = spriteWidth * scaleX;
+                const gridHeight = spriteHeight * scaleY;
+                
+                this.currentSelection.x = Math.floor(this.currentSelection.x / gridWidth) * gridWidth;
+                this.currentSelection.y = Math.floor(this.currentSelection.y / gridHeight) * gridHeight;
+                this.currentSelection.width = gridWidth;
+                this.currentSelection.height = gridHeight;
+            }
+            
+            updateSelectionOverlay() {
+                const overlay = document.getElementById('selectionOverlay');
+                
+                if (!this.currentSelection) {
+                    overlay.style.display = 'none';
+                    return;
+                }
+                
+                overlay.style.display = 'block';
+                overlay.style.left = this.currentSelection.x + 'px';
+                overlay.style.top = this.currentSelection.y + 'px';
+                overlay.style.width = this.currentSelection.width + 'px';
+                overlay.style.height = this.currentSelection.height + 'px';
+            }
+            
+            addSprite() {
+                if (!this.currentSelection) return;
+                
+                const name = document.getElementById('spriteName').value.trim();
+                if (!name) {
+                    alert('Please enter a sprite name');
+                    return;
+                }
+                
+                // Check for duplicate names
+                if (this.sprites.some(s => s.name === name)) {
+                    alert('Sprite name already exists');
+                    return;
+                }
+                
+                // Convert canvas coordinates to image coordinates
+                const scaleX = this.image.width / this.canvas.width;
+                const scaleY = this.image.height / this.canvas.height;
+                
+                const sprite = {
+                    name: name,
+                    x: Math.round(this.currentSelection.x * scaleX),
+                    y: Math.round(this.currentSelection.y * scaleY),
+                    width: Math.round(this.currentSelection.width * scaleX),
+                    height: Math.round(this.currentSelection.height * scaleY),
+                    group: document.getElementById('spriteGroup').value.trim() || null
+                };
+                
+                // Calculate row/col if using grid mode
+                const spriteWidth = parseInt(document.getElementById('spriteWidth').value);
+                const spriteHeight = parseInt(document.getElementById('spriteHeight').value);
+                
+                if (document.getElementById('selectionMode').value === 'grid') {
+                    sprite.row = Math.floor(sprite.y / spriteHeight);
+                    sprite.col = Math.floor(sprite.x / spriteWidth);
+                }
+                
+                this.sprites.push(sprite);
+                this.updateSpriteList();
+                this.updateOutput();
+                this.updateStats();
+                
+                // Clear selection and inputs
+                this.currentSelection = null;
+                this.updateSelectionOverlay();
+                document.getElementById('spriteName').value = '';
+                document.getElementById('addSprite').disabled = true;
+            }
+            
+            removeSprite(index) {
+                this.sprites.splice(index, 1);
+                this.updateSpriteList();
+                this.updateOutput();
+                this.updateStats();
+            }
+            
+            updateSpriteList() {
+                const listContainer = document.getElementById('spriteList');
+                
+                if (this.sprites.length === 0) {
+                    listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No sprites added yet</div>';
+                    return;
+                }
+                
+                listContainer.innerHTML = this.sprites.map((sprite, index) => `
+                    <div class="sprite-item">
+                        <div>
+                            <div class="sprite-name">${sprite.name}</div>
+                            <div class="sprite-coords">
+                                ${sprite.row !== undefined ? `Row ${sprite.row}, Col ${sprite.col}` : `${sprite.x}, ${sprite.y} (${sprite.width}×${sprite.height})`}
+                                ${sprite.group ? ` • Group: ${sprite.group}` : ''}
+                            </div>
+                        </div>
+                        <button class="delete-btn" onclick="generator.removeSprite(${index})">×</button>
+                    </div>
+                `).join('');
+            }
+            
+            updateOutput() {
+                if (this.sprites.length === 0) {
+                    document.getElementById('outputArea').textContent = 'Select sprites to generate atlas JSON...';
+                    return;
+                }
+                
+                const atlasName = document.getElementById('atlasName').value || 'my_atlas';
+                const spriteWidth = parseInt(document.getElementById('spriteWidth').value);
+                const spriteHeight = parseInt(document.getElementById('spriteHeight').value);
+                
+                // Group sprites by group
+                const groups = {};
+                this.sprites.forEach(sprite => {
+                    if (sprite.group) {
+                        if (!groups[sprite.group]) groups[sprite.group] = [];
+                        groups[sprite.group].push(sprite.name);
+                    }
+                });
+                
+                const atlas = {
+                    name: atlasName,
+                    path: `assets/${atlasName}.png`,
+                    defaultSpriteWidth: spriteWidth,
+                    defaultSpriteHeight: spriteHeight,
+                    autoDetect: false,
+                    sprites: this.sprites.map(sprite => {
+                        const spriteData = { name: sprite.name };
+                        
+                        if (sprite.row !== undefined && sprite.col !== undefined) {
+                            spriteData.row = sprite.row;
+                            spriteData.col = sprite.col;
+                        } else {
+                            spriteData.x = sprite.x;
+                            spriteData.y = sprite.y;
+                            spriteData.width = sprite.width;
+                            spriteData.height = sprite.height;
+                        }
+                        
+                        return spriteData;
+                    })
+                };
+                
+                if (Object.keys(groups).length > 0) {
+                    atlas.groups = groups;
+                }
+                
+                document.getElementById('outputArea').textContent = JSON.stringify(atlas, null, 2);
+            }
+            
+            updateStats() {
+                document.getElementById('spriteCount').textContent = this.sprites.length;
+                
+                if (this.image) {
+                    document.getElementById('imageSize').textContent = `${this.image.width}×${this.image.height}`;
+                } else {
+                    document.getElementById('imageSize').textContent = '-';
+                }
+            }
+            
+            clearAll() {
+                if (this.sprites.length > 0 && !confirm('Clear all sprites?')) return;
+                
+                this.sprites = [];
+                this.currentSelection = null;
+                this.updateSelectionOverlay();
+                this.updateSpriteList();
+                this.updateOutput();
+                this.updateStats();
+                document.getElementById('addSprite').disabled = true;
+            }
+            
+            exportJson() {
+                if (this.sprites.length === 0) {
+                    alert('No sprites to export');
+                    return;
+                }
+                
+                const atlasName = document.getElementById('atlasName').value || 'my_atlas';
+                const json = document.getElementById('outputArea').textContent;
+                
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${atlasName}.json`;
+                a.click();
+                
+                URL.revokeObjectURL(url);
+            }
+            
+            copyToClipboard() {
+                const json = document.getElementById('outputArea').textContent;
+                
+                if (json === 'Select sprites to generate atlas JSON...') {
+                    alert('No JSON to copy');
+                    return;
+                }
+                
+                navigator.clipboard.writeText(json).then(() => {
+                    alert('JSON copied to clipboard!');
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textarea = document.createElement('textarea');
+                    textarea.value = json;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    alert('JSON copied to clipboard!');
+                });
+            }
+            
+            changeZoom(factor) {
+                this.setZoom(this.zoom * factor);
+            }
+            
+            setZoom(zoom) {
+                this.zoom = Math.max(0.25, Math.min(4, zoom));
+                
+                const container = document.querySelector('.canvas-container');
+                container.style.transform = `scale(${this.zoom})`;
+                container.style.transformOrigin = 'top left';
+                
+                document.getElementById('zoomReset').textContent = `${Math.round(this.zoom * 100)}%`;
+            }
+        }
+        
+        // Initialize the generator
+        const generator = new AtlasGenerator();
+    </script>
+</body>
+</html> 

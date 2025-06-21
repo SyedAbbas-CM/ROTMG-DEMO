@@ -113,7 +113,7 @@
     
     <!-- Controls Help -->
     <div id="controlsHelp">
-        WASD: Move | Click: Shoot | V: Switch View | F3: Debug | E: Sprite Editor
+        WASD: Move | Click: Shoot | V: Switch View | F3: Debug | Shift+E: Sprite Editor | Shift+M: Map Editor | Shift+S: Sprite Test
     </div>
     
     <!-- 3D Canvas (for first-person view) -->
@@ -122,9 +122,10 @@
     <!-- 2D Canvas (for top-down and strategic views) -->
     <canvas id="gameCanvas"></canvas>
     
-    <!-- Sprite Editor Container -->
-    <div id="spriteEditorContainer" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 1000;">
-      <!-- Sprite editor content will go here -->
+    <!-- Sprite Editor Overlay -->
+    <div id="spriteEditorContainer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000;">
+        <button id="closeSpriteEditor" style="position:absolute; top:10px; right:10px; padding:6px 10px; font-size:16px;">✖</button>
+        <iframe id="spriteEditorFrame" src="" style="width:100%; height:100%; border:none;"></iframe>
     </div>
     
     <!-- Game UI Container -->
@@ -221,6 +222,23 @@
                 // Show error message
                 alert('Failed to initialize the game. Please check the console for details.');
             });
+        });
+        
+        document.getElementById('closeSpriteEditor').addEventListener('click',()=>{
+            document.getElementById('spriteEditorContainer').style.display='none';
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            // Existing key bindings are in game/game.js; this global listener is ONLY for dev tools
+            if (e.key === 'S' && e.shiftKey) {
+                window.open('test-sprites.html', '_blank');
+            }
+            if (e.key === 'E' && e.shiftKey) {
+                window.open('tools/sprite-editor.html', '_blank');
+            }
+            if (e.key === 'M' && e.shiftKey) {
+                window.open('tools/map-editor.html', '_blank');
+            }
         });
     </script>
 </body>

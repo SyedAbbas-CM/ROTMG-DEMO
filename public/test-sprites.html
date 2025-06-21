@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprite System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        .sprite-test {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+            background: #f9f9f9;
+        }
+        canvas {
+            border: 1px solid #000;
+            margin: 5px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .warning {
+            color: orange;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 Sprite System Test</h1>
+    
+    <div class="test-section">
+        <h2>System Status</h2>
+        <div id="status">Loading...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Available Sprites</h2>
+        <div id="sprite-list">Loading...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Sprite Rendering Test</h2>
+        <div id="sprite-tests">Loading...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Enemy Type Mapping</h2>
+        <div id="enemy-mapping">Loading...</div>
+    </div>
+
+    <script type="module">
+        import { spriteDatabase } from './src/assets/SpriteDatabase.js';
+        import { ClientEnemyManager } from './src/game/clientEnemyManager.js';
+        
+        async function runTests() {
+            const statusDiv = document.getElementById('status');
+            const spriteListDiv = document.getElementById('sprite-list');
+            const spriteTestsDiv = document.getElementById('sprite-tests');
+            const enemyMappingDiv = document.getElementById('enemy-mapping');
+            
+            try {
+                statusDiv.innerHTML = '<div class="warning">Loading sprite database...</div>';
+                
+                // Load sprite database
+                await spriteDatabase.loadAtlases([
+                    'assets/atlases/chars2.json',
+                    'assets/atlases/items.json'
+                ]);
+                
+                const stats = spriteDatabase.getStats();
+                statusDiv.innerHTML = `
+                    <div class="success">✅ Sprite database loaded successfully!</div>
+                    <div>📊 Stats: ${stats.atlasesLoaded} atlases, ${stats.spritesLoaded} sprites, ${stats.groupsLoaded} groups</div>
+                    <div>🎯 Hit rate: ${stats.hitRate}%</div>
+                `;
+                
+                // Show available sprites
+                const allSprites = spriteDatabase.getAllSpriteNames();
+                const allGroups = spriteDatabase.getAllGroupNames();
+                
+                spriteListDiv.innerHTML = `
+                    <h3>Sprites (${allSprites.length})</h3>
+                    <div style="max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
+                        ${allSprites.slice(0, 50).join(', ')}${allSprites.length > 50 ? '... and ' + (allSprites.length - 50) + ' more' : ''}
+                    </div>
+                    <h3>Groups (${allGroups.length})</h3>
+                    <div>${allGroups.join(', ')}</div>
+                `;
+                
+                // Test sprite rendering
+                const testSprites = ['knight', 'goblin', 'orc', 'skeleton', 'troll', 'wizard', 'sword', 'bow'];
+                let testsHtml = '';
+                
+                for (const spriteName of testSprites) {
+                    const sprite = spriteDatabase.getSprite(spriteName);
+                    if (sprite) {
+                        testsHtml += `
+                            <div class="sprite-test">
+                                <div><strong>${spriteName}</strong></div>
+                                <canvas id="canvas-${spriteName}" width="64" height="64"></canvas>
+                                <div>Position: (${sprite.x}, ${sprite.y})</div>
+                                <div>Size: ${sprite.width}x${sprite.height}</div>
+                            </div>
+                        `;
+                    } else {
+                        testsHtml += `
+                            <div class="sprite-test">
+                                <div><strong>${spriteName}</strong></div>
+                                <div class="error">❌ Not found</div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                spriteTestsDiv.innerHTML = testsHtml;
+                
+                // Render sprites to canvases
+                for (const spriteName of testSprites) {
+                    const canvas = document.getElementById(`canvas-${spriteName}`);
+                    if (canvas) {
+                        const ctx = canvas.getContext('2d');
+                        try {
+                            spriteDatabase.drawSprite(ctx, spriteName, 0, 0, 64, 64);
+                        } catch (error) {
+                            ctx.fillStyle = 'red';
+                            ctx.fillText('Error', 10, 30);
+                            console.error(`Error drawing ${spriteName}:`, error);
+                        }
+                    }
+                }
+                
+                // Test enemy manager integration
+                const enemyManager = new ClientEnemyManager(10);
+                enemyMappingDiv.innerHTML = `
+                    <h3>Enemy Type Definitions</h3>
+                    <div>
+                        ${enemyManager.enemyTypes.map((type, index) => `
+                            <div>
+                                <strong>Type ${index}: ${type.name}</strong><br>
+                                Sprite: ${type.spriteName} → (${type.spriteX || 'N/A'}, ${type.spriteY || 'N/A'})<br>
+                                Behaviors: ${type.behaviors.join(', ')}
+                            </div>
+                        `).join('<hr>')}
+                    </div>
+                `;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                console.error('Test error:', error);
+            }
+        }
+        
+        // Run tests when page loads
+        runTests();
+    </script>
+</body>
+</html> 

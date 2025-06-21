@@ -84,22 +84,37 @@ export function renderStrategicView() {
         
         // FIX: Use correct TILE_SIZE parameter (not multiplied by scaleFactor)
         const screenPos = camera.worldToScreen(
-          worldX, 
-          worldY, 
+          worldX + 0.5, // shift to tile center
+          worldY + 0.5, 
           canvas2D.width, 
           canvas2D.height, 
           TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
         );
         
         // Draw tile using the consistent screen position
+        const sCfg = tileSheetObj.config;
+        const spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
+        const spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
         ctx.drawImage(
           tileSpriteSheet,
-          spritePos.x, spritePos.y, TILE_SIZE, TILE_SIZE, // Source rectangle
-          screenPos.x - (TILE_SIZE * scaleFactor / 2), // Center the tile at the screen position
-          screenPos.y - (TILE_SIZE * scaleFactor / 2),
-          TILE_SIZE * scaleFactor,
-          TILE_SIZE * scaleFactor
+          spritePos.x, spritePos.y, spriteW, spriteH,
+          screenPos.x - (spriteW * scaleFactor / 2),
+          screenPos.y - (spriteH * scaleFactor / 2),
+          spriteW * scaleFactor,
+          spriteH * scaleFactor
         );
+
+        // Height shading (lighter to darker)
+        if (tile.height && tile.height > 0) {
+          const alpha = Math.min(tile.height / 15, 1) * 0.25;
+          ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(3)})`;
+          ctx.fillRect(
+            screenPos.x - (spriteW * scaleFactor / 2),
+            screenPos.y - (spriteH * scaleFactor / 2),
+            spriteW * scaleFactor,
+            spriteH * scaleFactor
+          );
+        }
         
         // Add debug visualization to help with alignment
         if (DEBUG_RENDERING) {
@@ -107,10 +122,10 @@ export function renderStrategicView() {
           ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
           ctx.lineWidth = 1;
           ctx.strokeRect(
-            screenPos.x - (TILE_SIZE * scaleFactor / 2),
-            screenPos.y - (TILE_SIZE * scaleFactor / 2),
-            TILE_SIZE * scaleFactor,
-            TILE_SIZE * scaleFactor
+            screenPos.x - (spriteW * scaleFactor / 2),
+            screenPos.y - (spriteH * scaleFactor / 2),
+            spriteW * scaleFactor,
+            spriteH * scaleFactor
           );
           
           // Draw tile coordinates for reference (only every several tiles to avoid clutter)
@@ -119,8 +134,8 @@ export function renderStrategicView() {
             ctx.font = '6px Arial';
             ctx.fillText(
               `(${x},${y})`, 
-              screenPos.x - (TILE_SIZE * scaleFactor / 2) + 1,
-              screenPos.y - (TILE_SIZE * scaleFactor / 2) + 6
+              screenPos.x - (spriteW * scaleFactor / 2) + 1,
+              screenPos.y - (spriteH * scaleFactor / 2) + 6
             );
           }
         }

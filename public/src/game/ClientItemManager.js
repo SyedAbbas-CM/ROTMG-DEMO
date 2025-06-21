@@ -29,16 +29,43 @@ class ClientItemManager {
      * @private
      */
     _loadItemSprites() {
-        // Load base item sprites
-        this.spriteManager.loadSpriteSheet('items', 'assets/sprites/items.png', {
-            frameWidth: 32,
-            frameHeight: 32
+        /*
+         * Updated item sprite loading – two different sheets were provided:
+         *  1) stacked_spritesheet.png  – appears to be a square atlas of small 8×8 icons
+         *  2) merged_spritesheet_vertical.png – a column-oriented sheet (height >> width)
+         *
+         * We use autoDetect so irregular icon sizes are still captured, falling back
+         * to an 8×8 grid for stacked and a 10×10 guess for merged if auto-detection
+         * yields no regions.
+         */
+
+        // Stacked grid – 8×8 tiles by default
+        this.spriteManager.loadSpriteSheet({
+            name: 'items_stacked',
+            path: 'assets/images/items/stacked_spritesheet.png',
+            defaultSpriteWidth: 8,
+            defaultSpriteHeight: 8,
+            autoDetect: true
+        });
+
+        // Vertical merged – guess 10×10 tiles (adjust at runtime if needed)
+        this.spriteManager.loadSpriteSheet({
+            name: 'items_merged',
+            path: 'assets/images/items/merged_spritesheet_vertical.png',
+            defaultSpriteWidth: 10,
+            defaultSpriteHeight: 10,
+            autoDetect: true
         });
         
-        // Load rarity overlays
-        this.spriteManager.loadSpriteSheet('rarity', 'assets/sprites/rarity.png', {
-            frameWidth: 32,
-            frameHeight: 32
+        // Rarity overlay sheet kept (path unchanged)
+        this.spriteManager.loadSpriteSheet({
+            name: 'rarity',
+            path: 'assets/sprites/rarity.png',
+            defaultSpriteWidth: 32,
+            defaultSpriteHeight: 32,
+            spritesPerRow: 5,
+            spritesPerColumn: 1,
+            autoDetect: false
         });
     }
     

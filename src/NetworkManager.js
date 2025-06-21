@@ -85,6 +85,9 @@ class BinaryPacket {
     BULLET_LIST: 31,
     BULLET_REMOVE: 32,
     
+    // World update message (full or delta state)
+    WORLD_UPDATE: 60,
+    
     // Collision messages
     COLLISION: 40,
     COLLISION_RESULT: 41,

@@ -24,7 +24,8 @@ export class ClientBulletManager {
     this.damage = new Float32Array(maxBullets); // Damage value
     
     // Visual properties
-    this.sprite = new Array(maxBullets);    // Sprite info
+    this.sprite = new Array(maxBullets);    // Legacy sprite sheet info
+    this.spriteName = new Array(maxBullets); // SpriteDatabase name (new system)
     
     // Mapping from ID to index for fast lookups
     this.idToIndex = new Map();
@@ -72,6 +73,9 @@ export class ClientBulletManager {
       spriteWidth: bulletData.spriteWidth || 8,
       spriteHeight: bulletData.spriteHeight || 8
     } : null;
+    
+    // Store spriteName for new rendering path
+    this.spriteName[index] = bulletData.spriteName || null;
     
     // Store index for lookup
     this.idToIndex.set(bulletId, index);
@@ -141,6 +145,7 @@ export class ClientBulletManager {
       this.ownerId[index] = this.ownerId[lastIndex];
       this.damage[index] = this.damage[lastIndex];
       this.sprite[index] = this.sprite[lastIndex];
+      this.spriteName[index] = this.spriteName[lastIndex];
       
       // Update index in mapping
       this.idToIndex.set(this.id[index], index);
@@ -247,6 +252,9 @@ export class ClientBulletManager {
         this.width[index] = bullet.width || 5;
         this.height[index] = bullet.height || 5;
         this.damage[index] = bullet.damage || 10;
+        if (bullet.spriteName) {
+          this.spriteName[index] = bullet.spriteName;
+        }
       } else {
         // Add new bullet if we don't have it
         this.addBullet(bullet);

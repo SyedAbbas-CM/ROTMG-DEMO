@@ -658,7 +658,8 @@ export class ClientNetworkManager {
                     damage: data.damage || 10,
                     lifetime: data.lifetime || 3.0,
                     width: data.width || 5,
-                    height: data.height || 5
+                    height: data.height || 5,
+                    spriteName: data.spriteName || null
                 };
                 this.game.addBullet(bulletData);
             }

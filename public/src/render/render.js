@@ -15,6 +15,9 @@ const ctx = canvas2D.getContext('2d');
 // Rendering parameters
 const scaleFactor = SCALE;
 
+// Global scaling factor for the strategic (zoomed-out) view
+const STRATEGIC_VIEW_SCALE = 0.25;  // was 0.5 – much smaller to fit more of the map
+
 // Add a debug flag for rendering
 const DEBUG_ENEMY_SPRITES = false; // Set to false to disable sprite debugging visuals
 
@@ -32,8 +35,8 @@ export function renderCharacter() {
   //console.log(`[renderCharacter] Current view type: ${gameState.camera?.viewType}`);
 
   // Determine scale factor based on view type
-  let isStrategicView = gameState.camera?.viewType === 'strategic';
-  let viewScaleFactor = isStrategicView ? 0.5 : 1.0; // FIXED back to 0.5 for strategic view (was 0.25)
+  const isStrategicView = gameState.camera?.viewType === 'strategic';
+  const viewScaleFactor = isStrategicView ? STRATEGIC_VIEW_SCALE : 1.0;
   let effectiveScale = SCALE * viewScaleFactor; 
 
   // Debug: Log the scale factor being used
@@ -68,10 +71,10 @@ export function renderCharacter() {
     
     // Draw rectangle with view-dependent scaling
     ctx.fillRect(
-      screenX - (character.width * effectiveScale) / 2,
-      screenY - (character.height * effectiveScale) / 2,
-      character.width * effectiveScale,
-      character.height * effectiveScale
+      screenX - (character.width * character.renderScale * effectiveScale) / 2,
+      screenY - (character.height * character.renderScale * effectiveScale) / 2,
+      character.width * character.renderScale * effectiveScale,
+      character.height * character.renderScale * effectiveScale
     );
     return;
   }
@@ -104,8 +107,8 @@ export function renderCharacter() {
       characterSpriteSheet,
       spriteX, spriteY,
       TILE_SIZE, TILE_SIZE,
-      -character.width * effectiveScale / 2, -character.height * effectiveScale / 2,
-      character.width * effectiveScale, character.height * effectiveScale
+      -character.width * character.renderScale * effectiveScale / 2, -character.height * character.renderScale * effectiveScale / 2,
+      character.width * character.renderScale * effectiveScale, character.height * character.renderScale * effectiveScale
     );
   } else {
     // Get sprite coordinates
@@ -117,10 +120,10 @@ export function renderCharacter() {
       characterSpriteSheet,
       spriteX, spriteY,
       TILE_SIZE, TILE_SIZE,
-      screenX - character.width * effectiveScale / 2,
-      screenY - character.height * effectiveScale / 2,
-      character.width * effectiveScale,
-      character.height * effectiveScale
+      screenX - character.width * character.renderScale * effectiveScale / 2,
+      screenY - character.height * character.renderScale * effectiveScale / 2,
+      character.width * character.renderScale * effectiveScale,
+      character.height * character.renderScale * effectiveScale
     );
   }
   
@@ -164,7 +167,7 @@ export function renderEnemies() {
   
   // Get view scaling factor - FIXING back to 0.5 for strategic view
   const viewType = gameState.camera?.viewType || 'top-down';
-  const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
+  const viewScaleFactor = viewType === 'strategic' ? STRATEGIC_VIEW_SCALE : 1.0;
   
   // Get screen dimensions
   const screenWidth = canvas2D.width;
@@ -176,9 +179,10 @@ export function renderEnemies() {
   // Render each enemy
   enemies.forEach(enemy => {
     try {
-      // Scale dimensions based on view type
-      const width = enemy.width * SCALE * viewScaleFactor;
-      const height = enemy.height * SCALE * viewScaleFactor;
+      // Use tile size scaling instead of collision width to control sprite size
+      const baseScale = enemy.renderScale || 2; // tiles wide/high
+      const width = TILE_SIZE * baseScale * viewScaleFactor;
+      const height = TILE_SIZE * baseScale * viewScaleFactor;
       
       // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
       let screenX, screenY;
@@ -205,6 +209,32 @@ export function renderEnemies() {
       if (screenX < -buffer || screenX > screenWidth + buffer || 
           screenY < -buffer || screenY > screenHeight + buffer) {
         return;
+      }
+
+      const spriteDB = window.spriteDatabase;
+
+      // If we have spriteName and sprite database, draw using it and skip legacy sheet path
+      if (enemy.spriteName && spriteDB && spriteDB.hasSprite(enemy.spriteName)) {
+        spriteDB.drawSprite(
+          ctx,
+          enemy.spriteName,
+          screenX - width/2,
+          screenY - height/2,
+          width,
+          height
+        );
+
+        // Draw health bar if needed
+        if (enemy.health !== undefined && enemy.maxHealth !== undefined) {
+          const hpPct = enemy.health / enemy.maxHealth;
+          const bw = width;
+          const bh = 4;
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fillRect(screenX - bw/2, screenY - height/2 - bh - 2, bw, bh);
+          ctx.fillStyle = hpPct>0.6?'green':hpPct>0.3?'yellow':'red';
+          ctx.fillRect(screenX - bw/2, screenY - height/2 - bh -2, bw*hpPct, bh);
+        }
+        return; // skip legacy drawing
       }
 
       // Save context for rotation
@@ -322,7 +352,7 @@ export function renderBullets() {
 
   const spriteManager = window.spriteManager;
   const viewType = gameState.camera?.viewType || 'top-down';
-  const viewScale = viewType === 'strategic' ? 0.5 : 1.0;
+  const viewScale = viewType === 'strategic' ? STRATEGIC_VIEW_SCALE : 1.0;
 
   const W = canvas2D.width;
   const H = canvas2D.height;
@@ -343,12 +373,17 @@ export function renderBullets() {
       sy = (bm.y[i] - gameState.camera.position.y) * TILE_SIZE * viewScale + H/2;
     }
 
+    // Ensure bullet is always at least a couple of pixels so it's visible
+    const minPx = 3;
+    const drawW = Math.max(bm.width[i] || 8, minPx);
+    const drawH = Math.max(bm.height[i] || 8, minPx);
+
     // cull
     if (sx < -100 || sx > W+100 || sy < -100 || sy > H+100) continue;
 
     // Apply bullet scale to width and height
-    const w = (bm.width[i] || 8) * viewScale * bulletScale;
-    const h = (bm.height[i] || 8) * viewScale * bulletScale;
+    const w = drawW;
+    const h = drawH;
 
     // try sprite draw
     if (spriteManager && bm.sprite && bm.sprite[i]) {
@@ -371,7 +406,7 @@ export function renderBullets() {
 
     // fallback glow circle
     const isLocal = bm.ownerId[i] === gameState.character?.id;
-    const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, w);
+    const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, drawW);
     if (isLocal) {
       grad.addColorStop(0, 'rgb(255,255,120)');
       grad.addColorStop(0.7, 'rgb(255,160,0)');
@@ -384,12 +419,12 @@ export function renderBullets() {
 
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(sx, sy, w, 0, Math.PI*2);
+    ctx.arc(sx, sy, drawW, 0, Math.PI*2);
     ctx.fill();
 
     ctx.fillStyle = 'white';
     ctx.beginPath();
-    ctx.arc(sx, sy, w*0.3, 0, Math.PI*2);
+    ctx.arc(sx, sy, drawW*0.3, 0, Math.PI*2);
     ctx.fill();
   }
 }
@@ -477,6 +512,16 @@ export function renderGame() {
 function renderUI() {
   // Draw player health bar
   if (gameState.character && gameState.character.health !== undefined) {
+    if (gameState.character.health <= 0) {
+      // Big centred message
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(0,0,canvas2D.width,canvas2D.height);
+      ctx.fillStyle='red';
+      ctx.font='72px serif';
+      ctx.textAlign='center';
+      ctx.fillText('YOU DIED', canvas2D.width/2, canvas2D.height/2);
+      return; // skip rest of UI when dead
+    }
     const health = gameState.character.health;
     const maxHealth = gameState.character.maxHealth || 100;
     const healthPercent = health / maxHealth;
@@ -582,7 +627,7 @@ export function renderItems() {
   
   // Get view scaling factor
   const viewType = gameState.camera?.viewType || 'top-down';
-  const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
+  const viewScaleFactor = viewType === 'strategic' ? STRATEGIC_VIEW_SCALE : 1.0;
   
   // Get screen dimensions
   const screenWidth = canvas2D.width;

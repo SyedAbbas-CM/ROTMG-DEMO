@@ -34,8 +34,17 @@ export class Player {
       this.name = options.name || 'Player';
       this.x = options.x || 0;
       this.y = options.y || 0;
-      this.width = options.width || 10;
-      this.height = options.height || 10;
+      // Physical hit-box (tile units)
+      this.collisionWidth  = options.collisionWidth  ?? 1;
+      this.collisionHeight = options.collisionHeight ?? 1;
+
+      // Increase default sprite scale for better visibility (2.5x larger than previous)
+      this.renderScale = options.renderScale ?? 10;
+
+      // Keep legacy width/height fields for code that still expects them, but
+      // deprecate their use in favour of collisionWidth / renderScale.
+      this.width  = this.collisionWidth;
+      this.height = this.collisionHeight;
       this.rotation = 0;
       
       // Movement - ROTMG-style stats
@@ -359,8 +368,8 @@ export class Player {
       const screenY = (this.y - cameraPosition.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
       
       // Apply the appropriate scale factor for rendering
-      const width = this.width * SCALE * viewScaleFactor;
-      const height = this.height * SCALE * viewScaleFactor;
+      const width = this.width * this.renderScale * SCALE * viewScaleFactor;
+      const height = this.height * this.renderScale * SCALE * viewScaleFactor;
       
       // Save context for rotation
       ctx.save();
@@ -438,8 +447,8 @@ export class Player {
       const screenY = (this.y - cameraPosition.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
       
       // Apply the appropriate scale factor for rendering
-      const width = this.width * SCALE * viewScaleFactor;
-      const height = this.height * SCALE * viewScaleFactor;
+      const width = this.width * this.renderScale * SCALE * viewScaleFactor;
+      const height = this.height * this.renderScale * SCALE * viewScaleFactor;
       
       // Draw debug rectangle
       ctx.fillStyle = 'red';

@@ -301,9 +301,11 @@ export class GameManager {
    * @param {Object} data - Chunk data
    */
   setChunkData(chunkX, chunkY, data) {
-    // If map has a method to set chunk data, use it
-    if (map.setChunkData) {
-      map.setChunkData(chunkX, chunkY, data);
+    // Always use the authoritative map instance stored in gameState
+    if (gameState.map && typeof gameState.map.setChunkData === 'function') {
+      gameState.map.setChunkData(chunkX, chunkY, data);
+    } else {
+      console.error('setChunkData: gameState.map is not ready');
     }
   }
   
@@ -313,10 +315,9 @@ export class GameManager {
    * @param {number} chunkY - Chunk Y coordinate
    */
   generateFallbackChunk(chunkX, chunkY) {
-    console.log(`Generating fallback chunk for (${chunkX}, ${chunkY})`);
-    // If map has a method to generate a fallback chunk, use it
-    if (map.generateFallbackChunk) {
-      map.generateFallbackChunk(chunkX, chunkY);
+    if (gameState.map && typeof gameState.map.generateFallbackChunk === 'function') {
+      console.warn(`Fallback: creating dummy chunk (${chunkX},${chunkY})`);
+      gameState.map.generateFallbackChunk(chunkX, chunkY);
     }
   }
   

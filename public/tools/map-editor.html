@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Map Editor</title>
+  <style>
+    body{margin:0;display:flex;height:100vh;font-family:Arial,sans-serif;background:#222;color:#eee;}
+    #sidebar{width:300px;background:#111;padding:10px;overflow:auto;}
+    #sidebar h2{margin:0 0 10px 0;}
+    #sidebar input, #sidebar button, #sidebar select{width:100%;margin:4px 0;}
+    #canvasWrap{flex:1;display:flex;justify-content:center;align-items:center;background:#333;}
+    #mapCanvas{image-rendering:pixelated;border:2px solid #555;}
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h2>Map Editor</h2>
+    <label>New map size</label>
+    <div style="display:flex;gap:4px;">
+      <input id="mapW" type="number" value="32" min="4" style="flex:1;"/>
+      <input id="mapH" type="number" value="32" min="4" style="flex:1;"/>
+    </div>
+    <button id="newMapBtn">New Map</button>
+    <hr>
+    <label>Tilesheet</label>
+    <select id="atlasSelect"></select>
+    <button id="loadAtlasBtn">Load Atlas</button>
+    <div id="tilePicker" style="display:grid;grid-template-columns:repeat(auto-fill,32px);gap:4px;margin-top:6px;max-height:200px;overflow:auto;"></div>
+    <hr>
+    <button id="saveMapBtn">Save Map (Ctrl+S)</button>
+    <label>Existing maps</label>
+    <select id="mapList"></select>
+    <button id="loadMapBtn">Load Map</button>
+  </div>
+  <div id="canvasWrap"><canvas id="mapCanvas" width="640" height="640"></canvas></div>
+
+  <script type="module">
+    import { spriteDatabase } from '../src/assets/SpriteDatabase.js';
+
+    const atlasSelect=document.getElementById('atlasSelect');
+    const tilePicker=document.getElementById('tilePicker');
+    const canvas=document.getElementById('mapCanvas');
+    const ctx=canvas.getContext('2d');
+
+    let tileW=16, tileH=16;
+    let mapW=32, mapH=32;
+    let mapData=[]; // 2d array of sprite names
+    let currentTile=null;
+
+    async function init(){
+      // load atlas list
+      const atlRes=await fetch('/api/assets/atlases');
+      const atlJson=await atlRes.json();
+      atlJson.atlases.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;atlasSelect.appendChild(o);});
+      // load map list
+      refreshMapList();
+      newMap();
+    }
+
+    async function refreshMapList(){
+      const res=await fetch('/api/map-editor/maps');
+      const j=await res.json();
+      const sel=document.getElementById('mapList');
+      sel.innerHTML='';
+      j.maps.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;sel.appendChild(o);});
+    }
+
+    document.getElementById('newMapBtn').onclick=newMap;
+    function newMap(){
+      mapW=parseInt(document.getElementById('mapW').value)||32;
+      mapH=parseInt(document.getElementById('mapH').value)||32;
+      canvas.width=mapW*tileW;
+      canvas.height=mapH*tileH;
+      mapData=Array.from({length:mapH},()=>Array(mapW).fill(null));
+      drawMap();
+    }
+
+    async function loadAtlas(){
+      const path=atlasSelect.value; if(!path) return;
+      await spriteDatabase.loadAtlases([path]);
+      const names=spriteDatabase.getAllSpriteNames();
+      tilePicker.innerHTML='';
+      names.forEach(n=>{
+        const tile=document.createElement('canvas'); tile.width=32; tile.height=32; tile.style.cursor='pointer';
+        spriteDatabase.drawSprite(tile.getContext('2d'), n,0,0,32,32);
+        tile.onclick=()=>{currentTile=n;};
+        tile.title=n;
+        tilePicker.appendChild(tile);
+      });
+    }
+    document.getElementById('loadAtlasBtn').onclick=loadAtlas;
+
+    canvas.addEventListener('click', (e)=>{
+      if(!currentTile) return;
+      const rect=canvas.getBoundingClientRect();
+      const x=Math.floor((e.clientX-rect.left)/tileW);
+      const y=Math.floor((e.clientY-rect.top)/tileH);
+      if(x<0||y<0||x>=mapW||y>=mapH)return;
+      mapData[y][x]=currentTile;
+      drawMap();
+    });
+
+    function drawMap(){
+      ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(let y=0;y<mapH;y++){
+        for(let x=0;x<mapW;x++){
+          const name=mapData[y][x];
+          if(name) spriteDatabase.drawSprite(ctx,name,x*tileW,y*tileH,tileW,tileH);
+        }
+      }
+      ctx.strokeStyle='rgba(255,255,255,0.1)';
+      for(let x=0;x<=mapW;x++){ctx.beginPath();ctx.moveTo(x*tileW,0);ctx.lineTo(x*tileW,mapH*tileH);ctx.stroke();}
+      for(let y=0;y<=mapH;y++){ctx.beginPath();ctx.moveTo(0,y*tileH);ctx.lineTo(mapW*tileW,y*tileH);ctx.stroke();}
+    }
+
+    async function saveMap(){
+      const filename=prompt('Save as filename (e.g. myMap.json):'); if(!filename) return;
+      const data={ width:mapW,height:mapH,tileW,tileH,tiles:mapData };
+      const res=await fetch('/api/map-editor/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename,data})});
+      const json=await res.json();
+      if(json.success){alert('Saved to '+json.path); refreshMapList();}
+      else alert('Save failed: '+json.error);
+    }
+    document.getElementById('saveMapBtn').onclick=saveMap;
+
+    document.getElementById('loadMapBtn').onclick=async()=>{
+      const f=document.getElementById('mapList').value; if(!f) return;
+      const res=await fetch('/maps/'+f);
+      const data=await res.json();
+      mapW=data.width; mapH=data.height; tileW=data.tileW; tileH=data.tileH;
+      document.getElementById('mapW').value=mapW; document.getElementById('mapH').value=mapH;
+      canvas.width=mapW*tileW; canvas.height=mapH*tileH;
+      mapData=data.tiles;
+      drawMap();
+    };
+
+    document.addEventListener('keydown',(e)=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveMap();}});
+
+    init();
+  </script>
+</body>
+</html> 

@@ -1,0 +1,11 @@
+[
+  { "id": "floor",     "sprite": "tile_sprites:floor",     "walkable": true,  "height": 0 },
+  { "id": "wall",      "sprite": "tile_sprites:wall",      "walkable": false, "height": 0 },
+  { "id": "obstacle",  "sprite": "tile_sprites:obstacle",  "walkable": false, "height": 0 },
+  { "id": "water",     "sprite": "tile_sprites:water",     "walkable": false, "height": 0 },
+  { "id": "mountain",  "sprite": "tile_sprites:mountain",  "walkable": false, "height": 2 },
+  { "id": "ramp_n",   "sprite": "tile_sprites:floor",     "walkable": true,  "height": 1, "slope": "N" },
+  { "id": "ramp_e",   "sprite": "tile_sprites:floor",     "walkable": true,  "height": 1, "slope": "E" },
+  { "id": "ramp_s",   "sprite": "tile_sprites:floor",     "walkable": true,  "height": 1, "slope": "S" },
+  { "id": "ramp_w",   "sprite": "tile_sprites:floor",     "walkable": true,  "height": 1, "slope": "W" }
+] 

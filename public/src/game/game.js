@@ -1,5 +1,6 @@
 // public/src/game/game.js
 import { spriteManager } from '../assets/spriteManager.js'; 
+import { initializeSpriteManager } from '../game.js';
 import { gameState } from './gamestate.js';
 import { initControls, getKeysPressed, getMoveSpeed } from './input.js';
 import { addFirstPersonElements, updateFirstPerson } from '../render/renderFirstPerson.js';
@@ -27,6 +28,9 @@ import { EntityAnimator } from '../entities/EntityAnimator.js';
 import { PlayerManager } from '../entities/PlayerManager.js';
 import { initCoordinateUtils } from '../utils/coordinateUtils.js';
 import { initLogger, setLogLevel, LOG_LEVELS } from '../utils/logger.js';
+import { setupDebugTools } from '../utils/debugTools.js';
+import { spriteDatabase } from '../assets/SpriteDatabase.js';
+import { tileDatabase } from '../assets/TileDatabase.js';
 
 let renderer, scene, camera;
 let lastTime = 0;
@@ -41,8 +45,15 @@ let localPlayer;
 let gameUI;
 
 // Server connection settings
-const SERVER_PORT = 3000;
-const SERVER_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:${SERVER_PORT}`;// Change if your server is on a different port or host
+const DEFAULT_SERVER_PORT = 3000;
+// Allow overriding from localStorage (set in console: localStorage.setItem('DEV_SERVER_PORT', '5000'))
+const OVERRIDE_PORT = localStorage.getItem('DEV_SERVER_PORT');
+// If the page itself is served from the same host:port as the WebSocket server we can reuse location.port
+const PAGE_PORT = location.port && location.port !== '' ? location.port : null;
+
+const SERVER_PORT = OVERRIDE_PORT || PAGE_PORT || DEFAULT_SERVER_PORT;
+
+const SERVER_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:${SERVER_PORT}`;
 
 // Collision statistics
 const collisionStats = {
@@ -61,6 +72,9 @@ window.ALLOW_CLIENT_ENEMY_BEHAVIOR = false; // Can be toggled with 'B' key
 
 // Make collision stats available globally for UI
 window.collisionStats = collisionStats;
+
+// Make spriteDatabase globally visible for console usage
+window.spriteDatabase = spriteDatabase;
 
 export async function initGame() {
     try {
@@ -84,6 +98,13 @@ export async function initGame() {
         // Display current log levels
         logger.displayLogLevels();
         
+        // Initialize the new sprite database system
+        console.log('Initializing sprite database...');
+        await initializeSpriteManager();
+        
+        // Load tile database
+        await tileDatabase.load('assets/database/tiles.json');
+
         // Initialize sprite sheets
         console.log('Loading sprite sheets...');
         try {
@@ -120,22 +141,24 @@ export async function initGame() {
             console.log('Character sprites loaded successfully:', charSheet.config);
         }
         
+        // Enemy sprites now come from the provided ROTMG sheet (chars2.png)
+        // Dimensions: 512×512 with 8×8 tiles → 64×64 grid
         await spriteManager.loadSpriteSheet({ 
             name: 'enemy_sprites', 
-            path: 'assets/images/Oryx/lofi_char.png',
+            path: 'assets/images/chars2.png',
             defaultSpriteWidth: 8,
             defaultSpriteHeight: 8,
-            spritesPerRow: 40,
-            spritesPerColumn: 40
+            spritesPerRow: 64,
+            spritesPerColumn: 64
         });
         
         await spriteManager.loadSpriteSheet({ 
             name: 'tile_sprites', 
             path: 'assets/images/Oryx/8-Bit_Remaster_World.png',
-            defaultSpriteWidth: 24,
-            defaultSpriteHeight: 24,
-            spritesPerRow: 10,
-            spritesPerColumn: 10
+            defaultSpriteWidth: 12,
+            defaultSpriteHeight: 12,
+            spritesPerRow: 20,
+            spritesPerColumn: 20
         });
         
         // Load bullet sprites - Add this for bullet rendering
@@ -175,6 +198,7 @@ export async function initGame() {
         // Create Camera
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 1.5, 0); // Origin with eye height
+        window.camera = camera; // expose to movement utils
         camera.rotation.order = 'YXZ'; // Rotate first around Y, then X
         console.log('Three.js Camera created and positioned.');
 
@@ -186,6 +210,11 @@ export async function initGame() {
         const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.5);
         scene.add(hemisphereLight);
         console.log('Hemisphere Light added to the scene.');
+
+        // Add global ambient light to brighten scenes (especially first-person view)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        console.log('Ambient Light added to the scene.');
 
         // Add Directional Light
         const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -354,6 +383,61 @@ export async function initGame() {
 
         // Setup emergency teleport
         setupDebugTeleport();
+
+        // After all managers created and attached
+        setupDebugTools({
+            spriteDatabase: window.spriteDatabase || spriteDatabase,
+            enemyManager,
+            bulletManager,
+            mapManager,
+            playerManager
+        });
+
+        // Hot-reload atlases when saved from editor
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'atlasReload' && e.newValue) {
+                try {
+                    const payload = JSON.parse(e.newValue);
+                    const atlasPath = payload.path;
+                    console.log('[HOT-RELOAD] Atlas changed:', atlasPath);
+                    spriteDatabase.clearCaches();
+                    spriteDatabase.loadAtlases([atlasPath]).then(()=>{
+                        console.log('[HOT-RELOAD] Atlas reloaded');
+                        if (enemyManager?.reinitializeSprites) enemyManager.reinitializeSprites();
+                    });
+                } catch(err){ console.warn('Atlas reload parse error', err); }
+            }
+        });
+
+        // Pointer-lock mouse look setup
+        const canvas = document.getElementById('glCanvas');
+        canvas.addEventListener('click', ()=>{
+            if (gameState.camera.viewType === 'first-person') {
+                canvas.requestPointerLock();
+            }
+        });
+
+        const lookSensitivity = 0.0025;
+        document.addEventListener('pointerlockchange', ()=>{
+            if (document.pointerLockElement !== canvas) return;
+            const onMove = (e)=>{
+                const dx = e.movementX || 0;
+                const dy = e.movementY || 0;
+                const char = gameState.character;
+                if (!char.rotation) char.rotation = { yaw:0, pitch:0 };
+                char.rotation.yaw -= dx * lookSensitivity;
+                char.rotation.pitch -= dy * lookSensitivity;
+                // Clamp pitch (~ +/- 89°)
+                const maxPitch = Math.PI/2 - 0.05;
+                char.rotation.pitch = Math.max(-maxPitch, Math.min(maxPitch, char.rotation.pitch));
+            };
+            document.addEventListener('mousemove', onMove);
+            const exit = ()=>{
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('pointerlockchange', exit);
+            };
+            document.addEventListener('pointerlockchange', exit);
+        });
     } catch (error) {
         console.error('Error initializing the game:', error);
     }
@@ -368,21 +452,33 @@ function initializeGameState() {
         name: 'Player',
         x: 5,
         y: 5,
-        width: 10,
-        height: 10,
+        width: 1,
+        height: 1,
         speed: 150,
         projectileSpeed: 300, // Critical for shooting
         damage: 10,
         shootCooldown: 0.1,
-        sprite: 'character_sprites_sprite_1'
+        sprite: 'character_sprites_sprite_1',
+        renderScale: 10
     });
     
     console.log("Created local player:", localPlayer);
     
+    // Expose player reference for UI
+    gameState.player = localPlayer;
+
     // Create managers
     bulletManager = new ClientBulletManager(10000);
-    bulletManager.bulletScale = 2.0; // Scale all bullets to be twice as large
+    bulletManager.bulletScale = 3.0; // Larger bullets for visibility
     enemyManager = new ClientEnemyManager(1000);
+    
+    // Reinitialize enemy sprites after sprite database is loaded
+    if (enemyManager.reinitializeSprites) {
+        // Schedule this to run after sprite database is loaded
+        setTimeout(() => {
+            enemyManager.reinitializeSprites();
+        }, 100);
+    }
     
     // Verify enemy sprite data after loading sprite sheets
     if (enemyManager.verifySpriteData) {
@@ -393,8 +489,9 @@ function initializeGameState() {
     // Make bulletManager available in console for debugging
     window.bulletManager = bulletManager;
     
-    // Create map manager first (before network manager)
+    // Create map manager once and expose globally for any legacy references
     mapManager = new ClientMapManager({});
+    window.mapManager = mapManager; // legacy scripts may refer here
     
     // IMPORTANT: Disable procedural generation to use server's map
     mapManager.proceduralEnabled = false;
@@ -548,6 +645,28 @@ function initializeGameState() {
                     console.log(`[updateWorld] Received empty players object`);
                 }
                 return;
+            }
+            
+            // --- Update local player state from server (health, exact position etc.) ---
+            if (localPlayer) {
+                const lpIdStr = String(localPlayer.id);
+                const serverSelf = players[lpIdStr];
+                if (serverSelf) {
+                    // Sync only mutable attributes to avoid visual jitter
+                    if (typeof serverSelf.health === 'number') {
+                        localPlayer.health = serverSelf.health;
+                        localPlayer.maxHealth = serverSelf.maxHealth || localPlayer.maxHealth;
+                        // Refresh health bar in UI immediately
+                        if (window.gameUI && typeof window.gameUI.updateHealth === 'function') {
+                            window.gameUI.updateHealth(localPlayer.health, localPlayer.maxHealth || 100);
+                        }
+                    }
+                    // Keep position for first-person mode accuracy but allow client prediction in top-down
+                    if (window.FIRST_PERSON_VIEW_ACTIVE && serverSelf.x !== undefined && serverSelf.y !== undefined) {
+                        localPlayer.x = serverSelf.x;
+                        localPlayer.y = serverSelf.y;
+                    }
+                }
             }
             
             // Filter out local player from world updates to avoid ghost sprites

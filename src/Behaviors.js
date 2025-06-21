@@ -256,28 +256,29 @@ export class Shoot extends Behavior {
   }
   
   fireProjectiles(index, enemyManager, bulletManager, baseAngle) {
+    // Push bullet so it starts just outside the enemy's own hit-box (enemyWidth/2 + small margin)
+    const spawnOffset = (enemyManager.width[index] * 0.5) + 0.3; // tile-units
+
     // Single projectile case
     if (this.projectileCount <= 1) {
       // Apply inaccuracy if specified
       const angle = baseAngle + (Math.random() * 2 - 1) * this.inaccuracy;
       
+      const spawnX = enemyManager.x[index] + Math.cos(angle) * spawnOffset;
+      const spawnY = enemyManager.y[index] + Math.sin(angle) * spawnOffset;
+      
       bulletManager.addBullet({
-        x: enemyManager.x[index],
-        y: enemyManager.y[index],
+        x: spawnX,
+        y: spawnY,
         vx: Math.cos(angle) * enemyManager.bulletSpeed[index],
         vy: Math.sin(angle) * enemyManager.bulletSpeed[index],
         ownerId: enemyManager.id[index],
         damage: enemyManager.damage[index],
         lifetime: 3.0,
-        width: 8,
-        height: 8,
+        width: 0.4,
+        height: 0.4,
         isEnemy: true,
-        // Additional properties
-        spriteSheet: 'bullet_sprites',
-        spriteX: 8 * 11, // Enemy bullet sprite
-        spriteY: 8 * 11,
-        spriteWidth: 8,
-        spriteHeight: 8
+        spriteName: enemyManager.bulletSpriteName[index] || 'projectile_basic'
       });
       
       return;
@@ -290,23 +291,21 @@ export class Shoot extends Behavior {
       // Base angle plus spread offset plus inaccuracy
       const angle = startAngle + (this.spread * i) + (Math.random() * 2 - 1) * this.inaccuracy;
       
+      const spawnX = enemyManager.x[index] + Math.cos(angle) * spawnOffset;
+      const spawnY = enemyManager.y[index] + Math.sin(angle) * spawnOffset;
+      
       bulletManager.addBullet({
-        x: enemyManager.x[index],
-        y: enemyManager.y[index],
+        x: spawnX,
+        y: spawnY,
         vx: Math.cos(angle) * enemyManager.bulletSpeed[index],
         vy: Math.sin(angle) * enemyManager.bulletSpeed[index],
         ownerId: enemyManager.id[index],
         damage: enemyManager.damage[index],
         lifetime: 3.0,
-        width: 8,
-        height: 8,
+        width: 0.4,
+        height: 0.4,
         isEnemy: true,
-        // Additional properties
-        spriteSheet: 'bullet_sprites',
-        spriteX: 8 * 11, // Enemy bullet sprite
-        spriteY: 8 * 11,
-        spriteWidth: 8,
-        spriteHeight: 8
+        spriteName: enemyManager.bulletSpriteName[index] || 'projectile_basic'
       });
     }
   }

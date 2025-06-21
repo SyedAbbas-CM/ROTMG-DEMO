@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sprite Editor</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+    }
+    #sidebar {
+      width: 280px;
+      background: #222;
+      color: #eee;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    #sidebar h2 {
+      margin-top: 0;
+    }
+    #sidebar select,
+    #sidebar button,
+    #sidebar input {
+      width: 100%;
+      margin: 6px 0;
+    }
+    #viewport {
+      flex: 1;
+      background: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    #canvas {
+      background: #000;
+      image-rendering: pixelated;
+      border: 2px solid #555;
+    }
+    .rect {
+      position: absolute;
+      border: 2px dashed #0f0;
+      pointer-events: none;
+    }
+    #folderTree div{color:#ccc; padding-left:10px;}
+    #folderTree summary{color:#eee; cursor:pointer;}
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h2>Sprite Editor</h2>
+
+    <label>Image browser</label>
+    <div id="folderTree" style="max-height:200px; overflow:auto; background:#111; padding:6px; border:1px solid #444;"></div>
+
+    <hr>
+    <label>Tile Size (W×H)</label>
+    <div style="display:flex; gap:6px;">
+      <input id="tileW" type="number" value="8" style="flex:1;" />
+      <input id="tileH" type="number" value="8" style="flex:1;" />
+    </div>
+    <button id="reloadGridBtn">Redraw Grid</button>
+
+    <hr>
+    <label>Selection actions</label>
+    <button id="groupBtn">Group Selected</button>
+    <button id="deleteBtn">Delete Selected</button>
+
+    <hr>
+    <label>Atlas file</label>
+    <select id="atlasSelect"></select>
+
+    <button id="exportBtn">Export Atlas JSON</button>
+
+    <div id="spriteListPanel" style="max-height:200px; overflow:auto; margin-top:10px; background:#111; color:#ccc; padding:6px;"></div>
+
+    <label>Brush Size</label>
+    <input id="brushSizeInput" type="number" value="1" min="1" max="16" title="Brush size" style="width:60px;">
+
+    <label>Color</label>
+    <input id="colorInput" type="color" value="#ffffff" style="width:60px;">
+  </div>
+  <div id="viewport" style="overflow:hidden; position:relative;">
+    <div id="canvasWrapper" style="position:absolute;left:0;top:0;transform-origin:0 0;">
+      <canvas id="canvas" width="512" height="512"></canvas>
+      <canvas id="paintLayer" width="512" height="512" style="position:absolute;left:0;top:0;pointer-events:none;"></canvas>
+    </div>
+    <div id="palette" style="position:absolute;right:6px;bottom:6px;display:flex;gap:2px;"></div>
+    <!-- sprite info panel -->
+    <div id="spriteInfo" style="position:absolute;right:6px;top:6px;background:rgba(0,0,0,.7);color:#fff;font:12px monospace;padding:6px;border-radius:4px;max-width:140px;display:none;"></div>
+    <!-- status HUD -->
+    <div id="statusHUD" style="position:absolute;left:6px;bottom:6px;color:#fff;background:rgba(0,0,0,.6);font:12px/14px monospace;padding:2px 6px;border-radius:4px;pointer-events:none;user-select:none;">row: -, col: -</div>
+  </div>
+
+  <script>
+    const folderTreeDiv = document.getElementById('folderTree');
+    const tileWInput = document.getElementById('tileW');
+    const tileHInput = document.getElementById('tileH');
+    const reloadGridBtn = document.getElementById('reloadGridBtn');
+    const groupBtn = document.getElementById('groupBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const atlasSelect = document.getElementById('atlasSelect');
+    const exportBtn = document.getElementById('exportBtn');
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const statusHUD = document.getElementById('statusHUD');
+    const paintLayer = document.getElementById('paintLayer');
+    const paintCtx = paintLayer.getContext('2d');
+    const paletteDiv = document.getElementById('palette');
+    const wrapper = document.getElementById('canvasWrapper');
+    const spriteInfo = document.getElementById('spriteInfo');
+
+    let hoverCell = null;           // {row,col}
+    let flashSprite = null;         // {row,col,width,height, timeoutId}
+
+    let img = null;
+    const atlas = { meta: {}, sprites: [] };
+
+    let sheetName = '';
+    let currentScale = 1;
+    let offsetX = 0, offsetY = 0;
+    let selectedSprite = null;
+
+    // --- Painting setup ---
+    let paintMode = false;
+    let currentColor = '#ffffff';
+    let isPainting = false;
+    const undoStack = [];
+    const MAX_UNDO = 20;
+
+    let dragStart=null; // {row,col} for box creation
+    let isPanning=false;
+    let panStart={x:0,y:0,ox:0,oy:0};
+
+    // ---------- Debugging helpers ----------
+    const debugMode=true;
+    function dbg(label,obj){ if(debugMode) console.log(label,obj); }
+
+    function enterPaintMode(){
+      paintMode=true;
+      paintLayer.style.pointerEvents='auto';
+      generatePalette();
+    }
+    function exitPaintMode(){paintMode=false; paintLayer.style.pointerEvents='none';}
+
+    function pushUndo(){
+      undoStack.push(paintCtx.getImageData(0,0,paintLayer.width,paintLayer.height));
+      if(undoStack.length>MAX_UNDO) undoStack.shift();
+    }
+
+    function undo(){
+      if(!undoStack.length) return; const img=undoStack.pop(); paintCtx.putImageData(img,0,0);
+    }
+
+    function generatePalette(){
+      paletteDiv.innerHTML='';
+      const colors = new Set();
+      const imgData = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      for(let i=0;i<imgData.length;i+=4){
+        const r=imgData[i],g=imgData[i+1],b=imgData[i+2];
+        const hex = '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+        colors.add(hex);
+        if(colors.size>=32) break;
+      }
+      colors.forEach(col=>{
+        const sw=document.createElement('div'); sw.style.width='14px'; sw.style.height='14px'; sw.style.background=col; sw.style.cursor='pointer'; sw.onclick=()=>currentColor=col; paletteDiv.appendChild(sw);
+      });
+    }
+
+    const sidebar=document.getElementById('sidebar');
+    const brushSizeInput=document.createElement('input'); brushSizeInput.type='number'; brushSizeInput.value='1'; brushSizeInput.min='1'; brushSizeInput.max='16'; brushSizeInput.title='Brush size'; brushSizeInput.style.width='60px';
+    const colorInput=document.createElement('input'); colorInput.type='color'; colorInput.value='#ffffff'; colorInput.style.width='60px';
+
+    // Labels
+    const lblColor=document.createElement('label'); lblColor.textContent='Paint Color';
+    const lblBrush=document.createElement('label'); lblBrush.textContent='Brush Size';
+
+    sidebar.appendChild(lblColor); sidebar.appendChild(colorInput);
+    sidebar.appendChild(lblBrush); sidebar.appendChild(brushSizeInput);
+
+    let brushSize=1; brushSizeInput.onchange=()=>{ brushSize=parseInt(brushSizeInput.value)||1; };
+    colorInput.oninput=()=>{ currentColor=colorInput.value; };
+
+    paintLayer.addEventListener('mousedown',e=>{ if(!paintMode) return; if(e.altKey){ pickColor(e); return;} pushUndo(); isPainting=true; drawAt(e); });
+    paintLayer.addEventListener('mousemove',e=>{ if(isPainting){ drawAt(e);} else if(paintMode&&e.altKey){ pickColor(e);} });
+    window.addEventListener('mouseup',()=>isPainting=false);
+
+    function drawAt(e){
+      const {xCanvas,yCanvas} = screenToCanvas(e);
+      const x = Math.floor(xCanvas);
+      const y = Math.floor(yCanvas);
+      paintCtx.fillStyle=currentColor;
+      paintCtx.fillRect(x,y,brushSize,brushSize);
+    }
+
+    function pickColor(e){
+      const {xCanvas,yCanvas} = screenToCanvas(e);
+      const x = Math.floor(xCanvas);
+      const y = Math.floor(yCanvas);
+      const data = paintCtx.getImageData(x,y,1,1).data;
+      currentColor = colorInput.value = '#'+[data[0],data[1],data[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+    }
+
+    document.addEventListener('keydown',e=>{
+      if(e.key==='p') enterPaintMode();
+      if(e.key==='Escape'&&paintMode) exitPaintMode();
+      if(e.key==='z'&& (e.ctrlKey||e.metaKey)) { e.preventDefault(); undo(); }
+      if(e.key==='S'&& (e.ctrlKey||e.metaKey)&&paintMode){ e.preventDefault(); savePng(); }
+    });
+
+    async function savePng(){
+      if(!atlas.meta.image) return alert('Load image first');
+      const merged=document.createElement('canvas');
+      merged.width=canvas.width; merged.height=canvas.height;
+      const mctx=merged.getContext('2d');
+      mctx.drawImage(canvas,0,0); mctx.drawImage(paintLayer,0,0);
+      const dataUrl=merged.toDataURL('image/png');
+      const res=await fetch('/api/assets/images/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:atlas.meta.image.replace(/^\//,'') , data:dataUrl})});
+      const json=await res.json(); if(json.success) alert('PNG saved'); else alert('Save failed');
+    }
+
+    // Build folder tree UI
+    async function buildTree() {
+      const res = await fetch('/api/assets/images/tree');
+      const tree = await res.json();
+
+      function createNode(node, container, prefix = '') {
+        if (node.type === 'folder') {
+          const details = document.createElement('details');
+          details.open = true;
+          const summary = document.createElement('summary');
+          summary.textContent = node.name;
+          details.appendChild(summary);
+          container.appendChild(details);
+          node.children.forEach(child => createNode(child, details, `${prefix}${node.name}/`));
+        } else if (node.type === 'image') {
+          const link = document.createElement('div');
+          link.textContent = node.name;
+          link.style.cursor = 'pointer';
+          link.onclick = () => loadImage('/' + node.path);
+          container.appendChild(link);
+        }
+      }
+
+      folderTreeDiv.innerHTML = '';
+      createNode(tree, folderTreeDiv);
+    }
+
+    buildTree().catch(console.error);
+
+    async function loadImage(path) {
+      img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error('Failed to load image ' + path));
+        img.src = path;
+      });
+
+      // Basic canvas setup
+      canvas.width = img.width;
+      canvas.height = img.height;
+      paintLayer.width = img.width;
+      paintLayer.height = img.height;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0);
+
+      sheetName = path.split('/').pop().replace(/\.png$/i,'');
+
+      // Try to load existing atlas JSON first
+      let loaded = false;
+      try {
+        const res = await fetch(`/api/assets/atlas/${sheetName}.json`);
+        if (res.ok) {
+          const json = await res.json();
+          Object.assign(atlas, json);
+          // Ensure meta object exists
+          atlas.meta = atlas.meta || { image: path.replace(/^\//,''), imageW: img.width, imageH: img.height };
+          // Set tile size inputs based on first sprite if present
+          if (atlas.sprites && atlas.sprites.length) {
+            tileWInput.value = atlas.sprites[0].width || tileWInput.value;
+            tileHInput.value = atlas.sprites[0].height || tileHInput.value;
+          }
+          loaded = true;
+          console.log(`[Editor] Loaded existing atlas '${sheetName}.json' with ${atlas.sprites.length} sprites`);
+        }
+      } catch(err) {
+        console.warn('[Editor] Atlas JSON fetch failed (may not exist yet):', err);
+      }
+
+      // If no atlas loaded, regenerate default grid sprites and reset tile size fields
+      if (!loaded) {
+        tileWInput.value = 8;
+        tileHInput.value = 8;
+        atlas.meta = { image: path.replace(/^\//,''), imageW: img.width, imageH: img.height };
+        regenerateSprites();
+      }
+
+      fitToView();
+      drawGrid();
+      refreshSpriteList();
+
+      // Ensure atlas dropdown reflects current sheet json
+      const defaultJson = `${sheetName}.json`;
+      if (![...atlasSelect.options].some(o=>o.value===defaultJson)){
+         const opt=document.createElement('option'); opt.value=defaultJson; opt.textContent=defaultJson; atlasSelect.appendChild(opt);
+      }
+      atlasSelect.value = defaultJson;
+    }
+
+    function regenerateSprites(){
+      atlas.sprites.length=0;
+      const tileW=parseInt(tileWInput.value||8);
+      const tileH=parseInt(tileHInput.value||8);
+      const cols=Math.floor(img.width/tileW);
+      const rows=Math.floor(img.height/tileH);
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          atlas.sprites.push({
+            name:`${sheetName}_sprite_${r}_${c}`,
+            group:'auto',
+            row:r,col:c,width:tileW,height:tileH
+          });
+        }
+      }
+    }
+
+    function fitToView(){
+      const vp=document.getElementById('viewport');
+      const vw=vp.clientWidth*0.8;
+      const vh=vp.clientHeight*0.8;
+      currentScale=Math.min(vw/canvas.width,vh/canvas.height,1);
+      offsetX=offsetY=0;
+      applyTransform();
+    }
+
+    // Redraw when the button is clicked or when tile-size inputs change
+    const scheduleRedraw = () => { clearTimeout(scheduleRedraw.t); scheduleRedraw.t = setTimeout(()=>{regenerateSprites(); fitToView(); drawGrid(); refreshSpriteList();},100);} ;
+    reloadGridBtn.onclick = drawGrid;
+    tileWInput.addEventListener('input', scheduleRedraw);
+    tileHInput.addEventListener('input', scheduleRedraw);
+
+    const selectedCells = new Set(); // store keys row_col
+
+    function rectIter(r0,c0,r1,c1,cb){
+      const [rs, re]=[Math.min(r0,r1),Math.max(r0,r1)];
+      const [cs, ce]=[Math.min(c0,c1),Math.max(c0,c1)];
+      for(let r=rs;r<=re;r++) for(let c=cs;c<=ce;c++) cb(r,c);
+    }
+
+    // Prevent default right-click menu so we can pan with RMB
+    canvas.addEventListener('contextmenu',e=>e.preventDefault());
+
+    canvas.addEventListener('mousedown', (e)=>{
+      if(!img) return;
+      const rect=canvas.getBoundingClientRect();
+      const tileW=parseInt(tileWInput.value||8);
+      const tileH=parseInt(tileHInput.value||8);
+
+      const startPan = ()=>{ isPanning=true; panStart={x:e.clientX,y:e.clientY,ox:offsetX,oy:offsetY}; vp.style.cursor='grabbing'; };
+
+      // RMB or LMB (without Shift) -> Pan
+      if(e.button===2 || (e.button===0 && !e.shiftKey)){
+         startPan(); return;
+      }
+
+      // Shift + LMB -> begin box creation
+      if(e.button===0 && e.shiftKey){
+          const {row,col}=cellAtEvent(e);
+          dragStart={row,col};
+          dbg('START',{row,col,xCanvas:dragStart.col*parseInt(tileWInput.value||8),yCanvas:dragStart.row*parseInt(tileHInput.value||8)});
+      }
+
+      // Alt-click on an existing sprite removes it
+      if(e.altKey){
+        const key = dragStart.row+"_"+dragStart.col;
+        atlas.sprites = atlas.sprites.filter(sp=>!(sp.row===dragStart.row && sp.col===dragStart.col));
+        selectedCells.delete(key);
+        drawGrid();
+        refreshSpriteList();
+        dbg('dragEnd');
+        dragStart=null;
+      }
+    });
+
+    canvas.addEventListener('mousemove',(e)=>{
+      if(isPanning){
+         offsetX=panStart.ox+(e.clientX-panStart.x);
+         offsetY=panStart.oy+(e.clientY-panStart.y);
+         applyTransform();
+         return;
+      }
+      if(!dragStart) return;
+      const rect=canvas.getBoundingClientRect();
+      const tileW=parseInt(tileWInput.value||8);
+      const tileH=parseInt(tileHInput.value||8);
+      const col=Math.floor((e.clientX-rect.left)/tileW);
+      const row=Math.floor((e.clientY-rect.top)/tileH);
+      // Log DRAG every 100ms
+      if(!window._dragLogLast || performance.now()-window._dragLogLast>100){
+         const {row,col}=cellAtEvent(e);
+         dbg('DRAG',{start:dragStart,row,col});
+         window._dragLogLast=performance.now();
+      }
+      tempHighlight({r0:dragStart.row,c0:dragStart.col,r1:row,c1:col});
+      updateHUD(`drag ${Math.abs(row-dragStart.row)+1}×${Math.abs(col-dragStart.col)+1}`);
+    });
+
+    function tempHighlight(rectSel){
+      drawGrid();
+      const tileW=parseInt(tileWInput.value||8);
+      const tileH=parseInt(tileHInput.value||8);
+      ctx.save();
+      ctx.strokeStyle='rgba(0,255,0,0.8)';
+      ctx.setLineDash([4,2]);
+      const x0 = Math.min(rectSel.c0,rectSel.c1)*tileW;
+      const y0 = Math.min(rectSel.r0,rectSel.r1)*tileH;
+      const w  = (Math.abs(rectSel.c1-rectSel.c0)+1)*tileW;
+      const h  = (Math.abs(rectSel.r1-rectSel.r0)+1)*tileH;
+      ctx.strokeRect(x0+0.5,y0+0.5,w-1,h-1);
+      ctx.restore();
+    }
+
+    canvas.addEventListener('mouseup',(e)=>{
+      if(isPanning){ isPanning=false; return; }
+      if(!dragStart) return;
+      const rect=canvas.getBoundingClientRect();
+      const tileW=parseInt(tileWInput.value||8);
+      const tileH=parseInt(tileHInput.value||8);
+      const col=Math.floor((e.clientX-rect.left)/tileW);
+      const row=Math.floor((e.clientY-rect.top)/tileH);
+
+      // Create a single manual sprite covering drag rectangle
+      if(dragStart){
+          const r0=Math.min(dragStart.row,row);
+          const r1=Math.max(dragStart.row,row);
+          const c0=Math.min(dragStart.col,col);
+          const c1=Math.max(dragStart.col,col);
+          const tileW=parseInt(tileWInput.value||8);
+          const tileH=parseInt(tileHInput.value||8);
+          atlas.sprites.push({
+            name:`box_${r0}_${c0}`,
+            group:'manual',
+            row:r0,
+            col:c0,
+            width:(c1-c0+1)*tileW,
+            height:(r1-r0+1)*tileH
+          });
+       }
+       dbg('END',{});
+       dragStart=null;
+       drawGrid();
+       refreshSpriteList();
+    });
+
+    // Hover HUD when not dragging
+    canvas.addEventListener('mousemove',(e)=>{
+      if(dragStart) return; // handled above
+      const {row,col,tileW,tileH}=cellAtEvent(e);
+      hoverCell={row,col};
+      updateHUD(`row:${row} col:${col}`);
+      drawGrid();
+    });
+    canvas.addEventListener('mouseleave',()=>{hoverCell=null; updateHUD('row:- col:-'); drawGrid();});
+
+    groupBtn.onclick = ()=>{
+      if (selectedCells.size===0) return alert('Select at least one cell');
+      const group = prompt('Enter group name');
+      if (!group) return;
+      addSelectedToAtlas(group);
+    };
+
+    deleteBtn.onclick = ()=>{
+      selectedCells.clear();
+      drawGrid();
+    };
+
+    function addSelectedToAtlas(groupName){
+      const tileW = parseInt(tileWInput.value||8);
+      const tileH = parseInt(tileHInput.value||8);
+      [...selectedCells].forEach(key=>{
+        const [row,col] = key.split('_').map(Number);
+        atlas.sprites.push({
+          name:`${groupName}_${row}_${col}`,
+          group:groupName,
+          row,col,
+          width:tileW,
+          height:tileH
+        });
+      });
+      selectedCells.clear();
+      drawGrid();
+      refreshSpriteList();
+      alert(`Added sprites to atlas under group ${groupName}`);
+    }
+
+    // load atlases list for future merging / saving
+    (async()=>{
+      const res = await fetch('/api/assets/atlases');
+      const json = await res.json();
+      json.atlases.forEach(p=>{
+        const base=p.split('/').pop();
+        const opt=document.createElement('option'); opt.value=base; opt.textContent=base; atlasSelect.appendChild(opt);
+      });
+    })();
+
+    const spriteListPanel = document.createElement('div');
+    spriteListPanel.style.maxHeight='200px';
+    spriteListPanel.style.overflow='auto';
+    spriteListPanel.style.marginTop='10px';
+    spriteListPanel.style.background='#111';
+    spriteListPanel.style.color='#ccc';
+    spriteListPanel.style.padding='6px';
+    document.getElementById('sidebar').appendChild(spriteListPanel);
+
+    function refreshSpriteList(){
+      spriteListPanel.innerHTML='';
+      // Show ONLY manual sprites to keep list concise
+      const list = atlas.sprites.filter(sp=>sp.group==='manual');
+      list.forEach((sp,idx)=>{
+        const row=document.createElement('div');
+        row.style.display='flex';
+        row.style.alignItems='center';
+        row.style.gap='4px';
+        const upBtn=document.createElement('button'); upBtn.textContent='↑';
+        const dwnBtn=document.createElement('button'); dwnBtn.textContent='↓';
+        if(sp.group!=='auto'){
+           upBtn.onclick=()=>{if(idx>0){const tmp=atlas.sprites[idx-1]; atlas.sprites[idx-1]=atlas.sprites[idx]; atlas.sprites[idx]=tmp; refreshSpriteList();}};
+           dwnBtn.onclick=()=>{if(idx<atlas.sprites.length-1){const tmp=atlas.sprites[idx+1]; atlas.sprites[idx+1]=atlas.sprites[idx]; atlas.sprites[idx]=tmp; refreshSpriteList();}};
+        } else { upBtn.style.visibility=dwnBtn.style.visibility='hidden'; }
+        const nameInput=document.createElement('input'); nameInput.value=sp.name; nameInput.style.flex='1'; nameInput.onchange=()=>{sp.name=nameInput.value};
+        const pos=document.createElement('span'); pos.textContent=` (${sp.row},${sp.col}) ${sp.width}x${sp.height}`; pos.style.color='#888';
+        row.onclick=()=>{
+           const tileW=parseInt(tileWInput.value||8);
+           const tileH=parseInt(tileHInput.value||8);
+           flashSprite={row:sp.row,col:sp.col,width:sp.width,height:sp.height};
+           drawGrid();
+           clearTimeout(flashSprite.timeoutId);
+           flashSprite.timeoutId=setTimeout(()=>{flashSprite=null; drawGrid();},800);
+           selectedSprite=sp; showSpriteInfo(sp);
+        };
+        row.appendChild(upBtn); row.appendChild(dwnBtn); row.appendChild(nameInput); row.appendChild(pos);
+        spriteListPanel.appendChild(row);
+      });
+    }
+
+    exportBtn.textContent='Save Atlas JSON (Ctrl+S)';
+    exportBtn.onclick = saveAtlas;
+
+    async function saveAtlas(){
+      if (!img) return alert('No image loaded');
+      // Ensure default sprite sizes stored
+      const tileW = parseInt(tileWInput.value||8);
+      const tileH = parseInt(tileHInput.value||8);
+      atlas.defaultSpriteWidth = tileW;
+      atlas.defaultSpriteHeight = tileH;
+      atlas.path = atlas.meta.image; // convenience for loaders
+      atlas.name = sheetName;
+
+      const filename = atlasSelect.value || `${sheetName}.json`;
+      try{
+        const res = await fetch('/api/assets/atlases/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename,data:atlas})});
+        const json=await res.json();
+        if(json.success){
+          alert('Saved to '+json.path);
+          refreshSpriteList();
+          // notify other tabs for hot reload
+          localStorage.setItem('atlasReload', JSON.stringify({path: json.path, t: Date.now()}));
+        }else{alert('Save failed: '+json.error)}
+      }catch(err){alert('Save error'); console.error(err);}  
+    }
+
+    document.addEventListener('keydown',(e)=>{
+      if((e.ctrlKey||e.metaKey)&&e.key==='s'){
+        e.preventDefault(); saveAtlas();
+      }
+    });
+
+    /** Redraw the canvas image + grid & overlays */
+    function drawGrid() {
+      if (!img) return;
+      ctx.drawImage(img,0,0);
+      const tileW = parseInt(tileWInput.value||8);
+      const tileH = parseInt(tileHInput.value||8);
+      ctx.strokeStyle = 'rgba(255,255,0,0.6)'; // bright yellow
+      ctx.lineWidth = 1;
+      for (let x=0;x<img.width;x+=tileW) {
+        ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,img.height); ctx.stroke();
+      }
+      for (let y=0;y<img.height;y+=tileH) {
+        ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(img.width,y); ctx.stroke();
+      }
+      // Draw existing sprites:
+      atlas.sprites.forEach(sp=>{
+        const x = sp.col*tileW;
+        const y = sp.row*tileH;
+        // Different visuals for auto vs manual
+        if(sp.group==='manual'){
+          // Semi-transparent green fill & border
+          ctx.fillStyle='rgba(0,255,0,0.25)';
+          ctx.fillRect(x,y,sp.width,sp.height);
+          ctx.strokeStyle='lime';
+          ctx.lineWidth=2;
+          ctx.strokeRect(x+1,y+1,sp.width-2,sp.height-2);
+        } else {
+          // Auto sprites tinted blue
+          ctx.fillStyle='rgba(0,150,255,0.25)';
+          ctx.fillRect(x,y,sp.width,sp.height);
+        }
+      });
+
+      // hover outline (red)
+      if(hoverCell){
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(hoverCell.col*tileW+1, hoverCell.row*tileH+1, tileW-2, tileH-2);
+      }
+
+      // flash highlight for sprite (yellow)
+      if(flashSprite){
+        ctx.strokeStyle = 'yellow';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(flashSprite.col*tileW+1, flashSprite.row*tileH+1, flashSprite.width-2, flashSprite.height-2);
+      }
+    }
+
+    function updateHUD(info){statusHUD.textContent = info;}
+
+    const vp = document.getElementById('viewport');
+    function screenToCanvas(e){
+       const vpRect = vp.getBoundingClientRect();
+       const xInVp  = e.clientX - vpRect.left;
+       const yInVp  = e.clientY - vpRect.top;
+       // Correct inverse: undo scale FIRST, then translation
+       const xCanvas = xInVp / currentScale - offsetX;
+       const yCanvas = yInVp / currentScale - offsetY;
+       return {xCanvas,yCanvas};
+    }
+
+    function cellAtEvent(e){
+       const {xCanvas,yCanvas} = screenToCanvas(e);
+       const tileW=parseInt(tileWInput.value||8);
+       const tileH=parseInt(tileHInput.value||8);
+       const col = Math.floor(xCanvas / tileW);
+       const row = Math.floor(yCanvas / tileH);
+       return {row,col,tileW,tileH,xCanvas,yCanvas};
+    }
+
+    // CLICK: select sprites (cycle through overlaps)
+    canvas.addEventListener('click',(e)=>{
+      if(paintMode||!img||isPanning) return;
+      const {row,col}=cellAtEvent(e);
+      const tileW=parseInt(tileWInput.value||8);
+      const tileH=parseInt(tileHInput.value||8);
+      const all = spritesAtCell(row,col,tileW,tileH);
+      if(all.length===0) return; // nothing to select
+
+      const key = row+"_"+col;
+      if(key!==lastClickKey){ clickCycle=0; lastClickKey=key; }
+      const ordered = [...all].sort((a,b)=>{
+         if(e.altKey){ // Alt-click cycles larger boxes first
+            const area=(s)=>s.width*s.height; return area(b)-area(a);
+         }
+         const area=(s)=>s.width*s.height;
+         if(a.group===b.group) return area(a)-area(b);
+         return a.group==='manual'?-1:1;
+      });
+      selectedSprite = ordered[clickCycle % ordered.length];
+      clickCycle++;
+      flashSprite={row:selectedSprite.row,col:selectedSprite.col,width:selectedSprite.width,height:selectedSprite.height};
+      clearTimeout(flashSprite.timeoutId);
+      flashSprite.timeoutId=setTimeout(()=>{flashSprite=null; drawGrid();},800);
+      showSpriteInfo(selectedSprite);
+      drawGrid();
+    });
+
+    // (double-click rename removed – naming done via info panel)
+
+    // Ultra-smooth zoom (mouse-wheel or track-pad pinch)
+    const ZOOM_SENSITIVITY = 0.0015; // smaller = slower
+    vp.addEventListener('wheel',e=>{
+       if(!img) return;
+       e.preventDefault();
+       // Mac track-pad gives small deltaY, mouse wheel big steps – both feed into exp curve for smoothness
+       const factor = Math.exp(-e.deltaY * ZOOM_SENSITIVITY);
+       const rect=wrapper.getBoundingClientRect();
+       const cx=e.clientX-rect.left;
+       const cy=e.clientY-rect.top;
+       // Zoom toward cursor position
+       offsetX = (offsetX-cx)*(factor-1)+offsetX;
+       offsetY = (offsetY-cy)*(factor-1)+offsetY;
+       currentScale*=factor;
+       currentScale=Math.max(0.1,Math.min(16,currentScale));
+       applyTransform();
+    },{passive:false});
+
+    function applyTransform(){
+       // Translate first, then scale – easier math (translation in un-scaled pixels)
+       wrapper.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${currentScale})`;
+       const vpRect=vp.getBoundingClientRect();
+       // Clamp so canvas stays partially visible
+       offsetX=Math.min(vpRect.width*0.5,Math.max(offsetX,-canvas.width*currentScale+vpRect.width*0.5));
+       offsetY=Math.min(vpRect.height*0.5,Math.max(offsetY,-canvas.height*currentScale+vpRect.height*0.5));
+       wrapper.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${currentScale})`;
+    }
+
+    function showSpriteInfo(sp){
+       spriteInfo.style.display='block';
+       spriteInfo.innerHTML=`<label style="color:#fff;font-size:12px;">Name:</label><input id="renameInput" value="${sp.name}" style="width:120px; margin-bottom:4px;"><br><span style="color:#ddd">X:${sp.col} Y:${sp.row}<br>W:${sp.width} H:${sp.height}<br>Group:${sp.group}</span>`;
+       const renameInput=document.getElementById('renameInput');
+       renameInput.onkeydown=(ev)=>{ if(ev.key==='Enter'){ renameInput.blur(); } };
+       renameInput.onchange=()=>{ sp.name=renameInput.value; refreshSpriteList(); };
+    }
+
+    function clearSelection(){selectedSprite=null; spriteInfo.style.display='none';}
+
+    canvas.addEventListener('click',e=>{ if(selectedSprite&&e.shiftKey){ clearSelection(); drawGrid(); }});
+
+    document.addEventListener('keydown',e=>{if(e.key==='f'||e.key==='F'){fitToView();}});
+
+    // Cycle-selection support for overlapping sprites
+    let lastClickKey=null, clickCycle=0;
+    function spritesAtCell(row,col,tileW,tileH){
+       return atlas.sprites.filter(sp=> row>=sp.row && row<sp.row+sp.height/tileH && col>=sp.col && col<sp.col+sp.width/tileW);
+    }
+
+    // Allow native gesture events (Safari track-pad pinch) – we rely on wheel handler already.
+
+    // Help overlay
+    const help=document.createElement('div'); help.style.position='fixed'; help.style.right='8px'; help.style.bottom='8px'; help.style.font='11px monospace'; help.style.color='#888'; help.innerHTML='Pinch/Scroll: Zoom  |  Drag: Pan  |  Shift+Drag: New Box  |  Click: Select'; document.body.appendChild(help);
+
+    // Delete key removes currently selected sprite (unless typing in input)
+    document.addEventListener('keydown',e=>{
+       const active = document.activeElement;
+       const typing = active && (active.tagName==='INPUT' || active.tagName==='TEXTAREA');
+       if(typing) return; // don't delete sprite while renaming
+       if((e.key==='Delete'||e.key==='Backspace') && selectedSprite){
+          const idx = atlas.sprites.indexOf(selectedSprite);
+          if(idx>=0){ atlas.sprites.splice(idx,1); selectedSprite=null; flashSprite=null; spriteInfo.style.display='none'; drawGrid(); refreshSpriteList(); dbg('DELETE',{});}            
+       }
+    });
+  </script>
+</body>
+</html> 

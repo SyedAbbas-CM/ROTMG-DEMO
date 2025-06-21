@@ -7,6 +7,7 @@ import { MapObjectManager } from './MapObjectManager.js';
 import { ITEM_DEFINITIONS, ENEMY_DEFINITIONS, MAP_OBJECT_DEFINITIONS } from './database.js';
 import NetworkManager from './NetworkManager.js';
 import EnemyManager from './EnemyManager.js';
+import BulletManager from './BulletManager.js';
 
 class Server {
   constructor() {
@@ -20,7 +21,7 @@ class Server {
     this.gameState = {
         players: new Map(),
     };
-    this.bulletManager = {};
+    this.bulletManager = new BulletManager(5000);
 
     // Register definitions
     this._registerItemDefinitions();

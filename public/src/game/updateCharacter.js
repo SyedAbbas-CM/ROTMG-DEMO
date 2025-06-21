@@ -2,14 +2,16 @@
 
 import { getKeysPressed } from './input.js';
 import { gameState } from './gamestate.js';
-import { TILE_SIZE, TILE_IDS } from '../constants/constants.js';
+import { TILE_IDS } from '../constants/constants.js';
 import { createLogger, LOG_LEVELS } from '../utils/logger.js';
+import * as THREE from 'three'; // Added for THREE.Vector3 and THREE.Quaternion
 
 // Create a logger for this module
 const logger = createLogger('movement');
 
-// CHANGED: Collision debugging enabled by default
-window.DEBUG_COLLISION = true;
+// Toggle flags – tweak in console when needed
+export const DEBUG_MOVEMENT = false;           // Set to true for verbose movement logs
+window.DEBUG_COLLISION = false;               // Collision overlay (can be toggled by hot-key)
 
 // Initialize collision stats object at module load time
 if (!window.COLLISION_STATS) {
@@ -29,74 +31,44 @@ if (!window.COLLISION_STATS) {
 export function updateCharacter(delta) {
   const character = gameState.character;
   
-  // ENHANCED: Log position and verify coordinate conversion when character exists
-  if (character && gameState.map) {
+  // Abort movement and logic when character is dead
+  if (!character || (typeof character.health === 'number' && character.health <= 0)) {
+    return; // dead or missing character – skip rest of update
+  }
+  
+  // Verbose coordinate sanity-check – only when DEBUG_MOVEMENT is true
+  if (DEBUG_MOVEMENT && character && gameState.map) {
     const worldX = character.x;
     const worldY = character.y;
-    const tileSize = gameState.map.tileSize || 12;
-    const tileX = Math.floor(worldX / tileSize);
-    const tileY = Math.floor(worldY / tileSize);
-    
-    // Check for coordinate discrepancy - log if coordinates don't match expected
-    if (Math.abs(tileX - Math.round(worldX / tileSize)) > 0.01 || 
-        Math.abs(tileY - Math.round(worldY / tileSize)) > 0.01) {
-      console.warn(`COORDINATE MISMATCH: World: (${worldX.toFixed(2)}, ${worldY.toFixed(2)}) -> ` +
-                   `Tile: (${tileX}, ${tileY}) with tileSize=${tileSize}`);
-      console.warn(`Expected tile: (${Math.round(worldX / tileSize)}, ${Math.round(worldY / tileSize)})`);
-      
-      // Add more detailed conversion information
-      const floorX = Math.floor(worldX / tileSize);
-      const floorY = Math.floor(worldY / tileSize);
-      const ceilX = Math.ceil(worldX / tileSize);
-      const ceilY = Math.ceil(worldY / tileSize);
-      const roundX = Math.round(worldX / tileSize);
-      const roundY = Math.round(worldY / tileSize);
-      
-      console.warn(`Conversion details:
-- World position: (${worldX.toFixed(4)}, ${worldY.toFixed(4)})
-- Division result: (${(worldX / tileSize).toFixed(4)}, ${(worldY / tileSize).toFixed(4)})
-- Floor: (${floorX}, ${floorY})
-- Ceiling: (${ceilX}, ${ceilY})
-- Round: (${roundX}, ${roundY})
-- Error margin: (${Math.abs(worldX / tileSize - floorX).toFixed(4)}, ${Math.abs(worldY / tileSize - floorY).toFixed(4)})
-- % of tile: (${((worldX % tileSize) / tileSize).toFixed(4)}, ${((worldY % tileSize) / tileSize).toFixed(4)})`);
-      
-      // Check world boundaries for this tile to see if character is on boundary
-      const tileWorldX = tileX * tileSize;
-      const tileWorldY = tileY * tileSize;
-      const nextTileWorldX = (tileX + 1) * tileSize;
-      const nextTileWorldY = (tileY + 1) * tileSize;
-      
-      console.warn(`Tile boundaries:
-- Current tile (${tileX}, ${tileY}) world bounds: (${tileWorldX}, ${tileWorldY}) to (${nextTileWorldX}, ${nextTileWorldY})
-- Distance from west edge: ${(worldX - tileWorldX).toFixed(4)} (${((worldX - tileWorldX) / tileSize * 100).toFixed(2)}% of tile)
-- Distance from north edge: ${(worldY - tileWorldY).toFixed(4)} (${((worldY - tileWorldY) / tileSize * 100).toFixed(2)}% of tile)
-- Distance to east edge: ${(nextTileWorldX - worldX).toFixed(4)} (${((nextTileWorldX - worldX) / tileSize * 100).toFixed(2)}% of tile)
-- Distance to south edge: ${(nextTileWorldY - worldY).toFixed(4)} (${((nextTileWorldY - worldY) / tileSize * 100).toFixed(2)}% of tile)`);
-      
-      // Try alternative conversion methods to diagnose
-      console.warn(`Experiment: Direct tile center calculation: (${tileX + 0.5}, ${tileY + 0.5}) -> World: (${(tileX + 0.5) * tileSize}, ${(tileY + 0.5) * tileSize})`);
-    }
-    
-    // Periodically log character position with enhanced details
-    if (Math.random() < 0.05) {
-      console.log(`CHARACTER POSITION DETAILS:
-- World: (${worldX.toFixed(2)}, ${worldY.toFixed(2)})
-- Tile: (${tileX}, ${tileY}) with tileSize=${tileSize}
-- Center of tile: (${(tileX + 0.5) * tileSize}, ${(tileY + 0.5) * tileSize})
-- Tile percentage: (${((worldX % tileSize) / tileSize).toFixed(2)}, ${((worldY % tileSize) / tileSize).toFixed(2)})`);
-      
-      // Log map boundaries and player position in tiles
-      if (gameState.map.width && gameState.map.height) {
-        console.log(`Map boundaries: width=${gameState.map.width}, height=${gameState.map.height}`);
-        console.log(`Player position in tiles: (${tileX}, ${tileY})`);
-      }
-    }
+    const tileX = Math.floor(worldX);
+    const tileY = Math.floor(worldY);
+    console.log(`[DBG] Character world (${worldX.toFixed(2)},${worldY.toFixed(2)}) → tile (${tileX},${tileY})`);
   }
   
   // Use character's own speed instead of global MOVE_SPEED
-  const speed = character.speed || 6.0; // Fallback to 6.0 if character speed isn't defined
+  const speed = character.speed || 6.0; // units = tiles / second
   const keysPressed = getKeysPressed();
+
+  /* ---------------- Vertical movement (jump) ---------------- */
+  if (character.vz === undefined) character.vz = 0; // vertical velocity (tiles/s)
+  if (character.z === undefined) character.z = 0;   // current height in tiles
+
+  const GRAVITY = 20;          // tiles per second² (tweak)
+  const JUMP_SPEED = 10;       // initial jump velocity (tiles/s)
+
+  if ((keysPressed['Space'] || keysPressed['Spacebar']) && character.z === 0) {
+    character.vz = JUMP_SPEED;
+  }
+
+  // Integrate vertical motion
+  if (character.z > 0 || character.vz > 0) {
+    character.z += character.vz * delta;
+    character.vz -= GRAVITY * delta;
+    if (character.z <= 0) { // landed
+      character.z = 0;
+      character.vz = 0;
+    }
+  }
 
   // Debug log for speed value occasionally
   logger.occasional(0.01, LOG_LEVELS.DEBUG, `Character speed: ${speed}`);
@@ -119,11 +91,34 @@ export function updateCharacter(delta) {
     moveX += 1;
   }
 
-  // Normalize diagonal movement
-  if (moveX !== 0 && moveY !== 0) {
+  // --- First-person view: convert local WASD into world-space based on yaw ---
+  if (gameState?.camera?.viewType === 'first-person' && gameState.camera?.getGroundBasis) {
+    const { forward, right } = gameState.camera.getGroundBasis();
+    const fwdX = forward.x;
+    const fwdY = forward.y;
+    const rightX = right.x;
+    const rightY = right.y;
+    
+    // Local intent:   W/S => moveY  (W = -1, S = +1)
+    //                 A/D => moveX  (A = -1, D = +1)
+    const localForward = -moveY; // because W made it -1 above
+    const localRight   = moveX;
+
+    // Compose world vector
+    const worldMoveX = fwdX * localForward + rightX * localRight;
+    const worldMoveY = fwdY * localForward + rightY * localRight;
+
+    moveX = worldMoveX;
+    moveY = worldMoveY;
+  }
+
+  // Normalize diagonal movement (after possible rotation)
+  if (moveX !== 0 || moveY !== 0) {
     const length = Math.sqrt(moveX * moveX + moveY * moveY);
-    moveX /= length;
-    moveY /= length;
+    if (length > 0) {
+      moveX /= length;
+      moveY /= length;
+    }
   }
 
   // CRITICAL FIX: Force a clean state change when stopping movement
@@ -167,16 +162,13 @@ export function updateCharacter(delta) {
     // MODIFIED: Apply movement directly since isCollision will always return false now
     // First move along X axis
     const newX = character.x + moveX * distance;
-    character.x = newX;
     
     // Then move along Y axis 
     const newY = character.y + moveY * distance;
-    character.y = newY;
-    
     // ADDED: Still check for collision even though we're not stopping movement
     // This allows the visualization and debugging features to work
-    isCollision(newX, originalY);
-    isCollision(character.x, newY);
+    if (!isCollision(newX, originalY)) character.x = newX;
+    if (!isCollision(character.x, newY)) character.y = newY;
     
     // If we moved, log the new position occasionally
     if (Math.abs(character.x - originalX) > 0.001 || Math.abs(character.y - originalY) > 0.001) {
@@ -205,9 +197,9 @@ function isCollision(x, y) {
     return false;
   }
   
-  // Character dimensions (use properties if available, otherwise use defaults)
-  const width = gameState.character.width || 20;
-  const height = gameState.character.height || 20;
+  // Character dimensions (tile-units). Default to one tile square.
+  const width = gameState.character.width || 0.8;
+  const height = gameState.character.height || 0.8;
   
   // FIXED: Reduce collision box size to fix "distant wall" collision issue
   // Instead of checking at 5 points, we'll use a smaller hitbox that's appropriate
@@ -215,8 +207,8 @@ function isCollision(x, y) {
   
   // Calculate a more appropriate hitbox size based on tileSize
   const tileSize = gameState.map.tileSize || 12;
-  // Use 60% of character size or 80% of tile size, whichever is smaller
-  const collisionSize = Math.min(width * 0.6, tileSize * 0.8);
+  // Use 40% of one tile width for tighter fit (walls are unit tiles)
+  const collisionSize = 0.4; // tile units
   const halfSize = collisionSize / 2;
   
   // ADDED: Visualization of collision points when debugging is enabled
@@ -225,7 +217,7 @@ function isCollision(x, y) {
   }
   
   // Log the collision size occasionally for debugging
-  if (Math.random() < 0.001) {
+  if (DEBUG_MOVEMENT && Math.random() < 0.001) {
     console.log(`Collision detection using box size: ${collisionSize.toFixed(2)}px (character: ${width}x${height}, tile: ${tileSize}px)`);
   }
   
@@ -280,14 +272,14 @@ function isCollision(x, y) {
     }
     
     // Log this collision occasionally to avoid console spam
-    if (Math.random() < 0.1) {
+    if (DEBUG_MOVEMENT && Math.random() < 0.1) {
       console.log(`GHOST COLLISION: Character passed through wall at (${x.toFixed(2)}, ${y.toFixed(2)}), ` +
                   `tile (${Math.floor(x / tileSize)}, ${Math.floor(y / tileSize)})`);
     }
   }
   
-  // MODIFIED: Always return false to allow movement regardless of collision
-  return false;
+  // MODIFIED: Always return false to allow movement regardless of collision - reversed but turn to false if u want.
+  return wouldCollide;
 }
 
 /**
@@ -508,11 +500,11 @@ function isPointColliding(x, y) {
       // Add enhanced logging for collisions
       if (collides || shouldLogDetails) {
         // Log exact conversion details for debugging
-        const exactTileX = x / tileSize;
-        const exactTileY = y / tileSize;
+        const exactTileX = x;
+        const exactTileY = y;
         
-        const tileCenterX = (tileX + 0.5) * tileSize;
-        const tileCenterY = (tileY + 0.5) * tileSize;
+        const tileCenterX = (tileX + 0.5);
+        const tileCenterY = (tileY + 0.5);
         
         const distanceFromTileCenter = Math.sqrt(
           Math.pow(x - tileCenterX, 2) + 
@@ -520,14 +512,14 @@ function isPointColliding(x, y) {
         );
         
         const tileEdgesInfo = {
-          left: tileX * tileSize,
-          right: (tileX + 1) * tileSize,
-          top: tileY * tileSize,
-          bottom: (tileY + 1) * tileSize,
-          distToWest: x - (tileX * tileSize),
-          distToEast: (tileX + 1) * tileSize - x,
-          distToNorth: y - (tileY * tileSize),
-          distToSouth: (tileY + 1) * tileSize - y
+          left: tileX,
+          right: tileX + 1,
+          top: tileY,
+          bottom: tileY + 1,
+          distToWest: x - tileX,
+          distToEast: (tileX + 1) - x,
+          distToNorth: y - tileY,
+          distToSouth: (tileY + 1) - y
         };
         
         // Get minimum distance to any tile edge
@@ -577,8 +569,8 @@ function isPointColliding(x, y) {
                   
                   if (nearTile) {
                     const isWall = gameState.map.isWallOrObstacle(
-                      nearTileX * tileSize + tileSize/2, 
-                      nearTileY * tileSize + tileSize/2
+                      nearTileX + 0.5, 
+                      nearTileY + 0.5
                     );
                     
                     console.log(`Tile (${nearTileX}, ${nearTileY}): Type ${nearTile.type}, isWall=${isWall}`);
@@ -716,11 +708,11 @@ export function updateCollisionVisualization() {
     // Get player position for visualization
     const character = gameState.character;
     if (character) {
-      // Calculate collision box size
+      // Calculate collision box size - FIX: Complete the calculation
       const width = character.width || 20;
       const height = character.height || 20;
       const tileSize = gameState.map?.tileSize || 12;
-      const collisionSize = Math.min(width * 0.6, tileSize * 0.8);
+      const collisionSize = Math.max(width, height) * 0.8; // FIXED: Complete calculation
       const halfSize = collisionSize / 2;
       
       // Visualize at player's position

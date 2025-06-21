@@ -42,12 +42,36 @@ export default class CollisionManager {
       const bulletId = this.bulletManager.id[bi];
       const bulletOwnerId = this.bulletManager.ownerId[bi];
       
-      // Check for collisions with walls/obstacles if map manager exists
+      /* ------- Wall / obstacle collision (sub-stepped) ------- */
       if (this.mapManager && this.mapManager.isWallOrOutOfBounds) {
-        if (this.mapManager.isWallOrOutOfBounds(bulletX, bulletY)) {
-          // Bullet hit a wall, mark for removal
+        const vx = this.bulletManager.vx[bi];
+        const vy = this.bulletManager.vy[bi];
+
+        // Maximum distance bullet will move this tick (tile-units)
+        const maxDelta = Math.max(Math.abs(vx), Math.abs(vy));
+        // Break the motion into ≤0.5-tile chunks – prevents tunnelling
+        const steps = Math.max(1, Math.ceil(maxDelta / 0.5));
+
+        let bxStep = bulletX;
+        let byStep = bulletY;
+        let collided = false;
+
+        for (let s = 0; s < steps; s++) {
+          bxStep += vx / steps;
+          byStep += vy / steps;
+
+          if (this.mapManager.isWallOrOutOfBounds(bxStep, byStep)) {
+            collided = true;
+            break;
+          }
+        }
+
+        if (collided) {
           this.bulletManager.markForRemoval(bi);
-          continue;
+          if (this.bulletManager.registerRemoval) {
+            this.bulletManager.registerRemoval('wallHit');
+          }
+          continue; // Skip enemy checks for this bullet
         }
       }
       
@@ -61,6 +85,11 @@ export default class CollisionManager {
         const enemyWidth = this.enemyManager.width[ei];
         const enemyHeight = this.enemyManager.height[ei];
         const enemyId = this.enemyManager.id[ei];
+        
+        // Skip self-collision (enemy bullets colliding with their owner)
+        if (bulletOwnerId === enemyId) {
+          continue; // Bullet belongs to this enemy – ignore
+        }
         
         // Check if bullet and enemy collide (AABB)
         if (this.checkAABBCollision(
@@ -194,15 +223,22 @@ export default class CollisionManager {
     const damage = this.bulletManager.damage ? 
       this.bulletManager.damage[bulletIndex] : 10; // Default damage
     
-    // Apply damage to enemy
-    const remainingHealth = this.enemyManager.applyDamage(enemyIndex, damage);
+    // Apply damage to enemy (may return an object)
+    const dmgResult = this.enemyManager.applyDamage(enemyIndex, damage);
+    const remainingHealth = typeof dmgResult === 'object' && dmgResult !== null && 'health' in dmgResult
+      ? dmgResult.health
+      : (typeof dmgResult === 'number' ? dmgResult : this.enemyManager.health[enemyIndex]);
     
-    // Remove bullet
+    // Remove bullet and register
     if (this.bulletManager.markForRemoval) {
       this.bulletManager.markForRemoval(bulletIndex);
     } else if (this.bulletManager.life) {
       // Alternative removal method
       this.bulletManager.life[bulletIndex] = 0;
+    }
+    
+    if (this.bulletManager.registerRemoval) {
+      this.bulletManager.registerRemoval('entityHit');
     }
     
     // Handle enemy death if needed
@@ -270,14 +306,25 @@ export default class CollisionManager {
   }
   
   /**
-   * AABB collision check
+   * AABB collision check (treats x,y as entity centres)
    */
   checkAABBCollision(ax, ay, awidth, aheight, bx, by, bwidth, bheight) {
+    // Convert centre positions to min/max extents for each axis
+    const aMinX = ax - awidth / 2;
+    const aMaxX = ax + awidth / 2;
+    const aMinY = ay - aheight / 2;
+    const aMaxY = ay + aheight / 2;
+
+    const bMinX = bx - bwidth / 2;
+    const bMaxX = bx + bwidth / 2;
+    const bMinY = by - bheight / 2;
+    const bMaxY = by + bheight / 2;
+
     return (
-      ax < bx + bwidth &&
-      ax + awidth > bx &&
-      ay < by + bheight &&
-      ay + aheight > by
+      aMinX < bMaxX &&
+      aMaxX > bMinX &&
+      aMinY < bMaxY &&
+      aMaxY > bMinY
     );
   }
   

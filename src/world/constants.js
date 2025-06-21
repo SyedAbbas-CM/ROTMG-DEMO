@@ -1,6 +1,6 @@
 // Managers/world/constants.js
 
-export const TILE_SIZE = 12; // Size of each tile in pixels
+export const TILE_SIZE = 12; // Size of each tile in pixels (Oryx tiles are 12×12)
 export const CHARACTER_SPRITE_SIZE = 10; // Size of each character sprite in pixels
 export const SCALE = 3; // Scale factor for sprites
 export const CANVAS_WIDTH = 600;

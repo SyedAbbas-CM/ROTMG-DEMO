@@ -30,14 +30,14 @@ export class ClientCollisionManager {
         this.cleanupInterval = setInterval(() => this.cleanupProcessedCollisions(), 5000);
         
         // Add debug flag for coordinate system debugging
-        this.debugCoordinates = true; // Enable coordinate debugging
+        this.debugCoordinates = false; // Disabled by default – enable in console when needed
         
         // Add debug flags for collision visualization
-        this.debugWallCollisions = true; // Enable wall collision debugging
-        this.debugEntityCollisions = true; // Enable entity collision debugging
+        this.debugWallCollisions = false; // Set true in console to debug
+        this.debugEntityCollisions = false; // Set true in console to debug
         
         // Debug logging frequency (0-1)
-        this.debugLogFrequency = 0.1; // Log 10% of collisions
+        this.debugLogFrequency = 0.02; // Log 2% of collisions
         
         // Check for network manager
         if (!this.networkManager) {
@@ -131,6 +131,9 @@ export class ClientCollisionManager {
         
         // Check for bullet-wall collisions if map manager exists
         this.checkBulletWallCollisions();
+        
+        // Detect enemy bullets hitting the local player for immediate feedback
+        this.checkEnemyBulletsHitPlayer();
     }
     
     /**
@@ -484,6 +487,61 @@ export class ClientCollisionManager {
         // Log summary if wall collisions were detected
         if (wallCollisionsDetected > 0 && Math.random() < 0.2) {
             console.log(`Detected ${wallCollisionsDetected} bullet-wall collisions this frame`);
+        }
+    }
+    
+    /**
+     * Check if any enemy bullets hit the local player and apply client-side
+     * prediction (the server remains authoritative but this removes latency).
+     */
+    checkEnemyBulletsHitPlayer() {
+        if (!window.gameState || !window.gameState.character) return;
+
+        const player = window.gameState.character;
+        const pw = player.collisionWidth || 1;
+        const ph = player.collisionHeight || 1;
+
+        for (let i = 0; i < this.bulletManager.bulletCount; i++) {
+            if (this.bulletManager.life[i] <= 0) continue;
+
+            const ownerId = this.bulletManager.ownerId[i];
+            if (typeof ownerId !== 'string' || !ownerId.startsWith('enemy_')) continue;
+
+            const bx = this.bulletManager.x[i];
+            const by = this.bulletManager.y[i];
+            const bw = this.bulletManager.width[i];
+            const bh = this.bulletManager.height[i];
+
+            const hit = (
+                bx < player.x + pw &&
+                bx + bw > player.x &&
+                by < player.y + ph &&
+                by + bh > player.y
+            );
+
+            if (hit) {
+                const dmg = this.bulletManager.damage ? this.bulletManager.damage[i] : 10;
+
+                // Apply visual flash (if any)
+                if (typeof player.takeDamage === 'function') {
+                    player.takeDamage(dmg);
+                } else {
+                    player.health = Math.max(0, (player.health || 100) - dmg);
+                }
+
+                // Mark bullet for removal locally
+                this.bulletManager.markForRemoval(i);
+
+                // Optionally show hit indicator (simple console for now)
+                if (Math.random() < 0.05) {
+                    console.log(`Local player hit by ${ownerId} for ${dmg} dmg (hp=${player.health})`);
+                }
+
+                // Immediately update UI health bar if available
+                if (window.gameUI && typeof window.gameUI.updateHealth === 'function') {
+                    window.gameUI.updateHealth(player.health, player.maxHealth || 100);
+                }
+            }
         }
     }
     

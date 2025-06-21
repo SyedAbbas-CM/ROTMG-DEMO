@@ -24,8 +24,18 @@ export class ClientMapManager {
         this.height = 0;
         this.visibleChunks = []; // Currently visible chunks
         this.pendingChunks = new Set(); // Chunks we're currently requesting
-        this.maxCachedChunks = 100; // Maximum chunks to keep in memory
+        this.maxCachedChunks = 512; // FIXED: Increased from 100 to handle larger maps (64x64 needs 256 chunks)
         this.chunkLoadDistance = 2; // How many chunks to load around player
+        
+        /**
+         * Throttle duplicate chunk requests so the client won't hammer the
+         * server while waiting for the same chunk to arrive (or be parsed).
+         * A timestamp (ms) is stored for each chunk that is requested and a
+         * new request for the same key will only be sent once the cooldown
+         * has elapsed.
+         */
+        this.requestThrottleMs = 1500; // 1.5 s between identical requests
+        this.lastChunkRequestTime = new Map(); // key -> timestamp
         
         // CRITICAL: Default to false to use server's map data
         this.proceduralEnabled = false;
@@ -86,6 +96,8 @@ export class ClientMapManager {
      * @param {Object} chunkData - Chunk data from server
      */
     setChunkData(chunkX, chunkY, chunkData) {
+        console.log('[CLI] store', chunkX, chunkY); // PROBE: Track client chunk receives
+        
         const key = `${chunkX},${chunkY}`;
         
         // Track time for performance measurement
@@ -135,15 +147,19 @@ export class ClientMapManager {
      * @returns {Array} Processed chunk data
      */
     processChunkData(chunkData) {
-        // Log the structure of the incoming data to help diagnose issues
-        console.log(`Processing chunk data: type=${typeof chunkData}`, 
-                    chunkData ? 
-                    `keys=${Object.keys(chunkData).join(',')}` : 
-                    'chunkData is null/undefined');
-                    
+        // Log the structure of the incoming data only when verbose debugging
+        if (ClientMapManager.DEBUG_VERBOSE) {
+            console.log(`Processing chunk data: type=${typeof chunkData}`, 
+                        chunkData ? 
+                        `keys=${Object.keys(chunkData).join(',')}` : 
+                        'chunkData is null/undefined');
+        }
+        
         // If the chunk data is already in the right format, return it
         if (Array.isArray(chunkData)) {
-            console.log(`Chunk data is already an array with ${chunkData.length} rows`);
+            if (ClientMapManager.DEBUG_VERBOSE) {
+                console.log(`Chunk data is already an array with ${chunkData.length} rows`);
+            }
             return chunkData;
         }
         
@@ -157,13 +173,19 @@ export class ClientMapManager {
         if (chunkData && typeof chunkData === 'object') {
             if (chunkData.tiles && Array.isArray(chunkData.tiles)) {
                 tilesArray = chunkData.tiles;
-                console.log(`Found tiles array in chunkData.tiles with ${tilesArray.length} rows`);
+                if (ClientMapManager.DEBUG_VERBOSE) {
+                    console.log(`Found tiles array in chunkData.tiles with ${tilesArray.length} rows`);
+                }
             } else if (chunkData.data && Array.isArray(chunkData.data)) {
                 tilesArray = chunkData.data;
-                console.log(`Found tiles array in chunkData.data with ${tilesArray.length} rows`);
+                if (ClientMapManager.DEBUG_VERBOSE) {
+                    console.log(`Found tiles array in chunkData.data with ${tilesArray.length} rows`);
+                }
             } else if (Array.isArray(chunkData.data?.tiles)) {
                 tilesArray = chunkData.data.tiles;
-                console.log(`Found tiles array in chunkData.data.tiles with ${tilesArray.length} rows`);
+                if (ClientMapManager.DEBUG_VERBOSE) {
+                    console.log(`Found tiles array in chunkData.data.tiles with ${tilesArray.length} rows`);
+                }
             }
         }
         
@@ -187,15 +209,34 @@ export class ClientMapManager {
                         tileHeight = 0;
                     }
                     
-                    // Create tile instance
-                    row.push(new Tile(tileType, tileHeight));
+                    // Create tile instance WITH spriteName for renderer
+                    const t = new Tile(tileType, tileHeight);
+
+                    // Server-supplied sprite name (preferred)
+                    if (tileData && typeof tileData === 'object' && tileData.sprite) {
+                        t.spriteName = (tileData.sprite + '').trim();
+                    } else {
+                        // Local fallback mapping by tile type so first-person renderer always has a name
+                        switch (tileType) {
+                            case TILE_IDS.WALL:     t.spriteName = 'wall';      break;
+                            case TILE_IDS.WATER:    t.spriteName = 'water';     break;
+                            case TILE_IDS.MOUNTAIN: t.spriteName = 'mountain';  break;
+                            default:                t.spriteName = 'floor';     break;
+                        }
+                    }
+
+                    row.push(t);
                 }
                 processedData.push(row);
             }
             
-            console.log(`Processed chunk data: ${processedData.length} rows x ${processedData[0]?.length || 0} columns`);
+            if (ClientMapManager.DEBUG_VERBOSE) {
+                console.log(`Processed chunk data: ${processedData.length} rows x ${processedData[0]?.length || 0} columns`);
+            }
         } else {
-            console.warn('No valid tiles array found in chunk data, creating default floor tiles');
+            if (ClientMapManager.DEBUG_VERBOSE) {
+                console.warn('No valid tiles array found in chunk data, creating default floor tiles');
+            }
             
             // Create default chunk data
             for (let y = 0; y < this.chunkSize; y++) {
@@ -206,7 +247,9 @@ export class ClientMapManager {
                 processedData.push(row);
             }
             
-            console.log(`Created default chunk data: ${processedData.length} rows x ${processedData[0].length} columns`);
+            if (ClientMapManager.DEBUG_VERBOSE) {
+                console.log(`Created default chunk data: ${processedData.length} rows x ${processedData[0].length} columns`);
+            }
         }
         
         return processedData;
@@ -223,9 +266,9 @@ export class ClientMapManager {
             return;
         }
         
-        // Convert player position to tile coordinates first
-        const playerTileX = Math.floor(playerX / this.tileSize);
-        const playerTileY = Math.floor(playerY / this.tileSize);
+        // Player coordinates are already in tile units – no need to divide by tileSize
+        const playerTileX = Math.floor(playerX);
+        const playerTileY = Math.floor(playerY);
         
         // Log map boundaries for debugging
         if (Math.random() < 0.01) { // Only log occasionally
@@ -282,13 +325,19 @@ export class ClientMapManager {
                 }
                 // Request chunk if not already loaded or pending
                 else if (!this.pendingChunks.has(key)) {
-                    this.pendingChunks.add(key);
-                    try {
-                        this.networkManager.requestChunk(chunkX, chunkY);
-                        chunksRequested.push(`(${chunkX},${chunkY})`);
-                    } catch (error) {
-                        console.error(`Error requesting chunk (${chunkX}, ${chunkY}):`, error);
-                        this.pendingChunks.delete(key);
+                    // Throttle identical requests
+                    const now = Date.now();
+                    const lastReq = this.lastChunkRequestTime.get(key) || 0;
+                    if (now - lastReq >= this.requestThrottleMs) {
+                        this.pendingChunks.add(key);
+                        this.lastChunkRequestTime.set(key, now);
+                        try {
+                            this.networkManager.requestChunk(chunkX, chunkY);
+                            chunksRequested.push(`(${chunkX},${chunkY})`);
+                        } catch (error) {
+                            console.error(`Error requesting chunk (${chunkX}, ${chunkY}):`, error);
+                            this.pendingChunks.delete(key);
+                        }
                     }
                 }
             }
@@ -315,8 +364,8 @@ export class ClientMapManager {
         console.log(`[MapManager] Updating visible chunks LOCALLY around (${playerX.toFixed(1)}, ${playerY.toFixed(1)})`);
         
         // Convert player position to chunk coordinates
-        const centerChunkX = Math.floor(playerX / (this.tileSize * this.chunkSize));
-        const centerChunkY = Math.floor(playerY / (this.tileSize * this.chunkSize));
+        const centerChunkX = Math.floor(playerX / (this.chunkSize));
+        const centerChunkY = Math.floor(playerY / (this.chunkSize));
         
         // Use custom distance if provided, otherwise use default
         const effectiveChunkLoadDistance = customChunkDistance !== undefined ? 
@@ -424,13 +473,19 @@ export class ClientMapManager {
         
         // Request chunk if not already pending
         if (this.networkManager && !this.pendingChunks.has(key)) {
-            this.pendingChunks.add(key);
-            try {
-                this.networkManager.requestChunk(chunkX, chunkY);
-                console.log(`Requested chunk (${chunkX}, ${chunkY}) on-demand`);
-            } catch (error) {
-                console.error(`Error requesting chunk (${chunkX}, ${chunkY}):`, error);
-                this.pendingChunks.delete(key);
+            // Throttle on-demand requests too
+            const now = Date.now();
+            const lastReq = this.lastChunkRequestTime.get(key) || 0;
+            if (now - lastReq >= this.requestThrottleMs) {
+                this.pendingChunks.add(key);
+                this.lastChunkRequestTime.set(key, now);
+                try {
+                    this.networkManager.requestChunk(chunkX, chunkY);
+                    console.log(`Requested chunk (${chunkX}, ${chunkY}) on-demand`);
+                } catch (error) {
+                    console.error(`Error requesting chunk (${chunkX}, ${chunkY}):`, error);
+                    this.pendingChunks.delete(key);
+                }
             }
         }
         
@@ -446,29 +501,38 @@ export class ClientMapManager {
     getTile(x, y) {
         // STRICT MAP BOUNDARY CHECK: Only allow coordinates within map bounds
         if (x < 0 || y < 0 || (this.width > 0 && x >= this.width) || (this.height > 0 && y >= this.height)) {
-            console.log(`Attempted to get tile outside map bounds: (${x}, ${y}), map size: ${this.width}x${this.height}`);
-            return new Tile(TILE_IDS.WALL, 0); // Return wall for out-of-bounds
+            if (ClientMapManager.DEBUG_VERBOSE) {
+                console.log(`Attempted to get tile outside map bounds: (${x}, ${y}), map size: ${this.width}x${this.height}`);
+            }
+            return null;
         }
         
-        // Convert to chunk coordinates
-        const chunkX = Math.floor(x / this.chunkSize);
-        const chunkY = Math.floor(y / this.chunkSize);
-        const localX = ((x % this.chunkSize) + this.chunkSize) % this.chunkSize; // Handle negative values
-        const localY = ((y % this.chunkSize) + this.chunkSize) % this.chunkSize; // Handle negative values
+        // Coordinates are in tile-units already; no scaling needed
+        const tileX = Math.floor(x);
+        const tileY = Math.floor(y);
         
-        // Get chunk
+        // Compute chunk that contains this tile
+        const chunkX = Math.floor(tileX / this.chunkSize);
+        const chunkY = Math.floor(tileY / this.chunkSize);
+        const localX = ((tileX % this.chunkSize) + this.chunkSize) % this.chunkSize; // Handle negative values gracefully
+        const localY = ((tileY % this.chunkSize) + this.chunkSize) % this.chunkSize;
+        
+        // Get the chunk that should contain the tile
         const chunk = this.getChunk(chunkX, chunkY);
         
         // No chunk data available
         if (!chunk) {
-            console.log(`No chunk data for (${chunkX}, ${chunkY}), requesting from server`);
-            // Request the chunk if network manager is available
-            if (this.networkManager) {
-                this.networkManager.requestChunk(chunkX, chunkY);
+            if (ClientMapManager.DEBUG_VERBOSE) {
+                console.warn('tile miss', x, y, '-> chunk', chunkX, chunkY); // PROBE: Track missing tiles
+                console.log(`No chunk data for (${chunkX}, ${chunkY}), requesting from server`);
             }
+            // Do NOT send another immediate request here; getChunk() already
+            // queued one subject to throttling. Re-spamming would flood the
+            // server because getTile() can be called dozens of times per
+            // frame for rendering and collision checks.
             
-            // Return wall tile instead of fallback
-            return new Tile(TILE_IDS.WALL, 0);
+            // FIXED: Return null instead of fabricated WALL tile to prevent invisible walls
+            return null;
         }
         
         // Get tile from chunk
@@ -476,7 +540,7 @@ export class ClientMapManager {
             return chunk[localY][localX];
         } catch (e) {
             console.error(`Error getting tile at (${x}, ${y}) from chunk (${chunkX}, ${chunkY}):`, e);
-            return new Tile(TILE_IDS.WALL, 0);
+            return null;
         }
     }
     
@@ -515,135 +579,30 @@ export class ClientMapManager {
             window.COLLISION_STATS.totalWallChecks++;
         }
 
-        // DEBUGGING: Enhanced coordinate conversion debugging
-        const debugWalls = Math.random() < 0.02; // Reduce logging frequency to 2% of checks
+        // Coordinates are in tile-units already; no scaling needed
+        const tileX = Math.floor(x);
+        const tileY = Math.floor(y);
+
+        // Debug toggle – enable in console via `ClientMapManager.DEBUG_VERBOSE = true`
+        const debugWalls = ClientMapManager.DEBUG_VERBOSE && Math.random() < 0.02;
         
         if (debugWalls) {
             console.log(`WALL CHECK at world (${x.toFixed(4)}, ${y.toFixed(4)})`);
         }
         
         // Add more debugging info for problematic coordinates
-        const isProblematicCoord = (
-            (Math.abs(x - 5) < 1.0 && Math.abs(y - 5) < 1.0) || // Near 5,5
-            (Math.abs(x - 23.99) < 0.1 && Math.abs(y - 24) < 0.1) || // Near the reported coordinate mismatch
-            debugWalls // Randomly selected checks
-        );
+        const isProblematicCoord = ClientMapManager.DEBUG_VERBOSE && debugWalls;
         
         if (isProblematicCoord) {
             console.log(`DETAILED WALL CHECK at world (${x.toFixed(4)}, ${y.toFixed(4)}):
+- Map dimensions: ${this.width}x${this.height}
+- Tile coords: (${tileX}, ${tileY})
 - Using tileSize: ${this.tileSize}, map dimensions: ${this.width}x${this.height}
 - Raw tile calculation: (${(x / this.tileSize).toFixed(4)}, ${(y / this.tileSize).toFixed(4)})
 - Converting to tile: (${Math.floor(x / this.tileSize)}, ${Math.floor(y / this.tileSize)})
 - Percentage within tile: (${((x % this.tileSize) / this.tileSize).toFixed(4)}, ${((y % this.tileSize) / this.tileSize).toFixed(4)})`);
         }
 
-        // Check if we're dealing with a possibly incorrect server-sent position
-        const specialCaseBoundary = 10; // Special handling for small coordinates that might be in tiles already
-        if (x < specialCaseBoundary && y < specialCaseBoundary && this.tileSize > 1) {
-            // Check if these might actually be tile coordinates sent mistakenly as world coordinates
-            // Get the tile directly to check
-            const tile = this.getTile(Math.floor(x), Math.floor(y));
-            if (tile) {
-                const isWall = tile.type === TILE_IDS.WALL || 
-                      tile.type === TILE_IDS.OBSTACLE || 
-                      tile.type === TILE_IDS.MOUNTAIN ||
-                      tile.type === TILE_IDS.WATER;
-                
-                if (isProblematicCoord) {
-                    console.warn(`COORDINATE FIX ATTEMPT: Interpreted small world coord (${x.toFixed(4)}, ${y.toFixed(4)}) ` +
-                             `as tile coord (${Math.floor(x)}, ${Math.floor(y)}), isWall=${isWall}, tileType=${tile.type}`);
-                }
-                
-                if (isWall) {
-                    // Track wall collision in global stats
-                    if (window.COLLISION_STATS) {
-                        window.COLLISION_STATS.wallCollisions++;
-                        window.COLLISION_STATS.lastWallCollision = Date.now();
-                    }
-                    return true;
-                }
-            }
-        }
-        
-        // Convert from world coordinates to tile coordinates - regular handling
-        const tileX = Math.floor(x / this.tileSize);
-        const tileY = Math.floor(y / this.tileSize);
-        
-        // Enhanced debugging for coordinate conversion issues
-        if (isProblematicCoord) {
-            // Calculate tile boundaries
-            const tileLeft = tileX * this.tileSize;
-            const tileRight = (tileX + 1) * this.tileSize;
-            const tileTop = tileY * this.tileSize;
-            const tileBottom = (tileY + 1) * this.tileSize;
-            
-            // Calculate distance to each boundary
-            const distToLeft = x - tileLeft;
-            const distToRight = tileRight - x;
-            const distToTop = y - tileTop;
-            const distToBottom = tileBottom - y;
-            
-            // Find closest boundary
-            const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
-            let closestEdge = "unknown";
-            if (minDist === distToLeft) closestEdge = "left";
-            else if (minDist === distToRight) closestEdge = "right";
-            else if (minDist === distToTop) closestEdge = "top";
-            else if (minDist === distToBottom) closestEdge = "bottom";
-            
-            console.log(`DETAILED TILE INFO for world (${x.toFixed(4)}, ${y.toFixed(4)}) -> tile (${tileX}, ${tileY}):
-- Tile boundaries: Left=${tileLeft}, Right=${tileRight}, Top=${tileTop}, Bottom=${tileBottom}
-- Distance to edges: Left=${distToLeft.toFixed(4)}, Right=${distToRight.toFixed(4)}, Top=${distToTop.toFixed(4)}, Bottom=${distToBottom.toFixed(4)}
-- Closest edge: ${closestEdge} (${minDist.toFixed(4)} units)
-- Percentage within tile: x=${((x - tileLeft) / this.tileSize).toFixed(4)}, y=${((y - tileTop) / this.tileSize).toFixed(4)}
-- Tile center: (${(tileLeft + this.tileSize/2).toFixed(4)}, ${(tileTop + this.tileSize/2).toFixed(4)})
-- Distance from center: ${Math.sqrt(Math.pow(x - (tileLeft + this.tileSize/2), 2) + Math.pow(y - (tileTop + this.tileSize/2), 2)).toFixed(4)}`);
-            
-            // Check surrounding tiles
-            const surroundingTiles = [];
-            for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                    const checkX = tileX + dx;
-                    const checkY = tileY + dy;
-                    if (checkX >= 0 && checkY >= 0 && checkX < this.width && checkY < this.height) {
-                        const checkTile = this.getTile(checkX, checkY);
-                        if (checkTile) {
-                            const isBlocking = checkTile.type === TILE_IDS.WALL || 
-                                               checkTile.type === TILE_IDS.OBSTACLE || 
-                                               checkTile.type === TILE_IDS.MOUNTAIN ||
-                                               checkTile.type === TILE_IDS.WATER;
-                            surroundingTiles.push({
-                                x: checkX, 
-                                y: checkY, 
-                                type: checkTile.type,
-                                isWall: isBlocking
-                            });
-                        } else {
-                            surroundingTiles.push({
-                                x: checkX, 
-                                y: checkY, 
-                                type: "no-tile",
-                                isWall: true
-                            });
-                        }
-                    }
-                }
-            }
-            console.log(`Surrounding tiles (3x3 grid):`);
-            for (let y = -1; y <= 1; y++) {
-                let row = '';
-                for (let x = -1; x <= 1; x++) {
-                    const tile = surroundingTiles.find(t => t.x === tileX + x && t.y === tileY + y);
-                    if (tile) {
-                        row += tile.isWall ? 'W' : '.';
-                    } else {
-                        row += 'X'; // Out of bounds
-                    }
-                }
-                console.log(row);
-            }
-        }
-        
         // Map boundary check
         if (tileX < 0 || tileY < 0 || (this.width > 0 && tileX >= this.width) || (this.height > 0 && tileY >= this.height)) {
             // Treat outside of map as wall
@@ -663,19 +622,15 @@ export class ClientMapManager {
         // Get actual tile
         const tile = this.getTile(tileX, tileY);
         
-        // If no tile found, treat as obstacle
+        // FIXED: If no tile found (due to missing chunk), treat as walkable to prevent invisible walls
+        // The cache issue has been fixed, so missing chunks are temporary and should not block movement
         if (!tile) {
             if (isProblematicCoord) {
-                console.log(`WALL CHECK RESULT: TRUE (no tile) - getTile(${tileX}, ${tileY}) returned null`);
+                console.log(`WALL CHECK RESULT: FALSE (no tile) - getTile(${tileX}, ${tileY}) returned null, treating as walkable`);
             }
             
-            // Track wall collision in global stats (no tile)
-            if (window.COLLISION_STATS) {
-                window.COLLISION_STATS.wallCollisions++;
-                window.COLLISION_STATS.lastWallCollision = Date.now();
-            }
-            
-            return true;
+            // Don't treat missing tiles as obstacles anymore since we fixed the cache
+            return false;
         }
         
         // IMPROVED: Use tile's isWalkable method if available
@@ -1076,4 +1031,7 @@ export class ClientMapManager {
             return null;
         }
     }
+
+    // Toggle verbose collision debugging at runtime
+    static DEBUG_VERBOSE = false;
 }

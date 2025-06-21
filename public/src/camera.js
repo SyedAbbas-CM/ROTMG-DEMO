@@ -1,5 +1,7 @@
 // src/camera.js
+import { TILE_SIZE } from './constants/constants.js';
 import { createLogger } from './utils/logger.js';
+import * as THREE from 'three';
 
 // Create a logger for the camera module
 const logger = createLogger('camera');
@@ -15,7 +17,7 @@ export class Camera {
     this.viewScaleFactors = {
       'top-down': 4.0,
       'first-person': 1.0,
-      'strategic': 0.5 // Make strategic view show more of the map
+      'strategic': 0.25 // updated to match render STRATEGIC_VIEW_SCALE constant
     };
     
     // Debug mode - set to false by default
@@ -76,12 +78,11 @@ export class Camera {
    * @param {number} tileSize - Tile size in pixels
    * @returns {Object} Screen coordinates {x, y}
    */
-  worldToScreen(worldX, worldY, screenWidth, screenHeight, tileSize) {
+  worldToScreen(worldX, worldY, screenWidth, screenHeight) {
     const scaleFactor = this.getViewScaleFactor();
     // This formula transforms world coordinates to screen coordinates
-    const screenX = (worldX - this.position.x) * tileSize * scaleFactor + screenWidth / 2;
-    const screenY = (worldY - this.position.y) * tileSize * scaleFactor + screenHeight / 2;
-    
+    const screenX = (worldX - this.position.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
+    const screenY = (worldY - this.position.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
     // Debug logging (only occasionally to avoid spamming console)
     if (this.debugMode && Math.random() < 0.01) {
       console.log(`worldToScreen: 
@@ -113,6 +114,35 @@ export class Camera {
   getEntityScaleFactor(baseScale = 1) {
     return baseScale * this.getViewScaleFactor();
   }
+
+  /**
+   * Get unit 2-D basis vectors (ground-plane) that align with the camera yaw.
+   * Returns { forward:{x,y}, right:{x,y} } where x=world X, y=world Y(tile Z)
+   */
+  getGroundBasis() {
+    const dir = new THREE.Vector3();
+    this.getWorldDirection(dir); // Three forward, length 1
+    dir.y = 0;
+    if (dir.lengthSq() === 0) dir.set(0, 0, -1);
+    dir.normalize();
+
+    const forward = { x: dir.x, y: -dir.z };         // Z negative means forward increases Y
+    const right   = { x: dir.z, y: dir.x };          // rotate 90° clockwise
+    return { forward, right };
+  }
+  
+  /**
+   * Returns a unit vector (x, y) representing the camera\'s forward direction
+   * in the 2-D world plane based on its yaw rotation. Useful for first-person
+   * shooting and movement calculations.
+   */
+  getDirection() {
+    const yaw = this.rotation?.yaw || 0;
+    return {
+      x: Math.cos(yaw),
+      y: Math.sin(yaw)
+    };
+  }
   
   /**
    * Determines if a world coordinate is visible on screen
@@ -127,7 +157,7 @@ export class Camera {
    * @returns {boolean} Whether the entity is on screen
    */
   isOnScreen(worldX, worldY, width, height, screenWidth, screenHeight, tileSize, buffer = 0) {
-    const screen = this.worldToScreen(worldX, worldY, screenWidth, screenHeight, tileSize);
+    const screen = this.worldToScreen(worldX, worldY, screenWidth, screenHeight);
     const scaleFactor = this.getViewScaleFactor();
     
     // Extend buffer in strategic view

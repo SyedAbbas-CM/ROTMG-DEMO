@@ -90,6 +90,11 @@ export class MapManager {
    * @returns {Object|null} Chunk data or null if not found
    */
   getChunkData(mapId, chunkX, chunkY) {
+    // Detailed chunk-send logging is controlled by DEBUG.chunkRequests
+    if (globalThis.DEBUG?.chunkRequests) {
+      console.log('[SRV] send', chunkX, chunkY);
+    }
+    
     const key = `${mapId || 'default'}_${chunkX},${chunkY}`;
     
     // If chunk exists in cache, return it
@@ -97,11 +102,20 @@ export class MapManager {
       return this.chunks.get(key);
     }
     
-    // Otherwise generate it
+    // Otherwise generate or slice it
     if (this.proceduralEnabled && !this.isFixedMap) {
-      const chunkData = this.generateChunkData(chunkX, chunkY);
+      const chunkData = this.generateChunkData(chunkY, chunkX);
       this.chunks.set(key, chunkData);
       return chunkData;
+    }
+    
+    // If we have a fixed map with a full tileMap, slice on demand
+    if (this.isFixedMap) {
+      const sliced = this._sliceChunkFromTileMap(mapId, chunkX, chunkY);
+      if (sliced) {
+        this.chunks.set(key, sliced);
+        return sliced;
+      }
     }
     
     return null;
@@ -116,10 +130,10 @@ export class MapManager {
   generateChunkData(chunkRow, chunkCol) {
     const tiles = [];
     
-    // Parameters for multi-octave noise
-    const OCTAVES = 4;        // Number of noise layers to blend
-    const PERSISTENCE = 0.5;  // How much each octave contributes
-    const BASE_SCALE = 50;    // Base scale/zoom of the noise (higher = more zoomed out)
+    // Tuned parameters for richer terrain
+    const OCTAVES = 5;          // one extra octave for fine detail
+    const PERSISTENCE = 0.55;   // slightly more high-frequency influence
+    const BASE_SCALE = 32;      // zoom in => more variation per chunk
     
     for (let y = 0; y < CHUNK_SIZE; y++) {
       const row = [];
@@ -175,6 +189,40 @@ export class MapManager {
         row.push(new Tile(tileType, height));
       }
       tiles.push(row);
+    }
+    
+    // ---------- SIMPLE SMOOTHING PASS ----------
+    // Convert isolated single-tile walls into floor and thicken long wall lines
+    const neighbours = [
+      [1,0],[-1,0],[0,1],[0,-1]
+    ];
+    const copy = tiles.map(r => r.map(t => t.type));
+    for (let y=0;y<tiles.length;y++){
+      for (let x=0;x<tiles[y].length;x++){
+        const t = copy[y][x];
+        if(t!==TILE_IDS.WALL) continue;
+        let nWall=0;
+        for(const [dx,dy] of neighbours){
+          const nx=x+dx, ny=y+dy;
+          if(nx>=0&&ny>=0&&ny<copy.length&&nx<copy[0].length){
+            if(copy[ny][nx]===TILE_IDS.WALL) nWall++;
+          }
+        }
+        if(nWall===0){
+          // isolated pixel wall -> floor
+          tiles[y][x].type = TILE_IDS.FLOOR;
+        } else if(nWall>=3){
+          // core of thick wall: keep, but reinforce neighbours
+          for(const [dx,dy] of neighbours){
+            const nx=x+dx, ny=y+dy;
+            if(nx>=0&&ny>=0&&ny<tiles.length&&nx<tiles[0].length){
+              if(tiles[ny][nx].type===TILE_IDS.FLOOR){
+                tiles[ny][nx].type=TILE_IDS.WALL;
+              }
+            }
+          }
+        }
+      }
     }
     
     return {
@@ -325,13 +373,14 @@ export class MapManager {
    * @returns {boolean} True if wall or out of bounds
    */
   isWallOrOutOfBounds(x, y) {
-    // Convert to tile coordinates
-    const tileX = Math.floor(x / this.tileSize);
-    const tileY = Math.floor(y / this.tileSize);
+    // Coordinates supplied to this function are already expressed in tile units
+    // Do NOT divide by tileSize or we will create mismatches between server and client.
+    const tileX = Math.floor(x);
+    const tileY = Math.floor(y);
     
     // Debug coordinate conversion occasionally
     if (Math.random() < 0.0001) {
-      console.log(`[SERVER] Wall check: World (${x.toFixed(2)}, ${y.toFixed(2)}) -> Tile (${tileX}, ${tileY})`);
+      console.log(`[SERVER] Wall check: World (${x.toFixed(2)}, ${y.toFixed(2)}) -> Tile (${tileX}, ${tileY}) [tileSize=${this.tileSize}]`);
     }
     
     // Check if out of bounds
@@ -344,6 +393,7 @@ export class MapManager {
     
     // Check if wall or other solid obstacle
     const isBlocked = tileType === TILE_IDS.WALL || 
+                     tileType === TILE_IDS.OBSTACLE ||
                      tileType === TILE_IDS.MOUNTAIN || 
                      tileType === TILE_IDS.WATER;
     
@@ -629,7 +679,7 @@ export class MapManager {
       }
     }
     
-    // Store metadata
+    // Store metadata – also keep the raw tileMap (if present) so we can slice chunks on-demand
     this.maps.set(mapId, {
       id: mapId,
       width: mapData.width,
@@ -637,14 +687,15 @@ export class MapManager {
       tileSize: mapData.tileSize || this.tileSize,
       chunkSize: mapData.chunkSize || CHUNK_SIZE,
       name: mapData.name || 'Loaded Map',
-      procedural: false
+      procedural: false,
+      tileMap: mapData.tileMap || null // full 2-D array of tile objects / IDs
     });
     
     // Update current dimensions
     this.width = mapData.width;
     this.height = mapData.height;
     
-    // Load chunks if provided
+    // Load pre-baked chunks if provided
     if (mapData.chunks) {
       for (const [chunkKey, chunkData] of Object.entries(mapData.chunks)) {
         this.chunks.set(`${mapId}_${chunkKey}`, chunkData);
@@ -709,6 +760,44 @@ export class MapManager {
    */
   getMapMetadata(mapId) {
     return this.maps.has(mapId) ? this.maps.get(mapId) : null;
+  }
+  
+  /**
+   * Slice a chunk out of a full tileMap for fixed maps that ship only tileMap, not pre-chunked data.
+   * @private
+   */
+  _sliceChunkFromTileMap(mapId, chunkX, chunkY) {
+    const meta = this.maps.get(mapId);
+    if (!meta || !meta.tileMap) return null;
+
+    const { tileMap, chunkSize } = meta;
+    const startX = chunkX * chunkSize;
+    const startY = chunkY * chunkSize;
+
+    // Out of bounds?
+    if (startX >= meta.width || startY >= meta.height || startX < 0 || startY < 0) {
+      return null;
+    }
+
+    const tiles = [];
+    for (let y = 0; y < chunkSize; y++) {
+      const row = [];
+      const globalY = startY + y;
+      if (globalY >= meta.height) break;
+      for (let x = 0; x < chunkSize; x++) {
+        const globalX = startX + x;
+        if (globalX >= meta.width) break;
+        let cell = tileMap[globalY][globalX];
+        // If the stored value is a primitive ID, wrap in Tile object; otherwise assume object compatible.
+        if (typeof cell === 'number') {
+          cell = new Tile(cell, 0);
+        }
+        row.push(cell);
+      }
+      tiles.push(row);
+    }
+
+    return { x: chunkX, y: chunkY, tiles };
   }
 }
 

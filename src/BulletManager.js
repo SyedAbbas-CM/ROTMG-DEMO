@@ -25,6 +25,15 @@ export default class BulletManager {
     this.height = new Float32Array(maxBullets); // Collision height
     this.damage = new Float32Array(maxBullets);  // Damage amount
     this.ownerId = new Array(maxBullets);   // ID of entity that created this bullet
+    this.spriteName = new Array(maxBullets); // For client rendering
+
+    // Debug / analytics counters (reset each update)
+    this.stats = {
+      created: 0,
+      expired: 0,
+      wallHit: 0,
+      entityHit: 0
+    };
   }
 
   /**
@@ -52,7 +61,9 @@ export default class BulletManager {
     this.height[index] = bulletData.height || 5;
     this.damage[index] = bulletData.damage || 10;
     this.ownerId[index] = bulletData.ownerId || null;
+    this.spriteName[index] = bulletData.spriteName || null;
     
+    if (this.stats) this.stats.created++;
     return bulletId;
   }
 
@@ -63,6 +74,12 @@ export default class BulletManager {
   update(deltaTime) {
     let count = this.bulletCount;
     
+    // Reset per-frame stats (except created which should persist until next flush)
+    if (this.stats) {
+      this.stats.expired = 0;
+      // wallHit / entityHit updated externally; keep their values for overlay then reset later if desired
+    }
+
     for (let i = 0; i < count; i++) {
       // Update position
       this.x[i] += this.vx[i] * deltaTime;
@@ -73,6 +90,7 @@ export default class BulletManager {
 
       // Remove expired bullets
       if (this.life[i] <= 0) {
+        if (this.stats) this.stats.expired++;
         this.swapRemove(i);
         count--;
         i--;
@@ -80,6 +98,8 @@ export default class BulletManager {
     }
     
     this.bulletCount = count;
+
+    return this.bulletCount;
   }
 
   /**
@@ -101,6 +121,7 @@ export default class BulletManager {
       this.height[index] = this.height[last];
       this.damage[index] = this.damage[last];
       this.ownerId[index] = this.ownerId[last];
+      this.spriteName[index] = this.spriteName[last];
     }
     
     this.bulletCount--;
@@ -178,10 +199,21 @@ export default class BulletManager {
         height: this.height[i],
         life: this.life[i],
         damage: this.damage[i],
-        ownerId: this.ownerId[i]
+        ownerId: this.ownerId[i],
+        spriteName: this.spriteName[i]
       });
     }
     
     return bullets;
+  }
+
+  /**
+   * External systems (collision manager) can record why a bullet was removed.
+   * @param {string} reason - 'wallHit' | 'entityHit'
+   */
+  registerRemoval(reason) {
+    if (!this.stats) return;
+    if (reason === 'wallHit') this.stats.wallHit++;
+    if (reason === 'entityHit') this.stats.entityHit++;
   }
 }

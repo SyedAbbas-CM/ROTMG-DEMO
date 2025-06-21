@@ -1,0 +1,9 @@
+[
+  {
+    "id": 1,
+    "name": "Stone Floor",
+    "sprite": "floor_stone",
+    "walkable": true,
+    "blocksProjectiles": false
+  }
+] 

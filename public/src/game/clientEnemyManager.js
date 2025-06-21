@@ -2,6 +2,8 @@
  * ClientEnemyManager.js
  * Client-side manager for enemies with visual effects and interpolation
  */
+import { spriteDatabase } from '../assets/SpriteDatabase.js';
+
 export class ClientEnemyManager {
     /**
      * Creates a client-side enemy manager
@@ -23,8 +25,9 @@ export class ClientEnemyManager {
       
       // Visual and animation properties
       this.sprite = new Array(maxEnemies);     // Sprite reference
-      this.spriteX = new Uint16Array(maxEnemies); // Sprite X position in sheet
-      this.spriteY = new Uint16Array(maxEnemies); // Sprite Y position in sheet
+      this.spriteX = new Float32Array(maxEnemies);
+      this.spriteY = new Float32Array(maxEnemies);
+      this.spriteName = new Array(maxEnemies);
       this.animFrame = new Uint8Array(maxEnemies); // Current animation frame
       this.animTime = new Float32Array(maxEnemies); // Animation timer
       
@@ -42,12 +45,11 @@ export class ClientEnemyManager {
       // ID to index mapping
       this.idToIndex = new Map();
       
-      // Enemy type definitions with names for easier reference
+      // Enemy type definitions with sprite names for the new system
       this.enemyTypes = [
         { 
-          name: "Basic",      
-          spriteX: 0,  
-          spriteY: 0, 
+          name: "Goblin",      
+          spriteName: 'goblin',  // Use sprite database name
           frames: 4,
           behaviors: ['chase', 'shoot'],
           moveSpeed: 20,
@@ -57,9 +59,8 @@ export class ClientEnemyManager {
           damagePerHit: 10
         },  
         { 
-          name: "Fast",       
-          spriteX: 8,  
-          spriteY: 0, 
+          name: "Orc",       
+          spriteName: 'orc',  // Use sprite database name
           frames: 4,
           behaviors: ['chase'],
           moveSpeed: 40,
@@ -68,9 +69,8 @@ export class ClientEnemyManager {
           damagePerHit: 5
         },  
         { 
-          name: "Heavy",      
-          spriteX: 16, 
-          spriteY: 0, 
+          name: "Skeleton",      
+          spriteName: 'skeleton', // Use sprite database name
           frames: 4,
           behaviors: ['chase', 'shoot'],
           moveSpeed: 10,
@@ -82,9 +82,8 @@ export class ClientEnemyManager {
           damagePerHit: 15
         },  
         { 
-          name: "Turret",     
-          spriteX: 24, 
-          spriteY: 0, 
+          name: "Troll",     
+          spriteName: 'troll', // Use sprite database name
           frames: 4,
           behaviors: ['shoot'],
           moveSpeed: 0, // Doesn't move
@@ -94,9 +93,8 @@ export class ClientEnemyManager {
           damagePerHit: 12
         },  
         { 
-          name: "Melee",      
-          spriteX: 32, 
-          spriteY: 0, 
+          name: "Wizard",      
+          spriteName: 'wizard', // Use sprite database name
           frames: 4,
           behaviors: ['chase'],
           moveSpeed: 25,
@@ -106,12 +104,67 @@ export class ClientEnemyManager {
         }   
       ];
       
-      // Enemy type to sprite mapping (backwards compatible)
+      // Initialize sprite coordinates from the sprite database
+      this.initializeSpriteCoordinates();
+      
+      // Render scale per enemy (in tile units)
+      this.renderScale = new Float32Array(maxEnemies);
+    }
+    
+    /**
+     * Initialize sprite coordinates from the sprite database
+     */
+    initializeSpriteCoordinates() {
+      // Check if sprite database is loaded
+      if (!spriteDatabase || spriteDatabase.getStats().atlasesLoaded === 0) {
+        console.warn('⚠️ Sprite database not loaded yet, using fallback coordinates');
+        // Use fallback coordinates
+        this.enemyTypes.forEach((type, index) => {
+          type.spriteX = index * 8;
+          type.spriteY = 0;
+        });
+        this.typeToSprite = this.enemyTypes.map(type => ({ x: type.spriteX, y: type.spriteY }));
+        return;
+      }
+      
+      this.enemyTypes.forEach((type, index) => {
+        const sprite = spriteDatabase.getSprite(type.spriteName);
+        if (sprite) {
+          type.spriteX = sprite.x;
+          type.spriteY = sprite.y;
+          console.log(`Enemy type ${type.name} mapped to sprite (${sprite.x}, ${sprite.y})`);
+        } else {
+          console.warn(`Sprite '${type.spriteName}' not found for enemy type ${type.name}, using fallback coordinates`);
+          type.spriteX = index * 8; // Fallback to grid position
+          type.spriteY = 0;
+        }
+      });
+      
+      // Update the backwards-compatible mapping
       this.typeToSprite = this.enemyTypes.map(type => ({ x: type.spriteX, y: type.spriteY }));
       
       // Log sprite mapping for debugging
-      console.log("ClientEnemyManager initialized with types:", 
+      console.log("ClientEnemyManager sprite mapping:", 
         this.enemyTypes.map(t => `${t.name}(${t.spriteX},${t.spriteY})`).join(', '));
+    }
+    
+    /**
+     * Reinitialize sprite coordinates (call this after sprite database is loaded)
+     */
+    reinitializeSprites() {
+      console.log('🔄 Reinitializing enemy sprite coordinates...');
+      this.initializeSpriteCoordinates();
+      
+      // Update existing enemies with new sprite coordinates
+      for (let i = 0; i < this.enemyCount; i++) {
+        const typeData = this.enemyTypes[this.type[i]];
+        if (typeData) {
+          this.spriteX[i] = typeData.spriteX;
+          this.spriteY[i] = typeData.spriteY;
+        }
+      }
+      
+      console.log('✅ Enemy sprite coordinates updated');
     }
     
     /**
@@ -138,17 +191,24 @@ export class ClientEnemyManager {
       this.health[index] = enemyData.health || 100;
       this.maxHealth[index] = enemyData.maxHealth || 100;
       
-      // Validate type to prevent out-of-bounds access
-      const validType = Math.min(this.type[index], this.enemyTypes.length - 1);
-      if (validType !== this.type[index]) {
-        console.warn(`Invalid enemy type ${this.type[index]}, defaulting to type ${validType}`);
-        this.type[index] = validType;
+      // If server sends a type index we don't know yet, create placeholder
+      if (this.type[index] >= this.enemyTypes.length) {
+        console.warn(`Unknown enemy type index ${this.type[index]} – creating placeholder`);
+        this.enemyTypes.push({ name: `dynamic_${this.type[index]}`, spriteX:0, spriteY:0, frames:1 });
       }
       
-      // Initialize visual properties from type definition
-      const typeData = this.enemyTypes[this.type[index]];
-      this.spriteX[index] = typeData.spriteX;
-      this.spriteY[index] = typeData.spriteY;
+      // If server provided spriteName use database; else fall back to type spriteX/Y
+      if (enemyData.spriteName) {
+        this.spriteName[index] = enemyData.spriteName;
+        const s = window.spriteDatabase?.getSprite(enemyData.spriteName);
+        this.spriteX[index] = s ? s.x : 0;
+        this.spriteY[index] = s ? s.y : 0;
+      } else {
+        const typeData = this.enemyTypes[this.type[index]];
+        this.spriteX[index] = typeData.spriteX;
+        this.spriteY[index] = typeData.spriteY;
+        this.spriteName[index] = null;
+      }
       this.animFrame[index] = 0;
       this.animTime[index] = 0;
       this.flashTime[index] = 0;
@@ -164,6 +224,9 @@ export class ClientEnemyManager {
       // Store index for lookup
       this.idToIndex.set(enemyId, index);
       
+      // Add render scale
+      this.renderScale[index] = enemyData.renderScale || 2;
+      
       console.log(`Added enemy ${enemyId} of type ${this.enemyTypes[this.type[index]].name} at (${enemyData.x}, ${enemyData.y})`);
       
       return enemyId;
@@ -175,7 +238,8 @@ export class ClientEnemyManager {
      */
     update(deltaTime) {
       for (let i = 0; i < this.enemyCount; i++) {
-        // Skip interpolation - enemies don't move
+        // Interpolate position towards target smoothly
+        this.updateInterpolation(i, deltaTime);
         
         // Skip animations - enemies don't animate
         
@@ -327,6 +391,7 @@ export class ClientEnemyManager {
         this.sprite[index] = this.sprite[lastIndex];
         this.spriteX[index] = this.spriteX[lastIndex];
         this.spriteY[index] = this.spriteY[lastIndex];
+        this.spriteName[index] = this.spriteName[lastIndex];
         this.animFrame[index] = this.animFrame[lastIndex];
         this.animTime[index] = this.animTime[lastIndex];
         this.flashTime[index] = this.flashTime[lastIndex];
@@ -336,6 +401,7 @@ export class ClientEnemyManager {
         this.targetX[index] = this.targetX[lastIndex];
         this.targetY[index] = this.targetY[lastIndex];
         this.interpTime[index] = this.interpTime[lastIndex];
+        this.renderScale[index] = this.renderScale[lastIndex];
         
         // Update index in mapping
         this.idToIndex.set(this.id[index], index);
@@ -396,17 +462,25 @@ export class ClientEnemyManager {
         const index = this.findIndexById(enemy.id);
         
         if (index !== -1) {
-          // Update existing enemy
-          // MODIFIED: Keep position static after creation - don't follow position updates
-          // This effectively "freezes" enemies in place
-          
-          // IMPORTANT: Only update health
+          // Update existing enemy (interpolated movement)
+
+          // Update target position for interpolation
+          this.prevX[index] = this.x[index];
+          this.prevY[index] = this.y[index];
+          this.targetX[index] = enemy.x;
+          this.targetY[index] = enemy.y;
+          this.interpTime[index] = 0; // reset interpolation timer
+
+          // Update health (with hit flash)
           if (this.health[index] !== enemy.health) {
             this.setEnemyHealth(enemy.id, enemy.health);
           }
-          
-          // Still update max health
+
+          // Update other dynamic properties if needed (e.g., type switch)
+          this.type[index] = enemy.type;
           this.maxHealth[index] = enemy.maxHealth;
+          this.renderScale[index] = enemy.renderScale || this.renderScale[index];
+          if (enemy.spriteName) this.spriteName[index] = enemy.spriteName;
         } else {
           // Add new enemy (only first time)
           this.addEnemy(enemy);
@@ -441,12 +515,14 @@ export class ClientEnemyManager {
           y: this.y[i],
           spriteX: this.spriteX[i],
           spriteY: this.spriteY[i],
+          spriteName: this.spriteName[i],
           width: this.width[i],
           height: this.height[i],
           health: this.health[i],
           maxHealth: this.maxHealth[i],
           isFlashing: this.flashTime[i] > 0,
-          isDying: this.deathTime[i] > 0
+          isDying: this.deathTime[i] > 0,
+          renderScale: this.renderScale[i] || 2
         });
       }
       

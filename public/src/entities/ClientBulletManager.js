@@ -23,12 +23,15 @@ export class ClientBulletManager {
         this.width = new Float32Array(capacity);
         this.height = new Float32Array(capacity);
         
-        // Add sprite information arrays
+        // Add sprite information arrays (legacy sheet-based)
         this.spriteSheet = new Array(capacity).fill(null);
         this.spriteX = new Float32Array(capacity);
         this.spriteY = new Float32Array(capacity);
         this.spriteWidth = new Float32Array(capacity);
         this.spriteHeight = new Float32Array(capacity);
+
+        // New sprite database name array
+        this.spriteName = new Array(capacity).fill(null);
         
         this.activeBullets = 0;
         this.nextId = 1;
@@ -98,9 +101,21 @@ export class ClientBulletManager {
             const width = (this.width[i] || 10) * viewScaleFactor;
             const height = (this.height[i] || 10) * viewScaleFactor;
             
-            // Check if we have sprite information
-            if (spriteManager && this.spriteSheet[i]) {
-                // Render with sprite
+            // Prefer new spriteDatabase path
+            const spriteDatabase = window.spriteDatabase || null;
+
+            if (spriteDatabase && this.spriteName[i]) {
+                spriteDatabase.drawSprite(
+                    ctx,
+                    this.spriteName[i],
+                    screenX - width/2,
+                    screenY - height/2,
+                    width,
+                    height
+                );
+            }
+            // Legacy sheet-based rendering
+            else if (spriteManager && this.spriteSheet[i]) {
                 spriteManager.drawSprite(
                     ctx,
                     this.spriteSheet[i],
@@ -239,12 +254,17 @@ export class ClientBulletManager {
         this.width[index] = bullet.width || 5;
         this.height[index] = bullet.height || 5;
         
-        // Store sprite info if provided
+        // Store sprite info if provided (legacy)
         this.spriteSheet[index] = bullet.spriteSheet || null;
         this.spriteX[index] = bullet.spriteX || 0;
         this.spriteY[index] = bullet.spriteY || 0;
         this.spriteWidth[index] = bullet.spriteWidth || this.width[index];
         this.spriteHeight[index] = bullet.spriteHeight || this.height[index];
+
+        // Store spriteName for new system
+        if (bullet.spriteName) {
+            this.spriteName[index] = bullet.spriteName;
+        }
         
         this.activeBullets++;
         

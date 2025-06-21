@@ -1,12 +1,21 @@
 // src/constants/constants.js
 
-export const TILE_SIZE = 12; // Size of each tile in pixels
+export const TILE_SIZE = 12; // Size of each tile in pixels (Oryx tiles are 12×12)
 export const CHARACTER_SPRITE_SIZE = 12; // Size of each character sprite in pixels
 export const SCALE = 5; // Scale factor for sprites
 export const SCALE_S = 2;
+
+
 export const CANVAS_WIDTH = window.innerWidth;
 export const CANVAS_HEIGHT = window.innerHeight;
 
+
+export const UNIT_MODE = 'tiles'; 
+export const toPixels   = v => v * TILE_SIZE;
+export const fromPixels = v => v / TILE_SIZE;
+// hit-box scaling
+export const HITBOX_SCALE_BULLET = 0.5;
+export const HITBOX_SCALE_ENEMY  = 0.6;
 
 // ENHANCED: Expanded tile type IDs with more descriptive names and additional types
 export const TILE_IDS = {

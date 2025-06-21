@@ -305,7 +305,7 @@ export class PlayerManager {
         
         // Define the scale factor based on view type 
         const viewType = gameState.camera?.viewType || 'top-down';
-        const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
+        const viewScaleFactor = viewType === 'strategic' ? 0.25 : 1.0;
         
         // Get the view type for adjusted culling
         const isStrategicView = viewType === 'strategic';
@@ -448,7 +448,7 @@ export class PlayerManager {
         const screenWidth = ctx.canvas.width;
         const screenHeight = ctx.canvas.height;
         const viewType = gameState.camera?.viewType || 'top-down';
-        const viewScaleFactor = viewType === 'strategic' ? 0.5 : 1.0;
+        const viewScaleFactor = viewType === 'strategic' ? 0.25 : 1.0;
         
         // Use the camera's worldToScreen method if available for consistent coordinates
         const useCamera = gameState.camera && typeof gameState.camera.worldToScreen === 'function';

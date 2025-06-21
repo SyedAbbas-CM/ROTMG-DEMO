@@ -241,6 +241,17 @@ export class GameUI {
         healthText.textContent = `${current}/${max}`;
       }
       
+      // Fallback: update ControlBar style if elements exist (class selectors)
+      if (!healthBar) {
+        const cbBar = this.uiDocument.querySelector('.health-bar');
+        if (cbBar) cbBar.style.width = `${(current / max) * 100}%`;
+      }
+
+      if (!healthText) {
+        const cbText = this.uiDocument.querySelector('.health-text');
+        if (cbText) cbText.textContent = `${current}/${max}`;
+      }
+      
       // Update the internal state if it exists
       if (this.uiWindow.gameState) {
         this.uiWindow.gameState.health = current;

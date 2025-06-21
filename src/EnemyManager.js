@@ -1,6 +1,9 @@
 // File: /src/Managers/EnemyManager.js
 
 import BehaviorSystem from './BehaviorSystem.js';
+import fs from 'fs';
+import path from 'path';
+import { parseBehaviourTree, BehaviourTreeRunner } from './BehaviorTree.js';
 
 /**
  * EnemyManager handles enemy creation, updating, and removal.
@@ -39,6 +42,12 @@ export default class EnemyManager {
     this.canChase = new Uint8Array(maxEnemies); // Whether enemy can chase (1 or 0)
     this.canShoot = new Uint8Array(maxEnemies); // Whether enemy can shoot (1 or 0)
     
+    // Sprite for projectiles fired by this enemy
+    this.bulletSpriteName = new Array(maxEnemies);
+
+    // Map external entity ID -> internal type index
+    this.enemyIdToTypeIndex = new Map();
+    
     // New fields for visual effects
     this.flashTimer = new Float32Array(maxEnemies); // Timer for flash effect
     this.isFlashing = new Uint8Array(maxEnemies); // Whether enemy is flashing
@@ -48,97 +57,211 @@ export default class EnemyManager {
     // Mapping from ID to index for fast lookups
     this.idToIndex = new Map();
     
-    // Define enemy types with default values
-    this.enemyDefaults = [
-      // Type 0: Basic enemy - moderate speed, moderate health, single shot
+    // Enemy type definitions with sprite names
+    this.enemyTypes = [
       {
-        width: 25,
-        height: 25,
-        health: 100,
-        maxHealth: 100,
-        moveSpeed: 40,
-        chaseRadius: 250,
-        shootRange: 200,
-        cooldown: 2.0,
-        damage: 10,
-        bulletSpeed: 100,
+        id: 0,
+        name: 'Goblin',
+        spriteName: 'goblin',
+        maxHealth: 30,
+        speed: 15,
+        damage: 5,
+        width: 1,
+        height: 1,
+        renderScale: 2,
+        shootRange: 50,
+        shootCooldown: 2.5,
+        bulletSpeed: 25,
+        bulletLifetime: 2.0,
         projectileCount: 1,
-        projectileSpread: 0,
-        canChase: 1,
-        canShoot: 1
+        spread: 0,
+        inaccuracy: 0.1,
+        behavior: 'aggressive'
       },
-      // Type 1: Fast enemy - high speed, low health, quick shots
       {
-        width: 20,
-        height: 20,
-        health: 60,
-        maxHealth: 60,
-        moveSpeed: 70,
-        chaseRadius: 300,
-        shootRange: 150,
-        cooldown: 1.0,
+        id: 1,
+        name: 'Orc',
+        spriteName: 'orc',
+        maxHealth: 50,
+        speed: 12,
         damage: 8,
-        bulletSpeed: 120,
+        width: 1,
+        height: 1,
+        renderScale: 2,
+        shootRange: 60,
+        shootCooldown: 2.0,
+        bulletSpeed: 30,
+        bulletLifetime: 2.5,
         projectileCount: 1,
-        projectileSpread: 0,
-        canChase: 1,
-        canShoot: 1
+        spread: 0,
+        inaccuracy: 0.05,
+        behavior: 'defensive'
       },
-      // Type 2: Heavy enemy - slow speed, high health, multiple shots
       {
-        width: 35,
-        height: 35,
-        health: 200,
-        maxHealth: 200,
-        moveSpeed: 25,
-        chaseRadius: 350,
-        shootRange: 250,
-        cooldown: 3.0,
+        id: 2,
+        name: 'Skeleton',
+        spriteName: 'skeleton',
+        maxHealth: 25,
+        speed: 20,
+        damage: 6,
+        width: 1,
+        height: 1,
+        renderScale: 2,
+        shootRange: 80,
+        shootCooldown: 1.8,
+        bulletSpeed: 35,
+        bulletLifetime: 3.0,
+        projectileCount: 1,
+        spread: 0,
+        inaccuracy: 0.08,
+        behavior: 'patrol'
+      },
+      {
+        id: 3,
+        name: 'Troll',
+        spriteName: 'troll',
+        maxHealth: 100,
+        speed: 8,
         damage: 15,
-        bulletSpeed: 80,
+        width: 1,
+        height: 1,
+        renderScale: 2,
+        shootRange: 40,
+        shootCooldown: 3.0,
+        bulletSpeed: 20,
+        bulletLifetime: 2.0,
         projectileCount: 3,
-        projectileSpread: Math.PI/8,
-        canChase: 1,
-        canShoot: 1
+        spread: 0.5,
+        inaccuracy: 0.2,
+        behavior: 'guard'
       },
-      // Type 3: Stationary turret - no movement, medium health, fast shots
       {
-        width: 28,
-        height: 28,
-        health: 120,
-        maxHealth: 120,
-        moveSpeed: 0,
-        chaseRadius: 0,
-        shootRange: 300,
-        cooldown: 1.5,
+        id: 4,
+        name: 'Wizard',
+        spriteName: 'wizard',
+        maxHealth: 40,
+        speed: 10,
         damage: 12,
-        bulletSpeed: 150,
+        width: 1,
+        height: 1,
+        renderScale: 2,
+        shootRange: 100,
+        shootCooldown: 2.2,
+        bulletSpeed: 40,
+        bulletLifetime: 4.0,
         projectileCount: 1,
-        projectileSpread: 0,
-        canChase: 0,
-        canShoot: 1
-      },
-      // Type 4: Melee enemy - fast speed, medium health, no shooting
-      {
-        width: 30,
-        height: 30,
-        health: 150,
-        maxHealth: 150,
-        moveSpeed: 60,
-        chaseRadius: 200,
-        shootRange: 0,
-        cooldown: 0,
-        damage: 0,
-        bulletSpeed: 0,
-        projectileCount: 0,
-        projectileSpread: 0,
-        canChase: 1,
-        canShoot: 0
+        spread: 0,
+        inaccuracy: 0.02,
+        behavior: 'ranged'
       }
     ];
     
     // Initialize behavior system
     this.behaviorSystem = new BehaviorSystem();
+
+    // Storage for parsed behaviour trees (per type index)
+    this.behaviourTreeRunners = [];
+
+    // Load additional enemy definitions from the entity database (e.g. Red Demon)
+    this._loadExternalEnemyDefs();
+  }
+
+  /**
+   * Load enemy definitions from public/assets/entities/enemies.json and append to enemyTypes
+   * Allows designers to author enemies in JSON without touching server code.
+   * Populates enemyIdToTypeIndex for quick lookup.
+   * Currently uses a basic mapping; all external enemies get the generic BasicEnemy behavior template.
+   */
+  _loadExternalEnemyDefs() {
+    try {
+      const entitiesDir = path.join(process.cwd(), 'public', 'assets', 'entities');
+      const enemyPath = path.join(entitiesDir, 'enemies.json');
+      if (!fs.existsSync(enemyPath)) return;
+
+      const raw = JSON.parse(fs.readFileSync(enemyPath, 'utf8'));
+      // Build a quick lookup for bullet templates in same file (ids that appear in other enemies' attack.bulletId)
+      const bulletLookup = new Map();
+      raw.forEach(e => {
+        if (!e.attack && !e.hp) {
+          // Treat as projectile / auxiliary record (e.g. Red Demon Bullet)
+          bulletLookup.set(e.id, e);
+        }
+      });
+
+      raw.forEach(ent => {
+        if (!ent.attack) return; // Skip non-enemy rows (likely projectiles)
+
+        // Skip duplicates
+        if (this.enemyIdToTypeIndex.has(ent.id)) return;
+
+        const bulletEnt = bulletLookup.get(ent.attack.bulletId);
+
+        const bulletSpeed = bulletEnt?.speed || 8;
+        const bulletLifetime = (bulletEnt?.lifetime || 1500) / 1000;
+
+        // Determine projectile pattern
+        const projCount = ent.attack.projectileCount || ent.attack.count || (ent.id === 101 ? 5 : 1);
+        const spreadDeg = ent.attack.spread !== undefined ? ent.attack.spread : (projCount > 1 ? 45 : 0);
+        const spreadRad = spreadDeg * Math.PI / 180;
+
+        const template = {
+          id: ent.id,
+          name: ent.name,
+          spriteName: (ent.sprite || '').trim(),
+          maxHealth: ent.hp || 100,
+          speed: ent.speed || 10,
+          damage: 10,
+          width: 1,
+          height: 1,
+          renderScale: 2,
+          shootRange: 120,
+          shootCooldown: (ent.attack.cooldown || 800) / 1000,
+          bulletSpeed,
+          bulletLifetime,
+          projectileCount: projCount,
+          spread: spreadRad,
+          inaccuracy: 0,
+          behavior: 'aggressive',
+          bulletSpriteName: bulletEnt?.sprite || null
+        };
+
+        const idx = this.enemyTypes.length;
+        this.enemyTypes.push(template);
+        this.enemyIdToTypeIndex.set(ent.id, idx);
+
+        // Register a basic behavior for this new enemy type so AI functions correctly
+        const shootBehavior = this.behaviorSystem.createCustomShootBehavior({
+          projectileCount: template.projectileCount,
+          spread: template.spread,
+          shootCooldown: template.shootCooldown
+        });
+        this.behaviorSystem.registerBehaviorTemplate(idx, shootBehavior);
+
+        // Parse behaviour tree if provided
+        if (ent.behaviourTree) {
+          const root = parseBehaviourTree(ent.behaviourTree);
+          this.behaviourTreeRunners[idx] = new BehaviourTreeRunner(root);
+        }
+      });
+
+      if (this.enemyIdToTypeIndex.size > 0) {
+        console.log(`[EnemyManager] Loaded ${this.enemyIdToTypeIndex.size} external enemy definitions from entity DB`);
+      }
+    } catch (err) {
+      console.error('[EnemyManager] Failed to load external enemy definitions', err);
+    }
+  }
+
+  /**
+   * Convenience helper to spawn by entity ID defined in JSON (e.g. 101 → Red Demon)
+   */
+  spawnEnemyById(entityId, x, y) {
+    const typeIdx = this.enemyIdToTypeIndex.get(Number(entityId)) ?? this.enemyIdToTypeIndex.get(entityId);
+    if (typeIdx === undefined) {
+      console.warn(`spawnEnemyById: unknown entity ID ${entityId} – defaulting to type 0`);
+      return this.spawnEnemy(0, x, y);
+    }
+    return this.spawnEnemy(typeIdx, x, y);
   }
 
   /**
@@ -155,12 +278,12 @@ export default class EnemyManager {
     }
     
     // Validate enemy type
-    if (type < 0 || type >= this.enemyDefaults.length) {
+    if (type < 0 || type >= this.enemyTypes.length) {
       type = 0; // Default to type 0 if invalid
     }
     
     // Get default values for this enemy type
-    const defaults = this.enemyDefaults[type];
+    const defaults = this.enemyTypes[type];
     
     // Assign unique ID and store in manager
     const enemyId = `enemy_${this.nextEnemyId++}`;
@@ -173,21 +296,23 @@ export default class EnemyManager {
     this.width[index] = defaults.width;
     this.height[index] = defaults.height;
     this.type[index] = type;
-    this.health[index] = defaults.health;
+    this.health[index] = defaults.maxHealth;
     this.maxHealth[index] = defaults.maxHealth;
     
     // Store behavior properties
-    this.moveSpeed[index] = defaults.moveSpeed;
-    this.chaseRadius[index] = defaults.chaseRadius;
+    this.moveSpeed[index] = defaults.speed;
+    this.chaseRadius[index] = defaults.shootRange;
     this.shootRange[index] = defaults.shootRange;
-    this.cooldown[index] = defaults.cooldown;
+    this.cooldown[index] = defaults.shootCooldown;
     this.currentCooldown[index] = 0; // Start with no cooldown
     this.damage[index] = defaults.damage;
     this.bulletSpeed[index] = defaults.bulletSpeed;
     this.projectileCount[index] = defaults.projectileCount;
-    this.projectileSpread[index] = defaults.projectileSpread;
-    this.canChase[index] = defaults.canChase;
-    this.canShoot[index] = defaults.canShoot;
+    this.projectileSpread[index] = defaults.spread;
+    this.canChase[index] = 1;
+    this.canShoot[index] = 1;
+    // Store bullet sprite for rendering on clients
+    this.bulletSpriteName[index] = defaults.bulletSpriteName || null;
     
     // Initialize visual effect timers
     this.flashTimer[index] = 0;
@@ -201,7 +326,12 @@ export default class EnemyManager {
     // Initialize behavior for this enemy
     this.behaviorSystem.initBehavior(index, type);
     
-    console.log(`Spawned enemy ${enemyId} of type ${type} at position (${x.toFixed(2)}, ${y.toFixed(2)}), health: ${defaults.health}`);
+    // Ensure BT runner array sized
+    if (!this.behaviourTreeRunners[type]) {
+        this.behaviourTreeRunners[type] = null;
+    }
+    
+    console.log(`Spawned enemy ${enemyId} of type ${type} at position (${x.toFixed(2)}, ${y.toFixed(2)}), health: ${defaults.maxHealth}`);
     
     return enemyId;
   }
@@ -211,9 +341,10 @@ export default class EnemyManager {
    * @param {number} deltaTime - Time elapsed since last update in seconds
    * @param {Object} bulletManager - Reference to the bullet manager for shooting
    * @param {Object} target - Optional target entity (e.g., player)
+   * @param {Object} mapManager - Optional map manager for collision checks
    * @returns {number} The number of active enemies
    */
-  update(deltaTime, bulletManager, target = null) {
+  update(deltaTime, bulletManager, target = null, mapManager = null) {
     // Skip update if no target or bullet manager
     if (!target) return this.getActiveEnemyCount();
     
@@ -243,8 +374,28 @@ export default class EnemyManager {
         this.updateFlashEffect(i, deltaTime);
       }
       
-      // Update enemy behavior using the behavior system
-      this.behaviorSystem.updateBehavior(i, this, bulletManager, target, deltaTime);
+      // Store previous position for potential rollback if collision occurs
+      const prevX = this.x[i];
+      const prevY = this.y[i];
+
+      // Update enemy behavior using the behavior system (expects bulletManager before target)
+      const runner = this.behaviourTreeRunners[this.type[i]];
+      if (runner) {
+        runner.tick(i, this, bulletManager, target, deltaTime);
+      } else {
+        this.behaviorSystem.updateBehavior(i, this, bulletManager, target, deltaTime);
+      }
+
+      // Prevent enemies from moving into walls / outside of map bounds
+      if (mapManager && mapManager.isWallOrOutOfBounds) {
+        if (mapManager.isWallOrOutOfBounds(this.x[i], this.y[i])) {
+          // Simple resolution: revert to previous valid position
+          this.x[i] = prevX;
+          this.y[i] = prevY;
+
+          // Optional: nudge enemy in random safe direction
+        }
+      }
     }
     
     return activeCount;
@@ -432,6 +583,7 @@ export default class EnemyManager {
         width: this.width[i],
         height: this.height[i],
         type: this.type[i],
+        spriteName: this.enemyTypes[this.type[i]]?.spriteName || null,
         health: this.health[i],
         maxHealth: this.maxHealth[i],
         isFlashing: this.isFlashing[i],

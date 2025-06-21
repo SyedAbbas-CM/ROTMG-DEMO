@@ -75,8 +75,8 @@ export class CoordinateUtils {
     }
     
     // Calculate screen coordinates
-    const screenX = (worldX - camera.position.x) * this.tileSize * scaleFactor + screenWidth / 2;
-    const screenY = (worldY - camera.position.y) * this.tileSize * scaleFactor + screenHeight / 2;
+    const screenX = (worldX - camera.position.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
+    const screenY = (worldY - camera.position.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
     
     if (this.debugMode) {
       console.log(`World (${worldX}, ${worldY}) -> Screen (${screenX}, ${screenY})`);

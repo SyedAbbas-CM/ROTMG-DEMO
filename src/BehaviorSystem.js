@@ -289,4 +289,49 @@ export default class BehaviorSystem {
     
     return idleState;
   }
+  
+  /**
+   * Create a simple behavior template that only chases (optional) and shoots with custom parameters
+   * @param {Object} opts
+   *   - chaseSpeed {number} default 1.0
+   *   - chaseRadius {number} default 200
+   *   - projectileCount {number}
+   *   - spread {number}
+   *   - shootCooldown {number}
+   *   - inaccuracy {number}
+   *   - wanderSpeed {number}
+   */
+  createCustomShootBehavior(opts={}) {
+    const {
+      chaseSpeed = 1.0,
+      chaseRadius = 200,
+      projectileCount = 1,
+      spread = 0,
+      shootCooldown = 2.0,
+      inaccuracy = 0,
+      wanderSpeed = 0.4
+    } = opts;
+
+    const idleState = new BehaviorState('idle', [
+      new Behaviors.Wander(wanderSpeed)
+    ]);
+
+    const chaseState = new BehaviorState('chase', [
+      new Behaviors.Chase(chaseSpeed, chaseRadius),
+      // cooldownMultiplier is relative to base enemy cooldown; we just pass 1 here and rely on enemy-specific cooldown field
+      new Behaviors.Shoot(1.0, projectileCount, spread, inaccuracy)
+    ]);
+
+    idleState.addTransition(new Transitions.PlayerWithinRange(chaseRadius, chaseState));
+    chaseState.addTransition(new Transitions.NoPlayerWithinRange(chaseRadius*1.2, idleState));
+
+    // Override the Shoot behavior's default cooldown via prototype to respect shootCooldown
+    chaseState.behaviors.forEach(b=>{
+      if (b instanceof Behaviors.Shoot) {
+        b.cooldownMultiplier = shootCooldown / 1.0; // assume enemyManager.cooldown default already holds shootCooldown; multiplier keeps ratio
+      }
+    });
+
+    return idleState;
+  }
 } 
