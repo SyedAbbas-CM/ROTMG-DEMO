@@ -67,8 +67,14 @@ export class SpriteDatabase {
 
     // ---- Load corresponding images (also tolerate failures) ----
     const imagePromises = successfulAtlasConfigs.map(cfg => {
-      // Determine image path property (editor may save as meta.image)
-      const imgPath = cfg.path || cfg.image || (cfg.meta && cfg.meta.image);
+      // Normalise image path – many atlas JSONs store paths without a leading "/" which causes
+      // the browser to resolve them relative to the current page (e.g. /tools/map-editor.html).
+      // We want them to be resolved from the web-root instead, so we prepend "/" unless the path
+      // already starts with a slash or with a protocol (http/https).
+      let imgPath = cfg.path || cfg.image || (cfg.meta && cfg.meta.image);
+      if (imgPath && !imgPath.startsWith('/') && !/^https?:\/\//i.test(imgPath)) {
+        imgPath = '/' + imgPath;
+      }
       if (!imgPath) {
         console.warn('[SpriteDB] Atlas config missing image path:', cfg.name || '[unnamed]');
         return Promise.resolve(null);
@@ -179,6 +185,33 @@ export class SpriteDatabase {
     };
     
     this.sprites.set(name, spriteData);
+
+    // --- Group / tagging support ----------------------------------------
+    //  Sprite editors can add either:
+    //    "group": "tiles"               (single group string)
+    // or "groups": ["tiles","walls"]   (array)
+    // or "tags":   ["tiles","walls"]   (alias)
+    // We normalise all of them into this.groups map.
+    const tagSet = new Set();
+    if (typeof spriteConfig.group === 'string') tagSet.add(spriteConfig.group);
+    if (Array.isArray(spriteConfig.groups)) spriteConfig.groups.forEach(g => tagSet.add(g));
+    if (Array.isArray(spriteConfig.tags)) spriteConfig.tags.forEach(g => tagSet.add(g));
+
+    // Heuristic fallback – many raw atlases mark everything as "auto"
+    if (tagSet.size===0 || (tagSet.size===1 && tagSet.has('auto'))){
+      tagSet.delete('auto');
+      const atlasLower = atlasName.toLowerCase();
+      if(/world|environment|terrain/.test(atlasLower)) tagSet.add('tiles');
+      else if(/obj|object|prop/.test(atlasLower)) tagSet.add('objects');
+      else if(/char|enemy|creature|monster/.test(atlasLower)) tagSet.add('enemies');
+      else tagSet.add('misc');
+    }
+
+    tagSet.forEach(g => {
+      if (!this.groups.has(g)) this.groups.set(g, new Set());
+      this.groups.get(g).add(name);
+    });
+
     this.stats.spritesRegistered++;
   }
 

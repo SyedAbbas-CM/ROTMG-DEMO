@@ -1,6 +1,8 @@
 import { spriteManager } from './assets/spriteManager.js';
 import { spriteDatabase } from './assets/SpriteDatabase.js';
 import { ClientNetworkManager } from './network/ClientNetworkManager.js';
+import { entityDatabase } from './assets/EntityDatabase.js';
+import { tileDatabase } from './assets/TileDatabase.js';
 
 // Initialize sprite manager
 async function initializeSpriteManager() {
@@ -24,8 +26,7 @@ async function initializeSpriteManager() {
     // Ensure core atlases present; prepend critical ones to guarantee unique names resolve correctly
     const essentialAtlases = [
       'assets/atlases/chars.json',   // main character/enemy sheet (includes red_demon)
-      'assets/atlases/chars2.json',  // variant sheet
-      'assets/atlases/items.json'    // item icons
+      'assets/atlases/chars2.json'  // variant sheet
     ];
 
     // If server list was empty, use essentials; otherwise merge, keeping order (essentials first)
@@ -43,14 +44,17 @@ async function initializeSpriteManager() {
     await spriteDatabase.loadAtlases(atlasPaths);
 
     // Load entities
+    await entityDatabase.load();
+    tileDatabase.merge(entityDatabase.getAll('tiles'));
     await spriteDatabase.loadEntities();
 
     // Developer diagnostics
     console.log('✅ Sprite database ready. Stats:', spriteDatabase.getStats());
-    console.log('✅ Example sprite names:', spriteDatabase.getAllSpriteNames().slice(0, 10));
+    console.log('✅ Entity database ready – enemy count:', entityDatabase.getAll('enemies').length);
 
     // Expose globally for console experimentation
     window.spriteDatabase = spriteDatabase;
+    window.entityDatabase = entityDatabase;
 
   } catch (error) {
     console.error('❌ Failed to initialize sprite database:', error);

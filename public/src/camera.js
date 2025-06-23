@@ -120,14 +120,21 @@ export class Camera {
    * Returns { forward:{x,y}, right:{x,y} } where x=world X, y=world Y(tile Z)
    */
   getGroundBasis() {
-    const dir = new THREE.Vector3();
-    this.getWorldDirection(dir); // Three forward, length 1
-    dir.y = 0;
-    if (dir.lengthSq() === 0) dir.set(0, 0, -1);
-    dir.normalize();
+    // Use yaw rotation stored in this.rotation (set by pointer-lock mouse look)
+    const yaw = this.rotation?.yaw || 0;
 
-    const forward = { x: dir.x, y: -dir.z };         // Z negative means forward increases Y
-    const right   = { x: dir.z, y: dir.x };          // rotate 90° clockwise
+    // Forward vector in world X/Y (tile) plane
+    const forward = {
+      x: Math.cos(yaw),   // +X when yaw = 0 (east)
+      y: Math.sin(yaw)    // +Y when yaw = PI/2 (south if Y grows downward)
+    };
+
+    // Right vector is 90° clockwise from forward
+    const right = {
+      x: Math.cos(yaw + Math.PI / 2),
+      y: Math.sin(yaw + Math.PI / 2)
+    };
+
     return { forward, right };
   }
   

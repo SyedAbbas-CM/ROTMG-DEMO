@@ -1,0 +1,589 @@
+{
+  "meta": {
+    "image": "assets/images/Oryx/lofi_obj_packB.png",
+    "imageW": 72,
+    "imageH": 64
+  },
+  "sprites": [
+    {
+      "name": "lofi_obj_packB_sprite_0_0",
+      "group": "auto",
+      "row": 0,
+      "col": 0,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_0_1",
+      "group": "auto",
+      "row": 0,
+      "col": 1,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_0_2",
+      "group": "auto",
+      "row": 0,
+      "col": 2,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_0_3",
+      "group": "auto",
+      "row": 0,
+      "col": 3,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_0_4",
+      "group": "auto",
+      "row": 0,
+      "col": 4,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_0_5",
+      "group": "auto",
+      "row": 0,
+      "col": 5,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_0_6",
+      "group": "auto",
+      "row": 0,
+      "col": 6,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_0_7",
+      "group": "auto",
+      "row": 0,
+      "col": 7,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_0_8",
+      "group": "auto",
+      "row": 0,
+      "col": 8,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_1_0",
+      "group": "auto",
+      "row": 1,
+      "col": 0,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_1_1",
+      "group": "auto",
+      "row": 1,
+      "col": 1,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_1_2",
+      "group": "auto",
+      "row": 1,
+      "col": 2,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_1_3",
+      "group": "auto",
+      "row": 1,
+      "col": 3,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_1_4",
+      "group": "auto",
+      "row": 1,
+      "col": 4,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_1_5",
+      "group": "auto",
+      "row": 1,
+      "col": 5,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_1_6",
+      "group": "auto",
+      "row": 1,
+      "col": 6,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_1_7",
+      "group": "auto",
+      "row": 1,
+      "col": 7,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_1_8",
+      "group": "auto",
+      "row": 1,
+      "col": 8,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_2_0",
+      "group": "auto",
+      "row": 2,
+      "col": 0,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_2_1",
+      "group": "auto",
+      "row": 2,
+      "col": 1,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_2_2",
+      "group": "auto",
+      "row": 2,
+      "col": 2,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_2_3",
+      "group": "auto",
+      "row": 2,
+      "col": 3,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_2_4",
+      "group": "auto",
+      "row": 2,
+      "col": 4,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_2_5",
+      "group": "auto",
+      "row": 2,
+      "col": 5,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_2_6",
+      "group": "auto",
+      "row": 2,
+      "col": 6,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_2_7",
+      "group": "auto",
+      "row": 2,
+      "col": 7,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_2_8",
+      "group": "auto",
+      "row": 2,
+      "col": 8,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_3_0",
+      "group": "auto",
+      "row": 3,
+      "col": 0,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_3_1",
+      "group": "auto",
+      "row": 3,
+      "col": 1,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_3_2",
+      "group": "auto",
+      "row": 3,
+      "col": 2,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_3_3",
+      "group": "auto",
+      "row": 3,
+      "col": 3,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_3_4",
+      "group": "auto",
+      "row": 3,
+      "col": 4,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_3_5",
+      "group": "auto",
+      "row": 3,
+      "col": 5,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_3_6",
+      "group": "auto",
+      "row": 3,
+      "col": 6,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_3_7",
+      "group": "auto",
+      "row": 3,
+      "col": 7,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_3_8",
+      "group": "auto",
+      "row": 3,
+      "col": 8,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_4_0",
+      "group": "auto",
+      "row": 4,
+      "col": 0,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_4_1",
+      "group": "auto",
+      "row": 4,
+      "col": 1,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_4_2",
+      "group": "auto",
+      "row": 4,
+      "col": 2,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_4_3",
+      "group": "auto",
+      "row": 4,
+      "col": 3,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_4_4",
+      "group": "auto",
+      "row": 4,
+      "col": 4,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_4_5",
+      "group": "auto",
+      "row": 4,
+      "col": 5,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_4_6",
+      "group": "auto",
+      "row": 4,
+      "col": 6,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_4_7",
+      "group": "auto",
+      "row": 4,
+      "col": 7,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_4_8",
+      "group": "auto",
+      "row": 4,
+      "col": 8,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_5_0",
+      "group": "auto",
+      "row": 5,
+      "col": 0,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_5_1",
+      "group": "auto",
+      "row": 5,
+      "col": 1,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_5_2",
+      "group": "auto",
+      "row": 5,
+      "col": 2,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_5_3",
+      "group": "auto",
+      "row": 5,
+      "col": 3,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_5_4",
+      "group": "auto",
+      "row": 5,
+      "col": 4,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_5_5",
+      "group": "auto",
+      "row": 5,
+      "col": 5,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_5_6",
+      "group": "auto",
+      "row": 5,
+      "col": 6,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_5_7",
+      "group": "auto",
+      "row": 5,
+      "col": 7,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_5_8",
+      "group": "auto",
+      "row": 5,
+      "col": 8,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_6_0",
+      "group": "auto",
+      "row": 6,
+      "col": 0,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_6_1",
+      "group": "auto",
+      "row": 6,
+      "col": 1,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_6_2",
+      "group": "auto",
+      "row": 6,
+      "col": 2,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_6_3",
+      "group": "auto",
+      "row": 6,
+      "col": 3,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_6_4",
+      "group": "auto",
+      "row": 6,
+      "col": 4,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_6_5",
+      "group": "auto",
+      "row": 6,
+      "col": 5,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_6_6",
+      "group": "auto",
+      "row": 6,
+      "col": 6,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_6_7",
+      "group": "auto",
+      "row": 6,
+      "col": 7,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_6_8",
+      "group": "auto",
+      "row": 6,
+      "col": 8,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_7_0",
+      "group": "auto",
+      "row": 7,
+      "col": 0,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_7_1",
+      "group": "auto",
+      "row": 7,
+      "col": 1,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_7_2",
+      "group": "auto",
+      "row": 7,
+      "col": 2,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_7_3",
+      "group": "auto",
+      "row": 7,
+      "col": 3,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_7_4",
+      "group": "auto",
+      "row": 7,
+      "col": 4,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_7_5",
+      "group": "auto",
+      "row": 7,
+      "col": 5,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_7_6",
+      "group": "auto",
+      "row": 7,
+      "col": 6,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_7_7",
+      "group": "auto",
+      "row": 7,
+      "col": 7,
+      "width": 8,
+      "height": 8
+    },
+    {
+      "name": "lofi_obj_packB_sprite_7_8",
+      "group": "auto",
+      "row": 7,
+      "col": 8,
+      "width": 8,
+      "height": 8
+    }
+  ],
+  "defaultSpriteWidth": 8,
+  "defaultSpriteHeight": 8,
+  "path": "assets/images/Oryx/lofi_obj_packB.png",
+  "name": "lofi_obj_packB"
+}

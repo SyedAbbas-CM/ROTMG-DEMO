@@ -19,6 +19,9 @@ export const gameState = {
     collisionManager: null,
     playerManager: null,
     
+    // Objects (decor or interactive like portals) present in current map – populated from server WORLD_UPDATE
+    worldObjects: [],
+    
     // Tracking info
     lastUpdateX: character.x,
     lastUpdateY: character.y,

@@ -13,6 +13,7 @@ import EnemyManager from './src/EnemyManager.js';
 import CollisionManager from './src/CollisionManager.js';
 // Import BehaviorSystem
 import BehaviorSystem from './src/BehaviorSystem.js';
+import { entityDatabase } from './src/assets/EntityDatabase.js';
 
 // Debug flags to control logging
 const DEBUG = {
@@ -28,7 +29,9 @@ const DEBUG = {
   chunkRequests: false,
   chat: false,
   playerMovement: false,
-  bulletEvents: false
+  bulletEvents: false,
+  portal: true,        // Enable portal-related logs only
+  wallChecks: false    // Disable noisy per-frame wall collision logs
 };
 
 // Expose debug flags globally so helper classes can reference them
@@ -56,6 +59,11 @@ wss.on('error', (err) => {
 
 // Set up middleware
 app.use(express.json());
+
+// Root route – main menu
+app.get('/', (req,res)=>{
+  res.sendFile(path.join(__dirname,'public','menu.html'));
+});
 
 // ---------------- Asset Browser API ----------------
 // These routes provide the Sprite Editor and other tools with lists of accessible images and
@@ -120,7 +128,7 @@ app.get('/api/assets/atlases', (req, res) => {
     const atlases = fs
       .readdirSync(atlasesDirBase)
       .filter((f) => f.endsWith('.json'))
-      .map((f) => 'assets/atlases/' + f);
+      .map((f) => '/assets/atlases/' + f);
     res.json({ atlases });
   } catch (err) {
     console.error('[ASSETS] Error listing atlases', err);
@@ -161,7 +169,7 @@ app.post('/api/assets/atlases/save', (req, res) => {
   const atlasPath = path.join(atlasesDirBase, filename);
   try {
     fs.writeFileSync(atlasPath, JSON.stringify(data, null, 2));
-    res.json({ success: true, path: 'assets/atlases/' + filename });
+    res.json({ success: true, path: '/assets/atlases/' + filename });
   } catch (err) {
     console.error('[ASSETS] Error saving atlas', err);
     res.status(500).json({ error: 'Failed to save atlas' });
@@ -262,7 +270,7 @@ app.get('/api/assets/atlases', (req, res) => {
   const atlasesDir = path.join(__dirname, 'public', 'assets', 'atlases');
   try {
     const files = fs.readdirSync(atlasesDir).filter(f => f.endsWith('.json'));
-    res.json({ atlases: files.map(f => 'assets/atlases/' + f) });
+    res.json({ atlases: files.map(f => '/assets/atlases/' + f) });
   } catch (err) {
     console.error('Error listing atlases', err);
     res.status(500).json({ error: 'Failed to list atlases' });
@@ -312,7 +320,7 @@ app.post('/api/assets/atlases/save', (req, res) => {
   const atlasPath = path.join(__dirname, 'public', 'assets', 'atlases', filename);
   try {
     fs.writeFileSync(atlasPath, JSON.stringify(data, null, 2));
-    res.json({ success: true, path: `assets/atlases/${filename}` });
+    res.json({ success: true, path: '/assets/atlases/' + filename });
   } catch (err) {
     console.error('Error saving atlas', err);
     res.status(500).json({ error: 'Failed to save atlas' });
@@ -321,6 +329,7 @@ app.post('/api/assets/atlases/save', (req, res) => {
 
 // Create initial procedural map
 let defaultMapId;
+let fixedMapId; // map created from editor file
 try {
   // Set map storage path for the server
   mapManager.mapStoragePath = './maps';
@@ -336,64 +345,8 @@ try {
     console.log(`Created default map: ${defaultMapId} - This is the map ID that will be sent to clients`);
   }
   
-  // Direct save - guaranteed to work with imported fs
-  const enableDirectMapSave = false; // Set to true to enable direct map saving
-  if (enableDirectMapSave) {
-    try {
-      // Get map metadata
-      const mapData = mapManager.getMapMetadata(defaultMapId);
-      
-      // Create a simple tile map
-      const simpleTileMap = [];
-      for (let y = 0; y < mapData.height; y++) {
-        const row = [];
-        for (let x = 0; x < mapData.width; x++) {
-          // Get tile type, default to -1 if not found
-          const tile = mapManager.getTile(x, y);
-          row.push(tile ? tile.type : -1);
-        }
-        simpleTileMap.push(row);
-      }
-      
-      // Save the simple map directly to the root directory with custom formatting
-      const directFilePath = './direct_simple_map.json';
-      
-      // Custom formatting: one row per line, no commas between rows
-      const formattedJson = "[\n" + 
-        simpleTileMap.map(row => "  " + JSON.stringify(row)).join(",\n") + 
-        "\n]";
-      
-      fs.writeFileSync(directFilePath, formattedJson);
-      console.log(`DIRECT SAVE: Simple map saved to ${directFilePath} with custom formatting`);
-    } catch (directSaveError) {
-      console.error("Error with direct save:", directSaveError);
-    }
-  }
-  
-  // Save the map to a file for debugging purposes
-  (async () => {
-    try {
-      // Save detailed version using the MapManager methods in the maps folder
-      const filename = `server_map_${defaultMapId}.json`;
-      const saveResult = await mapManager.saveMap(defaultMapId, filename);
-      if (saveResult) {
-        console.log(`SERVER MAP SAVED: Map saved to maps/${filename}`);
-      } else {
-        console.error(`Failed to save map to file`);
-      }
-      
-      // Save simple tile type array version using MapManager method
-      const simpleFilename = `simple_map_${defaultMapId}.json`;
-      const simpleResult = await mapManager.saveSimpleMap(defaultMapId, simpleFilename);
-      if (simpleResult) {
-        console.log(`SIMPLE MAP SAVED: Simple map format saved to maps/${simpleFilename}`);
-      } else {
-        console.error(`Failed to save simple map format`);
-      }
-    } catch (saveError) {
-      console.error("Error saving map to file:", saveError);
-    }
-  })();
+  // (we will move async load after storedMaps declaration below)
+  // -------------------------------------------------------------------
 } catch (error) {
   console.error("Error creating procedural map:", error);
   defaultMapId = "default";
@@ -404,6 +357,41 @@ const storedMaps = new Map(); // mapId -> map data
 storedMaps.set(defaultMapId, mapManager.getMapMetadata(defaultMapId));
 
 console.log(`Created default map: ${defaultMapId}`);
+
+// -----------------------------------------------------------
+// Load editor-exported map and register portal inside default map
+// -----------------------------------------------------------
+(async () => {
+  try {
+    // Use absolute path so MapManager treats it as a filesystem read rather than a URL.
+    const fixedMapPath = path.join(__dirname, 'public', 'maps', 'test.json');
+    fixedMapId = await mapManager.loadFixedMap(fixedMapPath);
+    storedMaps.set(fixedMapId, mapManager.getMapMetadata(fixedMapId));
+
+    // Ensure newly connecting clients still start in the procedural world
+    mapManager.activeMapId = defaultMapId;
+
+    // Spawn enemies defined inside that map right away
+    spawnMapEnemies(fixedMapId);
+
+    // Place a portal in centre of procedural map linking to this fixed map
+    const defMeta = mapManager.getMapMetadata(defaultMapId);
+    if (defMeta) {
+      const portalObj = {
+        id: 'portal_to_' + fixedMapId,
+        type: 'portal',
+        sprite: 'portal',
+        x: 5,
+        y: 5,
+        destMap: fixedMapId
+      };
+      defMeta.objects.push(portalObj);
+      if (DEBUG.portal) console.log(`[PORTAL] Spawned portal from ${defaultMapId} to ${fixedMapId} at (${portalObj.x},${portalObj.y})`);
+    }
+  } catch (err) {
+    console.error('[PORTAL] Failed to load fixed map or set up portal', err);
+  }
+})();
 
 // Create bullet manager
 const bulletManager = new BulletManager(10000);
@@ -430,6 +418,9 @@ const gameState = {
 
 // Spawn initial enemies for the game world
 spawnInitialEnemies(2);
+
+// also spawn any enemies defined inside the procedural map metadata (none by default)
+spawnMapEnemies(gameState.mapId);
 
 // WebSocket connection handler
 wss.on('connection', (socket, req) => {
@@ -631,6 +622,9 @@ function updateGame() {
     });
   }
   
+  // ---------------- PORTAL HANDLING ----------------
+  handlePortals();
+  
   // Check for enemy spawns
   if (now - gameState.lastEnemySpawnTime > gameState.enemySpawnInterval) {
     gameState.lastEnemySpawnTime = now;
@@ -646,7 +640,7 @@ function updateGame() {
         
         for (let i = 0; i < count; i++) {
           // Red Demon entity ID
-          const type = 101;
+          const type = 'red_demon';
           
           // Spawn near the selected player (within 100-200 units)
           const distance = 100 + Math.random() * 100; // Distance from player: 100-200 units
@@ -692,11 +686,15 @@ function broadcastWorldUpdates() {
   // Get bullet data
   const bullets = bulletManager.getBulletsData();
   
+  // Get static objects for current map (decor/environment)
+  const objects = mapManager.getObjects(gameState.mapId);
+  
   // Broadcast world update (include optional debug stats)
   const worldPayload = {
     players,
     enemies,
     bullets,
+    objects,
     timestamp: Date.now()
   };
 
@@ -1066,6 +1064,9 @@ function handleMapRequest(clientId, data) {
   client.mapId = data.mapId;
   console.log(`Updated client ${clientId} to use map ${data.mapId}`);
   
+  // Spawn enemies defined in that map (if not already spawned). This naive version spawns every time the first client switches, but duplicate spawns are prevented by internal manager cap.
+  spawnMapEnemies(data.mapId);
+  
   // Send map info to client
   const mapMetadata = mapManager.getMapMetadata(data.mapId);
   if (!mapMetadata) {
@@ -1232,7 +1233,7 @@ function spawnInitialEnemies(count) {
   }
 
   for (let i = 0; i < count; i++) {
-    const type = 101; // Red Demon entity ID
+    const type = 'red_demon';
     const angle = Math.random() * Math.PI * 2;
     const distance = Math.random() * spawnRadius;
     let x = centerX + Math.cos(angle) * distance;
@@ -1449,5 +1450,122 @@ app.get('/api/entities', (_req, res) => {
   res.json(out);
 });
 
+app.post('/api/entities/:group', (req,res)=>{
+  const group=req.params.group;
+  const safe=['tiles','objects','enemies'];
+  if(!safe.includes(group)) return res.status(400).json({error:'Invalid group'});
+  const entry=req.body;
+  if(!entry||!entry.id) return res.status(400).json({error:'Entry with id required'});
+  const file=path.join(entitiesDir,`${group}.json`);
+  let arr=[];
+  if(fs.existsSync(file)) arr=JSON.parse(fs.readFileSync(file,'utf8'));
+  const idx=arr.findIndex(e=>e.id===entry.id);
+  if(idx>=0) arr[idx]=entry; else arr.push(entry);
+  fs.writeFileSync(file,JSON.stringify(arr,null,2));
+  // Reload group in memory
+  entityDatabase.loadSync();
+  res.json({success:true});
+});
+
 // ----- Static files ----- Move this BELOW asset-api so that /api/assets/* is not intercepted by serve-static
 app.use(express.static('public'));
+
+app.get('/api/sprites/groups', (req,res)=>{
+  try{
+    const out={};
+    const files=fs.readdirSync(atlasesDirBase).filter(f=>f.endsWith('.json'));
+    files.forEach(f=>{
+      const data=JSON.parse(fs.readFileSync(path.join(atlasesDirBase,f),'utf8'));
+      // groups at top-level
+      if(data.groups){
+        Object.entries(data.groups).forEach(([g,arr])=>{
+          if(!out[g]) out[g]=new Set();
+          arr.forEach(n=>out[g].add(n));
+        });
+      }
+      // per-sprite tags
+      if(Array.isArray(data.sprites)){
+        data.sprites.forEach(s=>{
+          const list=Array.isArray(s.tags)?s.tags: (Array.isArray(s.groups)?s.groups: (s.group?[s.group]:null));
+          if(list){
+            list.forEach(g=>{
+              if(!out[g]) out[g]=new Set();
+              if(s.name) out[g].add(s.name);
+            });
+          }
+        });
+      }
+    });
+    // convert sets to arrays
+    const jsonObj={};
+    Object.entries(out).forEach(([g,set])=>{jsonObj[g]=Array.from(set);});
+    res.json(jsonObj);
+  }catch(err){
+    console.error('[sprites/groups] error',err);
+    res.status(500).json({error:'Failed to aggregate'});
+  }
+});
+
+function spawnMapEnemies(mapId){
+  const spawns=mapManager.getEnemySpawns(mapId);
+  if(!spawns||spawns.length===0) return;
+  spawns.forEach(e=>{
+    if(e&&e.sprite!==undefined){
+      const id=typeof e.sprite==='string'?e.sprite:e.id||e.type;
+      enemyManager.spawnEnemyById(id,e.x||0,e.y||0);
+    }
+  });
+  if(DEBUG.enemySpawns){console.log(`[MAP] spawned ${spawns.length} enemies from map ${mapId}`);}
+}
+
+/**
+ * Check if any players are standing on a portal tile/object and trigger map switch.
+ */
+function handlePortals(){
+  if (!gameState.mapId) return;
+  const portals = mapManager.getObjects(gameState.mapId).filter(o => o.type === 'portal' && o.destMap);
+  if (portals.length === 0) return;
+  portals.forEach(portal => {
+    clients.forEach((client, id) => {
+      if (client.mapId !== gameState.mapId) return;
+      const dx = client.player.x - portal.x;
+      const dy = client.player.y - portal.y;
+      if (Math.abs(dx) <= 0.5 && Math.abs(dy) <= 0.5) {
+        switchEntireWorldToMap(portal.destMap);
+      }
+    });
+  });
+}
+
+/**
+ * Simple implementation: switch the *whole* session to a new map.
+ * Sends MAP_INFO to all clients so they reload chunks.
+ */
+function switchEntireWorldToMap(destMapId){
+  if (!destMapId || gameState.mapId === destMapId) return;
+  const meta = mapManager.getMapMetadata(destMapId);
+  if (!meta) return;
+  if (DEBUG.portal) console.log(`Switching world to map ${destMapId}`);
+
+  gameState.mapId = destMapId;
+
+  // Reposition players at map centre
+  const spawnX = meta.width/2;
+  const spawnY = meta.height/2;
+  clients.forEach((client,id)=>{
+    client.mapId = destMapId;
+    client.player.x = spawnX;
+    client.player.y = spawnY;
+    // Send map info so client begins chunk requests
+    sendToClient(client.socket, MessageType.MAP_INFO, {
+      mapId: destMapId,
+      width: meta.width,
+      height: meta.height,
+      tileSize: meta.tileSize,
+      chunkSize: meta.chunkSize,
+      timestamp: Date.now()
+    });
+  });
+
+  spawnMapEnemies(destMapId);
+}

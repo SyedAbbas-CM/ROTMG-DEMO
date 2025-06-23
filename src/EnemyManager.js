@@ -1,6 +1,7 @@
 // File: /src/Managers/EnemyManager.js
 
 import BehaviorSystem from './BehaviorSystem.js';
+import { entityDatabase } from './assets/EntityDatabase.js';
 import fs from 'fs';
 import path from 'path';
 import { parseBehaviourTree, BehaviourTreeRunner } from './BehaviorTree.js';
@@ -57,104 +58,134 @@ export default class EnemyManager {
     // Mapping from ID to index for fast lookups
     this.idToIndex = new Map();
     
-    // Enemy type definitions with sprite names
-    this.enemyTypes = [
-      {
-        id: 0,
-        name: 'Goblin',
-        spriteName: 'goblin',
-        maxHealth: 30,
-        speed: 15,
-        damage: 5,
-        width: 1,
-        height: 1,
-        renderScale: 2,
-        shootRange: 50,
-        shootCooldown: 2.5,
-        bulletSpeed: 25,
-        bulletLifetime: 2.0,
-        projectileCount: 1,
-        spread: 0,
-        inaccuracy: 0.1,
-        behavior: 'aggressive'
-      },
-      {
-        id: 1,
-        name: 'Orc',
-        spriteName: 'orc',
-        maxHealth: 50,
-        speed: 12,
-        damage: 8,
-        width: 1,
-        height: 1,
-        renderScale: 2,
-        shootRange: 60,
-        shootCooldown: 2.0,
-        bulletSpeed: 30,
-        bulletLifetime: 2.5,
-        projectileCount: 1,
-        spread: 0,
-        inaccuracy: 0.05,
-        behavior: 'defensive'
-      },
-      {
-        id: 2,
-        name: 'Skeleton',
-        spriteName: 'skeleton',
-        maxHealth: 25,
-        speed: 20,
-        damage: 6,
-        width: 1,
-        height: 1,
-        renderScale: 2,
-        shootRange: 80,
-        shootCooldown: 1.8,
-        bulletSpeed: 35,
-        bulletLifetime: 3.0,
-        projectileCount: 1,
-        spread: 0,
-        inaccuracy: 0.08,
-        behavior: 'patrol'
-      },
-      {
-        id: 3,
-        name: 'Troll',
-        spriteName: 'troll',
-        maxHealth: 100,
-        speed: 8,
-        damage: 15,
-        width: 1,
-        height: 1,
-        renderScale: 2,
-        shootRange: 40,
-        shootCooldown: 3.0,
-        bulletSpeed: 20,
-        bulletLifetime: 2.0,
-        projectileCount: 3,
-        spread: 0.5,
-        inaccuracy: 0.2,
-        behavior: 'guard'
-      },
-      {
-        id: 4,
-        name: 'Wizard',
-        spriteName: 'wizard',
-        maxHealth: 40,
-        speed: 10,
-        damage: 12,
-        width: 1,
-        height: 1,
-        renderScale: 2,
-        shootRange: 100,
-        shootCooldown: 2.2,
-        bulletSpeed: 40,
-        bulletLifetime: 4.0,
-        projectileCount: 1,
-        spread: 0,
-        inaccuracy: 0.02,
-        behavior: 'ranged'
-      }
-    ];
+    // Load enemy type definitions from entityDatabase, fallback to built-ins
+    const dbEnemies = entityDatabase.getAll('enemies');
+    if (dbEnemies.length > 0) {
+      // Normalize definitions coming from JSON so core fields exist
+      this.enemyTypes = dbEnemies.map((e, idx) => {
+        const attack = e.attack || {};
+        return {
+          id: idx,
+          name: e.name || e.id,
+          spriteName: (e.sprite || '').replace(/^chars:/,'') || 'unknown',
+          maxHealth: e.hp || e.health || 50,
+          speed: e.speed || 10,
+          damage: attack.damage || 10,
+          width: e.width || 1,
+          height: e.height || 1,
+          renderScale: e.renderScale || 2,
+          shootRange: attack.range || 120,
+          shootCooldown: (attack.cooldown||1000) / 1000,
+          bulletSpeed: attack.speed || 20,
+          bulletLifetime: (attack.lifetime||2000) / 1000,
+          projectileCount: attack.count || attack.projectileCount || 1,
+          spread: (attack.spread||0) * Math.PI / 180,
+          inaccuracy: (attack.inaccuracy||0) * Math.PI / 180,
+          behavior: e.ai?.behavior || 'aggressive',
+          bulletSpriteName: attack.sprite || null
+        };
+      });
+      console.log(`[EnemyManager] Loaded ${this.enemyTypes.length} enemy templates from EntityDB`);
+    } else {
+      console.warn('[EnemyManager] EntityDB returned zero enemies – falling back to hard-coded defaults');
+      this.enemyTypes = [
+        {
+          id: 0,
+          name: 'Goblin',
+          spriteName: 'goblin',
+          maxHealth: 30,
+          speed: 15,
+          damage: 5,
+          width: 1,
+          height: 1,
+          renderScale: 2,
+          shootRange: 50,
+          shootCooldown: 2.5,
+          bulletSpeed: 25,
+          bulletLifetime: 2.0,
+          projectileCount: 1,
+          spread: 0,
+          inaccuracy: 0.1,
+          behavior: 'aggressive'
+        },
+        {
+          id: 1,
+          name: 'Orc',
+          spriteName: 'orc',
+          maxHealth: 50,
+          speed: 12,
+          damage: 8,
+          width: 1,
+          height: 1,
+          renderScale: 2,
+          shootRange: 60,
+          shootCooldown: 2.0,
+          bulletSpeed: 30,
+          bulletLifetime: 2.5,
+          projectileCount: 1,
+          spread: 0,
+          inaccuracy: 0.05,
+          behavior: 'defensive'
+        },
+        {
+          id: 2,
+          name: 'Skeleton',
+          spriteName: 'skeleton',
+          maxHealth: 25,
+          speed: 20,
+          damage: 6,
+          width: 1,
+          height: 1,
+          renderScale: 2,
+          shootRange: 80,
+          shootCooldown: 1.8,
+          bulletSpeed: 35,
+          bulletLifetime: 3.0,
+          projectileCount: 1,
+          spread: 0,
+          inaccuracy: 0.08,
+          behavior: 'patrol'
+        },
+        {
+          id: 3,
+          name: 'Troll',
+          spriteName: 'troll',
+          maxHealth: 100,
+          speed: 8,
+          damage: 15,
+          width: 1,
+          height: 1,
+          renderScale: 2,
+          shootRange: 40,
+          shootCooldown: 3.0,
+          bulletSpeed: 20,
+          bulletLifetime: 2.0,
+          projectileCount: 3,
+          spread: 0.5,
+          inaccuracy: 0.2,
+          behavior: 'guard'
+        },
+        {
+          id: 4,
+          name: 'Wizard',
+          spriteName: 'wizard',
+          maxHealth: 40,
+          speed: 10,
+          damage: 12,
+          width: 1,
+          height: 1,
+          renderScale: 2,
+          shootRange: 100,
+          shootCooldown: 2.2,
+          bulletSpeed: 40,
+          bulletLifetime: 4.0,
+          projectileCount: 1,
+          spread: 0,
+          inaccuracy: 0.02,
+          behavior: 'ranged'
+        }
+      ];
+    }
     
     // Initialize behavior system
     this.behaviorSystem = new BehaviorSystem();

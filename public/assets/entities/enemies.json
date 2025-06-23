@@ -1,21 +1,66 @@
 [
   {
-    "id": 101,
+    "id": "goblin",
+    "name": "Goblin",
+    "sprite": "goblin",
+    "hp": 30,
+    "speed": 15,
+    "width": 1,
+    "height": 1,
+    "renderScale": 2,
+    "attack": {
+      "bulletId": "goblin_dart",
+      "cooldown": 2500,
+      "speed": 25,
+      "lifetime": 2000,
+      "count": 1,
+      "spread": 0
+    },
+    "ai": { "behaviorTree": "BasicChaseAndShoot" }
+  },
+  {
+    "id": "orc",
+    "name": "Orc",
+    "sprite": "orc",
+    "hp": 50,
+    "speed": 12,
+    "width": 1,
+    "height": 1,
+    "renderScale": 2,
+    "attack": {
+      "bulletId": "orc_arrow",
+      "cooldown": 2000,
+      "speed": 30,
+      "lifetime": 2500,
+      "count": 1,
+      "spread": 0
+    },
+    "ai": { "behaviorTree": "BasicChaseAndShoot" }
+  },
+  {
+    "id": "red_demon_bullet",
+    "sprite": "red_demon_fire",
+    "speed": 12,
+    "lifetime": 1500
+  },
+  {
+    "id": "red_demon",
     "name": "Red Demon",
     "sprite": "red_demon",
     "hp": 350,
-    "speed": 1.2,
-    "attack": {
-      "type": "straight",
-      "cooldown": 800,
-      "bulletId": 201
-    }
-  },
-  {
-    "id": 201,
-    "name": "Red Demon Bullet",
-    "sprite": "red_demon_bullet",
     "speed": 6,
-    "lifetime": 1500
+    "width": 1,
+    "height": 1,
+    "renderScale": 2,
+    "attack": {
+      "bulletId": "red_demon_bullet",
+      "cooldown": 800,
+      "speed": 12,
+      "lifetime": 2000,
+      "count": 5,
+      "spread": 45,
+      "inaccuracy": 5
+    },
+    "ai": { "behaviorTree": "RedDemonBT" }
   }
 ] 

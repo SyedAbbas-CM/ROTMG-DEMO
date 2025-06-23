@@ -21,10 +21,15 @@
       <input id="mapH" type="number" value="32" min="4" style="flex:1;"/>
     </div>
     <button id="newMapBtn">New Map</button>
+    <label>Mode</label>
+    <select id="modeSelect">
+      <option value="ground">Ground</option>
+      <option value="object">Object</option>
+      <option value="enemy">Enemy</option>
+    </select>
     <hr>
-    <label>Tilesheet</label>
-    <select id="atlasSelect"></select>
-    <button id="loadAtlasBtn">Load Atlas</button>
+    <label>Group</label>
+    <select id="groupSelect"></select>
     <div id="tilePicker" style="display:grid;grid-template-columns:repeat(auto-fill,32px);gap:4px;margin-top:6px;max-height:200px;overflow:auto;"></div>
     <hr>
     <button id="saveMapBtn">Save Map (Ctrl+S)</button>
@@ -36,6 +41,7 @@
 
   <script type="module">
     import { spriteDatabase } from '../src/assets/SpriteDatabase.js';
+    import { entityDatabase } from '../src/assets/EntityDatabase.js';
 
     const atlasSelect=document.getElementById('atlasSelect');
     const tilePicker=document.getElementById('tilePicker');
@@ -44,17 +50,66 @@
 
     let tileW=16, tileH=16;
     let mapW=32, mapH=32;
-    let mapData=[]; // 2d array of sprite names
+    let ground=[];   // 2d array of sprite names (tiles/walls)
+    let objects=[];  // array of {x,y,sprite}
+    let enemies=[];  // array of {x,y,sprite}
     let currentTile=null;
+    let isMouseDown=false; // track dragging
+    let currentRot=0; // 0,1,2,3 -> 0°,90°,180°,270°
 
     async function init(){
-      // load atlas list
+      // 1) Load *all* atlases so every sprite is available for the palette
       const atlRes=await fetch('/api/assets/atlases');
       const atlJson=await atlRes.json();
-      atlJson.atlases.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;atlasSelect.appendChild(o);});
-      // load map list
-      refreshMapList();
+      if(atlJson.atlases.length===0){alert('No atlases found under assets/atlases'); return;}
+
+      const paths=atlJson.atlases.map(p=>p.startsWith('/')?p:'/'+p);
+      await spriteDatabase.loadAtlases(paths);
+
+      // Load entity definitions for smarter enemy palette filtering
+      await entityDatabase.load();
+
+      // 2) Populate group selector
+      populateGroupSelect();
+
+      // 3) Initial build of side panel
+      updateTilePicker();
+
+      // 4) Map list & new blank map
+      await refreshMapList();
       newMap();
+    }
+
+    function populateGroupSelect(){
+      const grpSel=document.getElementById('groupSelect');
+      grpSel.innerHTML='';
+      const optAll=document.createElement('option');optAll.value='all';optAll.textContent='(all)';grpSel.appendChild(optAll);
+      spriteDatabase.getAllGroupNames().forEach(g=>{
+        const o=document.createElement('option');o.value=g;o.textContent=g;grpSel.appendChild(o);
+      });
+      grpSel.onchange=updateTilePicker;
+    }
+
+    function updateTilePicker(){
+      const mode=document.getElementById('modeSelect').value;
+      const selGroup=document.getElementById('groupSelect').value;
+      let names;
+      if(mode==='enemy') {
+        // Only sprites whose IDs appear in the enemy entity list (entity.sprite)
+        names=entityDatabase.getAll('enemies').map(e=>e.sprite).filter(Boolean);
+      } else {
+        if(selGroup&&selGroup!=='all') names=spriteDatabase.getGroup(selGroup).map(s=>s.name);
+        else names=spriteDatabase.getAllSpriteNames();
+      }
+
+      tilePicker.innerHTML='';
+      names.forEach(n=>{
+        const tile=document.createElement('canvas'); tile.width=32; tile.height=32; tile.style.cursor='pointer';
+        spriteDatabase.drawSprite(tile.getContext('2d'), n,0,0,32,32);
+        tile.onclick=()=>{currentTile=n;currentRot=0; Array.from(tilePicker.children).forEach(c=>c.style.outline=''); tile.style.outline='2px solid #fff';};
+        tile.title=n;
+        tilePicker.appendChild(tile);
+      });
     }
 
     async function refreshMapList(){
@@ -71,43 +126,94 @@
       mapH=parseInt(document.getElementById('mapH').value)||32;
       canvas.width=mapW*tileW;
       canvas.height=mapH*tileH;
-      mapData=Array.from({length:mapH},()=>Array(mapW).fill(null));
+      ground=Array.from({length:mapH},()=>Array(mapW).fill(null));
+      objects=[];
+      enemies=[];
       drawMap();
     }
 
     async function loadAtlas(){
       const path=atlasSelect.value; if(!path) return;
       await spriteDatabase.loadAtlases([path]);
-      const names=spriteDatabase.getAllSpriteNames();
-      tilePicker.innerHTML='';
-      names.forEach(n=>{
-        const tile=document.createElement('canvas'); tile.width=32; tile.height=32; tile.style.cursor='pointer';
-        spriteDatabase.drawSprite(tile.getContext('2d'), n,0,0,32,32);
-        tile.onclick=()=>{currentTile=n;};
-        tile.title=n;
-        tilePicker.appendChild(tile);
-      });
+      populateGroupSelect();
+      updateTilePicker();
     }
-    document.getElementById('loadAtlasBtn').onclick=loadAtlas;
+    document.getElementById('loadAtlasBtn')?.addEventListener('click',loadAtlas);
 
-    canvas.addEventListener('click', (e)=>{
-      if(!currentTile) return;
+    // Utility to translate mouse event to tile coords (returns null if out of bounds)
+    function eventToTile(e){
       const rect=canvas.getBoundingClientRect();
       const x=Math.floor((e.clientX-rect.left)/tileW);
       const y=Math.floor((e.clientY-rect.top)/tileH);
-      if(x<0||y<0||x>=mapW||y>=mapH)return;
-      mapData[y][x]=currentTile;
+      if(x<0||y<0||x>=mapW||y>=mapH) return null;
+      return {x,y};
+    }
+
+    function paint(x,y,isErase=false){
+      const mode=document.getElementById('modeSelect').value;
+      if(mode==='ground'){
+        ground[y][x]=isErase?null:{sprite:currentTile,rot:currentRot};
+      }else if(mode==='object'){
+        objects=objects.filter(o=>!(o.x===x&&o.y===y));
+        if(!isErase) objects.push({x,y,sprite:currentTile,rot:currentRot});
+      }else if(mode==='enemy'){
+        enemies=enemies.filter(o=>!(o.x===x&&o.y===y));
+        if(!isErase) enemies.push({x,y,sprite:currentTile,rot:currentRot});
+      }
+    }
+
+    canvas.addEventListener('mousedown',(e)=>{
+      if(e.button===2){ /* right click erase */ }
+      isMouseDown=true;
+      const pos=eventToTile(e); if(!pos) return;
+      const isErase=e.button===2;
+      paint(pos.x,pos.y,isErase);
       drawMap();
     });
 
+    canvas.addEventListener('mousemove',(e)=>{
+      if(!isMouseDown) return;
+      const pos=eventToTile(e); if(!pos) return;
+      const isErase=e.buttons===2; // 2 indicates right button pressed
+      paint(pos.x,pos.y,isErase);
+      drawMap();
+    });
+
+    window.addEventListener('mouseup',()=>{isMouseDown=false;});
+
+    // Prevent context menu on canvas (to allow right-click erase)
+    canvas.addEventListener('contextmenu',e=>e.preventDefault());
+
     function drawMap(){
       ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      // ground layer
       for(let y=0;y<mapH;y++){
         for(let x=0;x<mapW;x++){
-          const name=mapData[y][x];
-          if(name) spriteDatabase.drawSprite(ctx,name,x*tileW,y*tileH,tileW,tileH);
+          const cell=ground[y][x];
+          if(cell){
+             let spriteName,rot=0;
+             if(typeof cell==='string'){spriteName=cell;}
+             else{spriteName=cell.sprite;rot=cell.rot||0;}
+             ctx.save();
+             const centreX=x*tileW+tileW/2;
+             const centreY=y*tileH+tileH/2;
+             ctx.translate(centreX,centreY);
+             ctx.rotate(rot*Math.PI/2);
+             spriteDatabase.drawSprite(ctx,spriteName,-tileW/2,-tileH/2,tileW,tileH);
+             ctx.restore();
+          }
         }
       }
+      // objects layer (simple draw on top)
+      objects.forEach(o=>{
+        spriteDatabase.drawSprite(ctx,o.sprite,o.x*tileW,o.y*tileH,tileW,tileH);
+      });
+      // enemies layer (tint red outline)
+      enemies.forEach(e=>{
+        spriteDatabase.drawSprite(ctx,e.sprite,e.x*tileW,e.y*tileH,tileW,tileH);
+        ctx.strokeStyle='red';
+        ctx.strokeRect(e.x*tileW,e.y*tileH,tileW,tileH);
+      });
       ctx.strokeStyle='rgba(255,255,255,0.1)';
       for(let x=0;x<=mapW;x++){ctx.beginPath();ctx.moveTo(x*tileW,0);ctx.lineTo(x*tileW,mapH*tileH);ctx.stroke();}
       for(let y=0;y<=mapH;y++){ctx.beginPath();ctx.moveTo(0,y*tileH);ctx.lineTo(mapW*tileW,y*tileH);ctx.stroke();}
@@ -115,7 +221,7 @@
 
     async function saveMap(){
       const filename=prompt('Save as filename (e.g. myMap.json):'); if(!filename) return;
-      const data={ width:mapW,height:mapH,tileW,tileH,tiles:mapData };
+      const data={ width:mapW,height:mapH,tileW,tileH,ground,objects,enemies };
       const res=await fetch('/api/map-editor/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename,data})});
       const json=await res.json();
       if(json.success){alert('Saved to '+json.path); refreshMapList();}
@@ -130,11 +236,26 @@
       mapW=data.width; mapH=data.height; tileW=data.tileW; tileH=data.tileH;
       document.getElementById('mapW').value=mapW; document.getElementById('mapH').value=mapH;
       canvas.width=mapW*tileW; canvas.height=mapH*tileH;
-      mapData=data.tiles;
+      ground=data.ground||Array.from({length:mapH},()=>Array(mapW).fill(null));
+      objects=data.objects||[];
+      enemies=data.enemies||[];
       drawMap();
     };
 
     document.addEventListener('keydown',(e)=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveMap();}});
+
+    // Handle R key to rotate current selection
+    document.addEventListener('keydown',e=>{
+      if(e.key==='r'||e.key==='R'){
+        if(currentTile){
+          currentRot=(currentRot+1)%4;
+          // Optional: visual feedback – flash outline color
+          tilePicker.querySelectorAll('canvas').forEach(c=>{
+            if(c.title===currentTile) c.style.outline='2px dashed #0f0';
+          });
+        }
+      }
+    });
 
     init();
   </script>

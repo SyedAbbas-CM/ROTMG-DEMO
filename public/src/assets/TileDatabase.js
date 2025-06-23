@@ -29,6 +29,14 @@ export class TileDatabase {
 
   /** @param {string} id */
   get(id) { return this.tiles.get(id) || null; }
+
+  /** Merge in an array of tile defs coming from EntityDatabase */
+  merge(defArray=[]) {
+    defArray.forEach(def => {
+      if (def && def.id) this.tiles.set(def.id, def);
+    });
+    console.log(`[TileDB] merged ${defArray.length} external tile defs (total ${this.tiles.size})`);
+  }
 }
 
 export const tileDatabase = new TileDatabase(); 

@@ -5,5 +5,12 @@
     "sprite": "crate_wood",
     "hp": 20,
     "loot": []
+  },
+  {
+    "id": 99,
+    "name": "Realm Portal",
+    "sprite": "portal",
+    "hp": 1,
+    "walkable": true
   }
 ] 
