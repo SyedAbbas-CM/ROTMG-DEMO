@@ -22,7 +22,8 @@ export class MapManager {
     
     // For procedural generation
     this.perlin = new EnhancedPerlinNoise(options.seed || Math.random());
-    this.proceduralEnabled = true; // global default for newly created maps
+    this.proceduralEnabled = true;
+    this.isFixedMap = false;
     
     // Map storage (for server)
     this.mapStoragePath = options.mapStoragePath || '';
@@ -61,7 +62,7 @@ export class MapManager {
       tileSize: this.tileSize,
       chunkSize: CHUNK_SIZE,
       name: options.name || 'Untitled Map',
-      procedural: true,
+      procedural: this.proceduralEnabled,
       seed: this.perlin.seed,
       objects: [],
       enemySpawns: []
@@ -103,8 +104,6 @@ export class MapManager {
     // If no map explicitly supplied, fall back to the currently active one
     if (!mapId) mapId = this.activeMapId;
 
-    const meta = this.maps.get(mapId);
-    
     // Detailed chunk-send logging is controlled by DEBUG.chunkRequests
     if (globalThis.DEBUG?.chunkRequests) {
       console.log('[SRV] send', mapId, chunkX, chunkY);
@@ -117,15 +116,15 @@ export class MapManager {
       return this.chunks.get(key);
     }
     
-    // Otherwise generate or slice it depending on map type
-    if (meta && meta.procedural) {
+    // Otherwise generate or slice it
+    if (this.proceduralEnabled && !this.isFixedMap) {
       const chunkData = this.generateChunkData(chunkY, chunkX);
       this.chunks.set(key, chunkData);
       return chunkData;
     }
     
     // If we have a fixed map with a full tileMap, slice on demand
-    if (meta && meta.tileMap) {
+    if (this.isFixedMap) {
       const sliced = this._sliceChunkFromTileMap(mapId, chunkX, chunkY);
       if (sliced) {
         this.chunks.set(key, sliced);
@@ -398,7 +397,7 @@ export class MapManager {
     const tileY = Math.floor(y);
     
     // Debug coordinate conversion occasionally
-    if (globalThis.DEBUG?.wallChecks && Math.random() < 0.0001) {
+    if (Math.random() < 0.0001) {
       console.log(`[SERVER] Wall check: World (${x.toFixed(2)}, ${y.toFixed(2)}) -> Tile (${tileX}, ${tileY}) [tileSize=${this.tileSize}]`);
     }
     
@@ -413,7 +412,7 @@ export class MapManager {
     if (tile) {
       if (typeof tile.isWalkable === 'function') {
         const blocked = !tile.isWalkable();
-        if (globalThis.DEBUG?.wallChecks && blocked && Math.random() < 0.0001) {
+        if (blocked && Math.random() < 0.0001) {
           console.log(`[SERVER] Collision (property) at tile (${tileX}, ${tileY}), type: ${tile.type}`);
         }
         return blocked;
@@ -431,7 +430,7 @@ export class MapManager {
                      tileType === TILE_IDS.MOUNTAIN || 
                      tileType === TILE_IDS.WATER;
 
-    if (globalThis.DEBUG?.wallChecks && isBlocked && Math.random() < 0.0001) {
+    if (isBlocked && Math.random() < 0.0001) {
       console.log(`[SERVER] Collision at tile (${tileX}, ${tileY}), type: ${tileType}`);
     }
     return isBlocked;
@@ -481,20 +480,20 @@ export class MapManager {
       }
       
       // --- EDITOR COMPATIBILITY -----------------------------------------
-      // Browser editor exports { ground: [][] } of sprite names (strings) or null.
-      // We convert each cell into a Tile object preserving its sprite reference.
+      // If mapData comes from our browser editor, it has `ground` (2-D array of
+      // sprite names/null) instead of the numeric `tileMap` expected by the
+      // engine.  Convert it here: non-null => FLOOR (walkable); null => WALL.
       if (!mapData.tileMap && Array.isArray(mapData.ground)) {
-        mapData.tileMap = mapData.ground.map(row =>
-          row.map(cell => {
-            if (cell === null) return new Tile(TILE_IDS.WALL, 0);
-            // Store sprite reference inside properties so renderer can pick it.
-            return new Tile(TILE_IDS.FLOOR, 0, { spriteName: cell, walkable: true });
-          })
+        const tileMap = mapData.ground.map(row =>
+          row.map(cell => (cell===null ? TILE_IDS.WALL : TILE_IDS.FLOOR))
         );
+        mapData.tileMap = tileMap;
       }
 
       // Set map data and get ID
       const mapId = this.setMapData(mapData);
+      this.isFixedMap = true;
+      this.proceduralEnabled = false;
       console.log('Fixed map loaded successfully:', mapId);
       return mapId;
     } catch (error) {
@@ -751,8 +750,8 @@ export class MapManager {
     };
     this.maps.set(mapId, meta);
 
-    // Optionally update active map only if none set yet
-    if (!this.activeMapId) this.activeMapId = mapId;
+    // Mark as active map
+    this.activeMapId = mapId;
     
     // Update current dimensions
     this.width = mapData.width;
@@ -794,6 +793,7 @@ export class MapManager {
    */
   enableProceduralGeneration() {
     this.proceduralEnabled = true;
+    this.isFixedMap = false;
   }
   
   /**

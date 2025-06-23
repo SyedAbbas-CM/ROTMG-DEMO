@@ -522,7 +522,7 @@ export function updateFirstPerson(camera) {
     
     // Clear cache when moving into a new tile to force fresh lookups
     fpsTileCache.clear();
-
+    
     if (DEBUG_RENDERING) {
       console.log(`[FirstPerson] Camera Position: (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)})`);
       console.log(`[FirstPerson] Character Position: (${character.x.toFixed(2)}, ${character.y.toFixed(2)}, ${(character.z || CAMERA_HEIGHT).toFixed(2)})`);

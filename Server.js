@@ -29,9 +29,7 @@ const DEBUG = {
   chunkRequests: false,
   chat: false,
   playerMovement: false,
-  bulletEvents: false,
-  portal: true,        // Enable portal-related logs only
-  wallChecks: false    // Disable noisy per-frame wall collision logs
+  bulletEvents: false
 };
 
 // Expose debug flags globally so helper classes can reference them
@@ -368,9 +366,6 @@ console.log(`Created default map: ${defaultMapId}`);
     fixedMapId = await mapManager.loadFixedMap(fixedMapPath);
     storedMaps.set(fixedMapId, mapManager.getMapMetadata(fixedMapId));
 
-    // Ensure newly connecting clients still start in the procedural world
-    mapManager.activeMapId = defaultMapId;
-
     // Spawn enemies defined inside that map right away
     spawnMapEnemies(fixedMapId);
 
@@ -386,7 +381,7 @@ console.log(`Created default map: ${defaultMapId}`);
         destMap: fixedMapId
       };
       defMeta.objects.push(portalObj);
-      if (DEBUG.portal) console.log(`[PORTAL] Spawned portal from ${defaultMapId} to ${fixedMapId} at (${portalObj.x},${portalObj.y})`);
+      console.log(`[PORTAL] Spawned portal from ${defaultMapId} to ${fixedMapId} at (${portalObj.x},${portalObj.y})`);
     }
   } catch (err) {
     console.error('[PORTAL] Failed to load fixed map or set up portal', err);
@@ -1545,7 +1540,7 @@ function switchEntireWorldToMap(destMapId){
   if (!destMapId || gameState.mapId === destMapId) return;
   const meta = mapManager.getMapMetadata(destMapId);
   if (!meta) return;
-  if (DEBUG.portal) console.log(`Switching world to map ${destMapId}`);
+  console.log(`Switching world to map ${destMapId}`);
 
   gameState.mapId = destMapId;
 

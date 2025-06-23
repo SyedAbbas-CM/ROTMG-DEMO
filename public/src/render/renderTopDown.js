@@ -79,9 +79,8 @@ export function renderTopDownView() {
       }
       
       if (tile) {
-        const spriteDB = window.spriteDatabase;
-        const spriteName = (tile.properties && tile.properties.spriteName) || tile.spriteName;
-
+        const spritePos = TILE_SPRITES[tile.type];
+        
         // Convert tile grid position to world position
         // In this game, tile coordinates are the same as world coordinates
         const worldX = x;
@@ -97,34 +96,17 @@ export function renderTopDownView() {
           TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
         );
         
-        // If the tile references a named sprite and it's available, draw it via SpriteDatabase
-        if (spriteName && spriteDB && spriteDB.hasSprite(spriteName)) {
-          const sCfg = tileSheetObj.config;
-          const spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
-          const spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
-          spriteDB.drawSprite(
-            ctx,
-            spriteName,
-            screenPos.x - (spriteW * scaleFactor / 2),
-            screenPos.y - (spriteH * scaleFactor / 2),
-            spriteW * scaleFactor,
-            spriteH * scaleFactor
-          );
-        } else {
-          const spritePos = TILE_SPRITES[tile.type];
-
-          const sCfg = tileSheetObj.config;
-          const spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
-          const spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
-          ctx.drawImage(
-            tileSpriteSheet,
-            spritePos.x, spritePos.y, spriteW, spriteH, // Source rectangle
-            screenPos.x - (spriteW * scaleFactor / 2),
-            screenPos.y - (spriteH * scaleFactor / 2),
-            spriteW * scaleFactor,
-            spriteH * scaleFactor
-          );
-        }
+        const sCfg = tileSheetObj.config;
+        const spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
+        const spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
+        ctx.drawImage(
+          tileSpriteSheet,
+          spritePos.x, spritePos.y, spriteW, spriteH, // Source rectangle
+          screenPos.x - (spriteW * scaleFactor / 2),
+          screenPos.y - (spriteH * scaleFactor / 2),
+          spriteW * scaleFactor,
+          spriteH * scaleFactor
+        );
 
         // ---- Height shading -------------------------------------------------
         if (tile.height && tile.height > 0) {

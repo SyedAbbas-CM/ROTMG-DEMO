@@ -628,12 +628,7 @@ export class ClientNetworkManager {
             if (this.game.updateWorld) {
                 // Check if players is nested inside a 'players' property (from server inconsistency)
                 const players = data.players?.players || data.players;
-                this.game.updateWorld(data.enemies, data.bullets, players, data.objects);
-            }
-
-            // Provide objects directly if game has setObjects
-            if (this.game.setObjects && data.objects) {
-                this.game.setObjects(data.objects);
+                this.game.updateWorld(data.enemies, data.bullets, players);
             }
         };
         
@@ -758,9 +753,20 @@ export class ClientNetworkManager {
             this.connecting = true;
             
             try {
-                // Always connect without forcing mapId so new session starts in default world.
-                console.log(`Connecting to server: ${this.serverUrl}`);
-                this.socket = new WebSocket(this.serverUrl);
+                // Get stored map ID for reconnection
+                const storedMapId = localStorage.getItem('currentMapId');
+                let serverUrl = this.serverUrl;
+                
+                // Include map ID in URL if available
+                if (storedMapId) {
+                    console.log(`Found stored map ID: ${storedMapId}`);
+                    const separator = this.serverUrl.includes('?') ? '&' : '?';
+                    serverUrl = `${this.serverUrl}${separator}mapId=${storedMapId}`;
+                    console.log(`Connecting with map ID: ${serverUrl}`);
+                }
+                
+                console.log(`Connecting to server: ${serverUrl}`);
+                this.socket = new WebSocket(serverUrl);
                 
                 // Set binary type for ArrayBuffer data
                 this.socket.binaryType = 'arraybuffer';

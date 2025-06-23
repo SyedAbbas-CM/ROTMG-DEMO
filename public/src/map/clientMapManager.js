@@ -3,6 +3,7 @@
 import { Tile } from './tile.js';
 import { TILE_IDS, CHUNK_SIZE } from '../constants/constants.js';
 import { gameState } from '../game/gamestate.js';
+import { tileDatabase } from '../assets/TileDatabase.js';
 
 /**
  * ClientMapManager - Handles loading, caching, and rendering map data from server
@@ -225,6 +226,13 @@ export class ClientMapManager {
                         }
                     }
 
+                    // Merge DB definition if present
+                    const def = tileDatabase.get(t.spriteName || '');
+                    if (def) {
+                        t.properties.isWalkable = def.walkable;
+                        if (def.height !== undefined) t.height = def.height;
+                        if (def.slope) t.slope = def.slope;
+                    }
                     row.push(t);
                 }
                 processedData.push(row);
@@ -276,14 +284,12 @@ export class ClientMapManager {
             console.log(`Player position in tiles: (${playerTileX}, ${playerTileY})`);
         }
         
-        // Ensure player stays within map bounds (important!)
-        if (this.width > 0 && this.height > 0) {
-            if (playerTileX < 0 || playerTileX >= this.width || playerTileY < 0 || playerTileY >= this.height) {
-                console.warn(`Player outside map bounds: (${playerTileX}, ${playerTileY}) - Map size: ${this.width}x${this.height}`);
-                // Don't update chunks for out-of-bounds player
-                return;
-            }
-        }
+        // Allow negative world coordinates so maps can be centred at (0,0).
+        // Only early-exit if we know the map has finite positive bounds and the
+        // player moves *beyond* those – i.e. greater than width/height.  This
+        // keeps chunk streaming working when the map spans negative X/Y.
+        if (this.width > 0 && playerTileX >= this.width) return;
+        if (this.height > 0 && playerTileY >= this.height) return;
         
         // Convert player position to chunk coordinates (integers)
         const centerChunkX = Math.floor(playerTileX / this.chunkSize);
@@ -302,10 +308,8 @@ export class ClientMapManager {
                 const chunkX = centerChunkX + dx;
                 const chunkY = centerChunkY + dy;
                 
-                // Skip if out of map bounds
-                if (chunkX < 0 || chunkY < 0 || chunkX > maxChunkX || chunkY > maxChunkY) {
-                    continue;
-                }
+                // Skip if chunk exceeds positive map bounds (we now allow negative)
+                if (chunkX > maxChunkX || chunkY > maxChunkY) continue;
                 
                 // Calculate chunk start in tile coordinates
                 const chunkStartX = chunkX * this.chunkSize;
@@ -383,14 +387,11 @@ export class ClientMapManager {
                 const chunkX = centerChunkX + dx;
                 const chunkY = centerChunkY + dy;
                 
-                // Skip if out of map bounds
+                // Skip chunks that exceed the positive edge of a finite map.
                 if (this.mapMetadata && this.width > 0 && this.height > 0) {
                     const chunkStartX = chunkX * this.chunkSize;
                     const chunkStartY = chunkY * this.chunkSize;
-                    
-                    if (chunkStartX < 0 || chunkStartY < 0 || 
-                        chunkStartX >= this.width || 
-                        chunkStartY >= this.height) {
+                    if (chunkStartX >= this.width || chunkStartY >= this.height) {
                         continue;
                     }
                 }
@@ -499,10 +500,12 @@ export class ClientMapManager {
      * @returns {Tile|null} Tile object or null if not found
      */
     getTile(x, y) {
-        // STRICT MAP BOUNDARY CHECK: Only allow coordinates within map bounds
-        if (x < 0 || y < 0 || (this.width > 0 && x >= this.width) || (this.height > 0 && y >= this.height)) {
+        // Relax boundary check: allow negative world coordinates so maps
+        // with an origin at (0,0) centre can stream correctly.  Only guard
+        // against *positive* overflow when we know the map has finite size.
+        if ((this.width > 0 && x >= this.width) || (this.height > 0 && y >= this.height)) {
             if (ClientMapManager.DEBUG_VERBOSE) {
-                console.log(`Attempted to get tile outside map bounds: (${x}, ${y}), map size: ${this.width}x${this.height}`);
+                console.log(`Attempted to get tile beyond positive bounds: (${x}, ${y}) in map ${this.width}x${this.height}`);
             }
             return null;
         }

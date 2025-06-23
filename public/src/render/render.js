@@ -489,9 +489,6 @@ export function renderGame() {
   renderPlayers();
   renderCharacter();
   
-  // Draw decorative / interactive objects (e.g. portals)
-  renderObjects();
-  
   // Draw UI elements
   renderUI();
   
@@ -698,39 +695,6 @@ export function renderItems() {
       }
     } catch (error) {
       console.error("Error rendering item:", error);
-    }
-  });
-}
-
-/**
- * Render world objects such as portals or chests.
- */
-function renderObjects(){
-  const objects = gameState.worldObjects || [];
-  if (!objects.length) return;
-
-  const spriteDB = window.spriteDatabase;
-  const W = canvas2D.width;
-  const H = canvas2D.height;
-  const cam = gameState.camera;
-  const TILE = TILE_SIZE;
-
-  objects.forEach(obj => {
-    if (!obj) return;
-    const { x, y, sprite } = obj;
-    if (x===undefined||y===undefined) return;
-    const scr = cam.worldToScreen(x, y, W, H, TILE);
-    const size = TILE * 1.5; // slightly bigger than tile for visibility
-
-    // cull
-    if (scr.x < -size || scr.x > W+size || scr.y < -size || scr.y > H+size) return;
-
-    if (spriteDB && spriteDB.hasSprite(sprite)) {
-      spriteDB.drawSprite(ctx, sprite, scr.x - size/2, scr.y - size/2, size, size);
-    } else if (spriteManager && spriteManager.getSpriteSheet) {
-      // Fallback: draw simple square
-      ctx.fillStyle = 'purple';
-      ctx.fillRect(scr.x - size/2, scr.y - size/2, size, size);
     }
   });
 }

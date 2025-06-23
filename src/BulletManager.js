@@ -79,7 +79,7 @@ export default class BulletManager {
       this.stats.expired = 0;
       // wallHit / entityHit updated externally; keep their values for overlay then reset later if desired
     }
-
+    
     for (let i = 0; i < count; i++) {
       // Update position
       this.x[i] += this.vx[i] * deltaTime;

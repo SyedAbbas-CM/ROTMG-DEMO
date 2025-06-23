@@ -223,25 +223,12 @@ export class GameManager {
   }
   
   /**
-   * Set world objects list
-   * @param {Array} objects - Objects data from server
-   */
-  setObjects(objects){
-    this.objects = objects || [];
-    gameState.worldObjects = this.objects;
-    if (objects && objects.length && console.debug) {
-      console.debug(`[GAME] Received ${objects.length} objects`);
-    }
-  }
-  
-  /**
    * Update world state from server data
    * @param {Array} enemies - Updated enemies data
    * @param {Array} bullets - Updated bullets data
    * @param {Object} players - Updated players data
-   * @param {Array} objects - Updated objects data
    */
-  updateWorld(enemies, bullets, players, objects) {
+  updateWorld(enemies, bullets, players) {
     // Update enemies
     if (enemies && enemies.length > 0) {
       this.enemyManager.updateEnemies(enemies);
@@ -255,11 +242,6 @@ export class GameManager {
     // Update other players
     if (players) {
       this.players = players;
-    }
-    
-    // Update objects
-    if (objects) {
-      this.setObjects(objects);
     }
   }
   
@@ -295,8 +277,10 @@ export class GameManager {
    */
   applyCollision(data) {
     const { bulletId, enemyId, damage, enemyHealth } = data;
+    
     // Remove bullet
     this.bulletManager.removeBulletById(bulletId);
+    
     // Update enemy health
     this.enemyManager.setEnemyHealth(enemyId, enemyHealth);
   }

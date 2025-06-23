@@ -109,19 +109,6 @@ export async function initGame() {
         // Load tile database
         await tileDatabase.load('assets/database/tiles.json');
 
-        // Fetch list of atlases from server and preload them so map sprites are available
-        try {
-            const atlasListResp = await fetch('/api/assets/atlases');
-            const atlasJson = await atlasListResp.json();
-            const atlasPaths = atlasJson.atlases || [];
-            if (atlasPaths.length) {
-                console.log(`[INIT] Pre-loading ${atlasPaths.length} atlases into SpriteDatabase…`);
-                await spriteDatabase.loadAtlases(atlasPaths);
-            }
-        } catch (e) {
-            console.warn('[INIT] Failed to preload atlases', e);
-        }
-        
         // Initialize sprite sheets
         console.log('Loading sprite sheets...');
         try {
@@ -464,13 +451,11 @@ export async function initGame() {
  * Initialize game state and managers
  */
 function initializeGameState() {
-    // Spawn the player safely away from the portal at (5,5) so that we
-    // begin the session in the procedural world and only transition once
-    // the user intentionally steps onto the portal tile.
+    // Create local player with complete properties
     localPlayer = new Player({
         name: 'Player',
-        x: 10,   // start tile X (adjust as needed)
-        y: 10,   // start tile Y
+        x: 5,
+        y: 5,
         width: 1,
         height: 1,
         speed: 150,
