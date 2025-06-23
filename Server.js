@@ -35,6 +35,17 @@ const DEBUG = {
 // Expose debug flags globally so helper classes can reference them
 globalThis.DEBUG = DEBUG;
 
+// -----------------------------------------------------------------------------
+// Feature flags
+// -----------------------------------------------------------------------------
+// Toggle loading of a hand-crafted (editor-exported) map and automatic portal
+// insertion that links the procedural default map to that fixed map.  Set this
+// to `true` when you actively want to test the multi-map / portal flow.
+// When `false` (the default) the server will create only the procedural map
+// exactly as it did originally – giving us the "classic" single-world session
+// until we are ready to test portals again.
+const ENABLE_FIXED_MAP_LOADING = false;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -359,34 +370,39 @@ console.log(`Created default map: ${defaultMapId}`);
 // -----------------------------------------------------------
 // Load editor-exported map and register portal inside default map
 // -----------------------------------------------------------
-(async () => {
-  try {
-    // Use absolute path so MapManager treats it as a filesystem read rather than a URL.
-    const fixedMapPath = path.join(__dirname, 'public', 'maps', 'test.json');
-    fixedMapId = await mapManager.loadFixedMap(fixedMapPath);
-    storedMaps.set(fixedMapId, mapManager.getMapMetadata(fixedMapId));
+if (ENABLE_FIXED_MAP_LOADING) {
+  (async () => {
+    try {
+      // Use absolute path so MapManager treats it as a filesystem read rather than a URL.
+      const fixedMapPath = path.join(__dirname, 'public', 'maps', 'test.json');
+      fixedMapId = await mapManager.loadFixedMap(fixedMapPath);
+      storedMaps.set(fixedMapId, mapManager.getMapMetadata(fixedMapId));
 
-    // Spawn enemies defined inside that map right away
-    spawnMapEnemies(fixedMapId);
+      // Spawn enemies defined inside that map right away
+      spawnMapEnemies(fixedMapId);
 
-    // Place a portal in centre of procedural map linking to this fixed map
-    const defMeta = mapManager.getMapMetadata(defaultMapId);
-    if (defMeta) {
-      const portalObj = {
-        id: 'portal_to_' + fixedMapId,
-        type: 'portal',
-        sprite: 'portal',
-        x: 5,
-        y: 5,
-        destMap: fixedMapId
-      };
-      defMeta.objects.push(portalObj);
-      console.log(`[PORTAL] Spawned portal from ${defaultMapId} to ${fixedMapId} at (${portalObj.x},${portalObj.y})`);
+      // Place a portal in centre of procedural map linking to this fixed map
+      const defMeta = mapManager.getMapMetadata(defaultMapId);
+      if (defMeta) {
+        // Ensure objects array exists
+        if (!defMeta.objects) defMeta.objects = [];
+
+        const portalObj = {
+          id: 'portal_to_' + fixedMapId,
+          type: 'portal',
+          sprite: 'portal',
+          x: 5,
+          y: 5,
+          destMap: fixedMapId
+        };
+        defMeta.objects.push(portalObj);
+        console.log(`[PORTAL] Spawned portal from ${defaultMapId} to ${fixedMapId} at (${portalObj.x},${portalObj.y})`);
+      }
+    } catch (err) {
+      console.error('[PORTAL] Failed to load fixed map or set up portal', err);
     }
-  } catch (err) {
-    console.error('[PORTAL] Failed to load fixed map or set up portal', err);
-  }
-})();
+  })();
+}
 
 // Create bullet manager
 const bulletManager = new BulletManager(10000);
@@ -444,13 +460,19 @@ wss.on('connection', (socket, req) => {
     console.log(`Client ${clientId} connected without map request, using default map: ${defaultMapId}`);
   }
   
+  // Determine safe spawn coordinates within map bounds (avoid edges)
+  const metaForSpawn = mapManager.getMapMetadata(useMapId) || { width: 64, height: 64 };
+  const safeMargin = 2; // tiles away from the border
+  const spawnX = Math.random() * (metaForSpawn.width  - safeMargin * 2) + safeMargin;
+  const spawnY = Math.random() * (metaForSpawn.height - safeMargin * 2) + safeMargin;
+  
   // Store client info
   clients.set(clientId, {
     socket,
     player: {
       id: clientId,
-      x: Math.random() * 100 + 50, // Random spawn between 50-150
-      y: Math.random() * 100 + 50,
+      x: spawnX,
+      y: spawnY,
       rotation: 0,
       health: 100,
       lastUpdate: Date.now()
@@ -919,8 +941,23 @@ function handlePlayerUpdate(clientId, data) {
   const oldY = player.y;
   const oldRotation = player.rotation;
   
-  if (data.x !== undefined) player.x = data.x;
-  if (data.y !== undefined) player.y = data.y;
+  // Validate proposed coordinates against the current map so the server
+  // never trusts a client that tries to walk through walls.  If the new
+  // position is blocked we simply keep the previous coordinate.
+  if (data.x !== undefined) {
+    const newX = data.x;
+    if (!mapManager.isWallOrOutOfBounds(newX, player.y)) {
+      player.x = newX;
+    }
+  }
+
+  if (data.y !== undefined) {
+    const newY = data.y;
+    if (!mapManager.isWallOrOutOfBounds(player.x, newY)) {
+      player.y = newY;
+    }
+  }
+  
   if (data.rotation !== undefined) player.rotation = data.rotation;
   if (data.health !== undefined) player.health = data.health;
   

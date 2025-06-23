@@ -26,7 +26,7 @@ export class ClientMapManager {
         this.visibleChunks = []; // Currently visible chunks
         this.pendingChunks = new Set(); // Chunks we're currently requesting
         this.maxCachedChunks = 512; // FIXED: Increased from 100 to handle larger maps (64x64 needs 256 chunks)
-        this.chunkLoadDistance = 2; // How many chunks to load around player
+        this.chunkLoadDistance = 4; // Load farther ahead so movement never outruns chunks
         
         /**
          * Throttle duplicate chunk requests so the client won't hammer the
@@ -150,16 +150,16 @@ export class ClientMapManager {
     processChunkData(chunkData) {
         // Log the structure of the incoming data only when verbose debugging
         if (ClientMapManager.DEBUG_VERBOSE) {
-            console.log(`Processing chunk data: type=${typeof chunkData}`, 
-                        chunkData ? 
-                        `keys=${Object.keys(chunkData).join(',')}` : 
-                        'chunkData is null/undefined');
+        console.log(`Processing chunk data: type=${typeof chunkData}`, 
+                    chunkData ? 
+                    `keys=${Object.keys(chunkData).join(',')}` : 
+                    'chunkData is null/undefined');
         }
-        
+                    
         // If the chunk data is already in the right format, return it
         if (Array.isArray(chunkData)) {
             if (ClientMapManager.DEBUG_VERBOSE) {
-                console.log(`Chunk data is already an array with ${chunkData.length} rows`);
+            console.log(`Chunk data is already an array with ${chunkData.length} rows`);
             }
             return chunkData;
         }
@@ -175,17 +175,17 @@ export class ClientMapManager {
             if (chunkData.tiles && Array.isArray(chunkData.tiles)) {
                 tilesArray = chunkData.tiles;
                 if (ClientMapManager.DEBUG_VERBOSE) {
-                    console.log(`Found tiles array in chunkData.tiles with ${tilesArray.length} rows`);
+                console.log(`Found tiles array in chunkData.tiles with ${tilesArray.length} rows`);
                 }
             } else if (chunkData.data && Array.isArray(chunkData.data)) {
                 tilesArray = chunkData.data;
                 if (ClientMapManager.DEBUG_VERBOSE) {
-                    console.log(`Found tiles array in chunkData.data with ${tilesArray.length} rows`);
+                console.log(`Found tiles array in chunkData.data with ${tilesArray.length} rows`);
                 }
             } else if (Array.isArray(chunkData.data?.tiles)) {
                 tilesArray = chunkData.data.tiles;
                 if (ClientMapManager.DEBUG_VERBOSE) {
-                    console.log(`Found tiles array in chunkData.data.tiles with ${tilesArray.length} rows`);
+                console.log(`Found tiles array in chunkData.data.tiles with ${tilesArray.length} rows`);
                 }
             }
         }
@@ -219,10 +219,11 @@ export class ClientMapManager {
                     } else {
                         // Local fallback mapping by tile type so first-person renderer always has a name
                         switch (tileType) {
-                            case TILE_IDS.WALL:     t.spriteName = 'wall';      break;
-                            case TILE_IDS.WATER:    t.spriteName = 'water';     break;
-                            case TILE_IDS.MOUNTAIN: t.spriteName = 'mountain';  break;
-                            default:                t.spriteName = 'floor';     break;
+                            case TILE_IDS.WALL:      t.spriteName = 'wall';      break;
+                            case TILE_IDS.OBSTACLE:  t.spriteName = 'obstacle';  break;
+                            case TILE_IDS.WATER:     t.spriteName = 'water';     break;
+                            case TILE_IDS.MOUNTAIN:  t.spriteName = 'mountain';  break;
+                            default:                 t.spriteName = 'floor';     break;
                         }
                     }
 
@@ -239,11 +240,11 @@ export class ClientMapManager {
             }
             
             if (ClientMapManager.DEBUG_VERBOSE) {
-                console.log(`Processed chunk data: ${processedData.length} rows x ${processedData[0]?.length || 0} columns`);
+            console.log(`Processed chunk data: ${processedData.length} rows x ${processedData[0]?.length || 0} columns`);
             }
         } else {
             if (ClientMapManager.DEBUG_VERBOSE) {
-                console.warn('No valid tiles array found in chunk data, creating default floor tiles');
+            console.warn('No valid tiles array found in chunk data, creating default floor tiles');
             }
             
             // Create default chunk data
@@ -256,7 +257,7 @@ export class ClientMapManager {
             }
             
             if (ClientMapManager.DEBUG_VERBOSE) {
-                console.log(`Created default chunk data: ${processedData.length} rows x ${processedData[0].length} columns`);
+            console.log(`Created default chunk data: ${processedData.length} rows x ${processedData[0].length} columns`);
             }
         }
         
@@ -274,7 +275,14 @@ export class ClientMapManager {
             return;
         }
         
-        // Player coordinates are already in tile units – no need to divide by tileSize
+        // SAFETY: If map dimensions are not yet known, defer chunk requests until
+        // MAP_INFO arrives.  This prevents early negative-index requests that make
+        // the world appear huge.
+        if (this.width === 0 || this.height === 0) {
+            return;
+        }
+        
+        // World coordinates are already in tile units – use directly
         const playerTileX = Math.floor(playerX);
         const playerTileY = Math.floor(playerY);
         
@@ -284,12 +292,14 @@ export class ClientMapManager {
             console.log(`Player position in tiles: (${playerTileX}, ${playerTileY})`);
         }
         
-        // Allow negative world coordinates so maps can be centred at (0,0).
-        // Only early-exit if we know the map has finite positive bounds and the
-        // player moves *beyond* those – i.e. greater than width/height.  This
-        // keeps chunk streaming working when the map spans negative X/Y.
-        if (this.width > 0 && playerTileX >= this.width) return;
-        if (this.height > 0 && playerTileY >= this.height) return;
+        // Ensure player stays within map bounds (important!)
+        if (this.width > 0 && this.height > 0) {
+            if (playerTileX < 0 || playerTileX >= this.width || playerTileY < 0 || playerTileY >= this.height) {
+                console.warn(`Player outside map bounds: (${playerTileX}, ${playerTileY}) - Map size: ${this.width}x${this.height}`);
+                // Don't update chunks for out-of-bounds player
+                return;
+            }
+        }
         
         // Convert player position to chunk coordinates (integers)
         const centerChunkX = Math.floor(playerTileX / this.chunkSize);
@@ -308,8 +318,10 @@ export class ClientMapManager {
                 const chunkX = centerChunkX + dx;
                 const chunkY = centerChunkY + dy;
                 
-                // Skip if chunk exceeds positive map bounds (we now allow negative)
-                if (chunkX > maxChunkX || chunkY > maxChunkY) continue;
+                // Skip if out of map bounds
+                if (chunkX < 0 || chunkY < 0 || chunkX > maxChunkX || chunkY > maxChunkY) {
+                    continue;
+                }
                 
                 // Calculate chunk start in tile coordinates
                 const chunkStartX = chunkX * this.chunkSize;
@@ -333,14 +345,14 @@ export class ClientMapManager {
                     const now = Date.now();
                     const lastReq = this.lastChunkRequestTime.get(key) || 0;
                     if (now - lastReq >= this.requestThrottleMs) {
-                        this.pendingChunks.add(key);
+                    this.pendingChunks.add(key);
                         this.lastChunkRequestTime.set(key, now);
-                        try {
-                            this.networkManager.requestChunk(chunkX, chunkY);
-                            chunksRequested.push(`(${chunkX},${chunkY})`);
-                        } catch (error) {
-                            console.error(`Error requesting chunk (${chunkX}, ${chunkY}):`, error);
-                            this.pendingChunks.delete(key);
+                    try {
+                        this.networkManager.requestChunk(chunkX, chunkY);
+                        chunksRequested.push(`(${chunkX},${chunkY})`);
+                    } catch (error) {
+                        console.error(`Error requesting chunk (${chunkX}, ${chunkY}):`, error);
+                        this.pendingChunks.delete(key);
                         }
                     }
                 }
@@ -367,9 +379,13 @@ export class ClientMapManager {
         // Log local update
         console.log(`[MapManager] Updating visible chunks LOCALLY around (${playerX.toFixed(1)}, ${playerY.toFixed(1)})`);
         
-        // Convert player position to chunk coordinates
-        const centerChunkX = Math.floor(playerX / (this.chunkSize));
-        const centerChunkY = Math.floor(playerY / (this.chunkSize));
+        // World coordinates are already in tile units – use directly
+        const playerTileX = Math.floor(playerX);
+        const playerTileY = Math.floor(playerY);
+        
+        // Use tile units directly
+        const centerChunkX = Math.floor(playerX / this.chunkSize);
+        const centerChunkY = Math.floor(playerY / this.chunkSize);
         
         // Use custom distance if provided, otherwise use default
         const effectiveChunkLoadDistance = customChunkDistance !== undefined ? 
@@ -387,11 +403,14 @@ export class ClientMapManager {
                 const chunkX = centerChunkX + dx;
                 const chunkY = centerChunkY + dy;
                 
-                // Skip chunks that exceed the positive edge of a finite map.
+                // Skip if out of map bounds
                 if (this.mapMetadata && this.width > 0 && this.height > 0) {
                     const chunkStartX = chunkX * this.chunkSize;
                     const chunkStartY = chunkY * this.chunkSize;
-                    if (chunkStartX >= this.width || chunkStartY >= this.height) {
+                    
+                    if (chunkStartX < 0 || chunkStartY < 0 || 
+                        chunkStartX >= this.width || 
+                        chunkStartY >= this.height) {
                         continue;
                     }
                 }
@@ -478,14 +497,14 @@ export class ClientMapManager {
             const now = Date.now();
             const lastReq = this.lastChunkRequestTime.get(key) || 0;
             if (now - lastReq >= this.requestThrottleMs) {
-                this.pendingChunks.add(key);
+            this.pendingChunks.add(key);
                 this.lastChunkRequestTime.set(key, now);
-                try {
-                    this.networkManager.requestChunk(chunkX, chunkY);
-                    console.log(`Requested chunk (${chunkX}, ${chunkY}) on-demand`);
-                } catch (error) {
-                    console.error(`Error requesting chunk (${chunkX}, ${chunkY}):`, error);
-                    this.pendingChunks.delete(key);
+            try {
+                this.networkManager.requestChunk(chunkX, chunkY);
+                console.log(`Requested chunk (${chunkX}, ${chunkY}) on-demand`);
+            } catch (error) {
+                console.error(`Error requesting chunk (${chunkX}, ${chunkY}):`, error);
+                this.pendingChunks.delete(key);
                 }
             }
         }
@@ -500,17 +519,15 @@ export class ClientMapManager {
      * @returns {Tile|null} Tile object or null if not found
      */
     getTile(x, y) {
-        // Relax boundary check: allow negative world coordinates so maps
-        // with an origin at (0,0) centre can stream correctly.  Only guard
-        // against *positive* overflow when we know the map has finite size.
-        if ((this.width > 0 && x >= this.width) || (this.height > 0 && y >= this.height)) {
+        // STRICT MAP BOUNDARY CHECK: Only allow coordinates within map bounds
+        if (x < 0 || y < 0 || (this.width > 0 && x >= this.width) || (this.height > 0 && y >= this.height)) {
             if (ClientMapManager.DEBUG_VERBOSE) {
-                console.log(`Attempted to get tile beyond positive bounds: (${x}, ${y}) in map ${this.width}x${this.height}`);
+            console.log(`Attempted to get tile outside map bounds: (${x}, ${y}), map size: ${this.width}x${this.height}`);
             }
             return null;
         }
         
-        // Coordinates are in tile-units already; no scaling needed
+        // Coordinates are already tile units – no scaling needed
         const tileX = Math.floor(x);
         const tileY = Math.floor(y);
         
@@ -526,8 +543,8 @@ export class ClientMapManager {
         // No chunk data available
         if (!chunk) {
             if (ClientMapManager.DEBUG_VERBOSE) {
-                console.warn('tile miss', x, y, '-> chunk', chunkX, chunkY); // PROBE: Track missing tiles
-                console.log(`No chunk data for (${chunkX}, ${chunkY}), requesting from server`);
+            console.warn('tile miss', x, y, '-> chunk', chunkX, chunkY); // PROBE: Track missing tiles
+            console.log(`No chunk data for (${chunkX}, ${chunkY}), requesting from server`);
             }
             // Do NOT send another immediate request here; getChunk() already
             // queued one subject to throttling. Re-spamming would flood the
@@ -582,7 +599,7 @@ export class ClientMapManager {
             window.COLLISION_STATS.totalWallChecks++;
         }
 
-        // Coordinates are in tile-units already; no scaling needed
+        // Coordinates are already tile units – use directly
         const tileX = Math.floor(x);
         const tileY = Math.floor(y);
 
@@ -605,7 +622,7 @@ export class ClientMapManager {
 - Converting to tile: (${Math.floor(x / this.tileSize)}, ${Math.floor(y / this.tileSize)})
 - Percentage within tile: (${((x % this.tileSize) / this.tileSize).toFixed(4)}, ${((y % this.tileSize) / this.tileSize).toFixed(4)})`);
         }
-
+        
         // Map boundary check
         if (tileX < 0 || tileY < 0 || (this.width > 0 && tileX >= this.width) || (this.height > 0 && tileY >= this.height)) {
             // Treat outside of map as wall
@@ -625,15 +642,15 @@ export class ClientMapManager {
         // Get actual tile
         const tile = this.getTile(tileX, tileY);
         
-        // FIXED: If no tile found (due to missing chunk), treat as walkable to prevent invisible walls
-        // The cache issue has been fixed, so missing chunks are temporary and should not block movement
+        // If we don't have a tile yet it means the chunk hasn't arrived.  To
+        // avoid "running ahead of the world" we consider that position
+        // temporarily blocked and force the player to wait until the data is
+        // streamed in.
         if (!tile) {
             if (isProblematicCoord) {
-                console.log(`WALL CHECK RESULT: FALSE (no tile) - getTile(${tileX}, ${tileY}) returned null, treating as walkable`);
+                console.log(`WALL CHECK RESULT: TRUE (missing chunk)`);
             }
-            
-            // Don't treat missing tiles as obstacles anymore since we fixed the cache
-            return false;
+            return true; // treat as wall until chunk arrives
         }
         
         // IMPROVED: Use tile's isWalkable method if available

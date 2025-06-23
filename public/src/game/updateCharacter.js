@@ -158,18 +158,33 @@ export function updateCharacter(delta) {
   // Apply movement with delta time
   if (isMoving) {
     const distance = speed * delta;
-    
-    // MODIFIED: Apply movement directly since isCollision will always return false now
-    // First move along X axis
-    const newX = character.x + moveX * distance;
-    
-    // Then move along Y axis 
-    const newY = character.y + moveY * distance;
-    // ADDED: Still check for collision even though we're not stopping movement
-    // This allows the visualization and debugging features to work
-    if (!isCollision(newX, originalY)) character.x = newX;
-    if (!isCollision(character.x, newY)) character.y = newY;
-    
+
+    // ------------------------------------------------------------------
+    // NEW: Sub-step movement to avoid tunnelling through thin obstacles.
+    // We break the full movement vector into ≤0.25-tile chunks and test
+    // collision after each micro-step.  This guarantees we cannot skip
+    // an obstacle even if the character moves several tiles in one frame.
+    // ------------------------------------------------------------------
+
+    const MAX_STEP = 0.25;          // tile-units per micro-step
+    const steps = Math.max(1, Math.ceil(distance / MAX_STEP));
+    const stepX = (moveX * distance) / steps;
+    const stepY = (moveY * distance) / steps;
+
+    for (let s = 0; s < steps; s++) {
+      // X axis first
+      const attemptX = character.x + stepX;
+      if (!isCollision(attemptX, character.y)) {
+        character.x = attemptX;
+      }
+
+      // Y axis
+      const attemptY = character.y + stepY;
+      if (!isCollision(character.x, attemptY)) {
+        character.y = attemptY;
+      }
+    }
+
     // If we moved, log the new position occasionally
     if (Math.abs(character.x - originalX) > 0.001 || Math.abs(character.y - originalY) > 0.001) {
       // Only log position every 10 units to avoid spam
@@ -197,6 +212,17 @@ function isCollision(x, y) {
     return false;
   }
   
+  // -------------------------------------------------------------
+  // FAST PATH – centre-tile check
+  // -------------------------------------------------------------
+  // If the tile we are standing in is already known to be blocking, we can
+  // immediately report a collision and avoid the costly multi-point test
+  // below.  This guarantees that simple 1×1 wall tiles (e.g. red obstacle
+  // blocks) always stop the player.
+  if (gameState.map.isWallOrObstacle && gameState.map.isWallOrObstacle(x, y)) {
+    return true;
+  }
+  
   // Character dimensions (tile-units). Default to one tile square.
   const width = gameState.character.width || 0.8;
   const height = gameState.character.height || 0.8;
@@ -206,7 +232,7 @@ function isCollision(x, y) {
   // for the tile size (which is typically 12px)
   
   // Calculate a more appropriate hitbox size based on tileSize
-  const tileSize = gameState.map.tileSize || 12;
+  const tileSize = gameState.map?.tileSize || 12;
   // Use 40% of one tile width for tighter fit (walls are unit tiles)
   const collisionSize = 0.4; // tile units
   const halfSize = collisionSize / 2;
@@ -278,7 +304,7 @@ function isCollision(x, y) {
     }
   }
   
-  // MODIFIED: Always return false to allow movement regardless of collision - reversed but turn to false if u want.
+  // Return TRUE if any of the point probes detected a blocking tile.
   return wouldCollide;
 }
 
@@ -430,7 +456,7 @@ function visualizeCollisionPoints(x, y, halfSize) {
   ctx.stroke();
   
   // Draw tile grid lines for reference if within reasonable range of player
-  const tileSize = gameState.map.tileSize || 12;
+  const tileSize = gameState.map?.tileSize || 12;
   const startTileX = Math.floor((x - 5 * tileSize) / tileSize);
   const startTileY = Math.floor((y - 5 * tileSize) / tileSize);
   const endTileX = Math.floor((x + 5 * tileSize) / tileSize);
@@ -474,149 +500,142 @@ function visualizeCollisionPoints(x, y, halfSize) {
  * @returns {boolean} True if point collides with a wall
  */
 function isPointColliding(x, y) {
-  // Important: x and y are in world coordinates, NOT tile coordinates
-  try {
-    // Get tile size for calculations
-    const tileSize = gameState.map.tileSize || 12;
-    const tileX = Math.floor(x / tileSize);
-    const tileY = Math.floor(y / tileSize);
+  // Get tile size for calculations
+  const tileSize = gameState.map?.tileSize || 12;
+  const tileX = Math.floor(x);
+  const tileY = Math.floor(y);
 
-    // ENHANCED: Log coordinate details on every 50th check (approximately)
-    const shouldLogDetails = Math.random() < 0.02;
-    
-    if (shouldLogDetails) {
-      console.log(`COLLISION CHECK:
+  // ENHANCED: Log coordinate details on every 50th check (approximately)
+  const shouldLogDetails = Math.random() < 0.02;
+  
+  if (shouldLogDetails) {
+    console.log(`COLLISION CHECK:
 - World Position: (${x.toFixed(4)}, ${y.toFixed(4)})
 - Tile Position: (${tileX}, ${tileY})
 - TileSize: ${tileSize}
 - Tile Percent: (${((x % tileSize) / tileSize).toFixed(4)}, ${((y % tileSize) / tileSize).toFixed(4)})`);
-    }
+  }
 
-    // Check if position is a wall or obstacle using the map manager's method
-    // This is the correct way - let the map manager handle the conversion
-    if (gameState.map.isWallOrObstacle) {
-      const collides = gameState.map.isWallOrObstacle(x, y);
+  // Check if position is a wall or obstacle using the map manager's method
+  // This is the correct way - let the map manager handle the conversion
+  if (gameState.map.isWallOrObstacle) {
+    const collides = gameState.map.isWallOrObstacle(x, y);
+    
+    // Add enhanced logging for collisions
+    if (collides || shouldLogDetails) {
+      // Log exact conversion details for debugging
+      const exactTileX = x;
+      const exactTileY = y;
       
-      // Add enhanced logging for collisions
-      if (collides || shouldLogDetails) {
-        // Log exact conversion details for debugging
-        const exactTileX = x;
-        const exactTileY = y;
-        
-        const tileCenterX = (tileX + 0.5);
-        const tileCenterY = (tileY + 0.5);
-        
-        const distanceFromTileCenter = Math.sqrt(
-          Math.pow(x - tileCenterX, 2) + 
-          Math.pow(y - tileCenterY, 2)
-        );
-        
-        const tileEdgesInfo = {
-          left: tileX,
-          right: tileX + 1,
-          top: tileY,
-          bottom: tileY + 1,
-          distToWest: x - tileX,
-          distToEast: (tileX + 1) - x,
-          distToNorth: y - tileY,
-          distToSouth: (tileY + 1) - y
-        };
-        
-        // Get minimum distance to any tile edge
-        const minDistance = Math.min(
-          tileEdgesInfo.distToWest,
-          tileEdgesInfo.distToEast,
-          tileEdgesInfo.distToNorth,
-          tileEdgesInfo.distToSouth
-        );
-        
-        // Find which edge is closest
-        let closestEdge = "unknown";
-        if (minDistance === tileEdgesInfo.distToWest) closestEdge = "west";
-        else if (minDistance === tileEdgesInfo.distToEast) closestEdge = "east";
-        else if (minDistance === tileEdgesInfo.distToNorth) closestEdge = "north";
-        else if (minDistance === tileEdgesInfo.distToSouth) closestEdge = "south";
-        
-        const message = collides 
-          ? `WALL COLLISION DETECTED` 
-          : `No collision`;
-        
-        console.log(`${message} at world (${x.toFixed(2)}, ${y.toFixed(2)}), tile (${tileX}, ${tileY}):
+      const tileCenterX = (tileX + 0.5);
+      const tileCenterY = (tileY + 0.5);
+      
+      const distanceFromTileCenter = Math.sqrt(
+        Math.pow(x - tileCenterX, 2) + 
+        Math.pow(y - tileCenterY, 2)
+      );
+      
+      const tileEdgesInfo = {
+        left: tileX,
+        right: tileX + 1,
+        top: tileY,
+        bottom: tileY + 1,
+        distToWest: x - tileX,
+        distToEast: (tileX + 1) - x,
+        distToNorth: y - tileY,
+        distToSouth: (tileY + 1) - y
+      };
+      
+      // Get minimum distance to any tile edge
+      const minDistance = Math.min(
+        tileEdgesInfo.distToWest,
+        tileEdgesInfo.distToEast,
+        tileEdgesInfo.distToNorth,
+        tileEdgesInfo.distToSouth
+      );
+      
+      // Find which edge is closest
+      let closestEdge = "unknown";
+      if (minDistance === tileEdgesInfo.distToWest) closestEdge = "west";
+      else if (minDistance === tileEdgesInfo.distToEast) closestEdge = "east";
+      else if (minDistance === tileEdgesInfo.distToNorth) closestEdge = "north";
+      else if (minDistance === tileEdgesInfo.distToSouth) closestEdge = "south";
+      
+      const message = collides 
+        ? `WALL COLLISION DETECTED` 
+        : `No collision`;
+      
+      console.log(`${message} at world (${x.toFixed(2)}, ${y.toFixed(2)}), tile (${tileX}, ${tileY}):
 - Exact tile coords: (${exactTileX.toFixed(4)}, ${exactTileY.toFixed(4)})
 - Distance from tile center: ${distanceFromTileCenter.toFixed(2)}
 - Closest edge: ${closestEdge} (${minDistance.toFixed(2)} units)
 - Tile edges: W:${tileEdgesInfo.left} E:${tileEdgesInfo.right} N:${tileEdgesInfo.top} S:${tileEdgesInfo.bottom}`);
-        
-        // Get more detailed information about the tile if possible
-        if (gameState.map.getTile) {
-          const tile = gameState.map.getTile(tileX, tileY);
-          if (tile) {
-            console.log(`Tile details: 
+      
+      // Get more detailed information about the tile if possible
+      if (gameState.map.getTile) {
+        const tile = gameState.map.getTile(tileX, tileY);
+        if (tile) {
+          console.log(`Tile details: 
 - Type: ${tile.type}
 - Name: ${TILE_IDS[tile.type] || 'Unknown'}
 - Properties: ${JSON.stringify(tile.properties || {})}`);
-            
-            // Check surrounding tiles if a collision was detected
-            if (collides) {
-              console.log("Checking surrounding tiles...");
-              for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                  if (dx === 0 && dy === 0) continue; // Skip center tile
+          
+          // Check surrounding tiles if a collision was detected
+          if (collides) {
+            console.log("Checking surrounding tiles...");
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                if (dx === 0 && dy === 0) continue; // Skip center tile
+                
+                const nearTileX = tileX + dx;
+                const nearTileY = tileY + dy;
+                const nearTile = gameState.map.getTile(nearTileX, nearTileY);
+                
+                if (nearTile) {
+                  const isWall = gameState.map.isWallOrObstacle(
+                    nearTileX + 0.5, 
+                    nearTileY + 0.5
+                  );
                   
-                  const nearTileX = tileX + dx;
-                  const nearTileY = tileY + dy;
-                  const nearTile = gameState.map.getTile(nearTileX, nearTileY);
-                  
-                  if (nearTile) {
-                    const isWall = gameState.map.isWallOrObstacle(
-                      nearTileX + 0.5, 
-                      nearTileY + 0.5
-                    );
-                    
-                    console.log(`Tile (${nearTileX}, ${nearTileY}): Type ${nearTile.type}, isWall=${isWall}`);
-                  }
+                  console.log(`Tile (${nearTileX}, ${nearTileY}): Type ${nearTile.type}, isWall=${isWall}`);
                 }
               }
             }
           }
         }
       }
-      
-      return collides;
-    }
-    
-    // Fallback: Manual tile lookup and collision check
-    // Get tile from map
-    const tile = gameState.map.getTile(tileX, tileY);
-    if (!tile) {
-      // No tile found (out of bounds)
-      if (shouldLogDetails) {
-        console.log(`No tile found at (${tileX}, ${tileY}) - treating as wall (map boundary)`);
-      }
-      return true;
-    }
-    
-    // Check if it's a wall, obstacle, or mountain
-    const collides = (
-      tile.type === TILE_IDS.WALL || 
-      tile.type === TILE_IDS.OBSTACLE || 
-      tile.type === TILE_IDS.MOUNTAIN ||
-      tile.type === TILE_IDS.WATER
-    );
-    
-    // Add logging for collisions
-    if (collides || shouldLogDetails) {
-      console.log(`Tile ${collides ? 'collision' : 'check'} at world (${x.toFixed(2)}, ${y.toFixed(2)}), tile (${tileX}, ${tileY}):
-- Tile type: ${tile.type} (${TILE_IDS[tile.type] || 'Unknown'})
-- Is blocking: ${collides}`);
     }
     
     return collides;
-  } catch (error) {
-    logger.error("Error in collision detection:", error);
-    // On error, default to no collision
-    return false;
   }
+  
+  // Fallback: Manual tile lookup and collision check
+  // Get tile from map
+  const tile = gameState.map.getTile(tileX, tileY);
+  if (!tile) {
+    // No tile found (out of bounds)
+    if (shouldLogDetails) {
+      console.log(`No tile found at (${tileX}, ${tileY}) - treating as wall (map boundary)`);
+    }
+    return true;
+  }
+  
+  // Check if it's a wall, obstacle, or mountain
+  const collides = (
+    tile.type === TILE_IDS.WALL || 
+    tile.type === TILE_IDS.OBSTACLE || 
+    tile.type === TILE_IDS.MOUNTAIN ||
+    tile.type === TILE_IDS.WATER
+  );
+  
+  // Add logging for collisions
+  if (collides || shouldLogDetails) {
+    console.log(`Tile ${collides ? 'collision' : 'check'} at world (${x.toFixed(2)}, ${y.toFixed(2)}), tile (${tileX}, ${tileY}):
+- Tile type: ${tile.type} (${TILE_IDS[tile.type] || 'Unknown'})
+- Is blocking: ${collides}`);
+  }
+  
+  return collides;
 }
 
 // ADDED: Keyboard shortcut to toggle collision debugging

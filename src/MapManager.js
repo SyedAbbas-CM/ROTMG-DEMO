@@ -155,8 +155,11 @@ export class MapManager {
         const globalX = chunkCol * CHUNK_SIZE + x;
         const globalY = chunkRow * CHUNK_SIZE + y;
         
-        // Skip if out of world bounds
-        if (globalX >= this.width || globalY >= this.height) {
+        // Skip if out of world bounds (including negative coordinates)
+        // Treat any coordinate outside 0‥width-1 or 0‥height-1 as wall so the
+        // procedural world cannot extend infinitely into negative space.
+        if (globalX < 0 || globalY < 0 ||
+            globalX >= this.width || globalY >= this.height) {
           row.push(new Tile(TILE_IDS.WALL)); // Use wall for out of bounds
           continue;
         }

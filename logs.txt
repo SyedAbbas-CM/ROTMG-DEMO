@@ -1,524 +1,442 @@
-[Log] MOVE – {clientX: 869, clientY: 400, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 869, clientY: 400, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 840, clientY: 427, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 840, clientY: 427, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 832, clientY: 435, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 832, clientY: 435, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 813, clientY: 453, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 813, clientY: 453, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 466, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 466, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 466, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 466, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 467, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 467, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 468, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 468, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 468, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 468, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 470, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 470, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 472, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 472, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 473, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 473, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 473, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 473, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 473, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 473, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 473, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 473, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 473, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 473, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 473, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 473, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 473, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 473, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 473, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 473, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 800, clientY: 473, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 473, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] START – {row: 15, col: 13, xCanvas: 104, …} (sprite-editor.html, line 140)
-{row: 15, col: 13, xCanvas: 104, yCanvas: 120}Object
-[Log] END – {} (sprite-editor.html, line 140)
-[Log] MOVE – {clientX: 756, clientY: 415, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 756, clientY: 415, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 756, clientY: 415, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 756, clientY: 415, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 756, clientY: 415, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 756, clientY: 415, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 756, clientY: 414, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 756, clientY: 414, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 755, clientY: 413, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 755, clientY: 413, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 755, clientY: 413, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 755, clientY: 413, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 754, clientY: 412, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 754, clientY: 412, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 754, clientY: 412, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 754, clientY: 412, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 754, clientY: 412, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 754, clientY: 412, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 753, clientY: 412, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 753, clientY: 412, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 753, clientY: 411, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 753, clientY: 411, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 753, clientY: 411, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 753, clientY: 411, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 753, clientY: 410, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 753, clientY: 410, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 753, clientY: 409, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 753, clientY: 409, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 752, clientY: 408, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 752, clientY: 408, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 751, clientY: 408, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 751, clientY: 408, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 751, clientY: 408, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 751, clientY: 408, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 751, clientY: 407, left: 574.391357421875, …} (sprite-editor.html, line 140)
-{clientX: 751, clientY: 407, left: 574.391357421875, top: 214.6956787109375, scale: 1.9998094687570056, …}Object
-[Log] MOVE – {clientX: 751, clientY: 407, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 751, clientY: 407, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] START – {row: 6, col: 5, xCanvas: 40, …} (sprite-editor.html, line 140)
-{row: 6, col: 5, xCanvas: 40, yCanvas: 48}Object
-[Log] END – {} (sprite-editor.html, line 140)
-[Log] MOVE – {clientX: 716, clientY: 386, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 716, clientY: 386, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 717, clientY: 386, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 717, clientY: 386, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 719, clientY: 386, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 719, clientY: 386, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 720, clientY: 384, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 720, clientY: 384, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 722, clientY: 382, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 722, clientY: 382, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 727, clientY: 380, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 727, clientY: 380, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 732, clientY: 376, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 732, clientY: 376, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 735, clientY: 374, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 735, clientY: 374, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 737, clientY: 373, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 737, clientY: 373, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 738, clientY: 373, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 738, clientY: 373, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 738, clientY: 373, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 738, clientY: 373, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 738, clientY: 373, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 738, clientY: 373, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 738, clientY: 373, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 738, clientY: 373, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 738, clientY: 373, left: 586.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 738, clientY: 373, left: 586.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 736, clientY: 373, left: 584.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 736, clientY: 373, left: 584.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 735, clientY: 373, left: 583.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 735, clientY: 373, left: 583.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 733, clientY: 373, left: 581.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 733, clientY: 373, left: 581.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 729, clientY: 373, left: 577.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 729, clientY: 373, left: 577.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 725, clientY: 373, left: 573.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 725, clientY: 373, left: 573.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 720, clientY: 373, left: 568.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 720, clientY: 373, left: 568.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 715, clientY: 373, left: 563.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 715, clientY: 373, left: 563.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 711, clientY: 373, left: 559.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 711, clientY: 373, left: 559.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 706, clientY: 373, left: 554.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 706, clientY: 373, left: 554.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 700, clientY: 373, left: 548.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 700, clientY: 373, left: 548.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 693, clientY: 373, left: 541.521728515625, …} (sprite-editor.html, line 140)
-{clientX: 693, clientY: 373, left: 541.521728515625, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 687, clientY: 373, left: 535.521728515625, …} (sprite-editor.html, line 140)
-{clientX: 687, clientY: 373, left: 535.521728515625, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 680, clientY: 373, left: 528.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 680, clientY: 373, left: 528.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 675, clientY: 373, left: 523.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 675, clientY: 373, left: 523.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 670, clientY: 373, left: 518.5217895507812, …} (sprite-editor.html, line 140)
-{clientX: 670, clientY: 373, left: 518.5217895507812, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 663, clientY: 373, left: 511.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 663, clientY: 373, left: 511.5217590332031, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 656, clientY: 373, left: 504.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 656, clientY: 373, left: 504.5217590332031, top: 236.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 647, clientY: 371, left: 495.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 647, clientY: 371, left: 495.52178955078125, top: 234.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 638, clientY: 370, left: 486.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 638, clientY: 370, left: 486.5217590332031, top: 233.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 628, clientY: 368, left: 476.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 628, clientY: 368, left: 476.5217590332031, top: 231.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 618, clientY: 366, left: 466.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 618, clientY: 366, left: 466.5217590332031, top: 229.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 609, clientY: 365, left: 457.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 609, clientY: 365, left: 457.52178955078125, top: 228.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 601, clientY: 363, left: 449.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 601, clientY: 363, left: 449.5217590332031, top: 226.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 593, clientY: 362, left: 441.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 593, clientY: 362, left: 441.5217590332031, top: 225.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 586, clientY: 360, left: 434.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 586, clientY: 360, left: 434.5217590332031, top: 223.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 580, clientY: 359, left: 428.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 580, clientY: 359, left: 428.5217590332031, top: 222.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 574, clientY: 358, left: 422.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 574, clientY: 358, left: 422.52178955078125, top: 221.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 567, clientY: 356, left: 415.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 567, clientY: 356, left: 415.52178955078125, top: 219.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 561, clientY: 355, left: 409.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 561, clientY: 355, left: 409.5217590332031, top: 218.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 554, clientY: 354, left: 402.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 554, clientY: 354, left: 402.52178955078125, top: 217.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 548, clientY: 353, left: 396.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 548, clientY: 353, left: 396.52178955078125, top: 216.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 542, clientY: 351, left: 390.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 542, clientY: 351, left: 390.52178955078125, top: 214.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 536, clientY: 350, left: 384.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 536, clientY: 350, left: 384.5217590332031, top: 213.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 531, clientY: 349, left: 379.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 531, clientY: 349, left: 379.5217590332031, top: 212.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 526, clientY: 347, left: 374.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 526, clientY: 347, left: 374.5217590332031, top: 210.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 520, clientY: 346, left: 368.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 520, clientY: 346, left: 368.5217590332031, top: 209.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 514, clientY: 345, left: 362.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 514, clientY: 345, left: 362.5217590332031, top: 208.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 509, clientY: 344, left: 357.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 509, clientY: 344, left: 357.5217590332031, top: 207.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 502, clientY: 342, left: 350.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 502, clientY: 342, left: 350.52178955078125, top: 205.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 496, clientY: 340, left: 344.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 496, clientY: 340, left: 344.5217590332031, top: 203.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 491, clientY: 339, left: 339.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 491, clientY: 339, left: 339.5217590332031, top: 202.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 485, clientY: 337, left: 333.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 485, clientY: 337, left: 333.5217590332031, top: 200.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 480, clientY: 335, left: 328.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 480, clientY: 335, left: 328.5217590332031, top: 198.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 474, clientY: 333, left: 322.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 474, clientY: 333, left: 322.5217590332031, top: 196.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 469, clientY: 332, left: 317.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 469, clientY: 332, left: 317.5217590332031, top: 195.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 465, clientY: 329, left: 313.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 465, clientY: 329, left: 313.5217590332031, top: 192.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 459, clientY: 327, left: 307.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 459, clientY: 327, left: 307.5217590332031, top: 190.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 453, clientY: 325, left: 301.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 453, clientY: 325, left: 301.52178955078125, top: 188.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 449, clientY: 323, left: 297.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 449, clientY: 323, left: 297.5217590332031, top: 186.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 446, clientY: 321, left: 294.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 446, clientY: 321, left: 294.5217590332031, top: 184.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 440, clientY: 319, left: 288.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 440, clientY: 319, left: 288.5217590332031, top: 182.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 436, clientY: 317, left: 284.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 436, clientY: 317, left: 284.5217590332031, top: 180.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 432, clientY: 315, left: 280.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 432, clientY: 315, left: 280.52178955078125, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 428, clientY: 313, left: 276.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 428, clientY: 313, left: 276.52178955078125, top: 176.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 425, clientY: 312, left: 273.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 425, clientY: 312, left: 273.5217590332031, top: 175.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 422, clientY: 310, left: 270.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 422, clientY: 310, left: 270.52178955078125, top: 173.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 310, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 310, left: 268.5217590332031, top: 173.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 309, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 309, left: 268.5217590332031, top: 172.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 419, clientY: 308, left: 267.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 419, clientY: 308, left: 267.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 419, clientY: 308, left: 267.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 419, clientY: 308, left: 267.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 418, clientY: 308, left: 266.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 418, clientY: 308, left: 266.52178955078125, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 419, clientY: 308, left: 267.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 419, clientY: 308, left: 267.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 419, clientY: 308, left: 267.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 419, clientY: 308, left: 267.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 419, clientY: 308, left: 267.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 419, clientY: 308, left: 267.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 419, clientY: 308, left: 267.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 419, clientY: 308, left: 267.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 419, clientY: 308, left: 267.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 419, clientY: 308, left: 267.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 308, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 308, left: 268.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 308, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 308, left: 268.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 308, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 308, left: 268.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 308, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 308, left: 268.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 306, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 306, left: 268.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 304, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 304, left: 268.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 303, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 303, left: 268.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 300, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 300, left: 268.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 300, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 300, left: 268.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 300, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 300, left: 268.5217590332031, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 299, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 299, left: 268.5217590332031, top: 170.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 299, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 299, left: 268.5217590332031, top: 170.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 298, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 298, left: 268.5217590332031, top: 169.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 297, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 297, left: 268.5217590332031, top: 168.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 420, clientY: 296, left: 268.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 420, clientY: 296, left: 268.5217590332031, top: 167.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 421, clientY: 296, left: 269.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 421, clientY: 296, left: 269.5217590332031, top: 167.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 421, clientY: 295, left: 269.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 421, clientY: 295, left: 269.5217590332031, top: 166.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 421, clientY: 294, left: 269.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 421, clientY: 294, left: 269.5217590332031, top: 165.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 421, clientY: 293, left: 269.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 421, clientY: 293, left: 269.5217590332031, top: 164.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 422, clientY: 293, left: 270.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 422, clientY: 293, left: 270.52178955078125, top: 164.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 422, clientY: 293, left: 270.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 422, clientY: 293, left: 270.52178955078125, top: 164.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 422, clientY: 292, left: 270.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 422, clientY: 292, left: 270.52178955078125, top: 163.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 422, clientY: 292, left: 270.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 422, clientY: 292, left: 270.52178955078125, top: 163.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 422, clientY: 291, left: 270.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 422, clientY: 291, left: 270.52178955078125, top: 162.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 422, clientY: 291, left: 270.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 422, clientY: 291, left: 270.52178955078125, top: 162.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 422, clientY: 291, left: 270.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 422, clientY: 291, left: 270.52178955078125, top: 162.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 422, clientY: 290, left: 270.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 422, clientY: 290, left: 270.52178955078125, top: 161.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 422, clientY: 290, left: 270.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 422, clientY: 290, left: 270.52178955078125, top: 161.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 423, clientY: 290, left: 271.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 423, clientY: 290, left: 271.52178955078125, top: 161.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 423, clientY: 291, left: 271.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 423, clientY: 291, left: 271.52178955078125, top: 162.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 423, clientY: 291, left: 271.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 423, clientY: 291, left: 271.52178955078125, top: 162.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 423, clientY: 291, left: 271.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 423, clientY: 291, left: 271.52178955078125, top: 162.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 424, clientY: 291, left: 272.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 424, clientY: 291, left: 272.5217590332031, top: 162.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 424, clientY: 291, left: 272.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 424, clientY: 291, left: 272.5217590332031, top: 162.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 424, clientY: 292, left: 272.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 424, clientY: 292, left: 272.5217590332031, top: 163.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 425, clientY: 292, left: 273.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 425, clientY: 292, left: 273.5217590332031, top: 163.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 426, clientY: 293, left: 274.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 426, clientY: 293, left: 274.5217590332031, top: 164.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 426, clientY: 293, left: 274.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 426, clientY: 293, left: 274.5217590332031, top: 164.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 428, clientY: 294, left: 276.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 428, clientY: 294, left: 276.52178955078125, top: 165.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 429, clientY: 296, left: 277.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 429, clientY: 296, left: 277.5217590332031, top: 167.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 430, clientY: 297, left: 278.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 430, clientY: 297, left: 278.5217590332031, top: 168.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 431, clientY: 298, left: 279.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 431, clientY: 298, left: 279.5217590332031, top: 169.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 433, clientY: 299, left: 281.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 433, clientY: 299, left: 281.52178955078125, top: 170.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 433, clientY: 300, left: 281.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 433, clientY: 300, left: 281.52178955078125, top: 171.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 435, clientY: 302, left: 283.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 435, clientY: 302, left: 283.5217590332031, top: 173.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 436, clientY: 303, left: 284.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 436, clientY: 303, left: 284.5217590332031, top: 174.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 437, clientY: 304, left: 285.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 437, clientY: 304, left: 285.52178955078125, top: 175.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 438, clientY: 305, left: 286.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 438, clientY: 305, left: 286.52178955078125, top: 176.6485595703125, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 438, clientY: 306, left: 286.52178955078125, …} (sprite-editor.html, line 140)
-{clientX: 438, clientY: 306, left: 286.52178955078125, top: 177.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 439, clientY: 306, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 439, clientY: 306, left: 287.5217590332031, top: 177.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 439, clientY: 306, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 439, clientY: 306, left: 287.5217590332031, top: 177.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 439, clientY: 306, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 439, clientY: 306, left: 287.5217590332031, top: 177.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 439, clientY: 306, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 439, clientY: 306, left: 287.5217590332031, top: 177.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 439, clientY: 307, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 439, clientY: 307, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 439, clientY: 307, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 439, clientY: 307, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 439, clientY: 307, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 439, clientY: 307, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 439, clientY: 307, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 439, clientY: 307, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 437, clientY: 307, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 437, clientY: 307, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 433, clientY: 306, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 433, clientY: 306, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 424, clientY: 301, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 424, clientY: 301, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 402, clientY: 284, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 402, clientY: 284, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 390, clientY: 270, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 390, clientY: 270, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 380, clientY: 258, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 380, clientY: 258, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 375, clientY: 250, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 375, clientY: 250, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 370, clientY: 242, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 370, clientY: 242, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 366, clientY: 237, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 366, clientY: 237, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 364, clientY: 233, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 364, clientY: 233, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 362, clientY: 231, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 362, clientY: 231, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 361, clientY: 230, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 361, clientY: 230, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 361, clientY: 229, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 361, clientY: 229, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 360, clientY: 229, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 360, clientY: 229, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 360, clientY: 229, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 360, clientY: 229, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 360, clientY: 229, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 360, clientY: 229, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 360, clientY: 229, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 360, clientY: 229, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 360, clientY: 228, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 360, clientY: 228, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 360, clientY: 228, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 360, clientY: 228, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 360, clientY: 228, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 360, clientY: 228, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] START – {row: 1, col: 2, xCanvas: 16, …} (sprite-editor.html, line 140)
-{row: 1, col: 2, xCanvas: 16, yCanvas: 8}Object
-[Log] END – {} (sprite-editor.html, line 140)
-[Log] MOVE – {clientX: 388, clientY: 241, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 388, clientY: 241, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 389, clientY: 241, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 389, clientY: 241, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 394, clientY: 241, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 394, clientY: 241, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 400, clientY: 241, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 400, clientY: 241, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 426, clientY: 241, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 426, clientY: 241, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 473, clientY: 240, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 473, clientY: 240, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 575, clientY: 239, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 575, clientY: 239, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 636, clientY: 239, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 636, clientY: 239, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 674, clientY: 239, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 674, clientY: 239, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 713, clientY: 243, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 713, clientY: 243, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 740, clientY: 247, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 740, clientY: 247, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 759, clientY: 252, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 759, clientY: 252, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 768, clientY: 255, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 768, clientY: 255, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 777, clientY: 258, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 777, clientY: 258, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 785, clientY: 261, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 785, clientY: 261, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 793, clientY: 264, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 793, clientY: 264, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 800, clientY: 265, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 800, clientY: 265, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 809, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 809, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 825, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 825, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 833, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 833, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 840, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 840, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 846, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 846, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 849, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 849, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 850, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 850, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 851, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 851, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 851, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 851, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 850, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 850, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 847, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 847, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 846, clientY: 266, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 846, clientY: 266, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 843, clientY: 265, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 843, clientY: 265, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 833, clientY: 263, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 833, clientY: 263, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 822, clientY: 261, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 822, clientY: 261, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 812, clientY: 259, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 812, clientY: 259, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 805, clientY: 256, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 805, clientY: 256, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 799, clientY: 253, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 799, clientY: 253, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 795, clientY: 252, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 795, clientY: 252, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 793, clientY: 251, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 793, clientY: 251, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE (sprite-editor.html, line 140)
-Object
-
-clientX: 793
-
-clientY: 250
-
-col: 18
-
-left: 287.5217590332031
-
-offsetX: -12.478240966796875
-
-offsetY: 178.6485660100851
-
-row: 2
-
-scale: 3.447900527077075
-
-top: 178.64857482910156
-
-xCanvas: 144.7842845361295
-
-yCanvas: 20.163269292785586
-
-Object Prototype
-[Log] MOVE – {clientX: 793, clientY: 250, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 793, clientY: 250, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 793, clientY: 250, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 793, clientY: 250, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] START – {row: 2, col: 18, xCanvas: 144, …} (sprite-editor.html, line 140)
-{row: 2, col: 18, xCanvas: 144, yCanvas: 16}Object
-[Log] END – {} (sprite-editor.html, line 140)
-[Log] MOVE – {clientX: 771, clientY: 282, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 771, clientY: 282, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 771, clientY: 281, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 771, clientY: 281, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 771, clientY: 281, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 771, clientY: 281, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 774, clientY: 281, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 774, clientY: 281, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 778, clientY: 281, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 778, clientY: 281, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 791, clientY: 281, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 791, clientY: 281, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 835, clientY: 281, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 835, clientY: 281, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
-[Log] MOVE – {clientX: 870, clientY: 281, left: 287.5217590332031, …} (sprite-editor.html, line 140)
-{clientX: 870, clientY: 281, left: 287.5217590332031, top: 178.64857482910156, scale: 3.447900527077075, …}Object
+[Warning] 1800 console messages are not shown.
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x5)
+[Log] World update: 2 enemies, 27 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 22 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x4)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] COLLISION CHECK: (updateCharacter.js, line 503)
+- World Position: (1.2654, 1.6685)
+- Tile Position: (0, 0)
+- TileSize: 12
+- Tile Percent: (0.1055, 0.1390)
+[Log] No collision at world (1.27, 1.67), tile (0, 0): (updateCharacter.js, line 559)
+- Exact tile coords: (1.2654, 1.6685)
+- Distance from tile center: 1.40
+- Closest edge: south (-0.67 units)
+- Tile edges: W:0 E:1 N:0 S:1
+[Log] Tile details:  (updateCharacter.js, line 569)
+- Type: 1
+- Name: Unknown
+- Properties: {"isWalkable":false,"isTransparent":false,"variation":0}
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] COLLISION CHECK: (updateCharacter.js, line 503)
+- World Position: (1.0654, 2.0805)
+- Tile Position: (0, 0)
+- TileSize: 12
+- Tile Percent: (0.0888, 0.1734)
+[Log] No collision at world (1.07, 2.08), tile (0, 0): (updateCharacter.js, line 559)
+- Exact tile coords: (1.0654, 2.0805)
+- Distance from tile center: 1.68
+- Closest edge: south (-1.08 units)
+- Tile edges: W:0 E:1 N:0 S:1
+[Log] Tile details:  (updateCharacter.js, line 569)
+- Type: 1
+- Name: Unknown
+- Properties: {"isWalkable":false,"isTransparent":false,"variation":0}
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] COLLISION CHECK: (updateCharacter.js, line 503)
+- World Position: (1.4654, 3.2625)
+- Tile Position: (0, 0)
+- TileSize: 12
+- Tile Percent: (0.1221, 0.2719)
+[Log] No collision at world (1.47, 3.26), tile (0, 0): (updateCharacter.js, line 559)
+- Exact tile coords: (1.4654, 3.2625)
+- Distance from tile center: 2.93
+- Closest edge: south (-2.26 units)
+- Tile edges: W:0 E:1 N:0 S:1
+[Log] Tile details:  (updateCharacter.js, line 569)
+- Type: 1
+- Name: Unknown
+- Properties: {"isWalkable":false,"isTransparent":false,"variation":0}
+[Log] COLLISION CHECK: (updateCharacter.js, line 503)
+- World Position: (1.2654, 3.5975)
+- Tile Position: (0, 0)
+- TileSize: 12
+- Tile Percent: (0.1055, 0.2998)
+[Log] No collision at world (1.27, 3.60), tile (0, 0): (updateCharacter.js, line 559)
+- Exact tile coords: (1.2654, 3.5975)
+- Distance from tile center: 3.19
+- Closest edge: south (-2.60 units)
+- Tile edges: W:0 E:1 N:0 S:1
+[Log] Tile details:  (updateCharacter.js, line 569)
+- Type: 1
+- Name: Unknown
+- Properties: {"isWalkable":false,"isTransparent":false,"variation":0}
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] DEBUG: Requesting player list from server (game.js, line 297)
+[Log] Requesting current player list from server... (game.js, line 1121)
+[Log] Sending player list request to server (ClientNetworkManager.js, line 1096)
+[Log] ===== PLAYER DEBUG INFO ===== (game.js, line 1029)
+[Log] Local player: ID=1, position=(1.3, 3.7) (game.js, line 1030)
+[Log] Character ID in gameState: 1 (game.js, line 1031)
+[Log] PlayerManager local ID: 1 (game.js, line 1032)
+[Log] Number of other players: 0 (game.js, line 1033)
+[Log] No other players currently tracked (game.js, line 1041)
+[Log] RENDERING TEST: Forcing render of all players... (game.js, line 1059)
+[Log] Players to render: 0 (game.js, line 1060)
+[Log] Visual debugging enabled - other players will have magenta borders (game.js, line 1064)
+[Log] ============================= (game.js, line 1066)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 21 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 22 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x7)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 28 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 27 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update received – null (ClientNetworkManager.js, line 12)
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 21 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 21 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] Renderer and camera updated on window resize. (game.js, line 819)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x5)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 22 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x6)
+[Log] Player sample: – null (ClientNetworkManager.js, line 12)
+[Log] Sample player data for 1: – {id: 1, x: 91.0328905678103, y: 99.10583669151245, …} (ClientNetworkManager.js, line 554)
+{id: 1, x: 91.0328905678103, y: 99.10583669151245, rotation: 0, health: 100, …}Object
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 27 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x7)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 22 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x4)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x6)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 22 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x5)
+[Log] World update received – null (ClientNetworkManager.js, line 12)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x4)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 22 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x6)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 27 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 22 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x7)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 27 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 31 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x5)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 25 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update received – null (ClientNetworkManager.js, line 12)
+[Log] World update: 2 enemies, 23 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 32 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] Player sample: – null (ClientNetworkManager.js, line 12)
+[Log] Sample player data for 1: – {id: 1, x: 91.0328905678103, y: 99.10583669151245, …} (ClientNetworkManager.js, line 554)
+{id: 1, x: 91.0328905678103, y: 99.10583669151245, rotation: 0, health: 100, …}Object
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x4)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 27 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 32 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x4)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 27 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 24 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 32 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x4)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 27 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 24 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 32 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x5)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 32 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x7)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 29 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update received – null (ClientNetworkManager.js, line 12)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 27 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 22 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 32 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x10)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 27 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 23 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 32 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x10)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 28 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935, x3)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 24 bullets, 1 players (game.js, line 625)
+[Log] [updateWorld] Player IDs in update: 1 (game.js, line 629)
+[Log] [updateWorld] Local player ID: 1 (game.js, line 630)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 32 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [updateWorld] Filtered out local player (1) from update (game.js, line 691)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [NETWORK] Received player list: 1 players (IDs: 1) (ClientNetworkManager.js, line 14)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x8)
+[Log] [updateWorld] No other players to update after filtering (game.js, line 707)
+[Log] World update: 2 enemies, 28 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 27 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] Player sample: – null (ClientNetworkManager.js, line 12)
+[Log] Sample player data for 1: – {id: 1, x: 91.0328905678103, y: 99.10583669151245, …} (ClientNetworkManager.js, line 554)
+{id: 1, x: 91.0328905678103, y: 99.10583669151245, rotation: 0, health: 100, …}Object
+[Log] World update: 2 enemies, 26 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 24 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] World update: 2 enemies, 32 bullets, 1 players (ClientNetworkManager.js, line 935)
+[Log] World update: 2 enemies, 30 bullets, 1 players (ClientNetworkManager.js, line 935, x2)
+[Log] [updateWorld] Remaining players after filtering:  (game.js, line 699)
+[Log] World update: 2 enemies, 29 bullets, 1 players (ClientNetworkManager.js, line 935, x6)
