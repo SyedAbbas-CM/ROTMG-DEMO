@@ -103,7 +103,11 @@ class BinaryPacket {
     PLAYER_LIST_REQUEST: 80,
     
     // Chat messages
-    CHAT_MESSAGE: 90
+    CHAT_MESSAGE: 90,
+    
+    // Portal interaction
+    PORTAL_ENTER: 54,      // client -> server (player pressed E near portal)
+    WORLD_SWITCH: 55       // server -> client (authoritative map change)
   };
   
   /**

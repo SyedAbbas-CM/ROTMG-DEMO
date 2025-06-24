@@ -18,6 +18,15 @@ function throttledLog(key, message, data, interval = 1000) {
     return false;
 }
 
+// ----------------------------------------------------------------------------
+// CONFIG FLAGS
+// ----------------------------------------------------------------------------
+// Toggle whether the client persists the last map it was connected to in
+// localStorage and automatically reconnects to that map on page reload.
+// During portal-development we always want to spawn in the default (procedural)
+// realm first, so disable persistence by default.
+export const ENABLE_MAP_ID_PERSISTENCE = false;
+
 // Simple utility to save map data to a file
 window.saveMapData = function() {
     try {
@@ -515,8 +524,8 @@ export class ClientNetworkManager {
         
         this.handlers[MessageType.MAP_INFO] = (data) => {
             console.log('Received map info:', data);
-            // Store map ID in localStorage for persistence
-            if (data.mapId) {
+            // Store map ID only if persistence flag enabled (disabled by default)
+            if (ENABLE_MAP_ID_PERSISTENCE && data.mapId) {
                 console.log(`Storing map ID in localStorage: ${data.mapId}`);
                 localStorage.setItem('currentMapId', data.mapId);
             }
@@ -732,6 +741,23 @@ export class ClientNetworkManager {
         } catch (error) {
             console.error('Error setting up chat message handler:', error);
         }
+
+        // Handle authoritative world switch from server
+        this.handlers[MessageType.WORLD_SWITCH] = (data) => {
+            console.log(`[NETWORK] WORLD_SWITCH → map ${data.mapId} spawn (${data.spawnX},${data.spawnY})`);
+            if (this.game?.onWorldSwitch) {
+                this.game.onWorldSwitch(data);
+            } else {
+                // Fallback: re-init map and teleport the local character
+                if (this.game?.initMap) {
+                    this.game.initMap(data);
+                }
+                if (window.gameState?.character) {
+                    window.gameState.character.x = data.spawnX;
+                    window.gameState.character.y = data.spawnY;
+                }
+            }
+        };
     }
     
     /**
@@ -754,11 +780,11 @@ export class ClientNetworkManager {
             
             try {
                 // Get stored map ID for reconnection
-                const storedMapId = localStorage.getItem('currentMapId');
+                const storedMapId = ENABLE_MAP_ID_PERSISTENCE ? localStorage.getItem('currentMapId') : null;
                 let serverUrl = this.serverUrl;
                 
-                // Include map ID in URL if available
-                if (storedMapId) {
+                // Include map ID in URL if persistence is enabled and an ID exists
+                if (ENABLE_MAP_ID_PERSISTENCE && storedMapId) {
                     console.log(`Found stored map ID: ${storedMapId}`);
                     const separator = this.serverUrl.includes('?') ? '&' : '?';
                     serverUrl = `${this.serverUrl}${separator}mapId=${storedMapId}`;
@@ -1130,6 +1156,13 @@ export class ClientNetworkManager {
             return false;
         }
     }
+
+    /**
+     * Notify server that the player has pressed the portal-interact key.
+     */
+    sendPortalEnter() {
+        return this.send(MessageType.PORTAL_ENTER, { ts: Date.now() });
+    }
 }
 
 /**
@@ -1237,5 +1270,9 @@ export const MessageType = {
     PLAYER_LIST_REQUEST: 80,
     
     // Chat message
-    CHAT_MESSAGE: 90
+    CHAT_MESSAGE: 90,
+
+    // Portal interaction
+    PORTAL_ENTER: 54,      // client -> server
+    WORLD_SWITCH: 55       // server -> client
 };

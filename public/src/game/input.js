@@ -59,7 +59,15 @@ export function initControls() {
         // Sprite editor with 'E' key
         if (e.code === 'KeyE') {
             e.preventDefault();
-            openSpriteEditor();
+            if (e.ctrlKey) {
+                // Ctrl+E keeps sprite editor shortcut
+                openSpriteEditor();
+            } else {
+                // Plain E → interact (portal)
+                if (window.networkManager?.sendPortalEnter) {
+                    window.networkManager.sendPortalEnter();
+                }
+            }
         }
         
         // Add spacebar to also trigger shooting

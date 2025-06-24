@@ -111,26 +111,41 @@ export class MapManager {
     
     const key = `${mapId || 'default'}_${chunkX},${chunkY}`;
     
-    // If chunk exists in cache, return it
+    // Cache hit
     if (this.chunks.has(key)) {
       return this.chunks.get(key);
     }
-    
-    // Otherwise generate or slice it
-    if (this.proceduralEnabled && !this.isFixedMap) {
+
+    // ---------------- NEW PER-MAP LOGIC ----------------
+    // Decide how to fulfil this request based on the map's own metadata
+    const meta = this.maps.get(mapId);
+
+    // If we somehow don't know anything about the map yet, bail early
+    if (!meta) {
+      return null;
+    }
+
+    // Procedural maps → generate on the fly
+    if (meta.procedural) {
+      // Hard bound-check so we never fabricate terrain outside the declared map.
+      const maxChunkX = Math.ceil(meta.width  / meta.chunkSize) - 1;
+      const maxChunkY = Math.ceil(meta.height / meta.chunkSize) - 1;
+      if (chunkX < 0 || chunkY < 0 || chunkX > maxChunkX || chunkY > maxChunkY) {
+        return null; // out-of-bounds – no chunk
+      }
+
       const chunkData = this.generateChunkData(chunkY, chunkX);
       this.chunks.set(key, chunkData);
       return chunkData;
     }
-    
-    // If we have a fixed map with a full tileMap, slice on demand
-    if (this.isFixedMap) {
-      const sliced = this._sliceChunkFromTileMap(mapId, chunkX, chunkY);
-      if (sliced) {
-        this.chunks.set(key, sliced);
-        return sliced;
-      }
+
+    // Fixed maps (tileMap provided) → slice the 2-D array on demand
+    const sliced = this._sliceChunkFromTileMap(mapId, chunkX, chunkY);
+    if (sliced) {
+      this.chunks.set(key, sliced);
+      return sliced;
     }
+    // ----------------------------------------------------
     
     return null;
   }
@@ -160,7 +175,8 @@ export class MapManager {
         // procedural world cannot extend infinitely into negative space.
         if (globalX < 0 || globalY < 0 ||
             globalX >= this.width || globalY >= this.height) {
-          row.push(new Tile(TILE_IDS.WALL)); // Use wall for out of bounds
+          // Push null so renderers will skip drawing outside-map area
+          row.push(null);
           continue;
         }
         
@@ -216,10 +232,11 @@ export class MapManager {
     const neighbours = [
       [1,0],[-1,0],[0,1],[0,-1]
     ];
-    const copy = tiles.map(r => r.map(t => t.type));
+    const copy = tiles.map(r => r.map(t => (t ? t.type : null)));
     for (let y=0;y<tiles.length;y++){
       for (let x=0;x<tiles[y].length;x++){
         const t = copy[y][x];
+        if(t===null) continue;
         if(t!==TILE_IDS.WALL) continue;
         let nWall=0;
         for(const [dx,dy] of neighbours){
@@ -236,7 +253,7 @@ export class MapManager {
           for(const [dx,dy] of neighbours){
             const nx=x+dx, ny=y+dy;
             if(nx>=0&&ny>=0&&ny<tiles.length&&nx<tiles[0].length){
-              if(tiles[ny][nx].type===TILE_IDS.FLOOR){
+              if(tiles[ny][nx] && tiles[ny][nx].type===TILE_IDS.FLOOR){
                 tiles[ny][nx].type=TILE_IDS.WALL;
               }
             }

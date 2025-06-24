@@ -583,6 +583,32 @@ function initializeGameState() {
             mapManager.initMap(mapData);
         },
         
+        // World switch – authoritative change initiated by server after portal
+        onWorldSwitch: (data) => {
+            console.log(`[GAME] onWorldSwitch → ${data.mapId}`);
+
+            // 1) Rebuild map manager entirely so no stale chunks survive
+            mapManager = new ClientMapManager({ networkManager });
+            gameState.map = mapManager;
+            mapManager.initMap(data);
+
+            // 2) Reset entity managers so enemies / bullets from old world vanish
+            enemyManager.setEnemies([]);
+            bulletManager.setBullets([]);
+
+            // 3) Clear render tile caches in each view (guard for undefined)
+            if (window.clearStrategicCache) window.clearStrategicCache();
+            if (window.clearTopDownCache)   window.clearTopDownCache();
+
+            // 4) Snap camera to new spawn location immediately
+            if (gameState.camera && data.spawnX !== undefined) {
+                gameState.camera.position.x = data.spawnX;
+                gameState.camera.position.y = data.spawnY;
+            }
+
+            console.log('[GAME] World switch complete, waiting for chunks...');
+        },
+        
         // Set all players
         setPlayers: (players) => {
             //console.log('Players received:', players);
@@ -748,6 +774,9 @@ function initializeGameState() {
             mapManager.setChunkData(chunkX, chunkY, chunkData);
         }
     });
+    
+    // Expose globally for debug and input helpers
+    window.networkManager = networkManager;
     
     // Now that network manager is created, set it in the map manager
     mapManager.networkManager = networkManager;

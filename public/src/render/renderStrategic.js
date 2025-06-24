@@ -22,6 +22,15 @@ const strategicTileCache = new Map();
 let lastChunkUpdateTime = 0;
 const CHUNK_UPDATE_INTERVAL = 1000;
 
+// Expose a helper to clear the strategic tile cache when switching worlds
+export function clearStrategicCache() {
+  strategicTileCache.clear();
+  console.log('[StrategicView] Tile cache cleared');
+}
+
+// Also expose via window so other modules can call without import cycles
+window.clearStrategicCache = clearStrategicCache;
+
 export function renderStrategicView() {
   const camera = gameState.camera;
   const mapManager = gameState.map;
@@ -74,70 +83,70 @@ export function renderStrategicView() {
         }
       }
       
-      if (tile) {
-        const spritePos = TILE_SPRITES[tile.type];
-        
-        // Convert tile grid position to world position
-        // In this game, tile coordinates are the same as world coordinates
-        const worldX = x;
-        const worldY = y;
-        
-        // FIX: Use correct TILE_SIZE parameter (not multiplied by scaleFactor)
-        const screenPos = camera.worldToScreen(
-          worldX + 0.5, // shift to tile center
-          worldY + 0.5, 
-          canvas2D.width, 
-          canvas2D.height, 
-          TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
-        );
-        
-        // Draw tile using the consistent screen position
-        const sCfg = tileSheetObj.config;
-        const spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
-        const spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
-        ctx.drawImage(
-          tileSpriteSheet,
-          spritePos.x, spritePos.y, spriteW, spriteH,
+      if (!tile) continue;
+      
+      const spritePos = TILE_SPRITES[tile.type];
+      
+      // Convert tile grid position to world position
+      // In this game, tile coordinates are the same as world coordinates
+      const worldX = x;
+      const worldY = y;
+      
+      // FIX: Use correct TILE_SIZE parameter (not multiplied by scaleFactor)
+      const screenPos = camera.worldToScreen(
+        worldX + 0.5, // shift to tile center
+        worldY + 0.5, 
+        canvas2D.width, 
+        canvas2D.height, 
+        TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
+      );
+      
+      // Draw tile using the consistent screen position
+      const sCfg = tileSheetObj.config;
+      const spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
+      const spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
+      ctx.drawImage(
+        tileSpriteSheet,
+        spritePos.x, spritePos.y, spriteW, spriteH,
+        screenPos.x - (spriteW * scaleFactor / 2),
+        screenPos.y - (spriteH * scaleFactor / 2),
+        spriteW * scaleFactor,
+        spriteH * scaleFactor
+      );
+
+      // Height shading (lighter to darker)
+      if (tile.height && tile.height > 0) {
+        const alpha = Math.min(tile.height / 15, 1) * 0.25;
+        ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(3)})`;
+        ctx.fillRect(
           screenPos.x - (spriteW * scaleFactor / 2),
           screenPos.y - (spriteH * scaleFactor / 2),
           spriteW * scaleFactor,
           spriteH * scaleFactor
         );
-
-        // Height shading (lighter to darker)
-        if (tile.height && tile.height > 0) {
-          const alpha = Math.min(tile.height / 15, 1) * 0.25;
-          ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(3)})`;
-          ctx.fillRect(
-            screenPos.x - (spriteW * scaleFactor / 2),
-            screenPos.y - (spriteH * scaleFactor / 2),
-            spriteW * scaleFactor,
-            spriteH * scaleFactor
-          );
-        }
+      }
+      
+      // Add debug visualization to help with alignment
+      if (DEBUG_RENDERING) {
+        // Draw a grid outline in red (less visible in strategic view)
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(
+          screenPos.x - (spriteW * scaleFactor / 2),
+          screenPos.y - (spriteH * scaleFactor / 2),
+          spriteW * scaleFactor,
+          spriteH * scaleFactor
+        );
         
-        // Add debug visualization to help with alignment
-        if (DEBUG_RENDERING) {
-          // Draw a grid outline in red (less visible in strategic view)
-          ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(
-            screenPos.x - (spriteW * scaleFactor / 2),
-            screenPos.y - (spriteH * scaleFactor / 2),
-            spriteW * scaleFactor,
-            spriteH * scaleFactor
+        // Draw tile coordinates for reference (only every several tiles to avoid clutter)
+        if ((x % 10 === 0 && y % 10 === 0) || (x === 0 && y === 0)) {
+          ctx.fillStyle = 'white';
+          ctx.font = '6px Arial';
+          ctx.fillText(
+            `(${x},${y})`, 
+            screenPos.x - (spriteW * scaleFactor / 2) + 1,
+            screenPos.y - (spriteH * scaleFactor / 2) + 6
           );
-          
-          // Draw tile coordinates for reference (only every several tiles to avoid clutter)
-          if ((x % 10 === 0 && y % 10 === 0) || (x === 0 && y === 0)) {
-            ctx.fillStyle = 'white';
-            ctx.font = '6px Arial';
-            ctx.fillText(
-              `(${x},${y})`, 
-              screenPos.x - (spriteW * scaleFactor / 2) + 1,
-              screenPos.y - (spriteH * scaleFactor / 2) + 6
-            );
-          }
         }
       }
     }

@@ -26,6 +26,16 @@ const topDownTileCache = new Map();
 let lastChunkUpdateTime = 0;
 const CHUNK_UPDATE_INTERVAL = 2000; // Only update chunks every 2 seconds for top-down (less frequently needed)
 
+// Provide a helper to wipe this cache when the client switches maps to avoid
+// showing stale tiles from the previous world.
+export function clearTopDownCache() {
+  topDownTileCache.clear();
+  console.log('[TopDownView] Tile cache cleared');
+}
+
+// Expose via global window for ease of access without circular imports
+window.clearTopDownCache = clearTopDownCache;
+
 export function renderTopDownView() {
   const camera = gameState.camera;
   const mapManager = gameState.map;
@@ -78,70 +88,70 @@ export function renderTopDownView() {
         }
       }
       
-      if (tile) {
-        const spritePos = TILE_SPRITES[tile.type];
-        
-        // Convert tile grid position to world position
-        // In this game, tile coordinates are the same as world coordinates
-        const worldX = x;
-        const worldY = y;
-        
-        // FIX: Use correct TILE_SIZE parameter (not multiplied by scaleFactor)
-        // This was causing the double scaling issue
-        const screenPos = camera.worldToScreen(
-          worldX + 0.5,  // shift to tile center for proper alignment
-          worldY + 0.5, 
-          canvas2D.width, 
-          canvas2D.height, 
-          TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
-        );
-        
-        const sCfg = tileSheetObj.config;
-        const spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
-        const spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
-        ctx.drawImage(
-          tileSpriteSheet,
-          spritePos.x, spritePos.y, spriteW, spriteH, // Source rectangle
+      if (!tile) continue;
+      
+      const spritePos = TILE_SPRITES[tile.type];
+      
+      // Convert tile grid position to world position
+      // In this game, tile coordinates are the same as world coordinates
+      const worldX = x;
+      const worldY = y;
+      
+      // FIX: Use correct TILE_SIZE parameter (not multiplied by scaleFactor)
+      // This was causing the double scaling issue
+      const screenPos = camera.worldToScreen(
+        worldX + 0.5,  // shift to tile center for proper alignment
+        worldY + 0.5, 
+        canvas2D.width, 
+        canvas2D.height, 
+        TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
+      );
+      
+      const sCfg = tileSheetObj.config;
+      const spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
+      const spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
+      ctx.drawImage(
+        tileSpriteSheet,
+        spritePos.x, spritePos.y, spriteW, spriteH, // Source rectangle
+        screenPos.x - (spriteW * scaleFactor / 2),
+        screenPos.y - (spriteH * scaleFactor / 2),
+        spriteW * scaleFactor,
+        spriteH * scaleFactor
+      );
+
+      // ---- Height shading -------------------------------------------------
+      if (tile.height && tile.height > 0) {
+        const alpha = Math.min(tile.height / 15, 1) * 0.35; // up to 35% darken
+        ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(3)})`;
+        ctx.fillRect(
           screenPos.x - (spriteW * scaleFactor / 2),
           screenPos.y - (spriteH * scaleFactor / 2),
           spriteW * scaleFactor,
           spriteH * scaleFactor
         );
-
-        // ---- Height shading -------------------------------------------------
-        if (tile.height && tile.height > 0) {
-          const alpha = Math.min(tile.height / 15, 1) * 0.35; // up to 35% darken
-          ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(3)})`;
-          ctx.fillRect(
-            screenPos.x - (spriteW * scaleFactor / 2),
-            screenPos.y - (spriteH * scaleFactor / 2),
-            spriteW * scaleFactor,
-            spriteH * scaleFactor
-          );
-        }
+      }
+      
+      // Add debug visualization to help with alignment
+      if (DEBUG_RENDERING) {
+        // Draw a grid outline in red
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(
+          screenPos.x - (spriteW * scaleFactor / 2),
+          screenPos.y - (spriteH * scaleFactor / 2),
+          spriteW * scaleFactor,
+          spriteH * scaleFactor
+        );
         
-        // Add debug visualization to help with alignment
-        if (DEBUG_RENDERING) {
-          // Draw a grid outline in red
-          ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(
-            screenPos.x - (spriteW * scaleFactor / 2),
-            screenPos.y - (spriteH * scaleFactor / 2),
-            spriteW * scaleFactor,
-            spriteH * scaleFactor
+        // Draw tile coordinates for reference (only every few tiles to avoid clutter)
+        if ((x % 5 === 0 && y % 5 === 0) || (x === 0 && y === 0)) {
+          ctx.fillStyle = 'white';
+          ctx.font = '8px Arial';
+          ctx.fillText(
+            `(${x},${y})`, 
+            screenPos.x - (spriteW * scaleFactor / 2) + 2,
+            screenPos.y - (spriteH * scaleFactor / 2) + 8
           );
-          
-          // Draw tile coordinates for reference (only every few tiles to avoid clutter)
-          if ((x % 5 === 0 && y % 5 === 0) || (x === 0 && y === 0)) {
-            ctx.fillStyle = 'white';
-            ctx.font = '8px Arial';
-            ctx.fillText(
-              `(${x},${y})`, 
-              screenPos.x - (spriteW * scaleFactor / 2) + 2,
-              screenPos.y - (spriteH * scaleFactor / 2) + 8
-            );
-          }
         }
       }
     }
@@ -162,6 +172,59 @@ export function renderTopDownView() {
       }
     }
   }
+
+  /* ---------------------------------------------------------
+   * TEMPORARY PORTAL RENDERING
+   * ---------------------------------------------------------
+   * Draw a placeholder sprite for the portal at world tile (5,5)
+   * until we have a full object-rendering pipeline.
+   */
+  try {
+    const portalWorldX = 5;
+    const portalWorldY = 5;
+
+    const portalScreen = camera.worldToScreen(
+      portalWorldX + 0.5,
+      portalWorldY + 0.5,
+      canvas2D.width,
+      canvas2D.height,
+      TILE_SIZE
+    );
+
+    // Pick a sprite from the spriteManager if available; otherwise fallback to magenta circle
+    let drewSprite = false;
+    const portalSheetObj = spriteManager.getSpriteSheet('enemy_sprites');
+    if (portalSheetObj) {
+      const img = portalSheetObj.image;
+      // Use sprite at (0,0) for now
+      const sCfg = portalSheetObj.config;
+      const sw = sCfg.defaultSpriteWidth || TILE_SIZE;
+      const sh = sCfg.defaultSpriteHeight || TILE_SIZE;
+      const scale = scaleFactor * 1.5; // slightly larger so it pops
+      ctx.drawImage(
+        img,
+        0,
+        0,
+        sw,
+        sh,
+        portalScreen.x - (sw * scale / 2),
+        portalScreen.y - (sh * scale / 2),
+        sw * scale,
+        sh * scale
+      );
+      drewSprite = true;
+    }
+    if (!drewSprite) {
+      ctx.fillStyle = 'magenta';
+      const size = TILE_SIZE * scaleFactor;
+      ctx.beginPath();
+      ctx.arc(portalScreen.x, portalScreen.y, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } catch (err) {
+    console.error('[PortalRender] Failed:', err);
+  }
+  // ---------------------------------------------------------
 }
 
 // Export to window object to avoid circular references

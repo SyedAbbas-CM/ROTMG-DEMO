@@ -367,6 +367,73 @@ storedMaps.set(defaultMapId, mapManager.getMapMetadata(defaultMapId));
 
 console.log(`Created default map: ${defaultMapId}`);
 
+/* ------------------------------------------------------------------
+ * TEMPORARY PORTAL HOOK
+ * ------------------------------------------------------------------
+ * Until we finish the full multi-world system this helper will spawn a
+ * single portal in the centre of the procedural map that links to a
+ * handcrafted map file located at public/maps/test.json.  Remove once
+ * proper portal placement / map loading pipeline is ready.
+ */
+(async () => {
+  try {
+    const fixedMapPath = path.join(__dirname, 'public', 'maps', 'test.json');
+
+    // Load (or retrieve) the handcrafted map so we have its ID.
+    let handmadeId;
+    // Check if this map has already been loaded previously
+    for (const m of storedMaps.values()) {
+      if (m && m.sourcePath === fixedMapPath) {
+        handmadeId = m.id;
+        break;
+      }
+    }
+    if (!handmadeId) {
+      handmadeId = await mapManager.loadFixedMap(fixedMapPath);
+      storedMaps.set(handmadeId, mapManager.getMapMetadata(handmadeId));
+      // Spawn any static enemies that map defines
+      spawnMapEnemies(handmadeId);
+      console.log(`[TEMP-PORTAL] Loaded handcrafted map ${handmadeId} from ${fixedMapPath}`);
+
+      // --- NEW: Restore procedural map as active so new players spawn there ---
+      mapManager.activeMapId = defaultMapId;
+      const defMeta = mapManager.getMapMetadata(defaultMapId);
+      if (defMeta) {
+        mapManager.width  = defMeta.width;
+        mapManager.height = defMeta.height;
+      }
+
+      // Re-enable procedural generation for other maps
+      if (mapManager.enableProceduralGeneration) {
+        mapManager.enableProceduralGeneration();
+        // Also mark global fixed flag false so procedural chunks generate
+        mapManager.isFixedMap = false;
+      }
+    }
+
+    // Inject a portal into the default procedural map if one is not present
+    const defMeta = mapManager.getMapMetadata(defaultMapId);
+    if (!defMeta) return;
+    if (!defMeta.objects) defMeta.objects = [];
+
+    const alreadyExists = defMeta.objects.some(o => o.type === 'portal' && o.destMap === handmadeId);
+    if (!alreadyExists) {
+      const portalObj = {
+        id: `debug_portal_${handmadeId}`,
+        type: 'portal',
+        sprite: 'portal',
+        x: 5,
+        y: 5,
+        destMap: handmadeId
+      };
+      defMeta.objects.push(portalObj);
+      console.log(`[TEMP-PORTAL] Spawned portal at (${portalObj.x},${portalObj.y}) linking ${defaultMapId} → ${handmadeId}`);
+    }
+  } catch (err) {
+    console.error('[TEMP-PORTAL] Failed to set up temporary portal', err);
+  }
+})();
+
 // -----------------------------------------------------------
 // Load editor-exported map and register portal inside default map
 // -----------------------------------------------------------
@@ -691,43 +758,67 @@ function updateGame() {
  * Broadcast world updates (player, enemy, bullet positions)
  */
 function broadcastWorldUpdates() {
-  // Get player data
-  const players = {};
-  clients.forEach((client, id) => {
-    players[id] = client.player;
-  });
-  
-  // Get enemy data
-  const enemies = enemyManager.getEnemiesData();
-  
-  // Get bullet data
-  const bullets = bulletManager.getBulletsData();
-  
-  // Get static objects for current map (decor/environment)
-  const objects = mapManager.getObjects(gameState.mapId);
-  
-  // Broadcast world update (include optional debug stats)
-  const worldPayload = {
-    players,
-    enemies,
-    bullets,
-    objects,
-    timestamp: Date.now()
-  };
+  const now = Date.now();
 
+  // Group clients by map so we can send tailored payloads and avoid leaking
+  // enemies / players from other worlds.
+  const clientsByMap = new Map(); // mapId -> Set(clientId)
+  clients.forEach((client, id) => {
+    const m = client.mapId || gameState.mapId;
+    if (!clientsByMap.has(m)) clientsByMap.set(m, new Set());
+    clientsByMap.get(m).add(id);
+  });
+
+  // Pre-fetch global enemy & bullet arrays once to avoid repeated work
+  const allEnemies = enemyManager.getEnemiesData();
+  const allBullets = bulletManager.getBulletsData();
+
+  // Iterate per mapId and broadcast to only those clients
+  clientsByMap.forEach((idSet, mapId) => {
+    // Collect players in this map
+    const players = {};
+    idSet.forEach(cid => { players[cid] = clients.get(cid).player; });
+
+    // Filter enemies by simple bounding box of map (assumes enemies spawned inside)
+    const meta = mapManager.getMapMetadata(mapId) || { width: 0, height: 0 };
+    const enemies = allEnemies.filter(e => e.x >= 0 && e.y >= 0 && e.x < meta.width && e.y < meta.height);
+
+    // Likewise filter bullets
+    const bullets = allBullets.filter(b => b.x >= 0 && b.y >= 0 && b.x < meta.width && b.y < meta.height);
+
+    const objects = mapManager.getObjects(mapId);
+
+    const worldPayload = {
+      players,
+      enemies,
+      bullets,
+      objects,
+      timestamp: now
+    };
+
+    if (bulletManager.stats) {
+      worldPayload.bulletStats = { ...bulletManager.stats };
+    }
+
+    // Send to each client in this map
+    idSet.forEach(cid => {
+      const c = clients.get(cid);
+      if (c) sendToClient(c.socket, MessageType.WORLD_UPDATE, worldPayload);
+    });
+
+    // Also send player list
+    idSet.forEach(cid => {
+      const c = clients.get(cid);
+      if (c) sendToClient(c.socket, MessageType.PLAYER_LIST, players);
+    });
+  });
+
+  // Reset bullet stats counters once per frame
   if (bulletManager.stats) {
-    worldPayload.bulletStats = { ...bulletManager.stats };
-    // Reset per-tick counters so next frame starts clean
     bulletManager.stats.wallHit = 0;
     bulletManager.stats.entityHit = 0;
     bulletManager.stats.created = 0;
   }
-
-  broadcast(MessageType.WORLD_UPDATE, worldPayload);
-  
-  // Always send the player list with every update for smoother movement
-  // Removed the 2-second throttling
-  broadcast(MessageType.PLAYER_LIST, players);
 }
 
 // Start game update loop
@@ -914,6 +1005,10 @@ function handleClientMessage(clientId, message) {
       case MessageType.CHAT_MESSAGE:
         // Handle chat message
         handleChatMessage(clientId, data);
+        break;
+        
+      case MessageType.PORTAL_ENTER:
+        handlePortalEnter(clientId);
         break;
         
       default:
@@ -1554,19 +1649,8 @@ function spawnMapEnemies(mapId){
  * Check if any players are standing on a portal tile/object and trigger map switch.
  */
 function handlePortals(){
-  if (!gameState.mapId) return;
-  const portals = mapManager.getObjects(gameState.mapId).filter(o => o.type === 'portal' && o.destMap);
-  if (portals.length === 0) return;
-  portals.forEach(portal => {
-    clients.forEach((client, id) => {
-      if (client.mapId !== gameState.mapId) return;
-      const dx = client.player.x - portal.x;
-      const dy = client.player.y - portal.y;
-      if (Math.abs(dx) <= 0.5 && Math.abs(dy) <= 0.5) {
-        switchEntireWorldToMap(portal.destMap);
-      }
-    });
-  });
+  // Automatic world-wide portal activation disabled.
+  // Interactions are now explicit via MessageType.PORTAL_ENTER.
 }
 
 /**
@@ -1599,5 +1683,69 @@ function switchEntireWorldToMap(destMapId){
     });
   });
 
+  spawnMapEnemies(destMapId);
+}
+
+/**
+ * Handle portal interaction initiated by client
+ */
+function handlePortalEnter(clientId){
+  const client = clients.get(clientId);
+  if(!client) return;
+  const mapId = client.mapId;
+  if(!mapId) return;
+  const portals = mapManager.getObjects(mapId).filter(o=>o.type==='portal' && o.destMap);
+  if(portals.length===0) return;
+
+  // Find nearest within 2 tile radius
+  const px = client.player.x;
+  const py = client.player.y;
+  const portal = portals.find(p=> Math.hypot(p.x - px, p.y - py) <= 2.0);
+  if(!portal){
+    if (DEBUG.connections) console.log(`[PORTAL] Player ${clientId} pressed E but no portal nearby`);
+  }
+  if(!portal) return; // not close enough
+
+  switchPlayerWorld(clientId, portal.destMap);
+}
+
+function switchPlayerWorld(clientId, destMapId){
+  const client = clients.get(clientId);
+  if(!client) return;
+  if(!destMapId || client.mapId === destMapId) return;
+  const meta = mapManager.getMapMetadata(destMapId);
+  if(!meta) return;
+
+  // Choose spawn – centre of map or provided spawn property
+  const spawnX = meta.spawnX !== undefined ? meta.spawnX : Math.floor(meta.width/2);
+  const spawnY = meta.spawnY !== undefined ? meta.spawnY : Math.floor(meta.height/2);
+
+  client.mapId = destMapId;
+  client.player.x = spawnX;
+  client.player.y = spawnY;
+
+  // Send world switch packet only to this client
+  sendToClient(client.socket, MessageType.WORLD_SWITCH, {
+    mapId: destMapId,
+    width: meta.width,
+    height: meta.height,
+    tileSize: meta.tileSize,
+    chunkSize: meta.chunkSize,
+    spawnX,
+    spawnY,
+    timestamp: Date.now()
+  });
+
+  // Also send MAP_INFO (client expects this to init chunks)
+  sendToClient(client.socket, MessageType.MAP_INFO, {
+    mapId: destMapId,
+    width: meta.width,
+    height: meta.height,
+    tileSize: meta.tileSize,
+    chunkSize: meta.chunkSize,
+    timestamp: Date.now()
+  });
+
+  // Spawn enemies for new map if not yet done
   spawnMapEnemies(destMapId);
 }
