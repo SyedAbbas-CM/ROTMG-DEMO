@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Enemy Editor</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; display:flex; height:100vh; }
+    #sidebar { width: 250px; background:#2b2b2b; color:#fff; overflow-y:auto; }
+    #sidebar h2 { margin:10px; }
+    #enemyList { list-style:none; padding:0; margin:0; }
+    #enemyList li { padding:8px 10px; cursor:pointer; }
+    #enemyList li:hover, #enemyList li.active { background:#444; }
+    #editor { flex:1; display:flex; flex-direction:column; }
+    #jsonInput { flex:1; padding:10px; font-family: monospace; font-size:14px; }
+    #controls { padding:10px; background:#eee; }
+    button { padding:6px 12px; }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h2>Enemies</h2>
+    <ul id="enemyList"></ul>
+    <button id="newBtn" style="margin:10px;">+ New Enemy</button>
+  </div>
+  <div id="editor">
+    <textarea id="jsonInput" spellcheck="false"></textarea>
+    <div id="controls">
+      <button id="saveBtn">Save (POST)</button>
+      <span id="status"></span>
+    </div>
+  </div>
+
+  <script type="module">
+    const listEl = document.getElementById('enemyList');
+    const jsonInput = document.getElementById('jsonInput');
+    const statusEl = document.getElementById('status');
+    let currentId = null;
+
+    async function loadList() {
+      const res = await fetch('/api/entities/enemies');
+      const arr = await res.json();
+      listEl.innerHTML='';
+      arr.forEach(ent=>{
+        const li=document.createElement('li');
+        li.textContent = ent.id;
+        li.onclick=()=> select(ent);
+        listEl.appendChild(li);
+      });
+    }
+
+    function select(ent){
+      currentId = ent.id;
+      document.querySelectorAll('#enemyList li').forEach(li=> li.classList.toggle('active', li.textContent===ent.id));
+      jsonInput.value = JSON.stringify(ent, null, 2);
+    }
+
+    document.getElementById('saveBtn').onclick = async () => {
+      try {
+        const obj = JSON.parse(jsonInput.value);
+        const res = await fetch('/api/entities/enemies', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify(obj)
+        });
+        if(res.ok){
+          statusEl.textContent='Saved ✔';
+          loadList();
+        }else{
+          statusEl.textContent='Save failed';
+          console.warn(await res.text());
+        }
+      }catch(err){
+        statusEl.textContent='Invalid JSON';
+      }
+    };
+
+    document.getElementById('newBtn').onclick = () => {
+      const template = {
+        id: 'myEnemy_'+Date.now(),
+        name: 'New Enemy',
+        sprite: 'chars:some_sprite',
+        hp: 50,
+        speed: 10,
+        attack: {
+          damage: 10,
+          range: 60,
+          cooldown: 1500,
+          speed: 30,
+          projectileCount: 1
+        },
+        ai: {
+          behavior: 'custom',
+          phases: [
+            {
+              name: 'Phase 1',
+              duration: 10,
+              behaviors: [
+                { type:'Wander', speed:1, duration:3 },
+                { type:'Shoot', cooldownMultiplier:1 }
+              ]
+            }
+          ]
+        }
+      };
+      jsonInput.value = JSON.stringify(template, null, 2);
+    };
+
+    loadList();
+  </script>
+</body>
+</html> 

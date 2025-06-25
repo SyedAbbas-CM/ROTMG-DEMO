@@ -4,6 +4,7 @@ import { Tile } from './tile.js';
 import { TILE_IDS, CHUNK_SIZE } from '../constants/constants.js';
 import { gameState } from '../game/gamestate.js';
 import { tileDatabase } from '../assets/TileDatabase.js';
+import { spriteManager } from '../assets/spriteManager.js';
 
 /**
  * ClientMapManager - Handles loading, caching, and rendering map data from server
@@ -161,6 +162,29 @@ export class ClientMapManager {
             if (ClientMapManager.DEBUG_VERBOSE) {
             console.log(`Chunk data is already an array with ${chunkData.length} rows`);
             }
+            // Preload any sprite sheets referenced by existing Tile objects
+            try {
+                const sheetNames = new Set();
+                for (const row of chunkData){
+                    for (const tile of row){
+                        const key = tile?.spriteName;
+                        if (key && key.includes('_sprite_')){
+                            sheetNames.add(key.split('_sprite_')[0]);
+                        }
+                    }
+                }
+                sheetNames.forEach(sn=>{
+                    if(!spriteManager.getSpriteSheet(sn)){
+                        fetch(`/assets/atlases/${sn}.json`).then(r=>r.json()).then(cfg=>{
+                            cfg.name ||= sn;
+                            if(!cfg.path && cfg.meta && cfg.meta.image){
+                                cfg.path = `/assets/images/${cfg.meta.image}`;
+                            }
+                            spriteManager.loadSpriteSheet(cfg);
+                        }).catch(err=>console.warn('[MapManager] preload fail', sn, err));
+                    }
+                });
+            } catch(e){}
             return chunkData;
         }
         
@@ -202,9 +226,19 @@ export class ClientMapManager {
                     if (typeof tileData === 'number') {
                         tileType = tileData;
                         tileHeight = 0;
+                    } else if (tileData && typeof tileData === 'object' && 't' in tileData) {
+                        // Compact network form { t:number, s:string }
+                        tileType = tileData.t;
+                        tileHeight = 0;
+                        // sprite assignment deferred until after Tile instance created
                     } else if (tileData && typeof tileData === 'object') {
                         tileType = tileData.type;
                         tileHeight = tileData.height || 0;
+                    } else if (typeof tileData === 'string') {
+                        // Treat plain string as sprite alias for a generic floor tile
+                        tileType = TILE_IDS.FLOOR;
+                        tileHeight = 0;
+                        // spriteName will be assigned below after the Tile instance is created.
                     } else {
                         tileType = TILE_IDS.FLOOR; // Default
                         tileHeight = 0;
@@ -213,17 +247,37 @@ export class ClientMapManager {
                     // Create tile instance WITH spriteName for renderer
                     const t = new Tile(tileType, tileHeight);
 
+                    // ----------------------------------------------------------------
+                    // NEW: If the original tileData was a plain string alias, assign it
+                    // now so renderers (and the alias-registration block below) can use
+                    // it.  We defer the assignment until after the Tile object exists
+                    // so we don't need to duplicate alias-parsing logic above.
+                    // ----------------------------------------------------------------
+                    if (typeof tileData === 'string') {
+                        t.spriteName = tileData.trim();
+                    }
+
                     // Server-supplied sprite name (preferred)
-                    if (tileData && typeof tileData === 'object' && tileData.sprite) {
-                        t.spriteName = (tileData.sprite + '').trim();
+                    if (tileData && typeof tileData === 'object') {
+                        if (tileData.sprite) {
+                            t.spriteName = (tileData.sprite + '').trim();
+                        } else if (tileData.properties && tileData.properties.sprite) {
+                            t.spriteName = (tileData.properties.sprite + '').trim();
+                        } else if ('s' in tileData) {
+                            t.spriteName = (tileData.s + '').trim();
+                        }
                     } else {
-                        // Local fallback mapping by tile type so first-person renderer always has a name
-                        switch (tileType) {
-                            case TILE_IDS.WALL:      t.spriteName = 'wall';      break;
-                            case TILE_IDS.OBSTACLE:  t.spriteName = 'obstacle';  break;
-                            case TILE_IDS.WATER:     t.spriteName = 'water';     break;
-                            case TILE_IDS.MOUNTAIN:  t.spriteName = 'mountain';  break;
-                            default:                 t.spriteName = 'floor';     break;
+                        // Local fallback mapping by tile type.  Only apply if
+                        // spriteName has not already been set (e.g. by the
+                        // plain-string path handled above).
+                        if (!t.spriteName) {
+                            switch (tileType) {
+                                case TILE_IDS.WALL:      t.spriteName = 'wall';      break;
+                                case TILE_IDS.OBSTACLE:  t.spriteName = 'obstacle';  break;
+                                case TILE_IDS.WATER:     t.spriteName = 'water';     break;
+                                case TILE_IDS.MOUNTAIN:  t.spriteName = 'mountain';  break;
+                                default:                 t.spriteName = 'floor';     break;
+                            }
                         }
                     }
 
@@ -234,6 +288,46 @@ export class ClientMapManager {
                         if (def.height !== undefined) t.height = def.height;
                         if (def.slope) t.slope = def.slope;
                     }
+
+                    // ------------------------------------------------------------------
+                    // If the spriteName follows the pattern <sheet>_sprite_row_col then
+                    // make sure the corresponding atlas is loaded and the alias is
+                    // registered in the (legacy-compatible) spriteDatabase so that all
+                    // renderers can draw it without additional look-ups.
+                    // ------------------------------------------------------------------
+                    if (t.spriteName && t.spriteName.includes('_sprite_')) {
+                        try {
+                            const parts = t.spriteName.split('_sprite_');
+                            const sheetName = parts[0];
+                            const rc       = parts[1].split('_');
+                            const row = parseInt(rc[0], 10) || 0;
+                            const col = parseInt(rc[1], 10) || 0;
+
+                            // Lazy-load atlas JSON if necessary
+                            if (!spriteManager.getSpriteSheet(sheetName)) {
+                                fetch(`/assets/atlases/${sheetName}.json`)
+                                    .then(r => r.json())
+                                    .then(cfg => {
+                                        cfg.name ||= sheetName;
+                                        if (!cfg.path && cfg.meta && cfg.meta.image) {
+                                            cfg.path = cfg.meta.image.startsWith('/') ? cfg.meta.image : '/' + cfg.meta.image;
+                                        }
+                                        spriteManager.loadSpriteSheet(cfg);
+                                    })
+                                    .catch(err => console.warn('[MapManager] preload atlas failed', sheetName, err));
+                            }
+
+                            // Register sprite alias (one-time per alias)
+                            if (window.spriteDatabase && typeof window.spriteDatabase.fetchGridSprite === 'function') {
+                                if (typeof window.spriteDatabase.hasSprite === 'function' ? !window.spriteDatabase.hasSprite(t.spriteName) : true) {
+                                    window.spriteDatabase.fetchGridSprite(sheetName, row, col, t.spriteName);
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('[MapManager] ensure sprite alias failed', t.spriteName, err);
+                        }
+                    }
+
                     row.push(t);
                 }
                 processedData.push(row);
@@ -259,6 +353,39 @@ export class ClientMapManager {
             if (ClientMapManager.DEBUG_VERBOSE) {
             console.log(`Created default chunk data: ${processedData.length} rows x ${processedData[0].length} columns`);
             }
+        }
+        
+        // Auto-load any sprite sheets referenced by this chunk so renderers find them ready.
+        try {
+            const sheetsNeeded = new Set();
+            for (const row of processedData) {
+                for (const tile of row) {
+                    const key = tile?.spriteName;
+                    if (key && key.includes('_sprite_')) {
+                        const sheetName = key.split('_sprite_')[0];
+                        if (!spriteManager.getSpriteSheet(sheetName)) {
+                            sheetsNeeded.add(sheetName);
+                        }
+                    }
+                }
+            }
+            sheetsNeeded.forEach(sn => {
+                fetch(`/assets/atlases/${sn}.json`).then(r => r.json()).then(cfg => {
+                    cfg.name ||= sn;
+                    if (!cfg.path && cfg.meta && cfg.meta.image) {
+                        cfg.path = cfg.meta.image.startsWith('/') ? cfg.meta.image : '/' + cfg.meta.image;
+                    }
+                    spriteManager.loadSpriteSheet(cfg);
+                }).catch(err => {
+                    if (!processChunkData._missingSheetWarned) processChunkData._missingSheetWarned = new Set();
+                    if (!processChunkData._missingSheetWarned.has(sn)) {
+                        console.warn('[ClientMapManager] Failed to auto-load sheet', sn, err);
+                        processChunkData._missingSheetWarned.add(sn);
+                    }
+                });
+            });
+        } catch (err) {
+            console.warn('[ClientMapManager] sprite preload error', err);
         }
         
         return processedData;

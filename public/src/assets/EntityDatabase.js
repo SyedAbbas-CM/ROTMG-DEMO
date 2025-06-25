@@ -10,7 +10,8 @@ export class EntityDatabase {
     this.groups = {
       tiles: new Map(),
       objects: new Map(),
-      enemies: new Map()
+      enemies: new Map(),
+      items: new Map()
     };
     this.loaded = false;
   }
@@ -19,7 +20,7 @@ export class EntityDatabase {
     try {
       const res = await fetch(url);
       const json = await res.json();
-      ['tiles', 'objects', 'enemies'].forEach(group => {
+      ['tiles', 'objects', 'enemies', 'items'].forEach(group => {
         (json[group] || []).forEach(ent => {
           this.groups[group].set(ent.id, ent);
         });
@@ -40,6 +41,7 @@ export class EntityDatabase {
   getTile(id) { return this.groups.tiles.get(id) || null; }
   getObject(id) { return this.groups.objects.get(id) || null; }
   getEnemy(id) { return this.groups.enemies.get(id) || null; }
+  getItem(id)  { return this.groups.items.get(id)   || null; }
   getAll(group) { return Array.from(this.groups[group]?.values() || []); }
 }
 

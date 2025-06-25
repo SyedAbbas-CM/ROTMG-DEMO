@@ -78,18 +78,18 @@ export class Camera {
    * @param {number} tileSize - Tile size in pixels
    * @returns {Object} Screen coordinates {x, y}
    */
-  worldToScreen(worldX, worldY, screenWidth, screenHeight) {
+  worldToScreen(worldX, worldY, screenWidth, screenHeight, tileSize = TILE_SIZE) {
     const scaleFactor = this.getViewScaleFactor();
-    // This formula transforms world coordinates to screen coordinates
-    const screenX = (worldX - this.position.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
-    const screenY = (worldY - this.position.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
+    const ts = tileSize || TILE_SIZE;
+    const screenX = (worldX - this.position.x) * ts * scaleFactor + screenWidth / 2;
+    const screenY = (worldY - this.position.y) * ts * scaleFactor + screenHeight / 2;
     // Debug logging (only occasionally to avoid spamming console)
     if (this.debugMode && Math.random() < 0.01) {
       console.log(`worldToScreen: 
         World (${worldX}, ${worldY}) 
         Camera (${this.position.x}, ${this.position.y}) 
         Screen (${screenX}, ${screenY})
-        TileSize: ${tileSize}, ScaleFactor: ${scaleFactor}
+        TileSize: ${ts}, ScaleFactor: ${scaleFactor}
       `);
     }
     

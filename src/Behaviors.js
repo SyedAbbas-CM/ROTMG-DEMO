@@ -278,7 +278,8 @@ export class Shoot extends Behavior {
         width: 0.4,
         height: 0.4,
         isEnemy: true,
-        spriteName: enemyManager.bulletSpriteName[index] || 'projectile_basic'
+        spriteName: enemyManager.bulletSpriteName[index] || 'projectile_basic',
+        worldId: enemyManager.worldId[index]
       });
       
       return;
@@ -305,7 +306,8 @@ export class Shoot extends Behavior {
         width: 0.4,
         height: 0.4,
         isEnemy: true,
-        spriteName: enemyManager.bulletSpriteName[index] || 'projectile_basic'
+        spriteName: enemyManager.bulletSpriteName[index] || 'projectile_basic',
+        worldId: enemyManager.worldId[index]
       });
     }
   }

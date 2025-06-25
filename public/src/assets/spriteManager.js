@@ -493,6 +493,13 @@ export class SpriteManager {
    */
   fetchGridSprite(sheetName, row, col, alias = null, spriteWidth = null, spriteHeight = null) {
     const gridSprite = this.getGridSprite(sheetName, row, col, spriteWidth, spriteHeight);
+    // Ensure this grid sprite is stored in the main registry so later look-ups succeed
+    if (gridSprite) {
+      const key = `${sheetName}_${gridSprite.name}`;
+      if (!this.sprites[key]) {
+        this.sprites[key] = gridSprite;
+      }
+    }
     if (alias) {
       this.registerAlias(alias, sheetName, gridSprite.name);
     }

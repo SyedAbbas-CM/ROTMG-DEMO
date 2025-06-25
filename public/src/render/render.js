@@ -152,17 +152,15 @@ export function renderEnemies() {
   
   // Get enemy sprite sheet
   const enemySheetObj = spriteManager.getSpriteSheet('enemy_sprites');
+  const enemySpriteSheet = enemySheetObj ? enemySheetObj.image : null;
   if (!enemySheetObj) {
-    console.warn("Enemy sprite sheet not loaded");
-    return;
+    console.warn("Enemy sprite sheet not loaded – will use SpriteDatabase aliases or fallback rectangles");
   }
-  const enemySpriteSheet = enemySheetObj.image;
   
   // Log sheet info once to help with debugging
-  if (!window.enemySpriteDebugLogged) {
+  if (enemySheetObj && !window.enemySpriteDebugLogged) {
     window.enemySpriteDebugLogged = true;
-    console.log(`Enemy sprite sheet loaded: ${enemySpriteSheet.width}x${enemySpriteSheet.height}`, 
-      enemySheetObj.config);
+    console.log(`Enemy sprite sheet loaded: ${enemySpriteSheet.width}x${enemySpriteSheet.height}`, enemySheetObj.config);
   }
   
   // Get view scaling factor - FIXING back to 0.5 for strategic view
@@ -248,24 +246,30 @@ export function renderEnemies() {
         ctx.globalAlpha = 1.0;
       }
       
-      // If enemy has a rotation, use it
-      if (typeof enemy.rotation === 'number') {
-        ctx.translate(screenX, screenY);
-        ctx.rotate(enemy.rotation);
-        ctx.drawImage(
-          enemySpriteSheet,
-          enemy.spriteX || 0, enemy.spriteY || 0, 
-          8, 8, // Use 8x8 sprite size for source
-          -width/2, -height/2, width, height
-        );
+      if (enemySpriteSheet) {
+        // If enemy has a rotation, use it
+        if (typeof enemy.rotation === 'number') {
+          ctx.translate(screenX, screenY);
+          ctx.rotate(enemy.rotation);
+          ctx.drawImage(
+            enemySpriteSheet,
+            enemy.spriteX || 0, enemy.spriteY || 0,
+            8, 8, // source size
+            -width/2, -height/2, width, height
+          );
+        } else {
+          // Draw without rotation
+          ctx.drawImage(
+            enemySpriteSheet,
+            enemy.spriteX || 0, enemy.spriteY || 0,
+            8, 8,
+            screenX - width/2, screenY - height/2, width, height
+          );
+        }
       } else {
-        // Draw without rotation - center at the calculated screen position
-        ctx.drawImage(
-          enemySpriteSheet,
-          enemy.spriteX || 0, enemy.spriteY || 0, 
-          8, 8, // Use 8x8 sprite size for source
-          screenX - width/2, screenY - height/2, width, height
-        );
+        // Fallback: draw simple colored rectangle so the enemy is visible
+        ctx.fillStyle = 'magenta';
+        ctx.fillRect(screenX - width/2, screenY - height/2, width, height);
       }
       
       // Debug visualization of sprite source rectangle

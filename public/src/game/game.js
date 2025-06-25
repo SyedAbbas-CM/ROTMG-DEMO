@@ -35,6 +35,8 @@ import { initLogger, setLogLevel, LOG_LEVELS } from '../utils/logger.js';
 import { setupDebugTools } from '../utils/debugTools.js';
 import { spriteDatabase } from '../assets/SpriteDatabase.js';
 import { tileDatabase } from '../assets/TileDatabase.js';
+import { ClientWorld } from '../world/ClientWorld.js';
+import { entityDatabase } from '../assets/EntityDatabase.js';
 
 let renderer, scene, camera;
 let lastTime = 0;
@@ -80,6 +82,9 @@ window.collisionStats = collisionStats;
 // Make spriteDatabase globally visible for console usage
 window.spriteDatabase = spriteDatabase;
 
+// Expose entity database as well so other modules can consume definitions early
+window.entityDatabase = entityDatabase;
+
 export async function initGame() {
     try {
         console.log('Starting game initialization...');
@@ -106,6 +111,9 @@ export async function initGame() {
         console.log('Initializing sprite database...');
         await initializeSpriteManager();
         
+        // Load consolidated entity definitions (tiles, objects, enemies, …)
+        await entityDatabase.load();
+
         // Load tile database
         await tileDatabase.load('assets/database/tiles.json');
 
@@ -165,6 +173,19 @@ export async function initGame() {
             spritesPerColumn: 20
         });
         
+        // Register simple aliases so renderers can ask for 'floor', 'wall', …
+        // without hard-coding sprite indices everywhere.  Adjust row/col if you
+        // move tiles in the sheet.
+        [
+          ['floor',    0, 0], // row, col
+          ['wall',     0, 1],
+          ['obstacle', 0, 2],
+          ['water',    0, 4],
+          ['mountain', 0, 5]
+        ].forEach(([alias, row, col]) => {
+          spriteManager.fetchGridSprite('tile_sprites', row, col, alias, 12, 12);
+        });
+        
         // Load bullet sprites - Add this for bullet rendering
         await spriteManager.loadSpriteSheet({ 
             name: 'bullet_sprites', 
@@ -173,6 +194,16 @@ export async function initGame() {
             defaultSpriteHeight: 8,
             spritesPerRow: 16,
             spritesPerColumn: 16
+        });
+        
+        // Basic placeholder aliases for enemy types until proper atlas tags are created
+        [
+          ['goblin', 0, 0],
+          ['orc',    0, 1],
+          ['troll',  0, 2],
+          ['wizard', 0, 3]
+        ].forEach(([alias, row, col]) => {
+          spriteManager.fetchGridSprite('enemy_sprites', row, col, alias, 8, 8);
         });
         
         console.log('All sprite sheets loaded.');
@@ -587,18 +618,23 @@ function initializeGameState() {
         onWorldSwitch: (data) => {
             console.log(`[GAME] onWorldSwitch → ${data.mapId}`);
 
-            // 1) Rebuild map manager entirely so no stale chunks survive
-            mapManager = new ClientMapManager({ networkManager });
-            gameState.map = mapManager;
-            mapManager.initMap(data);
+            // 1) Dispose previous world (if any)
+            if (gameState.world && typeof gameState.world.dispose === 'function') {
+                gameState.world.dispose();
+            }
 
-            // 2) Reset entity managers so enemies / bullets from old world vanish
-            enemyManager.setEnemies([]);
-            bulletManager.setBullets([]);
+            // 2) Build new world container which owns its own managers
+            const newWorld = new ClientWorld({ mapData: data, networkManager });
+            gameState.world = newWorld;
 
-            // 3) Clear render tile caches in each view (guard for undefined)
-            if (window.clearStrategicCache) window.clearStrategicCache();
-            if (window.clearTopDownCache)   window.clearTopDownCache();
+            // 3) Redirect the top-level references so legacy code keeps working
+            mapManager     = newWorld.mapManager;
+            enemyManager   = newWorld.enemyManager;
+            bulletManager  = newWorld.bulletManager;
+
+            gameState.map          = mapManager;
+            gameState.enemyManager = enemyManager;
+            gameState.bulletManager= bulletManager;
 
             // 4) Snap camera to new spawn location immediately
             if (gameState.camera && data.spawnX !== undefined) {
@@ -606,7 +642,12 @@ function initializeGameState() {
                 gameState.camera.position.y = data.spawnY;
             }
 
-            console.log('[GAME] World switch complete, waiting for chunks...');
+            console.log('[GAME] World switch complete → new world managers installed, waiting for chunks…');
+
+            // Re-hook collision manager to the fresh entity managers
+            if (collisionManager && typeof collisionManager.setEntityManagers==='function'){
+              collisionManager.setEntityManagers(bulletManager, enemyManager);
+            }
         },
         
         // Set all players

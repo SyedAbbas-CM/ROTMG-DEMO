@@ -347,6 +347,14 @@ export class SpriteDatabase {
   }
 
   /**
+   * Check if an atlas has been registered.  Added for compatibility with
+   * legacy code that previously called spriteDatabase.hasAtlas(name).
+   */
+  hasAtlas(atlasName) {
+    return this.atlases.has(atlasName);
+  }
+
+  /**
    * Get all sprite names
    * @returns {Array<string>} Array of all sprite names
    */
@@ -457,6 +465,29 @@ export class SpriteDatabase {
   get(spriteName) {
     // Alias for getSprite to maintain backward compatibility
     return this.getSprite(spriteName);
+  }
+
+  /**
+   * Compatibility helper replicating the old spriteManager.fetchGridSprite API.
+   * It returns a sprite extracted from grid coordinates and, if an alias is
+   * provided, registers that alias for future quick look-ups.
+   */
+  fetchGridSprite(atlasName, row, col, alias = null, spriteWidth = null, spriteHeight = null) {
+    const baseSprite = this.getSpriteByGrid(atlasName, row, col);
+    if (!baseSprite) return null;
+
+    // Override size if custom dimensions were supplied
+    if (spriteWidth || spriteHeight) {
+      baseSprite.width  = spriteWidth  || baseSprite.width;
+      baseSprite.height = spriteHeight || baseSprite.height;
+    }
+
+    // Register alias mapping if requested and not already present
+    if (alias && !this.hasSprite(alias)) {
+      this.sprites.set(alias, baseSprite);
+    }
+
+    return baseSprite;
   }
 }
 

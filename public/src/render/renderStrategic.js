@@ -31,6 +31,23 @@ export function clearStrategicCache() {
 // Also expose via window so other modules can call without import cycles
 window.clearStrategicCache = clearStrategicCache;
 
+function ensureSheetLoaded(sheetName){
+  if (spriteManager.getSpriteSheet(sheetName)) return;
+  fetch(`/assets/atlases/${sheetName}.json`).then(r=>r.json()).then(cfg=>{
+    cfg.name ||= sheetName;
+    if(!cfg.path && cfg.meta && cfg.meta.image){
+      cfg.path = cfg.meta.image.startsWith('/')? cfg.meta.image : ('/' + cfg.meta.image);
+    }
+    return spriteManager.loadSpriteSheet(cfg);
+  }).catch(err=>{
+    if(!ensureSheetLoaded.logged){ensureSheetLoaded.logged=new Set();}
+    if(!ensureSheetLoaded.logged.has(sheetName)){
+      console.warn('[Strategic] Failed to auto-load sheet', sheetName, err);
+      ensureSheetLoaded.logged.add(sheetName);
+    }
+  });
+}
+
 export function renderStrategicView() {
   const camera = gameState.camera;
   const mapManager = gameState.map;
@@ -63,14 +80,13 @@ export function renderStrategicView() {
     lastChunkUpdateTime = now;
   }
   
-  const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites");
-  if (!tileSheetObj) { console.warn('tile_sprites not loaded'); return; }
-  const tileSpriteSheet = tileSheetObj.image;
+  // We will select sprite sheets dynamically per tile so the view supports
+  // multiple art packs within the same map.
 
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
       // ANTI-FLICKERING: Check cache first before requesting tile
-      const tileKey = `${x},${y}`;
+      const tileKey = `${mapManager.activeMapId || 'map'}:${x},${y}`;
       let tile = strategicTileCache.get(tileKey);
       
       if (!tile) {
@@ -85,7 +101,31 @@ export function renderStrategicView() {
       
       if (!tile) continue;
       
-      const spritePos = TILE_SPRITES[tile.type];
+      let spritePos;
+      let spriteSheetName = 'tile_sprites';
+      if (tile.properties && tile.properties.sprite) {
+        const raw=tile.properties.sprite;
+        const parts=raw.split('_sprite_');
+        if(parts.length>1){ ensureSheetLoaded(parts[0]); }
+        const spr = spriteManager.fetchSprite(raw);
+        if (spr) {
+          spriteSheetName = spr.sheetName;
+          spritePos = { x: spr.x, y: spr.y };
+        }
+      }
+      if (!spritePos && tile.spriteName){
+        const raw=tile.spriteName;
+        const parts=raw.split('_sprite_');
+        if(parts.length>1){ ensureSheetLoaded(parts[0]); }
+        const spr = spriteManager.fetchSprite(raw);
+        if (spr){
+          spriteSheetName = spr.sheetName;
+          spritePos = { x: spr.x, y: spr.y };
+        }
+      }
+      if (!spritePos) {
+        spritePos = TILE_SPRITES[tile.type];
+      }
       
       // Convert tile grid position to world position
       // In this game, tile coordinates are the same as world coordinates
@@ -98,15 +138,17 @@ export function renderStrategicView() {
         worldY + 0.5, 
         canvas2D.width, 
         canvas2D.height, 
-        TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
+        mapManager.tileSize || TILE_SIZE
       );
       
       // Draw tile using the consistent screen position
-      const sCfg = tileSheetObj.config;
-      const spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
-      const spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
+      ensureSheetLoaded(spriteSheetName);
+      const sheetObj = spriteManager.getSpriteSheet(spriteSheetName);
+      if (!sheetObj) continue;
+      const spriteW = sheetObj.config.defaultSpriteWidth  || TILE_SIZE;
+      const spriteH = sheetObj.config.defaultSpriteHeight || TILE_SIZE;
       ctx.drawImage(
-        tileSpriteSheet,
+        sheetObj.image,
         spritePos.x, spritePos.y, spriteW, spriteH,
         screenPos.x - (spriteW * scaleFactor / 2),
         screenPos.y - (spriteH * scaleFactor / 2),
@@ -159,7 +201,7 @@ export function renderStrategicView() {
     const cacheCleanupDistance = Math.max(tilesInViewX, tilesInViewY) * 2;
     
     for (const [key, _] of strategicTileCache) {
-      const [tileX, tileY] = key.split(',').map(Number);
+      const [tileX, tileY] = key.split(':').slice(1).map(Number);
       const dx = Math.abs(tileX - startX - tilesInViewX/2);
       const dy = Math.abs(tileY - startY - tilesInViewY/2);
       

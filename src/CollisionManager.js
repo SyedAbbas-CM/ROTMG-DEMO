@@ -77,6 +77,10 @@ export default class CollisionManager {
       
       // Check for enemy collisions
       for (let ei = 0; ei < this.enemyManager.enemyCount; ei++) {
+        // Skip enemies from a different world
+        if (this.bulletManager.worldId[bi] !== this.enemyManager.worldId[ei]) {
+          continue;
+        }
         // Skip dead enemies
         if (this.enemyManager.health[ei] <= 0) continue;
         
@@ -132,6 +136,16 @@ export default class CollisionManager {
       return { 
         valid: false, 
         reason: 'Entity not found',
+        bulletId,
+        enemyId
+      };
+    }
+    
+    // Ensure bullet and enemy are in the same world to prevent cross-realm hits
+    if (this.bulletManager.worldId[bulletIndex] !== this.enemyManager.worldId[enemyIndex]) {
+      return {
+        valid: false,
+        reason: 'Different world',
         bulletId,
         enemyId
       };

@@ -1,5 +1,9 @@
 // Managers/world/constants.js
 
+export * from '../../public/src/constants/constants.js';
+
+// (Deprecated duplicates below retained for reference, no longer exported)
+/*
 export const TILE_SIZE = 12; // Size of each tile in pixels (Oryx tiles are 12×12)
 export const CHARACTER_SPRITE_SIZE = 10; // Size of each character sprite in pixels
 export const SCALE = 3; // Scale factor for sprites
@@ -74,3 +78,4 @@ export const WALL_SPRITE_POSITIONS = {
 
 // Chunking Constants
 export const CHUNK_SIZE = 16; // Size of each chunk (e.g., 16x16 tiles)
+*/

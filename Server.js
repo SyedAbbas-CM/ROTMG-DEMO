@@ -14,6 +14,7 @@ import CollisionManager from './src/CollisionManager.js';
 // Import BehaviorSystem
 import BehaviorSystem from './src/BehaviorSystem.js';
 import { entityDatabase } from './src/assets/EntityDatabase.js';
+import { NETWORK_SETTINGS } from './public/src/constants/constants.js';
 
 // Debug flags to control logging
 const DEBUG = {
@@ -740,7 +741,7 @@ function updateGame() {
           }
           
           // Spawn enemy
-          enemyManager.spawnEnemyById(type, x, y);
+          enemyManager.spawnEnemyById(type, x, y, gameState.mapId);
         }
         
         if (DEBUG.enemySpawns) {
@@ -759,6 +760,8 @@ function updateGame() {
  */
 function broadcastWorldUpdates() {
   const now = Date.now();
+  const UPDATE_RADIUS = NETWORK_SETTINGS.UPDATE_RADIUS_TILES;
+  const UPDATE_RADIUS_SQ = UPDATE_RADIUS * UPDATE_RADIUS;
 
   // Group clients by map so we can send tailored payloads and avoid leaking
   // enemies / players from other worlds.
@@ -769,41 +772,57 @@ function broadcastWorldUpdates() {
     clientsByMap.get(m).add(id);
   });
 
-  // Pre-fetch global enemy & bullet arrays once to avoid repeated work
-  const allEnemies = enemyManager.getEnemiesData();
-  const allBullets = bulletManager.getBulletsData();
-
   // Iterate per mapId and broadcast to only those clients
   clientsByMap.forEach((idSet, mapId) => {
     // Collect players in this map
     const players = {};
     idSet.forEach(cid => { players[cid] = clients.get(cid).player; });
 
-    // Filter enemies by simple bounding box of map (assumes enemies spawned inside)
-    const meta = mapManager.getMapMetadata(mapId) || { width: 0, height: 0 };
-    const enemies = allEnemies.filter(e => e.x >= 0 && e.y >= 0 && e.x < meta.width && e.y < meta.height);
+    // Pull enemies and bullets belonging to this world only
+    const enemies = enemyManager.getEnemiesData(mapId);
+    const bullets = bulletManager.getBulletsData(mapId);
 
-    // Likewise filter bullets
-    const bullets = allBullets.filter(b => b.x >= 0 && b.y >= 0 && b.x < meta.width && b.y < meta.height);
+    // Optionally clamp by map bounds to avoid stray entities outside map
+    const meta = mapManager.getMapMetadata(mapId) || { width: 0, height: 0 };
+    const clamp = (arr) => arr.filter(o => o.x >= 0 && o.y >= 0 && o.x < meta.width && o.y < meta.height);
+    const enemiesClamped = clamp(enemies);
+    const bulletsClamped = clamp(bullets);
 
     const objects = mapManager.getObjects(mapId);
 
-    const worldPayload = {
-      players,
-      enemies,
-      bullets,
-      objects,
-      timestamp: now
-    };
-
-    if (bulletManager.stats) {
-      worldPayload.bulletStats = { ...bulletManager.stats };
-    }
-
-    // Send to each client in this map
+    // Send tailored update to each client (interest management)
     idSet.forEach(cid => {
       const c = clients.get(cid);
-      if (c) sendToClient(c.socket, MessageType.WORLD_UPDATE, worldPayload);
+      if (!c) return;
+
+      const px = c.player.x;
+      const py = c.player.y;
+
+      const visibleEnemies = enemiesClamped.filter(e => {
+        const dx = e.x - px;
+        const dy = e.y - py;
+        return (dx * dx + dy * dy) <= UPDATE_RADIUS_SQ;
+      });
+
+      const visibleBullets = bulletsClamped.filter(b => {
+        const dx = b.x - px;
+        const dy = b.y - py;
+        return (dx * dx + dy * dy) <= UPDATE_RADIUS_SQ;
+      });
+
+      const payload = {
+        players,
+        enemies: visibleEnemies.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
+        bullets: visibleBullets.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
+        objects,
+        timestamp: now
+      };
+
+      if (bulletManager.stats) {
+        payload.bulletStats = { ...bulletManager.stats };
+      }
+
+      sendToClient(c.socket, MessageType.WORLD_UPDATE, payload);
     });
 
     // Also send player list
@@ -927,14 +946,15 @@ function sendInitialState(socket, clientId) {
   sendToClient(socket, MessageType.PLAYER_LIST, players);
   
   // Send enemy list
-  const enemies = enemyManager.getEnemiesData();
+  const client = clients.get(clientId);
+  const enemies = enemyManager.getEnemiesData(client.mapId);
   sendToClient(socket, MessageType.ENEMY_LIST, {
     enemies,
     timestamp: Date.now()
   });
   
   // Send bullet list
-  const bullets = bulletManager.getBulletsData();
+  const bullets = bulletManager.getBulletsData(client.mapId);
   sendToClient(socket, MessageType.BULLET_LIST, {
     bullets,
     timestamp: Date.now()
@@ -1084,7 +1104,8 @@ function handleBulletCreate(clientId, data) {
       ownerId: clientId,
       damage: data.damage || 10,
       lifetime: data.lifetime || 5.0,
-      spriteName: data.spriteName || null
+      spriteName: data.spriteName || null,
+      worldId: client.mapId
     });
     
     if (globalThis.DEBUG?.bulletEvents) {
@@ -1106,6 +1127,7 @@ function handleBulletCreate(clientId, data) {
     lifetime: data.lifetime || 5.0,
     ownerId: clientId,
     spriteName: data.spriteName || null,
+    worldId: client.mapId,
     timestamp: Date.now()
   });
 }
@@ -1372,7 +1394,7 @@ function spawnInitialEnemies(count) {
       y = Math.max(1, Math.min(mapManager.height - 1, y));
     }
 
-    enemyManager.spawnEnemyById(type, x, y);
+    enemyManager.spawnEnemyById(type, x, y, gameState.mapId);
   }
 }
 
@@ -1562,7 +1584,7 @@ app.post('/api/map-editor/save', (req, res) => {
 const entitiesDir = path.join(__dirname, 'public', 'assets', 'entities');
 app.get('/api/entities/:group', (req, res) => {
   const group = req.params.group;
-  const safe = ['tiles', 'objects', 'enemies'];
+  const safe = ['tiles', 'objects', 'enemies', 'items'];
   if (!safe.includes(group)) return res.status(400).json({ error: 'Invalid group' });
   const file = path.join(entitiesDir, `${group}.json`);
   if (!fs.existsSync(file)) return res.json([]);
@@ -1570,7 +1592,7 @@ app.get('/api/entities/:group', (req, res) => {
 });
 app.get('/api/entities', (_req, res) => {
   const out = {};
-  ['tiles', 'objects', 'enemies'].forEach(g => {
+  ['tiles', 'objects', 'enemies', 'items'].forEach(g => {
     const file = path.join(entitiesDir, `${g}.json`);
     out[g] = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
   });
@@ -1579,7 +1601,7 @@ app.get('/api/entities', (_req, res) => {
 
 app.post('/api/entities/:group', (req,res)=>{
   const group=req.params.group;
-  const safe=['tiles','objects','enemies'];
+  const safe=['tiles','objects','enemies','items'];
   if(!safe.includes(group)) return res.status(400).json({error:'Invalid group'});
   const entry=req.body;
   if(!entry||!entry.id) return res.status(400).json({error:'Entry with id required'});
@@ -1639,7 +1661,7 @@ function spawnMapEnemies(mapId){
   spawns.forEach(e=>{
     if(e&&e.sprite!==undefined){
       const id=typeof e.sprite==='string'?e.sprite:e.id||e.type;
-      enemyManager.spawnEnemyById(id,e.x||0,e.y||0);
+      enemyManager.spawnEnemyById(id, e.x || 0, e.y || 0, mapId);
     }
   });
   if(DEBUG.enemySpawns){console.log(`[MAP] spawned ${spawns.length} enemies from map ${mapId}`);}

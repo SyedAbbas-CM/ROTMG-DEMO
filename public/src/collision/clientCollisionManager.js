@@ -722,4 +722,14 @@ export class ClientCollisionManager {
             this.cleanupInterval = null;
         }
     }
+
+    /**
+     * Called after a WORLD_SWITCH so the collision manager can hook into the
+     * fresh entity managers owned by the new ClientWorld.
+     */
+    setEntityManagers(bulletMgr, enemyMgr){
+        if (bulletMgr) this.bulletManager = bulletMgr;
+        if (enemyMgr)  this.enemyManager  = enemyMgr;
+        console.log('[Collision] Entity managers updated after world switch');
+    }
 }

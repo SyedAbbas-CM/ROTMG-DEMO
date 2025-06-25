@@ -36,6 +36,26 @@ export function clearTopDownCache() {
 // Expose via global window for ease of access without circular imports
 window.clearTopDownCache = clearTopDownCache;
 
+// Lazy loader for atlas json – ensures any sheet referenced by map tile gets
+// loaded on demand without blocking the main thread.
+function ensureSheetLoaded(sheetName){
+  if (spriteManager.getSpriteSheet(sheetName)) return;
+  fetch(`/assets/atlases/${sheetName}.json`).then(r=>r.json()).then(cfg=>{
+    cfg.name ||= sheetName;
+    // Provide fallback path for image if missing and meta.image exists
+    if(!cfg.path && cfg.meta && cfg.meta.image){
+      cfg.path = cfg.meta.image.startsWith('/')? cfg.meta.image : ('/' + cfg.meta.image);
+    }
+    return spriteManager.loadSpriteSheet(cfg);
+  }).catch(err=>{
+    if(!ensureSheetLoaded.loggedMissing){ensureSheetLoaded.loggedMissing=new Set();}
+    if(!ensureSheetLoaded.loggedMissing.has(sheetName)){
+      console.warn(`[TopDown] Failed to auto-load sheet ${sheetName}:`,err);
+      ensureSheetLoaded.loggedMissing.add(sheetName);
+    }
+  });
+}
+
 export function renderTopDownView() {
   const camera = gameState.camera;
   const mapManager = gameState.map;
@@ -68,14 +88,13 @@ export function renderTopDownView() {
     lastChunkUpdateTime = now;
   }
   
-  const tileSheetObj = spriteManager.getSpriteSheet("tile_sprites");
-  if (!tileSheetObj) return;
-  const tileSpriteSheet = tileSheetObj.image;
+  // NOTE: sprite sheets are fetched per-tile inside the render loop so
+  // that mixed sheets can be rendered in the same view.
 
   for (let y = startY; y <= endY; y++) {
     for (let x = startX; x <= endX; x++) {
       // ANTI-FLICKERING: Check cache first before requesting tile
-      const tileKey = `${x},${y}`;
+      const tileKey = `${mapManager.activeMapId || 'map'}:${x},${y}`;
       let tile = topDownTileCache.get(tileKey);
       
       if (!tile) {
@@ -90,7 +109,33 @@ export function renderTopDownView() {
       
       if (!tile) continue;
       
-      const spritePos = TILE_SPRITES[tile.type];
+      // Determine sprite – per-tile override takes priority
+      let spritePos;
+      let spriteSheetName = 'tile_sprites';
+      if (tile.properties && tile.properties.sprite) {
+        const rawName = tile.properties.sprite;
+        // Try to derive sheet name quickly to preload
+        const parts = rawName.split('_sprite_');
+        if(parts.length>1){ ensureSheetLoaded(parts[0]); }
+        const spriteObj = spriteManager.fetchSprite(rawName);
+        if (spriteObj) {
+          spriteSheetName = spriteObj.sheetName;
+          spritePos = { x: spriteObj.x, y: spriteObj.y };
+        }
+      }
+      if (!spritePos && tile.spriteName) {
+        const rawName=tile.spriteName;
+        const parts=rawName.split('_sprite_');
+        if(parts.length>1){ ensureSheetLoaded(parts[0]); }
+        const spriteObj = spriteManager.fetchSprite(rawName);
+        if (spriteObj) {
+          spriteSheetName = spriteObj.sheetName;
+          spritePos = { x: spriteObj.x, y: spriteObj.y };
+        }
+      }
+      if (!spritePos) {
+        spritePos = TILE_SPRITES[tile.type];
+      }
       
       // Convert tile grid position to world position
       // In this game, tile coordinates are the same as world coordinates
@@ -104,14 +149,17 @@ export function renderTopDownView() {
         worldY + 0.5, 
         canvas2D.width, 
         canvas2D.height, 
-        TILE_SIZE  // Use base TILE_SIZE, let worldToScreen apply scaling
+        mapManager.tileSize || TILE_SIZE
       );
       
-      const sCfg = tileSheetObj.config;
+      ensureSheetLoaded(spriteSheetName);
+      const sheetObj = spriteManager.getSpriteSheet(spriteSheetName);
+      if(!sheetObj) continue; // wait until loaded next frame
+      const sCfg = sheetObj.config;
       const spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
       const spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
       ctx.drawImage(
-        tileSpriteSheet,
+        sheetObj.image,
         spritePos.x, spritePos.y, spriteW, spriteH, // Source rectangle
         screenPos.x - (spriteW * scaleFactor / 2),
         screenPos.y - (spriteH * scaleFactor / 2),
@@ -163,7 +211,7 @@ export function renderTopDownView() {
     const cacheCleanupDistance = Math.max(tilesInViewX, tilesInViewY) * 2;
     
     for (const [key, _] of topDownTileCache) {
-      const [tileX, tileY] = key.split(',').map(Number);
+      const [tileX, tileY] = key.split(':').slice(1).map(Number);
       const dx = Math.abs(tileX - startX - tilesInViewX/2);
       const dy = Math.abs(tileY - startY - tilesInViewY/2);
       
@@ -188,7 +236,7 @@ export function renderTopDownView() {
       portalWorldY + 0.5,
       canvas2D.width,
       canvas2D.height,
-      TILE_SIZE
+      mapManager.tileSize || TILE_SIZE
     );
 
     // Pick a sprite from the spriteManager if available; otherwise fallback to magenta circle

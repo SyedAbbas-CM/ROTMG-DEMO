@@ -417,8 +417,8 @@ export class MapManager {
     const tileY = Math.floor(y);
     
     // Debug coordinate conversion occasionally
-    if (Math.random() < 0.0001) {
-      console.log(`[SERVER] Wall check: World (${x.toFixed(2)}, ${y.toFixed(2)}) -> Tile (${tileX}, ${tileY}) [tileSize=${this.tileSize}]`);
+    if (global.DEBUG?.wallChecks) {
+        console.log(`[SERVER] Wall check: World (${x.toFixed(2)}, ${y.toFixed(2)}) -> Tile (${tileX}, ${tileY}) [tileSize=${this.tileSize}]`);
     }
     
     // Check if out of bounds
@@ -505,7 +505,13 @@ export class MapManager {
       // engine.  Convert it here: non-null => FLOOR (walkable); null => WALL.
       if (!mapData.tileMap && Array.isArray(mapData.ground)) {
         const tileMap = mapData.ground.map(row =>
-          row.map(cell => (cell===null ? TILE_IDS.WALL : TILE_IDS.FLOOR))
+          row.map(cell => {
+            // Null → impassable wall
+            if (cell === null) return new Tile(TILE_IDS.WALL, 0, { sprite: null, walkable:false });
+
+            // Non-null string assumed to be sprite key – treat as walkable floor with sprite override
+            return new Tile(TILE_IDS.FLOOR, 0, { sprite: cell, walkable:true });
+          })
         );
         mapData.tileMap = tileMap;
       }
@@ -873,6 +879,9 @@ export class MapManager {
         // If the stored value is a primitive ID, wrap in Tile object; otherwise assume object compatible.
         if (typeof cell === 'number') {
           cell = new Tile(cell, 0);
+        } else if (typeof cell === 'string') {
+          // Treat plain string as sprite alias mapped to walkable floor
+          cell = new Tile(TILE_IDS.FLOOR, 0, { sprite: cell, walkable: true });
         }
         row.push(cell);
       }

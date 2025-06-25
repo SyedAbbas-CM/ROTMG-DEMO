@@ -15,7 +15,8 @@ export class EntityDatabase {
     this.groups = {
       tiles: new Map(),
       objects: new Map(),
-      enemies: new Map()
+      enemies: new Map(),
+      items: new Map()
     };
   }
 
@@ -24,7 +25,7 @@ export class EntityDatabase {
    * This should be called exactly once during server start-up.
    */
   loadSync(baseDir = path.join(process.cwd(), 'public', 'assets', 'entities')) {
-    ['tiles', 'objects', 'enemies'].forEach(group => {
+    ['tiles', 'objects', 'enemies', 'items'].forEach(group => {
       const file = path.join(baseDir, `${group}.json`);
       if (!fs.existsSync(file)) {
         console.warn(`[EntityDB] ${group}.json not found – skipping`);
@@ -56,6 +57,7 @@ export class EntityDatabase {
   getTile(id) { return this.groups.tiles.get(id) || null; }
   getObject(id) { return this.groups.objects.get(id) || null; }
   getEnemy(id) { return this.groups.enemies.get(id) || null; }
+  getItem(id)  { return this.groups.items.get(id)   || null; }
   getAll(group) { return Array.from(this.groups[group]?.values() || []); }
 }
 

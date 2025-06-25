@@ -58,6 +58,10 @@ export default class EnemyManager {
     // Mapping from ID to index for fast lookups
     this.idToIndex = new Map();
     
+    // Track which world / map this enemy belongs to so the server can filter
+    // them per-world when broadcasting.  We keep string identifiers (mapId).
+    this.worldId = new Array(maxEnemies);
+    
     // Load enemy type definitions from entityDatabase, fallback to built-ins
     const dbEnemies = entityDatabase.getAll('enemies');
     if (dbEnemies.length > 0) {
@@ -286,13 +290,13 @@ export default class EnemyManager {
   /**
    * Convenience helper to spawn by entity ID defined in JSON (e.g. 101 → Red Demon)
    */
-  spawnEnemyById(entityId, x, y) {
+  spawnEnemyById(entityId, x, y, worldId='default') {
     const typeIdx = this.enemyIdToTypeIndex.get(Number(entityId)) ?? this.enemyIdToTypeIndex.get(entityId);
     if (typeIdx === undefined) {
       console.warn(`spawnEnemyById: unknown entity ID ${entityId} – defaulting to type 0`);
-      return this.spawnEnemy(0, x, y);
+      return this.spawnEnemy(0, x, y, worldId);
     }
-    return this.spawnEnemy(typeIdx, x, y);
+    return this.spawnEnemy(typeIdx, x, y, worldId);
   }
 
   /**
@@ -300,9 +304,10 @@ export default class EnemyManager {
    * @param {number} type - Enemy type (0-4)
    * @param {number} x - X position to spawn
    * @param {number} y - Y position to spawn
+   * @param {string} worldId - World ID to associate with the enemy
    * @returns {string} The ID of the new enemy
    */
-  spawnEnemy(type, x, y) {
+  spawnEnemy(type, x, y, worldId='default') {
     if (this.enemyCount >= this.maxEnemies) {
       console.warn('EnemyManager: Maximum enemy capacity reached');
       return null;
@@ -362,6 +367,9 @@ export default class EnemyManager {
         this.behaviourTreeRunners[type] = null;
     }
     
+    // Record world ownership
+    this.worldId[index] = worldId;
+    
     console.log(`Spawned enemy ${enemyId} of type ${type} at position (${x.toFixed(2)}, ${y.toFixed(2)}), health: ${defaults.maxHealth}`);
     
     return enemyId;
@@ -383,6 +391,11 @@ export default class EnemyManager {
     let activeCount = 0;
     
     for (let i = 0; i < this.enemyCount; i++) {
+      // Skip enemies that belong to a different world from the current target player
+      if (target && this.worldId[i] !== target.worldId) {
+        continue;
+      }
+      
       // Skip dead enemies
       if (this.health[i] <= 0) {
         if (this.isDying[i]) {
@@ -598,15 +611,14 @@ export default class EnemyManager {
 
   /**
    * Get enemy data array for network transmission
+   * @param {string} filterWorldId - World ID to filter enemies by
    * @returns {Array} Array of enemy data objects
    */
-  getEnemiesData() {
+  getEnemiesData(filterWorldId=null) {
     const enemies = [];
     
     for (let i = 0; i < this.enemyCount; i++) {
-      // Skip completely dead enemies (those done with death animation)
-      if (this.health[i] <= 0 && !this.isDying[i]) continue;
-      
+      if (filterWorldId && this.worldId[i] !== filterWorldId) continue;
       enemies.push({
         id: this.id[i],
         x: this.x[i],
@@ -619,7 +631,8 @@ export default class EnemyManager {
         maxHealth: this.maxHealth[i],
         isFlashing: this.isFlashing[i],
         isDying: this.isDying[i],
-        deathStage: this.isDying[i] ? Math.floor((1 - this.deathTimer[i] / 0.5) * 4) : 0
+        deathStage: this.isDying[i] ? Math.floor((1 - this.deathTimer[i] / 0.5) * 4) : 0,
+        worldId: this.worldId[i]
       });
     }
     

@@ -26,6 +26,7 @@ export default class BulletManager {
     this.damage = new Float32Array(maxBullets);  // Damage amount
     this.ownerId = new Array(maxBullets);   // ID of entity that created this bullet
     this.spriteName = new Array(maxBullets); // For client rendering
+    this.worldId = new Array(maxBullets);
 
     // Debug / analytics counters (reset each update)
     this.stats = {
@@ -62,6 +63,7 @@ export default class BulletManager {
     this.damage[index] = bulletData.damage || 10;
     this.ownerId[index] = bulletData.ownerId || null;
     this.spriteName[index] = bulletData.spriteName || null;
+    this.worldId[index] = bulletData.worldId || 'default';
     
     if (this.stats) this.stats.created++;
     return bulletId;
@@ -122,6 +124,7 @@ export default class BulletManager {
       this.damage[index] = this.damage[last];
       this.ownerId[index] = this.ownerId[last];
       this.spriteName[index] = this.spriteName[last];
+      this.worldId[index] = this.worldId[last];
     }
     
     this.bulletCount--;
@@ -183,12 +186,14 @@ export default class BulletManager {
 
   /**
    * Get bullet data array for network transmission
+   * @param {string} filterWorldId - Filter bullets by world ID
    * @returns {Array} Array of bullet data objects
    */
-  getBulletsData() {
+  getBulletsData(filterWorldId = null) {
     const bullets = [];
     
     for (let i = 0; i < this.bulletCount; i++) {
+      if (filterWorldId && this.worldId[i] !== filterWorldId) continue;
       bullets.push({
         id: this.id[i],
         x: this.x[i],
@@ -200,7 +205,8 @@ export default class BulletManager {
         life: this.life[i],
         damage: this.damage[i],
         ownerId: this.ownerId[i],
-        spriteName: this.spriteName[i]
+        spriteName: this.spriteName[i],
+        worldId: this.worldId[i]
       });
     }
     

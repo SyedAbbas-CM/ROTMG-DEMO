@@ -6,8 +6,8 @@ export const SCALE = 5; // Scale factor for sprites
 export const SCALE_S = 2;
 
 
-export const CANVAS_WIDTH = window.innerWidth;
-export const CANVAS_HEIGHT = window.innerHeight;
+export const CANVAS_WIDTH = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 1920;
+export const CANVAS_HEIGHT = (typeof window !== 'undefined' && window.innerHeight) ? window.innerHeight : 1080;
 
 
 export const UNIT_MODE = 'tiles'; 
@@ -56,8 +56,8 @@ export const TILE_PROPERTIES = {
 };
 
 // Sprite grid dimensions for tile sprite sheet
-export const TILE_SPRITES_PER_ROW = 24;
-export const TILE_SPRITES_PER_COLUMN = 11;
+export const TILE_SPRITES_PER_ROW = 20;
+export const TILE_SPRITES_PER_COLUMN = 20;
 
 // Generate array for all tile sprites (no spacing)
 export const ALL_TILE_SPRITES = [];
@@ -77,8 +77,8 @@ export const TILE_SPRITES = {
   [TILE_IDS.FLOOR]: ALL_TILE_SPRITES[0],
   [TILE_IDS.WALL]: ALL_TILE_SPRITES[1],
   [TILE_IDS.OBSTACLE]: ALL_TILE_SPRITES[2],
-  [TILE_IDS.WATER]: ALL_TILE_SPRITES[3],
-  [TILE_IDS.MOUNTAIN]: ALL_TILE_SPRITES[4],
+  [TILE_IDS.WATER]: ALL_TILE_SPRITES[4],
+  [TILE_IDS.MOUNTAIN]: ALL_TILE_SPRITES[5],
   
   // New types
   [TILE_IDS.SAND]: ALL_TILE_SPRITES[5],
@@ -91,9 +91,9 @@ export const TILE_SPRITES = {
   
   // Variations for base types (using specific sprite indices)
   // Format: "TYPE_VARIATION"
-  [`${TILE_IDS.FLOOR}_1`]: ALL_TILE_SPRITES[24], // Alternative floor (row 1, col 0)
-  [`${TILE_IDS.WALL}_1`]: ALL_TILE_SPRITES[25],  // Alternative wall
-  [`${TILE_IDS.WATER}_1`]: ALL_TILE_SPRITES[27], // Alternative water
+  [`${TILE_IDS.FLOOR}_1`]: ALL_TILE_SPRITES[20], // Alternative floor (row 1, col 0)
+  [`${TILE_IDS.WALL}_1`]: ALL_TILE_SPRITES[21],  // Alternative wall
+  [`${TILE_IDS.WATER}_1`]: ALL_TILE_SPRITES[24], // Alternative water
 };
 
 // Helper function to get sprite for a tile type and variation
@@ -141,3 +141,10 @@ export const WALL_SPRITE_POSITIONS = {
 
 // Chunking Constants
 export const CHUNK_SIZE = 16; // Size of each chunk (e.g., 16x16 tiles)
+
+// Networking tuning constants – shared by client & server
+export const NETWORK_SETTINGS = {
+  UPDATE_RADIUS_TILES: 40,       // within this many tiles of the player we send entities
+  MAX_ENTITIES_PER_PACKET: 500,  // soft-cap to avoid oversized frames
+  DELTA_COMPRESSION: true        // toggle per-field delta compression on WORLD_UPDATE packets
+};

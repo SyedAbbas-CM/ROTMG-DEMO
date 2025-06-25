@@ -491,9 +491,6 @@ export class ClientNetworkManager {
             this.handlers[type] = () => {};
         });
         
-        // Setup message handlers
-        this.setupMessageHandlers();
-        
         console.log("ClientNetworkManager initialized with server URL:", serverUrl);
     }
     
@@ -745,6 +742,20 @@ export class ClientNetworkManager {
         // Handle authoritative world switch from server
         this.handlers[MessageType.WORLD_SWITCH] = (data) => {
             console.log(`[NETWORK] WORLD_SWITCH → map ${data.mapId} spawn (${data.spawnX},${data.spawnY})`);
+
+            // ------------------------------------------------------------------
+            // Reset local caches and entity lists so the new world starts clean
+            // ------------------------------------------------------------------
+
+            // Clear render tile caches (strategic / top-down)
+            if (window.clearStrategicCache) window.clearStrategicCache();
+            if (window.clearTopDownCache)   window.clearTopDownCache();
+
+            // Flush client-side enemies & bullets so we don't see leftovers
+            if (this.game?.setEnemies) this.game.setEnemies([]);
+            if (this.game?.setBullets) this.game.setBullets([]);
+
+            // Delegate to higher-level game handler if provided
             if (this.game?.onWorldSwitch) {
                 this.game.onWorldSwitch(data);
             } else {
@@ -803,7 +814,7 @@ export class ClientNetworkManager {
                     this.connecting = false;
                     this.reconnectAttempts = 0;
                     
-                    // Re-setup message handlers now that socket is initialized
+                    // Now that the socket exists we can safely attach all handlers
                     this.setupMessageHandlers();
                     
                     // Send handshake

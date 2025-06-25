@@ -134,9 +134,17 @@ export class ClientEnemyManager {
           type.spriteY = sprite.y;
           console.log(`Enemy type ${type.name} mapped to sprite (${sprite.x}, ${sprite.y})`);
         } else {
-          console.warn(`Sprite '${type.spriteName}' not found for enemy type ${type.name}, using fallback coordinates`);
-          type.spriteX = index * 8; // Fallback to grid position
-          type.spriteY = 0;
+          // Try to grab sprite from default chars2 atlas grid if available
+          const gridSpr = spriteDatabase.getSpriteByGrid('chars2', 0, index);
+          if (gridSpr) {
+            type.spriteX = gridSpr.x;
+            type.spriteY = gridSpr.y;
+            console.log(`Enemy type ${type.name} assigned grid sprite (${gridSpr.x}, ${gridSpr.y}) from chars2 atlas`);
+          } else {
+            console.warn(`Sprite '${type.spriteName}' not found for enemy type ${type.name}, using fallback coordinates`);
+            type.spriteX = index * 8; // Fallback grid position
+            type.spriteY = 0;
+          }
         }
       });
       
@@ -191,10 +199,51 @@ export class ClientEnemyManager {
       this.health[index] = enemyData.health || 100;
       this.maxHealth[index] = enemyData.maxHealth || 100;
       
-      // If server sends a type index we don't know yet, create placeholder
-      if (this.type[index] >= this.enemyTypes.length) {
-        console.warn(`Unknown enemy type index ${this.type[index]} – creating placeholder`);
-        this.enemyTypes.push({ name: `dynamic_${this.type[index]}`, spriteX:0, spriteY:0, frames:1 });
+      // Ensure we have a definition for this enemy type index.
+      const typeIdx = this.type[index];
+      if (typeIdx >= this.enemyTypes.length) {
+        console.warn(`Unknown enemy type index ${typeIdx} – creating placeholder entries up to that index`);
+        // Add placeholders until the array is long enough to include typeIdx.
+        while (this.enemyTypes.length <= typeIdx) {
+          const placeholderIdx = this.enemyTypes.length;
+          // Spread placeholders across a simple 8x8 grid (chars2-style) so they don't all overlap.
+          const gridX = (placeholderIdx % 8) * 8;
+          const gridY = Math.floor(placeholderIdx / 8) * 8;
+          // Also register an alias in the sprite database so it can be referenced by name later
+          const sm = window.spriteManager;
+          if (sm && typeof sm.fetchGridSprite === 'function') {
+            const aliasName = `dynamic_${placeholderIdx}`;
+            if (!sm.aliases?.[aliasName]) {
+              sm.fetchGridSprite('enemy_sprites', Math.floor(placeholderIdx / 8), placeholderIdx % 8, aliasName, 8, 8);
+            }
+          }
+          this.enemyTypes.push({
+            name: `dynamic_${placeholderIdx}`,
+            spriteX: gridX,
+            spriteY: gridY,
+            frames: 1
+          });
+          // Register a matching sprite alias in the SpriteDatabase so that future renders
+          // can draw via spriteName if we decide to assign it.
+          const sm2 = window.spriteManager;
+          if (sm2 && typeof sm2.fetchGridSprite === 'function') {
+            const alias = `dynamic_${placeholderIdx}`;
+            if (!sm2.aliases?.[alias]) {
+              try {
+                sm2.fetchGridSprite('enemy_sprites', Math.floor(placeholderIdx / 8), placeholderIdx % 8, alias, 8, 8);
+              } catch (e) {
+                console.warn('Could not register placeholder sprite alias', alias, e);
+              }
+            }
+          }
+        }
+        // Keep legacy mapping array (if already generated) in sync
+        if (this.typeToSprite) {
+          this.typeToSprite[typeIdx] = {
+            x: this.enemyTypes[typeIdx].spriteX,
+            y: this.enemyTypes[typeIdx].spriteY
+          };
+        }
       }
       
       // If server provided spriteName use database; else fall back to type spriteX/Y
@@ -208,18 +257,21 @@ export class ClientEnemyManager {
         this.spriteX[index] = typeData.spriteX;
         this.spriteY[index] = typeData.spriteY;
         this.spriteName[index] = null;
+        if (!this.spriteName[index]) {
+          this.spriteName[index] = typeData.name;
+        }
+        this.animFrame[index] = 0;
+        this.animTime[index] = 0;
+        this.flashTime[index] = 0;
+        this.deathTime[index] = 0;
+        
+        // Initialize interpolation
+        this.prevX[index] = this.x[index];
+        this.prevY[index] = this.y[index];
+        this.targetX[index] = this.x[index];
+        this.targetY[index] = this.y[index];
+        this.interpTime[index] = 0;
       }
-      this.animFrame[index] = 0;
-      this.animTime[index] = 0;
-      this.flashTime[index] = 0;
-      this.deathTime[index] = 0;
-      
-      // Initialize interpolation
-      this.prevX[index] = this.x[index];
-      this.prevY[index] = this.y[index];
-      this.targetX[index] = this.x[index];
-      this.targetY[index] = this.y[index];
-      this.interpTime[index] = 0;
       
       // Store index for lookup
       this.idToIndex.set(enemyId, index);
