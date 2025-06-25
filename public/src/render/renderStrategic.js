@@ -126,28 +126,28 @@ export function renderStrategicView() {
       if (!spritePos) {
         spritePos = TILE_SPRITES[tile.type];
       }
-      
-      // Convert tile grid position to world position
-      // In this game, tile coordinates are the same as world coordinates
-      const worldX = x;
-      const worldY = y;
-      
-      // FIX: Use correct TILE_SIZE parameter (not multiplied by scaleFactor)
-      const screenPos = camera.worldToScreen(
+        
+        // Convert tile grid position to world position
+        // In this game, tile coordinates are the same as world coordinates
+        const worldX = x;
+        const worldY = y;
+        
+        // FIX: Use correct TILE_SIZE parameter (not multiplied by scaleFactor)
+        const screenPos = camera.worldToScreen(
         worldX + 0.5, // shift to tile center
         worldY + 0.5, 
-        canvas2D.width, 
-        canvas2D.height, 
+          canvas2D.width, 
+          canvas2D.height, 
         mapManager.tileSize || TILE_SIZE
-      );
-      
-      // Draw tile using the consistent screen position
+        );
+        
+        // Draw tile using the consistent screen position
       ensureSheetLoaded(spriteSheetName);
       const sheetObj = spriteManager.getSpriteSheet(spriteSheetName);
       if (!sheetObj) continue;
       const spriteW = sheetObj.config.defaultSpriteWidth  || TILE_SIZE;
       const spriteH = sheetObj.config.defaultSpriteHeight || TILE_SIZE;
-      ctx.drawImage(
+        ctx.drawImage(
         sheetObj.image,
         spritePos.x, spritePos.y, spriteW, spriteH,
         screenPos.x - (spriteW * scaleFactor / 2),
@@ -167,28 +167,28 @@ export function renderStrategicView() {
           spriteH * scaleFactor
         );
       }
-      
-      // Add debug visualization to help with alignment
-      if (DEBUG_RENDERING) {
-        // Draw a grid outline in red (less visible in strategic view)
-        ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(
+        
+        // Add debug visualization to help with alignment
+        if (DEBUG_RENDERING) {
+          // Draw a grid outline in red (less visible in strategic view)
+          ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
           screenPos.x - (spriteW * scaleFactor / 2),
           screenPos.y - (spriteH * scaleFactor / 2),
           spriteW * scaleFactor,
           spriteH * scaleFactor
-        );
-        
-        // Draw tile coordinates for reference (only every several tiles to avoid clutter)
-        if ((x % 10 === 0 && y % 10 === 0) || (x === 0 && y === 0)) {
-          ctx.fillStyle = 'white';
-          ctx.font = '6px Arial';
-          ctx.fillText(
-            `(${x},${y})`, 
+          );
+          
+          // Draw tile coordinates for reference (only every several tiles to avoid clutter)
+          if ((x % 10 === 0 && y % 10 === 0) || (x === 0 && y === 0)) {
+            ctx.fillStyle = 'white';
+            ctx.font = '6px Arial';
+            ctx.fillText(
+              `(${x},${y})`, 
             screenPos.x - (spriteW * scaleFactor / 2) + 1,
             screenPos.y - (spriteH * scaleFactor / 2) + 6
-          );
+            );
         }
       }
     }

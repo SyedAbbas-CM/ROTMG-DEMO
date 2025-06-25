@@ -747,6 +747,19 @@ export class ClientNetworkManager {
             // Reset local caches and entity lists so the new world starts clean
             // ------------------------------------------------------------------
 
+            // Completely clear entity managers (SoA arrays) so no stale data
+            if (this.game?.enemyManager?.cleanup) {
+                this.game.enemyManager.cleanup();
+            }
+            if (this.game?.bulletManager?.cleanup) {
+                this.game.bulletManager.cleanup();
+            }
+
+            // Clear map chunks so renderer waits for fresh CHUNK_DATA
+            if (this.game?.mapManager?.clearChunks) {
+                this.game.mapManager.clearChunks();
+            }
+
             // Clear render tile caches (strategic / top-down)
             if (window.clearStrategicCache) window.clearStrategicCache();
             if (window.clearTopDownCache)   window.clearTopDownCache();
@@ -814,7 +827,7 @@ export class ClientNetworkManager {
                     this.connecting = false;
                     this.reconnectAttempts = 0;
                     
-                    // Now that the socket exists we can safely attach all handlers
+                    // With the WebSocket established we can now attach all message handlers
                     this.setupMessageHandlers();
                     
                     // Send handshake

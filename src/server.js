@@ -82,11 +82,11 @@ class Server {
     if (this.gameState && this.gameState.players && this.gameState.players.size > 0) {
         const targetPlayer = this.gameState.players.values().next().value;
         if (targetPlayer) {
-             const target = { x: targetPlayer.x, y: targetPlayer.y };
-             this.enemyManager.update(deltaTime, this.bulletManager, target);
+             // Pass the full player object so EnemyManager can access worldId
+             this.enemyManager.update(deltaTime, this.bulletManager, targetPlayer, this.mapManager);
         }
     } else {
-        this.enemyManager.update(deltaTime, this.bulletManager, null);
+        this.enemyManager.update(deltaTime, this.bulletManager, null, this.mapManager);
     }
   }
 

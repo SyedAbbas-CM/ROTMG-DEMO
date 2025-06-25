@@ -476,10 +476,91 @@ export class SpriteDatabase {
     const baseSprite = this.getSpriteByGrid(atlasName, row, col);
     if (!baseSprite) return null;
 
-    // Override size if custom dimensions were supplied
+    // If the caller requested a larger logical cell (e.g. 12×12 while the
+    // underlying atlas frame is 8×8) we build a *padded canvas* so the sprite
+    // still occupies the full tile.  This prevents the 8-pixel art sitting
+    // inside a 12-pixel black square.
     if (spriteWidth || spriteHeight) {
-      baseSprite.width  = spriteWidth  || baseSprite.width;
-      baseSprite.height = spriteHeight || baseSprite.height;
+      const targetW = spriteWidth  || baseSprite.width;
+      const targetH = spriteHeight || baseSprite.height;
+
+      // Only upscale / pad when the requested size is bigger than the source.
+      if (targetW !== baseSprite.width || targetH !== baseSprite.height) {
+        const canvas   = document.createElement('canvas');
+        canvas.width   = targetW;
+        canvas.height  = targetH;
+        const ctx      = canvas.getContext('2d');
+        // Keep crisp pixel art when scaling
+        ctx.imageSmoothingEnabled = false;
+
+        // Draw the source sprite scaled to fit the full tile
+        ctx.drawImage(
+          baseSprite.image,
+          baseSprite.x,
+          baseSprite.y,
+          baseSprite.width,
+          baseSprite.height,
+          0,
+          0,
+          targetW,
+          targetH
+        );
+
+        // Replace the sprite definition with the up-scaled canvas region
+        const paddedSprite = {
+          ...baseSprite,
+          image: canvas,
+          x: 0,
+          y: 0,
+          width: targetW,
+          height: targetH
+        };
+
+        // Use new definition for aliasing / return value
+        if (alias) {
+          this.sprites.set(alias, paddedSprite);
+        }
+        return paddedSprite;
+      } else {
+        // Source sprite already matches requested size (e.g. 12×12) but some
+        // Oryx sheets include a 1-pixel transparent frame that shows up as a
+        // dark halo against the map background.  We crop that outer pixel on
+        // all sides and re-draw the central 10×10 (or 11×11) region so the
+        // sprite fills the tile cleanly.
+
+        const CROP = 1;
+        if (targetW >= 12) {
+          const canvas = document.createElement('canvas');
+          canvas.width  = targetW;
+          canvas.height = targetH;
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = false;
+          ctx.clearRect(0,0,targetW,targetH);
+
+          ctx.drawImage(
+            baseSprite.image,
+            baseSprite.x   + CROP,
+            baseSprite.y   + CROP,
+            baseSprite.width  - 2*CROP,
+            baseSprite.height - 2*CROP,
+            0,
+            0,
+            targetW,
+            targetH
+          );
+
+          baseSprite.image  = canvas;
+          baseSprite.x      = 0;
+          baseSprite.y      = 0;
+          baseSprite.width  = targetW;
+          baseSprite.height = targetH;
+        }
+
+        // Requested size matches source – just update meta width/height so
+        // renderers scale correctly.
+        baseSprite.width  = targetW;
+        baseSprite.height = targetH;
+      }
     }
 
     // Register alias mapping if requested and not already present

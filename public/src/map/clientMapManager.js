@@ -319,12 +319,28 @@ export class ClientMapManager {
 
                             // Register sprite alias (one-time per alias)
                             if (window.spriteDatabase && typeof window.spriteDatabase.fetchGridSprite === 'function') {
-                                if (typeof window.spriteDatabase.hasSprite === 'function' ? !window.spriteDatabase.hasSprite(t.spriteName) : true) {
-                                    window.spriteDatabase.fetchGridSprite(sheetName, row, col, t.spriteName);
+                                const needsReg = typeof window.spriteDatabase.hasSprite === 'function'
+                                    ? !window.spriteDatabase.hasSprite(t.spriteName)
+                                    : true;
+                                if (needsReg) {
+                                    // Use global tileSize so 8×8 sprites are upscaled to 12×12 and no transparent border shows.
+                                    window.spriteDatabase.fetchGridSprite(sheetName, row, col, t.spriteName, this.tileSize, this.tileSize);
                                 }
                             }
                         } catch (err) {
                             console.warn('[MapManager] ensure sprite alias failed', t.spriteName, err);
+                        }
+                    }
+
+                    // ------------------------------------------------------
+                    // Normalise aliases like "tile_sprites:floor" → "floor"
+                    // so they match the simple aliases we registered during
+                    // game bootstrap (floor, wall, obstacle, …).
+                    // ------------------------------------------------------
+                    if (t.spriteName && t.spriteName.includes(':')) {
+                        const [_sheet, aliasPart] = t.spriteName.split(':');
+                        if (aliasPart) {
+                            t.spriteName = aliasPart.trim();
                         }
                     }
 
@@ -1181,4 +1197,14 @@ export class ClientMapManager {
 
     // Toggle verbose collision debugging at runtime
     static DEBUG_VERBOSE = false;
+
+    /**
+     * Drop every cached chunk so a fresh world starts with an empty map.
+     */
+    clearChunks() {
+        this.chunks.clear();
+        this.chunkLastAccessed.clear();
+        this.pendingChunks.clear();
+        console.log('[MapManager] Cleared all cached chunks (world switch)');
+    }
 }

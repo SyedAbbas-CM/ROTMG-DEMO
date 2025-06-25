@@ -391,8 +391,10 @@ export default class EnemyManager {
     let activeCount = 0;
     
     for (let i = 0; i < this.enemyCount; i++) {
-      // Skip enemies that belong to a different world from the current target player
-      if (target && this.worldId[i] !== target.worldId) {
+      // Skip enemies that belong to a different world – but only if *both* sides
+      // have a defined worldId.  This prevents the AI from idling when the player
+      // hasn't been assigned one yet (proc-gen default map).
+      if (target && this.worldId[i] && target.worldId && this.worldId[i] !== target.worldId) {
         continue;
       }
       
