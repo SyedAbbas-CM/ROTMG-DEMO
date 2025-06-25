@@ -177,7 +177,8 @@ const behaviors = {
           vy: Math.sin(shotAngle) * projectileSpeed,
           ownerId: entityArrays.id[index],
           damage: damage,
-          lifetime: 3.0
+          lifetime: 3.0,
+          worldId: entityArrays.worldId ? entityArrays.worldId[index] : undefined
         });
       }
     }

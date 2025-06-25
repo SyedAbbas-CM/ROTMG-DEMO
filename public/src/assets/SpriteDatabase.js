@@ -493,18 +493,38 @@ export class SpriteDatabase {
         // Keep crisp pixel art when scaling
         ctx.imageSmoothingEnabled = false;
 
-        // Draw the source sprite scaled to fit the full tile
-        ctx.drawImage(
+        // -----------------------------------------------------------------
+        // 1) Copy JUST the native frame (8×8, 10×10, …) into a temp canvas.
+        // -----------------------------------------------------------------
+        const srcW = baseSprite.width;
+        const srcH = baseSprite.height;
+        const tmpCvs = document.createElement('canvas');
+        tmpCvs.width  = srcW;
+        tmpCvs.height = srcH;
+        const tmpCtx  = tmpCvs.getContext('2d');
+        tmpCtx.imageSmoothingEnabled = false;
+        tmpCtx.clearRect(0,0,srcW,srcH);
+        tmpCtx.drawImage(
           baseSprite.image,
           baseSprite.x,
           baseSprite.y,
-          baseSprite.width,
-          baseSprite.height,
+          srcW,
+          srcH,
           0,
           0,
-          targetW,
-          targetH
+          srcW,
+          srcH
         );
+
+        // ---------------------------------------------------------------
+        // 2) Paste it centred into the 12×12 (or requested) destination.
+        //    Any leftover pixels around stay transparent so no neighbour
+        //    bleed occurs.
+        // ---------------------------------------------------------------
+        const padX = Math.floor((targetW - srcW) / 2);
+        const padY = Math.floor((targetH - srcH) / 2);
+        ctx.clearRect(0,0,targetW,targetH);
+        ctx.drawImage(tmpCvs, 0, 0, srcW, srcH, padX, padY, srcW, srcH);
 
         // Replace the sprite definition with the up-scaled canvas region
         const paddedSprite = {
@@ -564,8 +584,8 @@ export class SpriteDatabase {
     }
 
     // Register alias mapping if requested and not already present
-    if (alias && !this.hasSprite(alias)) {
-      this.sprites.set(alias, baseSprite);
+    if (alias) {
+      this.sprites.set(alias, baseSprite); // unconditionally overwrite
     }
 
     return baseSprite;

@@ -11,6 +11,7 @@ import { spriteManager } from '../assets/spriteManager.js';
 // Get 2D Canvas Context
 const canvas2D = document.getElementById('gameCanvas');
 const ctx = canvas2D.getContext('2d');
+ctx.imageSmoothingEnabled = false; // pixel-perfect rendering
 
 // Rendering parameters
 const scaleFactor = SCALE;
@@ -254,11 +255,11 @@ export function renderEnemies() {
           ctx.drawImage(
             enemySpriteSheet,
             enemy.spriteX || 0, enemy.spriteY || 0,
-            8, 8, // source size
+            8, 8,
             -width/2, -height/2, width, height
           );
         } else {
-          // Draw without rotation
+          // Draw without rotation - centered
           ctx.drawImage(
             enemySpriteSheet,
             enemy.spriteX || 0, enemy.spriteY || 0,
@@ -267,7 +268,7 @@ export function renderEnemies() {
           );
         }
       } else {
-        // Fallback: draw simple colored rectangle so the enemy is visible
+        // Fallback: draw magenta rectangle so invisible enemies are obvious
         ctx.fillStyle = 'magenta';
         ctx.fillRect(screenX - width/2, screenY - height/2, width, height);
       }

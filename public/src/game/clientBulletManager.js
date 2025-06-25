@@ -23,6 +23,9 @@ export class ClientBulletManager {
     this.ownerId = new Array(maxBullets);   // Who fired this bullet
     this.damage = new Float32Array(maxBullets); // Damage value
     
+    // World association so client can filter/collide correctly
+    this.worldId = new Array(maxBullets);
+    
     // Visual properties
     this.sprite = new Array(maxBullets);    // Legacy sprite sheet info
     this.spriteName = new Array(maxBullets); // SpriteDatabase name (new system)
@@ -64,6 +67,7 @@ export class ClientBulletManager {
     this.height[index] = bulletData.height || 5;
     this.ownerId[index] = bulletData.ownerId || null;
     this.damage[index] = bulletData.damage || 10;
+    this.worldId[index] = bulletData.worldId;
     
     // Store sprite info
     this.sprite[index] = bulletData.spriteSheet ? {
@@ -144,6 +148,7 @@ export class ClientBulletManager {
       this.height[index] = this.height[lastIndex];
       this.ownerId[index] = this.ownerId[lastIndex];
       this.damage[index] = this.damage[lastIndex];
+      this.worldId[index] = this.worldId[lastIndex];
       this.sprite[index] = this.sprite[lastIndex];
       this.spriteName[index] = this.spriteName[lastIndex];
       
@@ -193,6 +198,9 @@ export class ClientBulletManager {
    * @param {Array} bullets - Array of bullet data from server
    */
   setBullets(bullets) {
+    const playerWorld = window.gameState?.character?.worldId;
+    if (playerWorld) bullets = bullets.filter(b => b.worldId === playerWorld);
+    
     // Clear existing bullets except local predictions
     this.clearNonLocalBullets();
     
@@ -238,6 +246,9 @@ export class ClientBulletManager {
       return;
     }
     
+    const playerWorld = window.gameState?.character?.worldId;
+    if (playerWorld) bullets = bullets.filter(b => b.worldId === playerWorld);
+    
     // Process server bullets
     for (const bullet of bullets) {
       const index = this.findIndexById(bullet.id);
@@ -252,6 +263,7 @@ export class ClientBulletManager {
         this.width[index] = bullet.width || 5;
         this.height[index] = bullet.height || 5;
         this.damage[index] = bullet.damage || 10;
+        this.worldId[index] = bullet.worldId;
         if (bullet.spriteName) {
           this.spriteName[index] = bullet.spriteName;
         }

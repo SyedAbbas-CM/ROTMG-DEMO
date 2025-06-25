@@ -63,7 +63,10 @@ export default class BulletManager {
     this.damage[index] = bulletData.damage || 10;
     this.ownerId[index] = bulletData.ownerId || null;
     this.spriteName[index] = bulletData.spriteName || null;
-    this.worldId[index] = bulletData.worldId || 'default';
+    this.worldId[index] = bulletData.worldId;
+    if (!this.worldId[index]) {
+      console.warn('[BulletManager] Bullet created without worldId – will be ignored by clients', bulletId);
+    }
     
     if (this.stats) this.stats.created++;
     return bulletId;

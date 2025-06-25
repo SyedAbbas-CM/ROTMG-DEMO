@@ -1,4 +1,4 @@
-    // File: /src/Behaviors/EnemyBehaviors.js
+    // File: /src/Behaviours/EnemyBehaviors.js
 
 /**
  * A modular behavior system for enemies that works with Structure of Arrays (SoA) architecture.
@@ -237,7 +237,8 @@ export const BehaviorType = {
                 vy: Math.sin(bulletAngle) * this.projectileSpeed[index],
                 damage: this.projectileDamage[index],
                 lifetime: this.projectileLifetime[index],
-                ownerId: enemyManager.id[index]
+                ownerId: enemyManager.id[index],
+                worldId: enemyManager.worldId[index]
               });
             }
           }

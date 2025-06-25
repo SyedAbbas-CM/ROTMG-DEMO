@@ -104,11 +104,56 @@ export class ClientEnemyManager {
         }   
       ];
       
+      /* Merge external enemy templates that the server may use (loaded via entityDatabase). */
+      if (typeof window !== 'undefined' && window.entityDatabase?.getAll) {
+        try {
+          const extraDefs = window.entityDatabase.getAll('enemies');
+          extraDefs.forEach(def => {
+            if (this.enemyTypes.find(e => e.name === def.name)) return; // skip duplicates
+            this.enemyTypes.push({
+              name: def.name || `enemy_${this.enemyTypes.length}`,
+              spriteName: (def.sprite || '').replace(/^chars:/, ''),
+              frames: 1,
+              behaviors: ['chase'],
+              moveSpeed: def.speed || 15,
+              attackRange: def.attack?.range || 6,
+              attackCooldown: (def.attack?.cooldown || 2000) / 1000,
+              projectileSpeed: def.attack?.speed || 30,
+              damagePerHit: def.attack?.damage || 10
+            });
+          });
+        } catch (mergeErr) {
+          console.warn('[ClientEnemyManager] Could not merge external enemy definitions:', mergeErr);
+        }
+      }
+      
       // Initialize sprite coordinates from the sprite database
       this.initializeSpriteCoordinates();
       
       // Render scale per enemy (in tile units)
       this.renderScale = new Float32Array(maxEnemies);
+      
+      // After base enemyTypes array is initialised, merge external defs if available.
+      try {
+        const extDefs = (typeof window !== 'undefined' && window.entityDatabase?.getAll) ? window.entityDatabase.getAll('enemies') : [];
+        if (extDefs && extDefs.length) {
+          extDefs.forEach(ent => {
+            // Use ent.id as index by order if provided; otherwise push sequentially
+            const idx = this.enemyTypes.findIndex(e => e.name === ent.name);
+            if (idx === -1) {
+              this.enemyTypes.push({
+                name: ent.name || ent.id || `enemy_${this.enemyTypes.length}`,
+                spriteName: ent.sprite || ent.spriteName || '',
+                spriteX: ent.spriteX || 0,
+                spriteY: ent.spriteY || 0,
+                frames: 1
+              });
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('[ClientEnemyManager] Failed to merge external enemy defs', err);
+      }
     }
     
     /**
@@ -181,6 +226,11 @@ export class ClientEnemyManager {
      * @returns {string} Enemy ID
      */
     addEnemy(enemyData) {
+      const playerWorld = window.gameState?.character?.worldId;
+      if (enemyData.worldId && playerWorld && enemyData.worldId !== playerWorld) {
+        return null; // Skip off-world enemy
+      }
+      
       if (this.enemyCount >= this.maxEnemies) {
         console.warn('ClientEnemyManager: Maximum enemy capacity reached');
         return null;
@@ -188,6 +238,11 @@ export class ClientEnemyManager {
       
       const index = this.enemyCount++;
       const enemyId = enemyData.id || `enemy_${index}`;
+      
+      // Ensure spriteDatabase has a fetchGridSprite stub to avoid TypeErrors in older call sites
+      if (typeof window !== 'undefined' && window.spriteDatabase && typeof window.spriteDatabase.fetchGridSprite !== 'function') {
+        window.spriteDatabase.fetchGridSprite = () => {};
+      }
       
       // Store enemy properties
       this.id[index] = enemyId;
@@ -209,13 +264,17 @@ export class ClientEnemyManager {
           // Spread placeholders across a simple 8x8 grid (chars2-style) so they don't all overlap.
           const gridX = (placeholderIdx % 8) * 8;
           const gridY = Math.floor(placeholderIdx / 8) * 8;
-          // Also register an alias in the sprite database so it can be referenced by name later
-          const sm = window.spriteManager;
-          if (sm && typeof sm.fetchGridSprite === 'function') {
-            const aliasName = `dynamic_${placeholderIdx}`;
-            if (!sm.aliases?.[aliasName]) {
-              sm.fetchGridSprite('enemy_sprites', Math.floor(placeholderIdx / 8), placeholderIdx % 8, aliasName, 8, 8);
+          // Register a placeholder alias via the classic spriteManager so we can render something.
+          try {
+            const sm = window.spriteManager;
+            if (sm && typeof sm.fetchGridSprite === 'function') {
+              const aliasName = `dynamic_${placeholderIdx}`;
+              if (!sm.aliases || !sm.aliases[aliasName]) {
+                sm.fetchGridSprite('enemy_sprites', Math.floor(placeholderIdx / 8), placeholderIdx % 8, aliasName, 8, 8);
+              }
             }
+          } catch (e) {
+            console.warn('Failed to register placeholder sprite alias via spriteManager:', e);
           }
           this.enemyTypes.push({
             name: `dynamic_${placeholderIdx}`,
@@ -228,11 +287,10 @@ export class ClientEnemyManager {
           const sm2 = window.spriteManager;
           if (sm2 && typeof sm2.fetchGridSprite === 'function') {
             const alias = `dynamic_${placeholderIdx}`;
-            if (!sm2.aliases?.[alias]) {
-              try {
-                sm2.fetchGridSprite('enemy_sprites', Math.floor(placeholderIdx / 8), placeholderIdx % 8, alias, 8, 8);
-              } catch (e) {
-                console.warn('Could not register placeholder sprite alias', alias, e);
+            if (!sm2.aliases?.[alias] && typeof spriteDatabase.fetchGridSprite === 'function') {
+              // Guard against environments where fetchGridSprite is not present
+              if (typeof spriteDatabase.fetchGridSprite === 'function') {
+                spriteDatabase.fetchGridSprite('enemy_sprites', Math.floor(placeholderIdx / 8), placeholderIdx % 8, alias, 8, 8);
               }
             }
           }
@@ -491,11 +549,17 @@ export class ClientEnemyManager {
      * @param {Array} enemies - Array of enemy data from server
      */
     setEnemies(enemies) {
+      // Filter out enemies from other worlds
+      const playerWorld = window.gameState?.character?.worldId;
+      if (playerWorld) {
+        enemies = enemies.filter(e => e.worldId === playerWorld);
+      }
+      
       // Clear existing enemies
       this.enemyCount = 0;
       this.idToIndex.clear();
       
-      // Add new enemies from server
+      // Add new enemies from server (filtered)
       for (const enemy of enemies) {
         this.addEnemy(enemy);
       }
@@ -506,11 +570,22 @@ export class ClientEnemyManager {
      * @param {Array} enemies - Array of enemy data from server
      */
     updateEnemies(enemies) {
+      const playerWorld = window.gameState?.character?.worldId;
+      if (playerWorld) {
+        enemies = enemies.filter(e => e.worldId === playerWorld);
+      }
+      
       // Track which enemies we've seen in this update
       const seenEnemies = new Set();
       
       // Update existing enemies and add new ones
       for (const enemy of enemies) {
+        if (playerWorld && enemy.worldId && enemy.worldId !== playerWorld) {
+          // Ensure we purge if we already had that id cached
+          this.removeEnemyById(enemy.id);
+          continue;
+        }
+        
         const index = this.findIndexById(enemy.id);
         
         if (index !== -1) {

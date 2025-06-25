@@ -7,6 +7,7 @@ import { spriteManager } from '../assets/spriteManager.js';
 // Get 2D Canvas Context
 const canvas2D = document.getElementById('gameCanvas');
 const ctx = canvas2D.getContext('2d');
+ctx.imageSmoothingEnabled = false;
 
 // Resize canvas to match window size
 canvas2D.width = window.innerWidth;

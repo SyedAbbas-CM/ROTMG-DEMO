@@ -675,14 +675,22 @@ function initializeGameState() {
         
         // Set initial enemies
         setEnemies: (enemies) => {
-            //console.log(`Received ${enemies.length} enemies from server`);
-            enemyManager.setEnemies(enemies);
+            const { enemyManager } = this;
+            if (!enemyManager) return;
+            const currentWorld = gameState.character?.worldId;
+            enemyManager.setEnemies(
+                currentWorld ? enemies.filter(e => e.worldId === currentWorld) : enemies
+            );
         },
         
         // Set initial bullets
         setBullets: (bullets) => {
-            //console.log(`Received ${bullets.length} bullets from server`);
-            bulletManager.setBullets(bullets);
+            const { bulletManager } = this;
+            if (!bulletManager) return;
+            const currentWorld = gameState.character?.worldId;
+            bulletManager.setBullets(
+                currentWorld ? bullets.filter(b => b.worldId === currentWorld) : []
+            );
         },
         
         // Update world state
@@ -698,9 +706,15 @@ function initializeGameState() {
                 }
             }
             
-            // Update game entities
-            if (enemies) enemyManager.updateEnemies(enemies);
-            if (bullets) bulletManager.updateBullets(bullets);
+            const currentWorld = gameState.character?.worldId;
+            if (enemies) {
+                const filteredEnemies = currentWorld ? enemies.filter(e => e.worldId === currentWorld) : enemies;
+                enemyManager.updateEnemies(filteredEnemies);
+            }
+            if (bullets) {
+                const filteredBullets = currentWorld ? bullets.filter(b => b.worldId === currentWorld) : bullets;
+                bulletManager.updateBullets(filteredBullets);
+            }
             
             // Check if we actually got player data
             if (!players || typeof players !== 'object') {

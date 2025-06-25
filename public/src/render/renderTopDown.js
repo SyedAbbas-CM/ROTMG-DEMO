@@ -7,6 +7,7 @@ import { spriteManager } from '../assets/spriteManager.js';
 // Get 2D Canvas Context
 const canvas2D = document.getElementById('gameCanvas');
 const ctx = canvas2D.getContext('2d');
+ctx.imageSmoothingEnabled = false; // keep retro pixel art crisp
 
 // Resize canvas to match window size
 canvas2D.width = window.innerWidth;
@@ -156,15 +157,30 @@ export function renderTopDownView() {
       const sheetObj = spriteManager.getSpriteSheet(spriteSheetName);
       if(!sheetObj) continue; // wait until loaded next frame
       const sCfg = sheetObj.config;
-      const spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
-      const spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
+
+      // spriteMeta may be defined when we used fetchSprite; otherwise null.
+      let spriteW, spriteH;
+      if (typeof spriteObj !== 'undefined' && spriteObj) {
+        spriteW = spriteObj.width || sCfg.defaultSpriteWidth  || TILE_SIZE;
+        spriteH = spriteObj.height|| sCfg.defaultSpriteHeight || TILE_SIZE;
+      } else {
+        spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
+        spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
+      }
+
+      // FINAL NORMALISATION: Always draw at mapManager.tileSize so 8×8 / 10×10
+      // frames get up-scaled to the full logical tile and no transparent rim
+      // reveals the black canvas.
+      const drawW = mapManager.tileSize || TILE_SIZE;
+      const drawH = mapManager.tileSize || TILE_SIZE;
+
       ctx.drawImage(
         sheetObj.image,
         spritePos.x, spritePos.y, spriteW, spriteH, // Source rectangle
-        screenPos.x - (spriteW * scaleFactor / 2),
-        screenPos.y - (spriteH * scaleFactor / 2),
-        spriteW * scaleFactor,
-        spriteH * scaleFactor
+        screenPos.x - (drawW * scaleFactor / 2),
+        screenPos.y - (drawH * scaleFactor / 2),
+        drawW * scaleFactor,
+        drawH * scaleFactor
       );
 
       // ---- Height shading -------------------------------------------------
@@ -172,10 +188,10 @@ export function renderTopDownView() {
         const alpha = Math.min(tile.height / 15, 1) * 0.35; // up to 35% darken
         ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(3)})`;
         ctx.fillRect(
-          screenPos.x - (spriteW * scaleFactor / 2),
-          screenPos.y - (spriteH * scaleFactor / 2),
-          spriteW * scaleFactor,
-          spriteH * scaleFactor
+          screenPos.x - (drawW * scaleFactor / 2),
+          screenPos.y - (drawH * scaleFactor / 2),
+          drawW * scaleFactor,
+          drawH * scaleFactor
         );
       }
       
@@ -185,10 +201,10 @@ export function renderTopDownView() {
         ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
         ctx.lineWidth = 1;
         ctx.strokeRect(
-          screenPos.x - (spriteW * scaleFactor / 2),
-          screenPos.y - (spriteH * scaleFactor / 2),
-          spriteW * scaleFactor,
-          spriteH * scaleFactor
+          screenPos.x - (drawW * scaleFactor / 2),
+          screenPos.y - (drawH * scaleFactor / 2),
+          drawW * scaleFactor,
+          drawH * scaleFactor
         );
         
         // Draw tile coordinates for reference (only every few tiles to avoid clutter)
@@ -197,8 +213,8 @@ export function renderTopDownView() {
           ctx.font = '8px Arial';
           ctx.fillText(
             `(${x},${y})`, 
-            screenPos.x - (spriteW * scaleFactor / 2) + 2,
-            screenPos.y - (spriteH * scaleFactor / 2) + 8
+            screenPos.x - (drawW * scaleFactor / 2) + 2,
+            screenPos.y - (drawH * scaleFactor / 2) + 8
           );
         }
       }

@@ -404,7 +404,7 @@ export class SpriteManager {
     sourceHeight = sourceHeight || sheet.config.defaultSpriteHeight || destHeight;
 
     try {
-      // Draw the sprite
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(
         sheet.image,
         spriteX, spriteY,
