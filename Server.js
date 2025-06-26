@@ -432,7 +432,7 @@ console.log(`Created default map: ${defaultMapId}`);
     }
   } catch (err) {
     console.error('[TEMP-PORTAL] Failed to set up temporary portal', err);
-    }
+  }
 })();
 
 // -----------------------------------------------------------
@@ -543,6 +543,7 @@ wss.on('connection', (socket, req) => {
       y: spawnY,
       rotation: 0,
       health: 100,
+      worldId: useMapId,
       lastUpdate: Date.now()
     },
     mapId: useMapId,  // Use the appropriate map ID
@@ -658,6 +659,9 @@ function updateGame() {
       continue;
     }
 
+    // World isolation: ignore bullets from other maps
+    const bulletWorldId = bulletManager.worldId ? bulletManager.worldId[bi] : null;
+
     const bx = bulletManager.x[bi];
     const by = bulletManager.y[bi];
     const bw = bulletManager.width[bi];
@@ -665,6 +669,9 @@ function updateGame() {
 
     // Iterate over players
     clients.forEach((client, pid) => {
+      // Skip players in other worlds
+      if (bulletWorldId && bulletWorldId !== client.mapId) return;
+
       const player = client.player;
       if (!player || player.health <= 0) return;
 
@@ -777,11 +784,11 @@ function broadcastWorldUpdates() {
     // Collect players in this map
     const players = {};
     idSet.forEach(cid => { players[cid] = clients.get(cid).player; });
-  
+
     // Pull enemies and bullets belonging to this world only
     const enemies = enemyManager.getEnemiesData(mapId);
     const bullets = bulletManager.getBulletsData(mapId);
-  
+
     // Optionally clamp by map bounds to avoid stray entities outside map
     const meta = mapManager.getMapMetadata(mapId) || { width: 0, height: 0 };
     const clamp = (arr) => arr.filter(o => o.x >= 0 && o.y >= 0 && o.x < meta.width && o.y < meta.height);
@@ -789,7 +796,7 @@ function broadcastWorldUpdates() {
     const bulletsClamped = clamp(bullets);
 
     const objects = mapManager.getObjects(mapId);
-  
+
     // Send tailored update to each client (interest management)
     idSet.forEach(cid => {
       const c = clients.get(cid);
@@ -811,7 +818,7 @@ function broadcastWorldUpdates() {
       });
 
       const payload = {
-    players,
+        players,
         enemies: visibleEnemies.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         bullets: visibleBullets.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         objects,
@@ -823,8 +830,8 @@ function broadcastWorldUpdates() {
       }
 
       sendToClient(c.socket, MessageType.WORLD_UPDATE, payload);
-  });
-  
+    });
+
     // Also send player list
     idSet.forEach(cid => {
       const c = clients.get(cid);
@@ -1109,7 +1116,7 @@ function handleBulletCreate(clientId, data) {
     });
     
     if (globalThis.DEBUG?.bulletEvents) {
-    console.log(`Player ${clientId} fired bullet ${bulletId} at angle ${data.angle.toFixed(2)}, position (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
+      console.log(`Player ${clientId} fired bullet ${bulletId} at angle ${data.angle.toFixed(2)}, position (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
     }
   } catch (error) {
     console.error("Error adding bullet:", error);
@@ -1149,7 +1156,7 @@ function handleCollision(clientId, data) {
     });
     
     if (globalThis.DEBUG?.collisions) {
-    console.log(`Player ${clientId} reported collision: bullet ${data.bulletId} hit enemy ${data.enemyId}, valid: ${result.valid}`);
+      console.log(`Player ${clientId} reported collision: bullet ${data.bulletId} hit enemy ${data.enemyId}, valid: ${result.valid}`);
     }
   } catch (error) {
     console.error("Error validating collision:", error);
@@ -1159,7 +1166,7 @@ function handleCollision(clientId, data) {
   // Send result to client
   if (result.valid) {
     if (globalThis.DEBUG?.collisions) {
-    console.log(`Valid collision: bullet ${result.bulletId} hit enemy ${result.enemyId}, enemy health: ${result.enemyHealth}, killed: ${result.enemyKilled}`);
+      console.log(`Valid collision: bullet ${result.bulletId} hit enemy ${result.enemyId}, enemy health: ${result.enemyHealth}, killed: ${result.enemyKilled}`);
     }
     
     // Broadcast valid collision to all clients
@@ -1174,7 +1181,7 @@ function handleCollision(clientId, data) {
     });
   } else {
     if (globalThis.DEBUG?.collisions) {
-    console.log(`Invalid collision rejected: ${result.reason}`);
+      console.log(`Invalid collision rejected: ${result.reason}`);
     }
     
     // Send rejection only to the reporting client
@@ -1387,13 +1394,13 @@ function spawnInitialEnemies(count) {
     const distance = Math.random() * spawnRadius;
     let x = centerX + Math.cos(angle) * distance;
     let y = centerY + Math.sin(angle) * distance;
-    
+
     // Clamp spawn inside world bounds
     if (mapManager) {
       x = Math.max(1, Math.min(mapManager.width - 1, x));
       y = Math.max(1, Math.min(mapManager.height - 1, y));
-  }
-  
+    }
+
     enemyManager.spawnEnemyById(type, x, y, gameState.mapId);
   }
 }
@@ -1692,6 +1699,10 @@ function switchEntireWorldToMap(destMapId){
   const spawnY = meta.height/2;
   clients.forEach((client,id)=>{
     client.mapId = destMapId;
+    // Keep the per-player worldId in sync so broadcast filtering works correctly
+    if (client.player) {
+      client.player.worldId = destMapId;
+    }
     client.player.x = spawnX;
     client.player.y = spawnY;
     // Send map info so client begins chunk requests
@@ -1743,6 +1754,10 @@ function switchPlayerWorld(clientId, destMapId){
   const spawnY = meta.spawnY !== undefined ? meta.spawnY : Math.floor(meta.height/2);
 
   client.mapId = destMapId;
+  // Keep the per-player worldId in sync so broadcast filtering works correctly
+  if (client.player) {
+    client.player.worldId = destMapId;
+  }
   client.player.x = spawnX;
   client.player.y = spawnY;
 

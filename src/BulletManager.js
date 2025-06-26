@@ -48,6 +48,14 @@ export default class BulletManager {
       return null;
     }
     
+    // ------------------------------------------------------------------
+    // Sanity: every bullet **must** belong to a world.  Hard-reject if not.
+    // ------------------------------------------------------------------
+    if (!bulletData.worldId) {
+      console.warn('[BulletManager] REJECTED bullet without worldId', bulletData);
+      return null;
+    }
+
     const bulletId = bulletData.id || `bullet_${this.nextBulletId++}`;
     const index = this.bulletCount++;
     
@@ -64,9 +72,6 @@ export default class BulletManager {
     this.ownerId[index] = bulletData.ownerId || null;
     this.spriteName[index] = bulletData.spriteName || null;
     this.worldId[index] = bulletData.worldId;
-    if (!this.worldId[index]) {
-      console.warn('[BulletManager] Bullet created without worldId – will be ignored by clients', bulletId);
-    }
     
     if (this.stats) this.stats.created++;
     return bulletId;

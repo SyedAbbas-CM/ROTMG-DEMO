@@ -507,6 +507,11 @@ export class ClientCollisionManager {
             const ownerId = this.bulletManager.ownerId[i];
             if (typeof ownerId !== 'string' || !ownerId.startsWith('enemy_')) continue;
 
+            // Ignore bullets from other realms
+            if (this.bulletManager.worldId && this.bulletManager.worldId[i] !== player.worldId) {
+                continue;
+            }
+
             const bx = this.bulletManager.x[i];
             const by = this.bulletManager.y[i];
             const bw = this.bulletManager.width[i];

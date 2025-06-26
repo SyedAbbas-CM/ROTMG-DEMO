@@ -90,24 +90,49 @@ class Server {
     }
   }
 
-  // Broadcast game state
+  /**
+   * Broadcast a WORLD_UPDATE tailored for each connected player so that
+   * they never receive entities from a different world.
+   * Relies on each player object carrying a .worldId string.
+   */
   broadcastGameState() {
-    const enemiesData = this.enemyManager.getEnemiesData();
-    const itemsData = this.itemManager.getBinaryData();
+    const itemsData   = this.itemManager.getBinaryData();
     const objectsData = this.mapObjectManager.getBinaryData();
-    const playersData = {};
-    for (const [id, player] of this.gameState.players.entries()) {
-        playersData[id] = { x: player.x, y: player.y };
+
+    // Pre-group players by world to avoid N² loops
+    const worldsToPlayers = new Map(); // worldId -> array of [playerId, playerObj]
+    for (const [pid, player] of this.gameState.players.entries()) {
+      const w = player.worldId || 'default';
+      if (!worldsToPlayers.has(w)) worldsToPlayers.set(w, []);
+      worldsToPlayers.get(w).push([pid, player]);
     }
 
-    const fullGameState = {
-      players: playersData, 
-      enemies: enemiesData,
-      items: itemsData,
-      objects: objectsData
-    };
+    // For each world build a delta and unicast to its players
+    for (const [worldId, playerList] of worldsToPlayers.entries()) {
+      const enemies   = this.enemyManager.getEnemiesData(worldId);
+      const bullets   = this.bulletManager.getBulletsData(worldId);
 
-    this.networkManager.broadcastGameState(fullGameState);
+      // Build player subset for this world only (positions of other players)
+      const playersPayload = {};
+      for (const [pid, p] of playerList) {
+        playersPayload[pid] = { x: p.x, y: p.y, worldId };
+      }
+
+      const payload = {
+        enemies,
+        bullets,
+        players: playersPayload,
+        items: itemsData,     // items / objects currently global – can be refined later
+        objects: objectsData
+      };
+
+      for (const [pid] of playerList) {
+        this.networkManager.sendToPlayer(pid, {
+          type: this.networkManager.MessageType.WORLD_UPDATE || 60,
+          ...payload
+        });
+      }
+    }
   }
 
   // Handle item pickup

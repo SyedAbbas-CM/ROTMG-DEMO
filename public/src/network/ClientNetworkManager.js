@@ -665,8 +665,13 @@ export class ClientNetworkManager {
                     lifetime: data.lifetime || 3.0,
                     width: data.width || 5,
                     height: data.height || 5,
-                    spriteName: data.spriteName || null
+                    spriteName: data.spriteName || null,
+                    worldId: data.worldId || null
                 };
+                const playerWorld = window.gameState?.character?.worldId;
+                if (playerWorld && bulletData.worldId !== playerWorld) {
+                    return; // ignore bullets with other or missing worldId
+                }
                 this.game.addBullet(bulletData);
             }
         };
@@ -747,7 +752,8 @@ export class ClientNetworkManager {
             // Reset local caches and entity lists so the new world starts clean
             // ------------------------------------------------------------------
 
-            // Completely clear entity managers (SoA arrays) so no stale data
+            // 1) Drop all runtime entities from the CURRENT world so they no
+            //    neither render nor collide once we teleport.
             if (this.game?.enemyManager?.cleanup) {
                 this.game.enemyManager.cleanup();
             }
@@ -755,7 +761,7 @@ export class ClientNetworkManager {
                 this.game.bulletManager.cleanup();
             }
 
-            // Clear map chunks so renderer waits for fresh CHUNK_DATA
+            // 2) Clear map chunk cache so no old tiles bleed into the new map.
             if (this.game?.mapManager?.clearChunks) {
                 this.game.mapManager.clearChunks();
             }
@@ -779,6 +785,10 @@ export class ClientNetworkManager {
                 if (window.gameState?.character) {
                     window.gameState.character.x = data.spawnX;
                     window.gameState.character.y = data.spawnY;
+                    // Update local reference of the active world so that all
+                    // subsequent entity filters and collision checks operate
+                    // against the correct realm.
+                    window.gameState.character.worldId = data.mapId;
                 }
             }
         };
