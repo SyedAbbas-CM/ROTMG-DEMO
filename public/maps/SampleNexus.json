@@ -1,0 +1,4170 @@
+{
+  "width": 32,
+  "height": 32,
+  "tileW": 16,
+  "tileH": 16,
+  "ground": [
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_12",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_7",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_7",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_7",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_7",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_7",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_7",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_12",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_7",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_7",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_14",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_13",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_6_6",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_5_8",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_2_16",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_10_11",
+        "rot": 0
+      }
+    ]
+  ],
+  "objects": [],
+  "enemies": []
+}

@@ -1,0 +1,1098 @@
+{
+  "width": 8,
+  "height": 32,
+  "tileW": 16,
+  "tileH": 16,
+  "ground": [
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_1",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_1",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_9",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_1",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_1",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_9",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_1",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_1",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_3",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_15",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_15",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_15",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_15",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_15",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_15",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_15",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_15",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_15",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_15",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ],
+    [
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_3_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_5_18",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_7_0",
+        "rot": 0
+      },
+      {
+        "sprite": "8-Bit_Remaster_World_sprite_4_15",
+        "rot": 0
+      },
+      {
+        "sprite": "lofi_environment_sprite_3_4",
+        "rot": 0
+      }
+    ]
+  ],
+  "objects": [],
+  "enemies": []
+}
