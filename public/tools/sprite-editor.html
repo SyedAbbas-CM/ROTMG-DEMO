@@ -2,29 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Sprite Editor</title>
+  <title>Sprite Editor - Fixed</title>
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       display: flex;
       height: 100vh;
+      background: #1a1a1a;
     }
     #sidebar {
-      width: 280px;
+      width: 300px;
       background: #222;
       color: #eee;
       overflow-y: auto;
-      padding: 10px;
+      padding: 12px;
+      box-sizing: border-box;
     }
     #sidebar h2 {
       margin-top: 0;
+      color: #fff;
     }
     #sidebar select,
     #sidebar button,
     #sidebar input {
       width: 100%;
       margin: 6px 0;
+      padding: 6px;
+      box-sizing: border-box;
+      background: #333;
+      color: #eee;
+      border: 1px solid #555;
+    }
+    #sidebar button:hover {
+      background: #444;
+    }
+    #sidebar label {
+      display: block;
+      margin: 10px 0 4px 0;
+      font-weight: bold;
+      color: #ccc;
     }
     #viewport {
       flex: 1;
@@ -33,714 +50,1326 @@
       align-items: center;
       justify-content: center;
       position: relative;
+      overflow: hidden;
+    }
+    #canvasWrapper {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: 0 0;
     }
     #canvas {
       background: #000;
       image-rendering: pixelated;
       border: 2px solid #555;
+      display: block;
+    }
+    #paintLayer {
+      position: absolute;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+      border: 2px solid transparent;
     }
     .rect {
       position: absolute;
       border: 2px dashed #0f0;
       pointer-events: none;
     }
-    #folderTree div{color:#ccc; padding-left:10px;}
-    #folderTree summary{color:#eee; cursor:pointer;}
+    #folderTree {
+      max-height: 200px;
+      overflow: auto;
+      background: #111;
+      padding: 6px;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+    #folderTree div {
+      color: #ccc;
+      padding: 2px 0 2px 10px;
+      cursor: pointer;
+    }
+    #folderTree div:hover {
+      background: #333;
+    }
+    #folderTree summary {
+      color: #eee;
+      cursor: pointer;
+      padding: 2px 0;
+    }
+    #palette {
+      position: absolute;
+      right: 6px;
+      bottom: 6px;
+      display: flex;
+      gap: 2px;
+      flex-wrap: wrap;
+      max-width: 200px;
+    }
+    #palette div {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      border: 1px solid #666;
+    }
+    #palette div:hover {
+      border-color: #fff;
+    }
+    #spriteInfo {
+      position: absolute;
+      right: 6px;
+      top: 6px;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      font: 12px monospace;
+      padding: 8px;
+      border-radius: 4px;
+      max-width: 200px;
+      display: none;
+      border: 1px solid #555;
+    }
+    #spriteInfo input {
+      width: 100%;
+      margin: 4px 0;
+      padding: 2px;
+      background: #333;
+      border: 1px solid #555;
+      color: #fff;
+    }
+    #statusHUD {
+      position: absolute;
+      left: 6px;
+      bottom: 6px;
+      color: #fff;
+      background: rgba(0,0,0,0.7);
+      font: 12px monospace;
+      padding: 4px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      user-select: none;
+    }
+    #spriteListPanel {
+      max-height: 200px;
+      overflow: auto;
+      margin-top: 10px;
+      background: #111;
+      color: #ccc;
+      padding: 6px;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+    .sprite-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin: 2px 0;
+      padding: 2px;
+      border-radius: 2px;
+    }
+    .sprite-row:hover {
+      background: #333;
+    }
+    .sprite-row button {
+      width: 24px;
+      height: 24px;
+      margin: 0;
+      padding: 0;
+      font-size: 12px;
+    }
+    .sprite-row input {
+      flex: 1;
+      margin: 0;
+      padding: 2px;
+      font-size: 11px;
+    }
+    .sprite-row span {
+      color: #888;
+      font-size: 10px;
+    }
+    .controls-section {
+      background: #111;
+      padding: 8px;
+      margin: 8px 0;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+    .flex-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .flex-row input {
+      flex: 1;
+    }
+    #help {
+      position: fixed;
+      right: 8px;
+      bottom: 8px;
+      font: 11px monospace;
+      color: #888;
+      background: rgba(0,0,0,0.7);
+      padding: 4px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+    .paint-mode {
+      background: #004400 !important;
+      border-color: #00ff00 !important;
+    }
   </style>
 </head>
 <body>
   <div id="sidebar">
     <h2>Sprite Editor</h2>
 
-    <label>Image browser</label>
-    <div id="folderTree" style="max-height:200px; overflow:auto; background:#111; padding:6px; border:1px solid #444;"></div>
-
-    <hr>
-    <label>Tile Size (W×H)</label>
-    <div style="display:flex; gap:6px;">
-      <input id="tileW" type="number" value="8" style="flex:1;" />
-      <input id="tileH" type="number" value="8" style="flex:1;" />
+    <div class="controls-section">
+      <label>Image Browser</label>
+      <div id="folderTree"></div>
     </div>
-    <button id="reloadGridBtn">Redraw Grid</button>
 
-    <hr>
-    <label>Selection actions</label>
-    <button id="groupBtn">Group Selected</button>
-    <button id="deleteBtn">Delete Selected</button>
+    <div class="controls-section">
+      <label>Tile Size (W×H)</label>
+      <div class="flex-row">
+        <input id="tileW" type="number" value="8" min="1" max="256" />
+        <input id="tileH" type="number" value="8" min="1" max="256" />
+      </div>
+      <button id="reloadGridBtn">Redraw Grid</button>
+    </div>
 
-    <hr>
-    <label>Atlas file</label>
-    <select id="atlasSelect"></select>
+    <div class="controls-section">
+      <label>Tools</label>
+      <button id="paintModeBtn">Toggle Paint Mode (P)</button>
+      <button id="fitViewBtn">Fit to View (F)</button>
+      <div class="flex-row">
+        <button id="groupBtn">Group Selected</button>
+        <button id="deleteBtn">Delete Selected</button>
+      </div>
+    </div>
 
-    <button id="exportBtn">Export Atlas JSON</button>
+    <div class="controls-section">
+      <label>Paint Settings</label>
+      <div class="flex-row">
+        <label style="margin:0;">Size:</label>
+        <input id="brushSizeInput" type="number" value="1" min="1" max="16" style="width:60px;" />
+      </div>
+      <div class="flex-row">
+        <label style="margin:0;">Color:</label>
+        <input id="colorInput" type="color" value="#ffffff" style="width:60px;" />
+      </div>
+    </div>
 
-    <div id="spriteListPanel" style="max-height:200px; overflow:auto; margin-top:10px; background:#111; color:#ccc; padding:6px;"></div>
+    <div class="controls-section">
+      <label>Atlas Export</label>
+      <select id="atlasSelect"></select>
+      <button id="exportBtn">Save Atlas JSON (Ctrl+S)</button>
+    </div>
 
-    <label>Brush Size</label>
-    <input id="brushSizeInput" type="number" value="1" min="1" max="16" title="Brush size" style="width:60px;">
+    <div class="controls-section">
+      <label>Sprites</label>
+      <div id="spriteListPanel"></div>
+    </div>
 
-    <label>Color</label>
-    <input id="colorInput" type="color" value="#ffffff" style="width:60px;">
+    <div style="margin-top: 20px; font-size: 11px; color: #666;">
+      <strong>Controls:</strong><br>
+      • Wheel: Zoom<br>
+      • Right drag: Pan<br>
+      • Shift+drag: New sprite box<br>
+      • Click: Select sprite<br>
+      • Alt+click: Cycle overlapping<br>
+      • Del: Delete selected<br>
+      • P: Toggle paint mode<br>
+      • F: Fit to view<br>
+      • Ctrl+S: Save atlas<br>
+      • Ctrl+Z: Undo paint
+    </div>
   </div>
-  <div id="viewport" style="overflow:hidden; position:relative;">
-    <div id="canvasWrapper" style="position:absolute;left:0;top:0;transform-origin:0 0;">
+
+  <div id="viewport">
+    <div id="canvasWrapper">
       <canvas id="canvas" width="512" height="512"></canvas>
-      <canvas id="paintLayer" width="512" height="512" style="position:absolute;left:0;top:0;pointer-events:none;"></canvas>
+      <canvas id="paintLayer" width="512" height="512"></canvas>
     </div>
-    <div id="palette" style="position:absolute;right:6px;bottom:6px;display:flex;gap:2px;"></div>
-    <!-- sprite info panel -->
-    <div id="spriteInfo" style="position:absolute;right:6px;top:6px;background:rgba(0,0,0,.7);color:#fff;font:12px monospace;padding:6px;border-radius:4px;max-width:140px;display:none;"></div>
-    <!-- status HUD -->
-    <div id="statusHUD" style="position:absolute;left:6px;bottom:6px;color:#fff;background:rgba(0,0,0,.6);font:12px/14px monospace;padding:2px 6px;border-radius:4px;pointer-events:none;user-select:none;">row: -, col: -</div>
+    <div id="palette"></div>
+    <div id="spriteInfo"></div>
+    <div id="statusHUD">Ready</div>
   </div>
 
   <script>
+    // =============== DOM REFERENCES ===============
     const folderTreeDiv = document.getElementById('folderTree');
     const tileWInput = document.getElementById('tileW');
     const tileHInput = document.getElementById('tileH');
     const reloadGridBtn = document.getElementById('reloadGridBtn');
+    const paintModeBtn = document.getElementById('paintModeBtn');
+    const fitViewBtn = document.getElementById('fitViewBtn');
     const groupBtn = document.getElementById('groupBtn');
     const deleteBtn = document.getElementById('deleteBtn');
     const atlasSelect = document.getElementById('atlasSelect');
     const exportBtn = document.getElementById('exportBtn');
+    const brushSizeInput = document.getElementById('brushSizeInput');
+    const colorInput = document.getElementById('colorInput');
 
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const statusHUD = document.getElementById('statusHUD');
     const paintLayer = document.getElementById('paintLayer');
     const paintCtx = paintLayer.getContext('2d');
-    const paletteDiv = document.getElementById('palette');
     const wrapper = document.getElementById('canvasWrapper');
+    const viewport = document.getElementById('viewport');
+    const statusHUD = document.getElementById('statusHUD');
+    const paletteDiv = document.getElementById('palette');
     const spriteInfo = document.getElementById('spriteInfo');
+    const spriteListPanel = document.getElementById('spriteListPanel');
 
-    let hoverCell = null;           // {row,col}
-    let flashSprite = null;         // {row,col,width,height, timeoutId}
-
+    // =============== STATE VARIABLES ===============
     let img = null;
+    let sheetName = '';
     const atlas = { meta: {}, sprites: [] };
 
-    let sheetName = '';
-    let currentScale = 1;
-    let offsetX = 0, offsetY = 0;
-    let selectedSprite = null;
+    // Camera system (fixed)
+    let camera = {
+      x: 0,    // Canvas offset in screen pixels
+      y: 0,
+      zoom: 1  // Scale factor
+    };
 
-    // --- Painting setup ---
+    // Interaction state
+    let hoverCell = null;
+    let flashSprite = null;
+    let selectedSprite = null;
+    let lastClickKey = null;
+    let clickCycle = 0;
+
+    // Drag state
+    let dragStart = null;
+    let isPanning = false;
+    let panStart = { x: 0, y: 0, startCameraX: 0, startCameraY: 0 };
+
+    // Paint mode
     let paintMode = false;
     let currentColor = '#ffffff';
+    let brushSize = 1;
     let isPainting = false;
     const undoStack = [];
     const MAX_UNDO = 20;
 
-    let dragStart=null; // {row,col} for box creation
-    let isPanning=false;
-    let panStart={x:0,y:0,ox:0,oy:0};
+    // Selection state
+    const selectedCells = new Set();
 
-    // ---------- Debugging helpers ----------
-    const debugMode=true;
-    function dbg(label,obj){ if(debugMode) console.log(label,obj); }
-
-    function enterPaintMode(){
-      paintMode=true;
-      paintLayer.style.pointerEvents='auto';
-      generatePalette();
-    }
-    function exitPaintMode(){paintMode=false; paintLayer.style.pointerEvents='none';}
-
-    function pushUndo(){
-      undoStack.push(paintCtx.getImageData(0,0,paintLayer.width,paintLayer.height));
-      if(undoStack.length>MAX_UNDO) undoStack.shift();
+    const debugMode = false;
+    function dbg(label, obj) { 
+      if (debugMode) console.log(label, obj); 
     }
 
-    function undo(){
-      if(!undoStack.length) return; const img=undoStack.pop(); paintCtx.putImageData(img,0,0);
+    // =============== COORDINATE SYSTEM (FIXED) ===============
+    function screenToCanvas(screenX, screenY) {
+      const viewportRect = viewport.getBoundingClientRect();
+      const screenInViewport = {
+        x: screenX - viewportRect.left,
+        y: screenY - viewportRect.top
+      };
+      
+      // Convert from screen coordinates to canvas coordinates
+      // Account for camera position and zoom
+      const canvasX = (screenInViewport.x - camera.x) / camera.zoom;
+      const canvasY = (screenInViewport.y - camera.y) / camera.zoom;
+      
+      return { x: canvasX, y: canvasY };
     }
 
-    function generatePalette(){
-      paletteDiv.innerHTML='';
-      const colors = new Set();
-      const imgData = ctx.getImageData(0,0,canvas.width,canvas.height).data;
-      for(let i=0;i<imgData.length;i+=4){
-        const r=imgData[i],g=imgData[i+1],b=imgData[i+2];
-        const hex = '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
-        colors.add(hex);
-        if(colors.size>=32) break;
-      }
-      colors.forEach(col=>{
-        const sw=document.createElement('div'); sw.style.width='14px'; sw.style.height='14px'; sw.style.background=col; sw.style.cursor='pointer'; sw.onclick=()=>currentColor=col; paletteDiv.appendChild(sw);
-      });
+    function canvasToScreen(canvasX, canvasY) {
+      const viewportRect = viewport.getBoundingClientRect();
+      const screenInViewport = {
+        x: canvasX * camera.zoom + camera.x,
+        y: canvasY * camera.zoom + camera.y
+      };
+      
+      return {
+        x: screenInViewport.x + viewportRect.left,
+        y: screenInViewport.y + viewportRect.top
+      };
     }
 
-    const sidebar=document.getElementById('sidebar');
-    const brushSizeInput=document.createElement('input'); brushSizeInput.type='number'; brushSizeInput.value='1'; brushSizeInput.min='1'; brushSizeInput.max='16'; brushSizeInput.title='Brush size'; brushSizeInput.style.width='60px';
-    const colorInput=document.createElement('input'); colorInput.type='color'; colorInput.value='#ffffff'; colorInput.style.width='60px';
-
-    // Labels
-    const lblColor=document.createElement('label'); lblColor.textContent='Paint Color';
-    const lblBrush=document.createElement('label'); lblBrush.textContent='Brush Size';
-
-    sidebar.appendChild(lblColor); sidebar.appendChild(colorInput);
-    sidebar.appendChild(lblBrush); sidebar.appendChild(brushSizeInput);
-
-    let brushSize=1; brushSizeInput.onchange=()=>{ brushSize=parseInt(brushSizeInput.value)||1; };
-    colorInput.oninput=()=>{ currentColor=colorInput.value; };
-
-    paintLayer.addEventListener('mousedown',e=>{ if(!paintMode) return; if(e.altKey){ pickColor(e); return;} pushUndo(); isPainting=true; drawAt(e); });
-    paintLayer.addEventListener('mousemove',e=>{ if(isPainting){ drawAt(e);} else if(paintMode&&e.altKey){ pickColor(e);} });
-    window.addEventListener('mouseup',()=>isPainting=false);
-
-    function drawAt(e){
-      const {xCanvas,yCanvas} = screenToCanvas(e);
-      const x = Math.floor(xCanvas);
-      const y = Math.floor(yCanvas);
-      paintCtx.fillStyle=currentColor;
-      paintCtx.fillRect(x,y,brushSize,brushSize);
+    function eventToCanvas(event) {
+      return screenToCanvas(event.clientX, event.clientY);
     }
 
-    function pickColor(e){
-      const {xCanvas,yCanvas} = screenToCanvas(e);
-      const x = Math.floor(xCanvas);
-      const y = Math.floor(yCanvas);
-      const data = paintCtx.getImageData(x,y,1,1).data;
-      currentColor = colorInput.value = '#'+[data[0],data[1],data[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+    function eventToCell(event) {
+      const canvasPos = eventToCanvas(event);
+      const tileW = parseInt(tileWInput.value) || 8;
+      const tileH = parseInt(tileHInput.value) || 8;
+      
+      const col = Math.floor(canvasPos.x / tileW);
+      const row = Math.floor(canvasPos.y / tileH);
+      
+      return { row, col, tileW, tileH, canvasX: canvasPos.x, canvasY: canvasPos.y };
     }
 
-    document.addEventListener('keydown',e=>{
-      if(e.key==='p') enterPaintMode();
-      if(e.key==='Escape'&&paintMode) exitPaintMode();
-      if(e.key==='z'&& (e.ctrlKey||e.metaKey)) { e.preventDefault(); undo(); }
-      if(e.key==='S'&& (e.ctrlKey||e.metaKey)&&paintMode){ e.preventDefault(); savePng(); }
-    });
-
-    async function savePng(){
-      if(!atlas.meta.image) return alert('Load image first');
-      const merged=document.createElement('canvas');
-      merged.width=canvas.width; merged.height=canvas.height;
-      const mctx=merged.getContext('2d');
-      mctx.drawImage(canvas,0,0); mctx.drawImage(paintLayer,0,0);
-      const dataUrl=merged.toDataURL('image/png');
-      const res=await fetch('/api/assets/images/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:atlas.meta.image.replace(/^\//,'') , data:dataUrl})});
-      const json=await res.json(); if(json.success) alert('PNG saved'); else alert('Save failed');
+    // =============== CAMERA CONTROLS (FIXED) ===============
+    function applyTransform() {
+      // Apply transform: translate first, then scale
+      wrapper.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`;
     }
 
-    // Build folder tree UI
-    async function buildTree() {
-      const res = await fetch('/api/assets/images/tree');
-      const tree = await res.json();
-
-      function createNode(node, container, prefix = '') {
-        if (node.type === 'folder') {
-          const details = document.createElement('details');
-          details.open = true;
-          const summary = document.createElement('summary');
-          summary.textContent = node.name;
-          details.appendChild(summary);
-          container.appendChild(details);
-          node.children.forEach(child => createNode(child, details, `${prefix}${node.name}/`));
-        } else if (node.type === 'image') {
-          const link = document.createElement('div');
-          link.textContent = node.name;
-          link.style.cursor = 'pointer';
-          link.onclick = () => loadImage('/' + node.path);
-          container.appendChild(link);
-        }
-      }
-
-      folderTreeDiv.innerHTML = '';
-      createNode(tree, folderTreeDiv);
+    function zoomToPoint(zoomFactor, screenX, screenY) {
+      // Get point in canvas coordinates before zoom
+      const canvasPoint = screenToCanvas(screenX, screenY);
+      
+      // Apply zoom
+      camera.zoom *= zoomFactor;
+      camera.zoom = Math.max(0.1, Math.min(20, camera.zoom));
+      
+      // Get where that point would be on screen after zoom
+      const newScreenPoint = {
+        x: canvasPoint.x * camera.zoom + camera.x,
+        y: canvasPoint.y * camera.zoom + camera.y
+      };
+      
+      // Adjust camera to keep the point under the cursor
+      const viewportRect = viewport.getBoundingClientRect();
+      const targetScreenX = screenX - viewportRect.left;
+      const targetScreenY = screenY - viewportRect.top;
+      
+      camera.x += targetScreenX - newScreenPoint.x;
+      camera.y += targetScreenY - newScreenPoint.y;
+      
+      applyTransform();
+      updateStatusHUD();
     }
 
-    buildTree().catch(console.error);
-
-    async function loadImage(path) {
-      img = new Image();
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = () => reject(new Error('Failed to load image ' + path));
-        img.src = path;
-      });
-
-      // Basic canvas setup
-      canvas.width = img.width;
-      canvas.height = img.height;
-      paintLayer.width = img.width;
-      paintLayer.height = img.height;
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.drawImage(img,0,0);
-
-      sheetName = path.split('/').pop().replace(/\.png$/i,'');
-
-      // Try to load existing atlas JSON first
-      let loaded = false;
-      try {
-        const res = await fetch(`/api/assets/atlas/${sheetName}.json`);
-        if (res.ok) {
-          const json = await res.json();
-          Object.assign(atlas, json);
-          // Ensure meta object exists
-          atlas.meta = atlas.meta || { image: path.replace(/^\//,''), imageW: img.width, imageH: img.height };
-          // Set tile size inputs based on first sprite if present
-          if (atlas.sprites && atlas.sprites.length) {
-            tileWInput.value = atlas.sprites[0].width || tileWInput.value;
-            tileHInput.value = atlas.sprites[0].height || tileHInput.value;
-          }
-          loaded = true;
-          console.log(`[Editor] Loaded existing atlas '${sheetName}.json' with ${atlas.sprites.length} sprites`);
-        }
-      } catch(err) {
-        console.warn('[Editor] Atlas JSON fetch failed (may not exist yet):', err);
-      }
-
-      // If no atlas loaded, regenerate default grid sprites and reset tile size fields
-      if (!loaded) {
-        tileWInput.value = 8;
-        tileHInput.value = 8;
-        atlas.meta = { image: path.replace(/^\//,''), imageW: img.width, imageH: img.height };
-        regenerateSprites();
-      }
-
-      fitToView();
-      drawGrid();
-      refreshSpriteList();
-
-      // Ensure atlas dropdown reflects current sheet json
-      const defaultJson = `${sheetName}.json`;
-      if (![...atlasSelect.options].some(o=>o.value===defaultJson)){
-         const opt=document.createElement('option'); opt.value=defaultJson; opt.textContent=defaultJson; atlasSelect.appendChild(opt);
-      }
-      atlasSelect.value = defaultJson;
+    function fitToView() {
+      if (!img) return;
+      
+      const viewportRect = viewport.getBoundingClientRect();
+      const padding = 50;
+      
+      const availableWidth = viewportRect.width - padding * 2;
+      const availableHeight = viewportRect.height - padding * 2;
+      
+      const scaleX = availableWidth / canvas.width;
+      const scaleY = availableHeight / canvas.height;
+      
+      camera.zoom = Math.min(scaleX, scaleY, 1);
+      camera.x = (viewportRect.width - canvas.width * camera.zoom) / 2;
+      camera.y = (viewportRect.height - canvas.height * camera.zoom) / 2;
+      
+      applyTransform();
+      updateStatusHUD();
     }
 
-    function regenerateSprites(){
-      atlas.sprites.length=0;
-      const tileW=parseInt(tileWInput.value||8);
-      const tileH=parseInt(tileHInput.value||8);
-      const cols=Math.floor(img.width/tileW);
-      const rows=Math.floor(img.height/tileH);
-      for(let r=0;r<rows;r++){
-        for(let c=0;c<cols;c++){
-          atlas.sprites.push({
-            name:`${sheetName}_sprite_${r}_${c}`,
-            group:'auto',
-            row:r,col:c,width:tileW,height:tileH
-          });
-        }
-      }
-    }
-
-    function fitToView(){
-      const vp=document.getElementById('viewport');
-      const vw=vp.clientWidth*0.8;
-      const vh=vp.clientHeight*0.8;
-      currentScale=Math.min(vw/canvas.width,vh/canvas.height,1);
-      offsetX=offsetY=0;
+    function panBy(deltaX, deltaY) {
+      camera.x += deltaX;
+      camera.y += deltaY;
       applyTransform();
     }
 
-    // Redraw when the button is clicked or when tile-size inputs change
-    const scheduleRedraw = () => { clearTimeout(scheduleRedraw.t); scheduleRedraw.t = setTimeout(()=>{regenerateSprites(); fitToView(); drawGrid(); refreshSpriteList();},100);} ;
-    reloadGridBtn.onclick = drawGrid;
-    tileWInput.addEventListener('input', scheduleRedraw);
-    tileHInput.addEventListener('input', scheduleRedraw);
-
-    const selectedCells = new Set(); // store keys row_col
-
-    function rectIter(r0,c0,r1,c1,cb){
-      const [rs, re]=[Math.min(r0,r1),Math.max(r0,r1)];
-      const [cs, ce]=[Math.min(c0,c1),Math.max(c0,c1)];
-      for(let r=rs;r<=re;r++) for(let c=cs;c<=ce;c++) cb(r,c);
+    // =============== PAINT MODE ===============
+    function enterPaintMode() {
+      paintMode = true;
+      paintLayer.style.pointerEvents = 'auto';
+      paintModeBtn.classList.add('paint-mode');
+      paintModeBtn.textContent = 'Exit Paint Mode (P)';
+      generatePalette();
+      updateStatusHUD('Paint mode enabled');
     }
 
-    // Prevent default right-click menu so we can pan with RMB
-    canvas.addEventListener('contextmenu',e=>e.preventDefault());
+    function exitPaintMode() {
+      paintMode = false;
+      paintLayer.style.pointerEvents = 'none';
+      paintModeBtn.classList.remove('paint-mode');
+      paintModeBtn.textContent = 'Toggle Paint Mode (P)';
+      updateStatusHUD('Paint mode disabled');
+    }
 
-    canvas.addEventListener('mousedown', (e)=>{
-      if(!img) return;
-      const rect=canvas.getBoundingClientRect();
-      const tileW=parseInt(tileWInput.value||8);
-      const tileH=parseInt(tileHInput.value||8);
-
-      const startPan = ()=>{ isPanning=true; panStart={x:e.clientX,y:e.clientY,ox:offsetX,oy:offsetY}; vp.style.cursor='grabbing'; };
-
-      // RMB or LMB (without Shift) -> Pan
-      if(e.button===2 || (e.button===0 && !e.shiftKey)){
-         startPan(); return;
+    function togglePaintMode() {
+      if (paintMode) {
+        exitPaintMode();
+      } else {
+        enterPaintMode();
       }
+    }
 
-      // Shift + LMB -> begin box creation
-      if(e.button===0 && e.shiftKey){
-          const {row,col}=cellAtEvent(e);
-          dragStart={row,col};
-          dbg('START',{row,col,xCanvas:dragStart.col*parseInt(tileWInput.value||8),yCanvas:dragStart.row*parseInt(tileHInput.value||8)});
+    function pushUndo() {
+      undoStack.push(paintCtx.getImageData(0, 0, paintLayer.width, paintLayer.height));
+      if (undoStack.length > MAX_UNDO) {
+        undoStack.shift();
       }
+    }
 
-      // Alt-click on an existing sprite removes it
-      if(e.altKey){
-        const key = dragStart.row+"_"+dragStart.col;
-        atlas.sprites = atlas.sprites.filter(sp=>!(sp.row===dragStart.row && sp.col===dragStart.col));
-        selectedCells.delete(key);
+    function undo() {
+      if (undoStack.length === 0) return;
+      const imageData = undoStack.pop();
+      paintCtx.putImageData(imageData, 0, 0);
+    }
+
+    function generatePalette() {
+      paletteDiv.innerHTML = '';
+      const colors = new Set(['#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']);
+      
+      // Extract colors from the image
+      if (img) {
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        for (let i = 0; i < imgData.length; i += 4) {
+          const r = imgData[i];
+          const g = imgData[i + 1];
+          const b = imgData[i + 2];
+          const alpha = imgData[i + 3];
+          
+          if (alpha > 128) { // Only visible pixels
+            const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+            colors.add(hex);
+            if (colors.size >= 32) break;
+          }
+        }
+      }
+      
+      colors.forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.style.backgroundColor = color;
+        swatch.title = color;
+        swatch.onclick = () => {
+          currentColor = color;
+          colorInput.value = color;
+        };
+        paletteDiv.appendChild(swatch);
+      });
+    }
+
+    function drawAt(event) {
+      const canvasPos = eventToCanvas(event);
+      const x = Math.floor(canvasPos.x);
+      const y = Math.floor(canvasPos.y);
+      
+      paintCtx.fillStyle = currentColor;
+      paintCtx.fillRect(x, y, brushSize, brushSize);
+    }
+
+    function pickColor(event) {
+      const canvasPos = eventToCanvas(event);
+      const x = Math.floor(canvasPos.x);
+      const y = Math.floor(canvasPos.y);
+      
+      if (x >= 0 && y >= 0 && x < paintLayer.width && y < paintLayer.height) {
+        const data = paintCtx.getImageData(x, y, 1, 1).data;
+        if (data[3] > 0) { // Has alpha
+          currentColor = '#' + [data[0], data[1], data[2]].map(v => v.toString(16).padStart(2, '0')).join('');
+          colorInput.value = currentColor;
+        }
+      }
+    }
+
+    // =============== FILE MANAGEMENT ===============
+    async function buildTree() {
+      try {
+        const res = await fetch('/api/assets/images/tree');
+        const tree = await res.json();
+
+        function createNode(node, container, prefix = '') {
+          if (node.type === 'folder') {
+            const details = document.createElement('details');
+            details.open = true;
+            const summary = document.createElement('summary');
+            summary.textContent = node.name;
+            details.appendChild(summary);
+            container.appendChild(details);
+            node.children.forEach(child => createNode(child, details, `${prefix}${node.name}/`));
+          } else if (node.type === 'image') {
+            const link = document.createElement('div');
+            link.textContent = node.name;
+            link.onclick = () => loadImage('/' + node.path);
+            container.appendChild(link);
+          }
+        }
+
+        folderTreeDiv.innerHTML = '';
+        createNode(tree, folderTreeDiv);
+      } catch (error) {
+        console.error('Failed to build tree:', error);
+        updateStatusHUD('Failed to load image tree');
+      }
+    }
+
+    async function loadImage(path) {
+      try {
+        updateStatusHUD('Loading image...');
+        
+        img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error('Failed to load image ' + path));
+          img.src = path;
+        });
+
+        // Setup canvas
+        canvas.width = img.width;
+        canvas.height = img.height;
+        paintLayer.width = img.width;
+        paintLayer.height = img.height;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        
+        paintCtx.clearRect(0, 0, paintLayer.width, paintLayer.height);
+
+        sheetName = path.split('/').pop().replace(/\.png$/i, '');
+
+        // Try to load existing atlas
+        let loaded = false;
+        try {
+          const res = await fetch(`/api/assets/atlas/${sheetName}.json`);
+          if (res.ok) {
+            const json = await res.json();
+            Object.assign(atlas, json);
+            atlas.meta = atlas.meta || { image: path.replace(/^\//, ''), imageW: img.width, imageH: img.height };
+            
+            if (atlas.sprites && atlas.sprites.length) {
+              tileWInput.value = atlas.sprites[0].width || 8;
+              tileHInput.value = atlas.sprites[0].height || 8;
+            }
+            loaded = true;
+            updateStatusHUD(`Loaded atlas with ${atlas.sprites.length} sprites`);
+          }
+        } catch (err) {
+          console.warn('Atlas not found, creating new one');
+        }
+
+        if (!loaded) {
+          atlas.meta = { image: path.replace(/^\//, ''), imageW: img.width, imageH: img.height };
+          regenerateSprites();
+          updateStatusHUD('Created new atlas');
+        }
+
+        fitToView();
         drawGrid();
         refreshSpriteList();
-        dbg('dragEnd');
-        dragStart=null;
-      }
-    });
 
-    canvas.addEventListener('mousemove',(e)=>{
-      if(isPanning){
-         offsetX=panStart.ox+(e.clientX-panStart.x);
-         offsetY=panStart.oy+(e.clientY-panStart.y);
-         applyTransform();
-         return;
-      }
-      if(!dragStart) return;
-      const rect=canvas.getBoundingClientRect();
-      const tileW=parseInt(tileWInput.value||8);
-      const tileH=parseInt(tileHInput.value||8);
-      const col=Math.floor((e.clientX-rect.left)/tileW);
-      const row=Math.floor((e.clientY-rect.top)/tileH);
-      // Log DRAG every 100ms
-      if(!window._dragLogLast || performance.now()-window._dragLogLast>100){
-         const {row,col}=cellAtEvent(e);
-         dbg('DRAG',{start:dragStart,row,col});
-         window._dragLogLast=performance.now();
-      }
-      tempHighlight({r0:dragStart.row,c0:dragStart.col,r1:row,c1:col});
-      updateHUD(`drag ${Math.abs(row-dragStart.row)+1}×${Math.abs(col-dragStart.col)+1}`);
-    });
+        // Update atlas dropdown
+        const defaultJson = `${sheetName}.json`;
+        if (![...atlasSelect.options].some(o => o.value === defaultJson)) {
+          const opt = document.createElement('option');
+          opt.value = defaultJson;
+          opt.textContent = defaultJson;
+          atlasSelect.appendChild(opt);
+        }
+        atlasSelect.value = defaultJson;
 
-    function tempHighlight(rectSel){
-      drawGrid();
-      const tileW=parseInt(tileWInput.value||8);
-      const tileH=parseInt(tileHInput.value||8);
-      ctx.save();
-      ctx.strokeStyle='rgba(0,255,0,0.8)';
-      ctx.setLineDash([4,2]);
-      const x0 = Math.min(rectSel.c0,rectSel.c1)*tileW;
-      const y0 = Math.min(rectSel.r0,rectSel.r1)*tileH;
-      const w  = (Math.abs(rectSel.c1-rectSel.c0)+1)*tileW;
-      const h  = (Math.abs(rectSel.r1-rectSel.r0)+1)*tileH;
-      ctx.strokeRect(x0+0.5,y0+0.5,w-1,h-1);
-      ctx.restore();
+      } catch (error) {
+        console.error('Failed to load image:', error);
+        updateStatusHUD('Failed to load image: ' + error.message);
+      }
     }
 
-    canvas.addEventListener('mouseup',(e)=>{
-      if(isPanning){ isPanning=false; return; }
-      if(!dragStart) return;
-      const rect=canvas.getBoundingClientRect();
-      const tileW=parseInt(tileWInput.value||8);
-      const tileH=parseInt(tileHInput.value||8);
-      const col=Math.floor((e.clientX-rect.left)/tileW);
-      const row=Math.floor((e.clientY-rect.top)/tileH);
-
-      // Create a single manual sprite covering drag rectangle
-      if(dragStart){
-          const r0=Math.min(dragStart.row,row);
-          const r1=Math.max(dragStart.row,row);
-          const c0=Math.min(dragStart.col,col);
-          const c1=Math.max(dragStart.col,col);
-          const tileW=parseInt(tileWInput.value||8);
-          const tileH=parseInt(tileHInput.value||8);
+    function regenerateSprites() {
+      atlas.sprites.length = 0;
+      const tileW = parseInt(tileWInput.value) || 8;
+      const tileH = parseInt(tileHInput.value) || 8;
+      const cols = Math.floor(img.width / tileW);
+      const rows = Math.floor(img.height / tileH);
+      
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
           atlas.sprites.push({
-            name:`box_${r0}_${c0}`,
-            group:'manual',
-            row:r0,
-            col:c0,
-            width:(c1-c0+1)*tileW,
-            height:(r1-r0+1)*tileH
+            name: `${sheetName}_${r}_${c}`,
+            group: 'auto',
+            row: r,
+            col: c,
+            width: tileW,
+            height: tileH
           });
-       }
-       dbg('END',{});
-       dragStart=null;
-       drawGrid();
-       refreshSpriteList();
-    });
-
-    // Hover HUD when not dragging
-    canvas.addEventListener('mousemove',(e)=>{
-      if(dragStart) return; // handled above
-      const {row,col,tileW,tileH}=cellAtEvent(e);
-      hoverCell={row,col};
-      updateHUD(`row:${row} col:${col}`);
-      drawGrid();
-    });
-    canvas.addEventListener('mouseleave',()=>{hoverCell=null; updateHUD('row:- col:-'); drawGrid();});
-
-    groupBtn.onclick = ()=>{
-      if (selectedCells.size===0) return alert('Select at least one cell');
-      const group = prompt('Enter group name');
-      if (!group) return;
-      addSelectedToAtlas(group);
-    };
-
-    deleteBtn.onclick = ()=>{
-      selectedCells.clear();
-      drawGrid();
-    };
-
-    function addSelectedToAtlas(groupName){
-      const tileW = parseInt(tileWInput.value||8);
-      const tileH = parseInt(tileHInput.value||8);
-      [...selectedCells].forEach(key=>{
-        const [row,col] = key.split('_').map(Number);
-        atlas.sprites.push({
-          name:`${groupName}_${row}_${col}`,
-          group:groupName,
-          row,col,
-          width:tileW,
-          height:tileH
-        });
-      });
-      selectedCells.clear();
-      drawGrid();
-      refreshSpriteList();
-      alert(`Added sprites to atlas under group ${groupName}`);
+        }
+      }
     }
 
-    // load atlases list for future merging / saving
-    (async()=>{
-      const res = await fetch('/api/assets/atlases');
-      const json = await res.json();
-      json.atlases.forEach(p=>{
-        const base=p.split('/').pop();
-        const opt=document.createElement('option'); opt.value=base; opt.textContent=base; atlasSelect.appendChild(opt);
-      });
-    })();
+    async function saveAtlas() {
+      if (!img) {
+        alert('No image loaded');
+        return;
+      }
 
-    const spriteListPanel = document.createElement('div');
-    spriteListPanel.style.maxHeight='200px';
-    spriteListPanel.style.overflow='auto';
-    spriteListPanel.style.marginTop='10px';
-    spriteListPanel.style.background='#111';
-    spriteListPanel.style.color='#ccc';
-    spriteListPanel.style.padding='6px';
-    document.getElementById('sidebar').appendChild(spriteListPanel);
+      const tileW = parseInt(tileWInput.value) || 8;
+      const tileH = parseInt(tileHInput.value) || 8;
+      
+      atlas.defaultSpriteWidth = tileW;
+      atlas.defaultSpriteHeight = tileH;
+      atlas.path = atlas.meta.image;
+      atlas.name = sheetName;
 
-    function refreshSpriteList(){
-      spriteListPanel.innerHTML='';
-      // Show ONLY manual sprites to keep list concise
-      const list = atlas.sprites.filter(sp=>sp.group==='manual');
-      list.forEach((sp,idx)=>{
-        const row=document.createElement('div');
-        row.style.display='flex';
-        row.style.alignItems='center';
-        row.style.gap='4px';
-        const upBtn=document.createElement('button'); upBtn.textContent='↑';
-        const dwnBtn=document.createElement('button'); dwnBtn.textContent='↓';
-        if(sp.group!=='auto'){
-           upBtn.onclick=()=>{if(idx>0){const tmp=atlas.sprites[idx-1]; atlas.sprites[idx-1]=atlas.sprites[idx]; atlas.sprites[idx]=tmp; refreshSpriteList();}};
-           dwnBtn.onclick=()=>{if(idx<atlas.sprites.length-1){const tmp=atlas.sprites[idx+1]; atlas.sprites[idx+1]=atlas.sprites[idx]; atlas.sprites[idx]=tmp; refreshSpriteList();}};
-        } else { upBtn.style.visibility=dwnBtn.style.visibility='hidden'; }
-        const nameInput=document.createElement('input'); nameInput.value=sp.name; nameInput.style.flex='1'; nameInput.onchange=()=>{sp.name=nameInput.value};
-        const pos=document.createElement('span'); pos.textContent=` (${sp.row},${sp.col}) ${sp.width}x${sp.height}`; pos.style.color='#888';
-        row.onclick=()=>{
-           const tileW=parseInt(tileWInput.value||8);
-           const tileH=parseInt(tileHInput.value||8);
-           flashSprite={row:sp.row,col:sp.col,width:sp.width,height:sp.height};
-           drawGrid();
-           clearTimeout(flashSprite.timeoutId);
-           flashSprite.timeoutId=setTimeout(()=>{flashSprite=null; drawGrid();},800);
-           selectedSprite=sp; showSpriteInfo(sp);
+      const filename = atlasSelect.value || `${sheetName}.json`;
+      
+      try {
+        const res = await fetch('/api/assets/atlases/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename, data: atlas })
+        });
+        
+        const json = await res.json();
+        if (json.success) {
+          updateStatusHUD(`Saved to ${json.path}`);
+          refreshSpriteList();
+          localStorage.setItem('atlasReload', JSON.stringify({ path: json.path, t: Date.now() }));
+        } else {
+          alert('Save failed: ' + json.error);
+        }
+      } catch (err) {
+        console.error('Save error:', err);
+        alert('Save error');
+      }
+    }
+
+    async function savePng() {
+      if (!atlas.meta.image) {
+        alert('Load image first');
+        return;
+      }
+      
+      const merged = document.createElement('canvas');
+      merged.width = canvas.width;
+      merged.height = canvas.height;
+      const mctx = merged.getContext('2d');
+      
+      mctx.drawImage(canvas, 0, 0);
+      mctx.drawImage(paintLayer, 0, 0);
+      
+      const dataUrl = merged.toDataURL('image/png');
+      
+      try {
+        const res = await fetch('/api/assets/images/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            path: atlas.meta.image.replace(/^\//, ''),
+            data: dataUrl
+          })
+        });
+        
+        const json = await res.json();
+        if (json.success) {
+          updateStatusHUD('PNG saved');
+        } else {
+          alert('Save failed');
+        }
+      } catch (err) {
+        console.error('PNG save failed:', err);
+        alert('PNG save failed');
+      }
+    }
+
+    // =============== SPRITE MANAGEMENT ===============
+    function refreshSpriteList() {
+      spriteListPanel.innerHTML = '';
+      
+      const manualSprites = atlas.sprites.filter(sp => sp.group === 'manual');
+      
+      manualSprites.forEach((sp, idx) => {
+        const row = document.createElement('div');
+        row.className = 'sprite-row';
+        
+        const upBtn = document.createElement('button');
+        upBtn.textContent = '↑';
+        upBtn.onclick = () => {
+          if (idx > 0) {
+            const temp = atlas.sprites[idx - 1];
+            atlas.sprites[idx - 1] = atlas.sprites[idx];
+            atlas.sprites[idx] = temp;
+            refreshSpriteList();
+          }
         };
-        row.appendChild(upBtn); row.appendChild(dwnBtn); row.appendChild(nameInput); row.appendChild(pos);
+        
+        const downBtn = document.createElement('button');
+        downBtn.textContent = '↓';
+        downBtn.onclick = () => {
+          if (idx < manualSprites.length - 1) {
+            const temp = atlas.sprites[idx + 1];
+            atlas.sprites[idx + 1] = atlas.sprites[idx];
+            atlas.sprites[idx] = temp;
+            refreshSpriteList();
+          }
+        };
+        
+        const nameInput = document.createElement('input');
+        nameInput.value = sp.name;
+        nameInput.onchange = () => { sp.name = nameInput.value; };
+        
+        const info = document.createElement('span');
+        info.textContent = ` (${sp.row},${sp.col}) ${sp.width}×${sp.height}`;
+        
+        row.onclick = () => {
+          flashSprite = { 
+            row: sp.row, 
+            col: sp.col, 
+            width: sp.width, 
+            height: sp.height 
+          };
+          drawGrid();
+          clearTimeout(flashSprite.timeoutId);
+          flashSprite.timeoutId = setTimeout(() => {
+            flashSprite = null;
+            drawGrid();
+          }, 800);
+          selectedSprite = sp;
+          showSpriteInfo(sp);
+        };
+        
+        row.appendChild(upBtn);
+        row.appendChild(downBtn);
+        row.appendChild(nameInput);
+        row.appendChild(info);
         spriteListPanel.appendChild(row);
       });
     }
 
-    exportBtn.textContent='Save Atlas JSON (Ctrl+S)';
-    exportBtn.onclick = saveAtlas;
-
-    async function saveAtlas(){
-      if (!img) return alert('No image loaded');
-      // Ensure default sprite sizes stored
-      const tileW = parseInt(tileWInput.value||8);
-      const tileH = parseInt(tileHInput.value||8);
-      atlas.defaultSpriteWidth = tileW;
-      atlas.defaultSpriteHeight = tileH;
-      atlas.path = atlas.meta.image; // convenience for loaders
-      atlas.name = sheetName;
-
-      const filename = atlasSelect.value || `${sheetName}.json`;
-      try{
-        const res = await fetch('/api/assets/atlases/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename,data:atlas})});
-        const json=await res.json();
-        if(json.success){
-          alert('Saved to '+json.path);
-          refreshSpriteList();
-          // notify other tabs for hot reload
-          localStorage.setItem('atlasReload', JSON.stringify({path: json.path, t: Date.now()}));
-        }else{alert('Save failed: '+json.error)}
-      }catch(err){alert('Save error'); console.error(err);}  
+    function showSpriteInfo(sp) {
+      spriteInfo.style.display = 'block';
+      spriteInfo.innerHTML = `
+        <label>Name:</label>
+        <input id="renameInput" value="${sp.name}" />
+        <div style="margin-top: 8px; color: #ddd;">
+          Position: ${sp.col}, ${sp.row}<br>
+          Size: ${sp.width}×${sp.height}<br>
+          Group: ${sp.group}
+        </div>
+      `;
+      
+      const renameInput = document.getElementById('renameInput');
+      renameInput.onkeydown = (ev) => {
+        if (ev.key === 'Enter') {
+          renameInput.blur();
+        }
+      };
+      renameInput.onchange = () => {
+        sp.name = renameInput.value;
+        refreshSpriteList();
+      };
     }
 
-    document.addEventListener('keydown',(e)=>{
-      if((e.ctrlKey||e.metaKey)&&e.key==='s'){
-        e.preventDefault(); saveAtlas();
-      }
-    });
+    function spritesAtCell(row, col, tileW, tileH) {
+      return atlas.sprites.filter(sp => 
+        row >= sp.row && row < sp.row + sp.height / tileH &&
+        col >= sp.col && col < sp.col + sp.width / tileW
+      );
+    }
 
-    /** Redraw the canvas image + grid & overlays */
+    // =============== DRAWING ===============
     function drawGrid() {
       if (!img) return;
-      ctx.drawImage(img,0,0);
-      const tileW = parseInt(tileWInput.value||8);
-      const tileH = parseInt(tileHInput.value||8);
-      ctx.strokeStyle = 'rgba(255,255,0,0.6)'; // bright yellow
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      
+      const tileW = parseInt(tileWInput.value) || 8;
+      const tileH = parseInt(tileHInput.value) || 8;
+      
+      // Draw grid lines
+      ctx.strokeStyle = 'rgba(255, 255, 0, 0.3)';
       ctx.lineWidth = 1;
-      for (let x=0;x<img.width;x+=tileW) {
-        ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,img.height); ctx.stroke();
+      
+      for (let x = 0; x < img.width; x += tileW) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, img.height);
+        ctx.stroke();
       }
-      for (let y=0;y<img.height;y+=tileH) {
-        ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(img.width,y); ctx.stroke();
+      
+      for (let y = 0; y < img.height; y += tileH) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(img.width, y);
+        ctx.stroke();
       }
-      // Draw existing sprites:
-      atlas.sprites.forEach(sp=>{
-        const x = sp.col*tileW;
-        const y = sp.row*tileH;
-        // Different visuals for auto vs manual
-        if(sp.group==='manual'){
-          // Semi-transparent green fill & border
-          ctx.fillStyle='rgba(0,255,0,0.25)';
-          ctx.fillRect(x,y,sp.width,sp.height);
-          ctx.strokeStyle='lime';
-          ctx.lineWidth=2;
-          ctx.strokeRect(x+1,y+1,sp.width-2,sp.height-2);
+      
+      // Draw existing sprites
+      atlas.sprites.forEach(sp => {
+        const x = sp.col * tileW;
+        const y = sp.row * tileH;
+        
+        if (sp.group === 'manual') {
+          // Manual sprites - green fill and border
+          ctx.fillStyle = 'rgba(0, 255, 0, 0.25)';
+          ctx.fillRect(x, y, sp.width, sp.height);
+          ctx.strokeStyle = 'lime';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x + 1, y + 1, sp.width - 2, sp.height - 2);
         } else {
-          // Auto sprites tinted blue
-          ctx.fillStyle='rgba(0,150,255,0.25)';
-          ctx.fillRect(x,y,sp.width,sp.height);
+          // Auto sprites - blue tint
+          ctx.fillStyle = 'rgba(0, 150, 255, 0.15)';
+          ctx.fillRect(x, y, sp.width, sp.height);
         }
       });
 
-      // hover outline (red)
-      if(hoverCell){
+      // Draw hover outline
+      if (hoverCell && !dragStart) {
         ctx.strokeStyle = 'red';
         ctx.lineWidth = 2;
-        ctx.strokeRect(hoverCell.col*tileW+1, hoverCell.row*tileH+1, tileW-2, tileH-2);
+        ctx.strokeRect(
+          hoverCell.col * tileW + 1, 
+          hoverCell.row * tileH + 1, 
+          tileW - 2, 
+          tileH - 2
+        );
       }
 
-      // flash highlight for sprite (yellow)
-      if(flashSprite){
+      // Draw flash highlight
+      if (flashSprite) {
         ctx.strokeStyle = 'yellow';
         ctx.lineWidth = 3;
-        ctx.strokeRect(flashSprite.col*tileW+1, flashSprite.row*tileH+1, flashSprite.width-2, flashSprite.height-2);
+        ctx.strokeRect(
+          flashSprite.col * tileW + 1, 
+          flashSprite.row * tileH + 1, 
+          flashSprite.width - 2, 
+          flashSprite.height - 2
+        );
+      }
+
+      // Draw drag preview
+      if (dragStart && dragEnd) {
+        const minCol = Math.min(dragStart.col, dragEnd.col);
+        const maxCol = Math.max(dragStart.col, dragEnd.col);
+        const minRow = Math.min(dragStart.row, dragEnd.row);
+        const maxRow = Math.max(dragStart.row, dragEnd.row);
+        
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)';
+        ctx.setLineDash([4, 2]);
+        ctx.lineWidth = 2;
+        
+        const x0 = minCol * tileW;
+        const y0 = minRow * tileH;
+        const w = (maxCol - minCol + 1) * tileW;
+        const h = (maxRow - minRow + 1) * tileH;
+        
+        ctx.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, h - 1);
+        ctx.restore();
       }
     }
 
-    function updateHUD(info){statusHUD.textContent = info;}
-
-    const vp = document.getElementById('viewport');
-    function screenToCanvas(e){
-       const vpRect = vp.getBoundingClientRect();
-       const xInVp  = e.clientX - vpRect.left;
-       const yInVp  = e.clientY - vpRect.top;
-       // Correct inverse: undo scale FIRST, then translation
-       const xCanvas = xInVp / currentScale - offsetX;
-       const yCanvas = yInVp / currentScale - offsetY;
-       return {xCanvas,yCanvas};
+    function updateStatusHUD(message) {
+      if (message) {
+        statusHUD.textContent = message;
+        setTimeout(() => {
+          statusHUD.textContent = `Zoom: ${Math.round(camera.zoom * 100)}% | Mode: ${paintMode ? 'Paint' : 'Edit'}`;
+        }, 2000);
+      } else {
+        statusHUD.textContent = `Zoom: ${Math.round(camera.zoom * 100)}% | Mode: ${paintMode ? 'Paint' : 'Edit'}`;
+      }
     }
 
-    function cellAtEvent(e){
-       const {xCanvas,yCanvas} = screenToCanvas(e);
-       const tileW=parseInt(tileWInput.value||8);
-       const tileH=parseInt(tileHInput.value||8);
-       const col = Math.floor(xCanvas / tileW);
-       const row = Math.floor(yCanvas / tileH);
-       return {row,col,tileW,tileH,xCanvas,yCanvas};
+    function tempHighlight(rectSel) {
+      drawGrid();
+      const tileW = parseInt(tileWInput.value) || 8;
+      const tileH = parseInt(tileHInput.value) || 8;
+      
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)';
+      ctx.setLineDash([4, 2]);
+      ctx.lineWidth = 2;
+      
+      const x0 = Math.min(rectSel.c0, rectSel.c1) * tileW;
+      const y0 = Math.min(rectSel.r0, rectSel.r1) * tileH;
+      const w = (Math.abs(rectSel.c1 - rectSel.c0) + 1) * tileW;
+      const h = (Math.abs(rectSel.r1 - rectSel.r0) + 1) * tileH;
+      
+      ctx.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, h - 1);
+      ctx.restore();
     }
 
-    // CLICK: select sprites (cycle through overlaps)
-    canvas.addEventListener('click',(e)=>{
-      if(paintMode||!img||isPanning) return;
-      const {row,col}=cellAtEvent(e);
-      const tileW=parseInt(tileWInput.value||8);
-      const tileH=parseInt(tileHInput.value||8);
-      const all = spritesAtCell(row,col,tileW,tileH);
-      if(all.length===0) return; // nothing to select
+    // =============== EVENT HANDLERS ===============
+    let dragEnd = null;
 
-      const key = row+"_"+col;
-      if(key!==lastClickKey){ clickCycle=0; lastClickKey=key; }
-      const ordered = [...all].sort((a,b)=>{
-         if(e.altKey){ // Alt-click cycles larger boxes first
-            const area=(s)=>s.width*s.height; return area(b)-area(a);
-         }
-         const area=(s)=>s.width*s.height;
-         if(a.group===b.group) return area(a)-area(b);
-         return a.group==='manual'?-1:1;
+    // Mouse events for canvas
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    canvas.addEventListener('mousedown', (event) => {
+      if (!img) return;
+      
+      const cellInfo = eventToCell(event);
+      
+      // Right mouse button or left mouse without shift = pan
+      if (event.button === 2 || (event.button === 0 && !event.shiftKey && !event.altKey)) {
+        isPanning = true;
+        panStart = {
+          x: event.clientX,
+          y: event.clientY,
+          startCameraX: camera.x,
+          startCameraY: camera.y
+        };
+        viewport.style.cursor = 'grabbing';
+        return;
+      }
+
+      // Shift + left mouse = drag to create sprite
+      if (event.button === 0 && event.shiftKey) {
+        dragStart = cellInfo;
+        dragEnd = cellInfo;
+        dbg('START DRAG', cellInfo);
+        return;
+      }
+
+      // Alt + left click = delete sprite at location
+      if (event.button === 0 && event.altKey) {
+        const spritesToDelete = spritesAtCell(cellInfo.row, cellInfo.col, cellInfo.tileW, cellInfo.tileH);
+        if (spritesToDelete.length > 0) {
+          const spriteToDelete = spritesToDelete[0];
+          const index = atlas.sprites.indexOf(spriteToDelete);
+          if (index >= 0) {
+            atlas.sprites.splice(index, 1);
+            drawGrid();
+            refreshSpriteList();
+            updateStatusHUD('Sprite deleted');
+          }
+        }
+        return;
+      }
+    });
+
+    canvas.addEventListener('mousemove', (event) => {
+      if (!img) return;
+      
+      const cellInfo = eventToCell(event);
+      
+      // Handle panning
+      if (isPanning) {
+        const deltaX = event.clientX - panStart.x;
+        const deltaY = event.clientY - panStart.y;
+        
+        camera.x = panStart.startCameraX + deltaX;
+        camera.y = panStart.startCameraY + deltaY;
+        
+        applyTransform();
+        return;
+      }
+      
+      // Handle drag creation
+      if (dragStart) {
+        dragEnd = cellInfo;
+        const width = Math.abs(dragEnd.col - dragStart.col) + 1;
+        const height = Math.abs(dragEnd.row - dragStart.row) + 1;
+        updateStatusHUD(`Dragging ${width}×${height} sprite`);
+        tempHighlight({
+          r0: dragStart.row,
+          c0: dragStart.col,
+          r1: dragEnd.row,
+          c1: dragEnd.col
+        });
+        return;
+      }
+      
+      // Update hover
+      hoverCell = cellInfo;
+      statusHUD.textContent = `Row: ${cellInfo.row}, Col: ${cellInfo.col} | Zoom: ${Math.round(camera.zoom * 100)}%`;
+      drawGrid();
+    });
+
+    canvas.addEventListener('mouseup', (event) => {
+      // End panning
+      if (isPanning) {
+        isPanning = false;
+        viewport.style.cursor = 'default';
+        return;
+      }
+      
+      // End drag creation
+      if (dragStart && dragEnd) {
+        const minRow = Math.min(dragStart.row, dragEnd.row);
+        const maxRow = Math.max(dragStart.row, dragEnd.row);
+        const minCol = Math.min(dragStart.col, dragEnd.col);
+        const maxCol = Math.max(dragStart.col, dragEnd.col);
+        
+        const tileW = parseInt(tileWInput.value) || 8;
+        const tileH = parseInt(tileHInput.value) || 8;
+        
+        const newSprite = {
+          name: `sprite_${minRow}_${minCol}`,
+          group: 'manual',
+          row: minRow,
+          col: minCol,
+          width: (maxCol - minCol + 1) * tileW,
+          height: (maxRow - minRow + 1) * tileH
+        };
+        
+        atlas.sprites.push(newSprite);
+        
+        dragStart = null;
+        dragEnd = null;
+        
+        drawGrid();
+        refreshSpriteList();
+        updateStatusHUD('Sprite created');
+        return;
+      }
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      hoverCell = null;
+      updateStatusHUD();
+      drawGrid();
+    });
+
+    // Click to select sprites
+    canvas.addEventListener('click', (event) => {
+      if (paintMode || !img || isPanning || dragStart) return;
+      
+      const cellInfo = eventToCell(event);
+      const spritesAtLocation = spritesAtCell(cellInfo.row, cellInfo.col, cellInfo.tileW, cellInfo.tileH);
+      
+      if (spritesAtLocation.length === 0) {
+        selectedSprite = null;
+        spriteInfo.style.display = 'none';
+        return;
+      }
+      
+      const key = `${cellInfo.row}_${cellInfo.col}`;
+      
+      if (key !== lastClickKey) {
+        clickCycle = 0;
+        lastClickKey = key;
+      }
+      
+      // Sort sprites for cycling
+      const sortedSprites = [...spritesAtLocation].sort((a, b) => {
+        if (event.altKey) {
+          // Alt-click: larger sprites first
+          const areaA = a.width * a.height;
+          const areaB = b.width * b.height;
+          return areaB - areaA;
+        }
+        
+        // Normal click: manual sprites first, then by area
+        if (a.group !== b.group) {
+          return a.group === 'manual' ? -1 : 1;
+        }
+        
+        const areaA = a.width * a.height;
+        const areaB = b.width * b.height;
+        return areaA - areaB;
       });
-      selectedSprite = ordered[clickCycle % ordered.length];
+      
+      selectedSprite = sortedSprites[clickCycle % sortedSprites.length];
       clickCycle++;
-      flashSprite={row:selectedSprite.row,col:selectedSprite.col,width:selectedSprite.width,height:selectedSprite.height};
+      
+      // Flash the selected sprite
+      flashSprite = {
+        row: selectedSprite.row,
+        col: selectedSprite.col,
+        width: selectedSprite.width,
+        height: selectedSprite.height
+      };
+      
       clearTimeout(flashSprite.timeoutId);
-      flashSprite.timeoutId=setTimeout(()=>{flashSprite=null; drawGrid();},800);
+      flashSprite.timeoutId = setTimeout(() => {
+        flashSprite = null;
+        drawGrid();
+      }, 800);
+      
       showSpriteInfo(selectedSprite);
       drawGrid();
     });
 
-    // (double-click rename removed – naming done via info panel)
+    // Zoom with mouse wheel
+    viewport.addEventListener('wheel', (event) => {
+      if (!img) return;
+      
+      event.preventDefault();
+      
+      const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
+      zoomToPoint(zoomFactor, event.clientX, event.clientY);
+    }, { passive: false });
 
-    // Ultra-smooth zoom (mouse-wheel or track-pad pinch)
-    const ZOOM_SENSITIVITY = 0.0015; // smaller = slower
-    vp.addEventListener('wheel',e=>{
-       if(!img) return;
-       e.preventDefault();
-       // Mac track-pad gives small deltaY, mouse wheel big steps – both feed into exp curve for smoothness
-       const factor = Math.exp(-e.deltaY * ZOOM_SENSITIVITY);
-       const rect=wrapper.getBoundingClientRect();
-       const cx=e.clientX-rect.left;
-       const cy=e.clientY-rect.top;
-       // Zoom toward cursor position
-       offsetX = (offsetX-cx)*(factor-1)+offsetX;
-       offsetY = (offsetY-cy)*(factor-1)+offsetY;
-       currentScale*=factor;
-       currentScale=Math.max(0.1,Math.min(16,currentScale));
-       applyTransform();
-    },{passive:false});
-
-    function applyTransform(){
-       // Translate first, then scale – easier math (translation in un-scaled pixels)
-       wrapper.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${currentScale})`;
-       const vpRect=vp.getBoundingClientRect();
-       // Clamp so canvas stays partially visible
-       offsetX=Math.min(vpRect.width*0.5,Math.max(offsetX,-canvas.width*currentScale+vpRect.width*0.5));
-       offsetY=Math.min(vpRect.height*0.5,Math.max(offsetY,-canvas.height*currentScale+vpRect.height*0.5));
-       wrapper.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${currentScale})`;
-    }
-
-    function showSpriteInfo(sp){
-       spriteInfo.style.display='block';
-       spriteInfo.innerHTML=`<label style="color:#fff;font-size:12px;">Name:</label><input id="renameInput" value="${sp.name}" style="width:120px; margin-bottom:4px;"><br><span style="color:#ddd">X:${sp.col} Y:${sp.row}<br>W:${sp.width} H:${sp.height}<br>Group:${sp.group}</span>`;
-       const renameInput=document.getElementById('renameInput');
-       renameInput.onkeydown=(ev)=>{ if(ev.key==='Enter'){ renameInput.blur(); } };
-       renameInput.onchange=()=>{ sp.name=renameInput.value; refreshSpriteList(); };
-    }
-
-    function clearSelection(){selectedSprite=null; spriteInfo.style.display='none';}
-
-    canvas.addEventListener('click',e=>{ if(selectedSprite&&e.shiftKey){ clearSelection(); drawGrid(); }});
-
-    document.addEventListener('keydown',e=>{if(e.key==='f'||e.key==='F'){fitToView();}});
-
-    // Cycle-selection support for overlapping sprites
-    let lastClickKey=null, clickCycle=0;
-    function spritesAtCell(row,col,tileW,tileH){
-       return atlas.sprites.filter(sp=> row>=sp.row && row<sp.row+sp.height/tileH && col>=sp.col && col<sp.col+sp.width/tileW);
-    }
-
-    // Allow native gesture events (Safari track-pad pinch) – we rely on wheel handler already.
-
-    // Help overlay
-    const help=document.createElement('div'); help.style.position='fixed'; help.style.right='8px'; help.style.bottom='8px'; help.style.font='11px monospace'; help.style.color='#888'; help.innerHTML='Pinch/Scroll: Zoom  |  Drag: Pan  |  Shift+Drag: New Box  |  Click: Select'; document.body.appendChild(help);
-
-    // Delete key removes currently selected sprite (unless typing in input)
-    document.addEventListener('keydown',e=>{
-       const active = document.activeElement;
-       const typing = active && (active.tagName==='INPUT' || active.tagName==='TEXTAREA');
-       if(typing) return; // don't delete sprite while renaming
-       if((e.key==='Delete'||e.key==='Backspace') && selectedSprite){
-          const idx = atlas.sprites.indexOf(selectedSprite);
-          if(idx>=0){ atlas.sprites.splice(idx,1); selectedSprite=null; flashSprite=null; spriteInfo.style.display='none'; drawGrid(); refreshSpriteList(); dbg('DELETE',{});}            
-       }
+    // Paint layer events
+    paintLayer.addEventListener('mousedown', (event) => {
+      if (!paintMode) return;
+      
+      if (event.altKey) {
+        pickColor(event);
+        return;
+      }
+      
+      pushUndo();
+      isPainting = true;
+      drawAt(event);
     });
+
+    paintLayer.addEventListener('mousemove', (event) => {
+      if (isPainting) {
+        drawAt(event);
+      } else if (paintMode && event.altKey) {
+        pickColor(event);
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      isPainting = false;
+    });
+
+    // =============== UI EVENT HANDLERS ===============
+    paintModeBtn.onclick = togglePaintMode;
+    fitViewBtn.onclick = fitToView;
+    reloadGridBtn.onclick = () => {
+      regenerateSprites();
+      drawGrid();
+      refreshSpriteList();
+    };
+
+    groupBtn.onclick = () => {
+      if (selectedCells.size === 0) {
+        alert('Select at least one cell first');
+        return;
+      }
+      
+      const groupName = prompt('Enter group name:');
+      if (!groupName) return;
+      
+      const tileW = parseInt(tileWInput.value) || 8;
+      const tileH = parseInt(tileHInput.value) || 8;
+      
+      [...selectedCells].forEach(key => {
+        const [row, col] = key.split('_').map(Number);
+        atlas.sprites.push({
+          name: `${groupName}_${row}_${col}`,
+          group: groupName,
+          row,
+          col,
+          width: tileW,
+          height: tileH
+        });
+      });
+      
+      selectedCells.clear();
+      drawGrid();
+      refreshSpriteList();
+      updateStatusHUD(`Added ${selectedCells.size} sprites to group "${groupName}"`);
+    };
+
+    deleteBtn.onclick = () => {
+      selectedCells.clear();
+      drawGrid();
+      updateStatusHUD('Selection cleared');
+    };
+
+    exportBtn.onclick = saveAtlas;
+
+    brushSizeInput.onchange = () => {
+      brushSize = parseInt(brushSizeInput.value) || 1;
+    };
+
+    colorInput.oninput = () => {
+      currentColor = colorInput.value;
+    };
+
+    // Input changes
+    const scheduleRedraw = () => {
+      clearTimeout(scheduleRedraw.timer);
+      scheduleRedraw.timer = setTimeout(() => {
+        if (img) {
+          regenerateSprites();
+          drawGrid();
+          refreshSpriteList();
+        }
+      }, 300);
+    };
+
+    tileWInput.addEventListener('input', scheduleRedraw);
+    tileHInput.addEventListener('input', scheduleRedraw);
+
+    // =============== KEYBOARD SHORTCUTS ===============
+    document.addEventListener('keydown', (event) => {
+      const activeElement = document.activeElement;
+      const isTyping = activeElement && (
+        activeElement.tagName === 'INPUT' || 
+        activeElement.tagName === 'TEXTAREA'
+      );
+      
+      if (isTyping) return; // Don't process shortcuts while typing
+      
+      switch (event.key.toLowerCase()) {
+        case 'p':
+          togglePaintMode();
+          break;
+          
+        case 'f':
+          fitToView();
+          break;
+          
+        case 'escape':
+          if (paintMode) {
+            exitPaintMode();
+          }
+          if (selectedSprite) {
+            selectedSprite = null;
+            spriteInfo.style.display = 'none';
+            drawGrid();
+          }
+          break;
+          
+        case 'delete':
+        case 'backspace':
+          if (selectedSprite) {
+            const index = atlas.sprites.indexOf(selectedSprite);
+            if (index >= 0) {
+              atlas.sprites.splice(index, 1);
+              selectedSprite = null;
+              flashSprite = null;
+              spriteInfo.style.display = 'none';
+              drawGrid();
+              refreshSpriteList();
+              updateStatusHUD('Sprite deleted');
+            }
+          }
+          break;
+          
+        case 'z':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            if (paintMode) {
+              undo();
+            }
+          }
+          break;
+          
+        case 's':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            if (paintMode) {
+              savePng();
+            } else {
+              saveAtlas();
+            }
+          }
+          break;
+      }
+    });
+
+    // =============== INITIALIZATION ===============
+    async function init() {
+      try {
+        // Load atlases list
+        const res = await fetch('/api/assets/atlases');
+        const json = await res.json();
+        
+        json.atlases.forEach(path => {
+          const base = path.split('/').pop();
+          const opt = document.createElement('option');
+          opt.value = base;
+          opt.textContent = base;
+          atlasSelect.appendChild(opt);
+        });
+        
+        // Build file tree
+        await buildTree();
+        
+        updateStatusHUD('Ready - Load an image to start');
+        
+      } catch (error) {
+        console.error('Initialization failed:', error);
+        updateStatusHUD('Initialization failed');
+      }
+    }
+
+    // Start the application
+    init();
   </script>
+
+  <div id="help">
+    Wheel: Zoom | Right-drag: Pan | Shift+drag: New sprite | Click: Select | Alt+click: Cycle/Delete | P: Paint | F: Fit | Del: Delete
+  </div>
 </body>
-</html> 
+</html>

@@ -2,262 +2,1335 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Map Editor</title>
+  <title>Map Editor – Enhanced Multi‑layer with Zoom</title>
   <style>
-    body{margin:0;display:flex;height:100vh;font-family:Arial,sans-serif;background:#222;color:#eee;}
-    #sidebar{width:300px;background:#111;padding:10px;overflow:auto;}
-    #sidebar h2{margin:0 0 10px 0;}
-    #sidebar input, #sidebar button, #sidebar select{width:100%;margin:4px 0;}
-    #canvasWrap{flex:1;display:flex;justify-content:center;align-items:center;background:#333;}
-    #mapCanvas{image-rendering:pixelated;border:2px solid #555;}
+    body{margin:0;display:flex;height:100vh;font-family:Arial,sans-serif;background:#222;color:#eee;overflow:hidden}
+    #sidebar{width:340px;background:#111;padding:10px;overflow:auto;box-sizing:border-box}
+    #sidebar h2{margin:0 0 10px 0}
+    #sidebar input,#sidebar button,#sidebar select{width:100%;margin:4px 0;padding:4px;box-sizing:border-box}
+    #sidebar label{display:block;margin:8px 0 4px 0;font-weight:bold}
+    #sidebar hr{border:1px solid #333;margin:12px 0}
+    
+    .flex-row{display:flex;gap:4px;margin:4px 0}
+    .flex-row > *{flex:1}
+    .center-buttons{display:flex;gap:4px;justify-content:center;margin:8px 0}
+    
+    #canvasWrap{flex:1;display:flex;justify-content:center;align-items:center;background:#333;position:relative;overflow:auto}
+    #mapCanvas{image-rendering:pixelated;border:2px solid #555;cursor:crosshair;display:block}
+
+    /* Tile picker */
+    #tilePicker{display:grid;grid-template-columns:repeat(auto-fill,32px);gap:4px;margin-top:6px;max-height:180px;overflow:auto}
+    #tilePicker canvas{cursor:pointer;border:1px solid #333}
+    #tilePicker canvas:hover{border-color:#666}
+
+    /* Current tile display */
+    #currentTileDisplay{width:64px;height:64px;border:2px solid #555;margin:8px auto;display:block;background:#000;image-rendering:pixelated}
+
+    /* Enemy panel */
+    #enemyPanel{position:absolute;right:10px;top:10px;width:240px;background:#111;padding:0;border:1px solid #444;border-radius:4px;user-select:none;box-shadow:0 0 8px #000;display:block}
+    #enemyPanel.hidden{display:none}
+    #enemyPanelHeader{cursor:move;background:#222;padding:8px;font-weight:bold;text-align:center;position:relative;border-radius:4px 4px 0 0}
+    #enemyPanelClose{position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:#999;font-size:16px}
+    #enemyPanelClose:hover{color:#fff}
+    #enemyPanelContent{padding:8px}
+    #enemyList{display:grid;grid-template-columns:repeat(auto-fill,36px);gap:4px;max-height:300px;overflow:auto}
+    #enemyList canvas{cursor:pointer;border:1px solid #333}
+    #enemyList canvas:hover{border-color:#666}
+    #enemyList canvas.selected{border-color:#fff;border-width:2px}
+
+    /* Layer controls */
+    .layer-controls{display:flex;gap:4px;align-items:center}
+    .layer-controls select{flex:1}
+    .layer-controls button{width:32px;height:28px;padding:0}
+
+    /* Rotation display */
+    .rotation-display{text-align:center;margin:4px 0;font-size:12px;color:#aaa}
+
+    /* Zoom controls */
+    .zoom-controls{display:flex;gap:4px;align-items:center;justify-content:center;margin:8px 0}
+    .zoom-display{font-size:12px;color:#aaa;min-width:50px;text-align:center}
+
+    /* Status bar */
+    #statusBar{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,0.7);padding:4px 8px;border-radius:4px;font-size:12px;pointer-events:none}
+
+    /* Brush size indicator */
+    .brush-controls{display:flex;gap:4px;align-items:center;margin:8px 0}
+    .brush-size{width:40px}
+
+    /* Layer visibility */
+    .layer-item{display:flex;align-items:center;gap:4px;margin:2px 0}
+    .layer-item input[type="checkbox"]{width:auto;margin:0}
+    .layer-item label{margin:0;flex:1;font-weight:normal}
+
+    /* Quick tools */
+    .quick-tools{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:8px 0}
+    .quick-tools button{margin:0}
   </style>
 </head>
 <body>
   <div id="sidebar">
     <h2>Map Editor</h2>
-    <label>New map size</label>
-    <div style="display:flex;gap:4px;">
-      <input id="mapW" type="number" value="32" min="4" style="flex:1;"/>
-      <input id="mapH" type="number" value="32" min="4" style="flex:1;"/>
+    
+    <label>New Map Size</label>
+    <div class="flex-row">
+      <input id="mapW" type="number" value="32" min="4" placeholder="Width"/>
+      <input id="mapH" type="number" value="32" min="4" placeholder="Height"/>
     </div>
     <button id="newMapBtn">New Map</button>
-    <label>Mode</label>
+
+    <hr>
+
+    <label>Layer Management</label>
+    <div class="layer-controls">
+      <select id="layerSelect"></select>
+      <button id="addLayerBtn" title="Add Layer">＋</button>
+      <button id="delLayerBtn" title="Delete Layer">−</button>
+    </div>
+    
+    <div id="layerVisibility"></div>
+
+    <label>Paint Mode</label>
     <select id="modeSelect">
-      <option value="ground">Ground</option>
-      <option value="object">Object</option>
+      <option value="tile">Tile</option>
       <option value="enemy">Enemy</option>
     </select>
+
+    <label>Brush Size</label>
+    <div class="brush-controls">
+      <input id="brushSize" type="range" min="1" max="5" value="1" class="brush-size"/>
+      <span id="brushSizeDisplay">1x1</span>
+    </div>
+
     <hr>
-    <label>Group</label>
+
+    <label>View Controls</label>
+    <div class="zoom-controls">
+      <button id="zoomOut">−</button>
+      <div class="zoom-display"><span id="zoomDisplay">100%</span></div>
+      <button id="zoomIn">+</button>
+      <button id="resetView" title="Reset Zoom & Pan">⌂</button>
+    </div>
+
+    <div class="quick-tools">
+      <button id="fillTool" title="Flood Fill">🪣</button>
+      <button id="eyedropperTool" title="Eyedropper">💧</button>
+      <button id="clearLayer" title="Clear Current Layer">🗑️</button>
+      <button id="copyLayer" title="Duplicate Layer">📋</button>
+    </div>
+
+    <hr>
+
+    <label>Sprite Group</label>
     <select id="groupSelect"></select>
-    <div id="tilePicker" style="display:grid;grid-template-columns:repeat(auto-fill,32px);gap:4px;margin-top:6px;max-height:200px;overflow:auto;"></div>
+    
+    <label>Current Selection</label>
+    <canvas id="currentTileDisplay"></canvas>
+    <div class="rotation-display">Rotation: <span id="rotDisplay">0°</span></div>
+    
+    <div class="center-buttons">
+      <button id="rotLeft" title="Rotate Left">⟲</button>
+      <button id="rotRight" title="Rotate Right">⟳</button>
+    </div>
+
+    <label>Tile/Object Palette</label>
+    <div id="tilePicker"></div>
+
     <hr>
+    
     <button id="saveMapBtn">Save Map (Ctrl+S)</button>
-    <label>Existing maps</label>
+    <label>Existing Maps</label>
     <select id="mapList"></select>
-    <button id="loadMapBtn">Load Map</button>
+    <button id="loadMapBtn">Load Selected Map</button>
+    
+    <hr>
+    <div style="font-size:12px;color:#999">
+      <strong>Controls:</strong><br>
+      • Left click: Paint<br>
+      • Right click: Erase<br>
+      • Shift+Click+Drag: Draw rectangle<br>
+      • Middle click: Pan<br>
+      • Wheel: Zoom<br>
+      • R: Rotate selection<br>
+      • Shift+E: Toggle enemy panel<br>
+      • Space: Eyedropper mode<br>
+      • Ctrl+Z: Undo<br>
+      • Ctrl+Y: Redo
+    </div>
   </div>
-  <div id="canvasWrap"><canvas id="mapCanvas" width="640" height="640"></canvas></div>
+
+  <div id="canvasWrap">
+    <canvas id="mapCanvas" width="640" height="640"></canvas>
+    <div id="statusBar">Ready</div>
+
+    <!-- Enemy Panel -->
+    <div id="enemyPanel">
+      <div id="enemyPanelHeader">
+        Enemy/Entity Panel
+        <span id="enemyPanelClose">✕</span>
+      </div>
+      <div id="enemyPanelContent">
+        <div id="enemyList"></div>
+      </div>
+    </div>
+  </div>
 
   <script type="module">
     import { spriteDatabase } from '../src/assets/SpriteDatabase.js';
     import { entityDatabase } from '../src/assets/EntityDatabase.js';
 
-    const atlasSelect=document.getElementById('atlasSelect');
-    const tilePicker=document.getElementById('tilePicker');
-    const canvas=document.getElementById('mapCanvas');
-    const ctx=canvas.getContext('2d');
+    // ============= DOM REFERENCES =============
+    const tilePicker = document.getElementById('tilePicker');
+    const canvas = document.getElementById('mapCanvas');
+    const ctx = canvas.getContext('2d');
+    const layerSelect = document.getElementById('layerSelect');
+    const layerVisibility = document.getElementById('layerVisibility');
+    const modeSelect = document.getElementById('modeSelect');
+    const groupSelect = document.getElementById('groupSelect');
+    const enemyPanel = document.getElementById('enemyPanel');
+    const enemyHeader = document.getElementById('enemyPanelHeader');
+    const enemyClose = document.getElementById('enemyPanelClose');
+    const enemyListDiv = document.getElementById('enemyList');
+    const currentTileDisplay = document.getElementById('currentTileDisplay');
+    const rotDisplay = document.getElementById('rotDisplay');
+    const addLayerBtn = document.getElementById('addLayerBtn');
+    const delLayerBtn = document.getElementById('delLayerBtn');
+    const rotLeftBtn = document.getElementById('rotLeft');
+    const rotRightBtn = document.getElementById('rotRight');
+    const zoomInBtn = document.getElementById('zoomIn');
+    const zoomOutBtn = document.getElementById('zoomOut');
+    const resetViewBtn = document.getElementById('resetView');
+    const zoomDisplay = document.getElementById('zoomDisplay');
+    const statusBar = document.getElementById('statusBar');
+    const brushSizeSlider = document.getElementById('brushSize');
+    const brushSizeDisplay = document.getElementById('brushSizeDisplay');
 
-    let tileW=16, tileH=16;
-    let mapW=32, mapH=32;
-    let ground=[];   // 2d array of sprite names (tiles/walls)
-    let objects=[];  // array of {x,y,sprite}
-    let enemies=[];  // array of {x,y,sprite}
-    let currentTile=null;
-    let isMouseDown=false; // track dragging
-    let currentRot=0; // 0,1,2,3 -> 0°,90°,180°,270°
+    // ============= UNIFIED DATA MODEL =============
+    let tileW = 16, tileH = 16;
+    let mapW = 32, mapH = 32;
 
-    async function init(){
-      // 1) Load *all* atlases so every sprite is available for the palette
-      const atlRes=await fetch('/api/assets/atlases');
-      const atlJson=await atlRes.json();
-      if(atlJson.atlases.length===0){alert('No atlases found under assets/atlases'); return;}
+    // Unified structure: layers[] + entities[]
+    let layers = [];   // [{name: string, grid: cell[][], visible: bool}, ...] where cell = {sprite, rot} or null
+    let entities = []; // [{type: 'enemy', x, y, sprite, rot}, ...]
 
-      const paths=atlJson.atlases.map(p=>p.startsWith('/')?p:'/'+p);
-      await spriteDatabase.loadAtlases(paths);
+    let currentTile = null;
+    let currentRot = 0;
+    let currentLayer = 0;
+    let brushSize = 1;
+    let isMouseDown = false;
+    let isPanning = false;
+    let isEyedropping = false;
 
-      // Load entity definitions for smarter enemy palette filtering
-      await entityDatabase.load();
+    // Camera/zoom system
+    let camera = { x: 0, y: 0, zoom: 1 };
+    const zoomLevels = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8];
+    let zoomIndex = 3; // Start at 100%
 
-      // 2) Populate group selector
-      populateGroupSelect();
+    // Drawing modes
+    let isDragDrawing = false;
+    let dragStart = null;
+    let dragEnd = null;
 
-      // 3) Initial build of side panel
-      updateTilePicker();
+    // Undo/Redo system
+    let undoStack = [];
+    let redoStack = [];
+    const maxUndoSteps = 50;
 
-      // 4) Map list & new blank map
-      await refreshMapList();
-      newMap();
-    }
+    // ============= INITIALIZATION =============
+    async function init() {
+      try {
+        // Load sprite atlases
+        const atlRes = await fetch('/api/assets/atlases');
+        const atlJson = await atlRes.json();
+        if (!atlJson.atlases.length) {
+          alert('No atlases found');
+          return;
+        }
+        await spriteDatabase.loadAtlases(atlJson.atlases.map(p => p.startsWith('/') ? p : '/' + p));
+        
+        // Load entity database
+        await entityDatabase.load();
 
-    function populateGroupSelect(){
-      const grpSel=document.getElementById('groupSelect');
-      grpSel.innerHTML='';
-      const optAll=document.createElement('option');optAll.value='all';optAll.textContent='(all)';grpSel.appendChild(optAll);
-      spriteDatabase.getAllGroupNames().forEach(g=>{
-        const o=document.createElement('option');o.value=g;o.textContent=g;grpSel.appendChild(o);
-      });
-      grpSel.onchange=updateTilePicker;
-    }
-
-    function updateTilePicker(){
-      const mode=document.getElementById('modeSelect').value;
-      const selGroup=document.getElementById('groupSelect').value;
-      let names;
-      if(mode==='enemy') {
-        // Only sprites whose IDs appear in the enemy entity list (entity.sprite)
-        names=entityDatabase.getAll('enemies').map(e=>e.sprite).filter(Boolean);
-      } else {
-        if(selGroup&&selGroup!=='all') names=spriteDatabase.getGroup(selGroup).map(s=>s.name);
-        else names=spriteDatabase.getAllSpriteNames();
+        // Setup UI
+        populateGroupSelect();
+        buildEnemyList();
+        updateTilePicker();
+        await refreshMapList();
+        newMap();
+        setupEventListeners();
+        enableEnemyPanelDrag();
+        
+        // Set initial displays
+        updateCurrentTileDisplay();
+        updateRotationDisplay();
+        updateZoomDisplay();
+        updateBrushSizeDisplay();
+        updateStatus('Editor loaded successfully');
+        
+      } catch (error) {
+        console.error('Initialization failed:', error);
+        alert('Failed to initialize editor: ' + error.message);
       }
+    }
 
-      tilePicker.innerHTML='';
-      names.forEach(n=>{
-        const tile=document.createElement('canvas'); tile.width=32; tile.height=32; tile.style.cursor='pointer';
-        spriteDatabase.drawSprite(tile.getContext('2d'), n,0,0,32,32);
-        tile.onclick=()=>{currentTile=n;currentRot=0; Array.from(tilePicker.children).forEach(c=>c.style.outline=''); tile.style.outline='2px solid #fff';};
-        tile.title=n;
+    // ============= UNDO/REDO SYSTEM =============
+    function saveState() {
+      const state = {
+        layers: JSON.parse(JSON.stringify(layers)),
+        entities: JSON.parse(JSON.stringify(entities))
+      };
+      undoStack.push(state);
+      if (undoStack.length > maxUndoSteps) {
+        undoStack.shift();
+      }
+      redoStack = []; // Clear redo stack when new action is performed
+    }
+
+    function undo() {
+      if (undoStack.length === 0) return;
+      
+      // Save current state to redo stack
+      const currentState = {
+        layers: JSON.parse(JSON.stringify(layers)),
+        entities: JSON.parse(JSON.stringify(entities))
+      };
+      redoStack.push(currentState);
+      
+      // Restore previous state
+      const previousState = undoStack.pop();
+      layers = previousState.layers;
+      entities = previousState.entities;
+      
+      buildLayerSelect();
+      buildLayerVisibility();
+      drawMap();
+      updateStatus('Undid last action');
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      
+      // Save current state to undo stack
+      saveState();
+      
+      // Restore next state
+      const nextState = redoStack.pop();
+      layers = nextState.layers;
+      entities = nextState.entities;
+      
+      buildLayerSelect();
+      buildLayerVisibility();
+      drawMap();
+      updateStatus('Redid last action');
+    }
+
+    // ============= UI BUILDERS =============
+    function populateGroupSelect() {
+      groupSelect.innerHTML = '';
+      const allOption = new Option('(all)', 'all');
+      groupSelect.appendChild(allOption);
+      
+      spriteDatabase.getAllGroupNames().forEach(groupName => {
+        groupSelect.appendChild(new Option(groupName, groupName));
+      });
+      
+      groupSelect.onchange = updateTilePicker;
+    }
+
+    function buildLayerSelect() {
+      layerSelect.innerHTML = '';
+      layers.forEach((layer, index) => {
+        const option = new Option(`${index}: ${layer.name}`, index);
+        layerSelect.appendChild(option);
+      });
+      layerSelect.value = currentLayer;
+    }
+
+    function buildLayerVisibility() {
+      layerVisibility.innerHTML = '';
+      layers.forEach((layer, index) => {
+        const div = document.createElement('div');
+        div.className = 'layer-item';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = layer.visible !== false; // Default to visible
+        checkbox.onchange = () => {
+          layer.visible = checkbox.checked;
+          drawMap();
+        };
+        
+        const label = document.createElement('label');
+        label.textContent = `${index}: ${layer.name}`;
+        label.style.fontSize = '12px';
+        
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        layerVisibility.appendChild(div);
+      });
+    }
+
+    function buildEnemyList() {
+      enemyListDiv.innerHTML = '';
+      const enemyDefs = entityDatabase.getAll('enemies');
+      
+      enemyDefs.forEach(enemyDef => {
+        const thumb = document.createElement('canvas');
+        thumb.width = 36;
+        thumb.height = 36;
+        thumb.style.cursor = 'pointer';
+        
+        const thumbCtx = thumb.getContext('2d');
+        spriteDatabase.drawSprite(thumbCtx, enemyDef.sprite, 2, 2, 32, 32);
+        
+        thumb.title = enemyDef.id || enemyDef.name || enemyDef.sprite;
+        
+        thumb.onclick = () => {
+          enemyListDiv.querySelectorAll('canvas').forEach(c => c.classList.remove('selected'));
+          thumb.classList.add('selected');
+          
+          currentTile = enemyDef.sprite;
+          currentRot = 0;
+          modeSelect.value = 'enemy';
+          updateCurrentTileDisplay();
+          updateRotationDisplay();
+        };
+        
+        enemyListDiv.appendChild(thumb);
+      });
+    }
+
+    function updateTilePicker() {
+      const selectedGroup = groupSelect.value;
+      const spriteNames = selectedGroup && selectedGroup !== 'all' 
+        ? spriteDatabase.getGroup(selectedGroup).map(s => s.name)
+        : spriteDatabase.getAllSpriteNames();
+      
+      tilePicker.innerHTML = '';
+      
+      spriteNames.forEach(spriteName => {
+        const tile = document.createElement('canvas');
+        tile.width = 32;
+        tile.height = 32;
+        tile.style.cursor = 'pointer';
+        
+        const tileCtx = tile.getContext('2d');
+        spriteDatabase.drawSprite(tileCtx, spriteName, 0, 0, 32, 32);
+        
+        tile.title = spriteName;
+        tile.onclick = () => {
+          currentTile = spriteName;
+          currentRot = 0;
+          modeSelect.value = 'tile';
+          highlightTile(tile);
+          updateCurrentTileDisplay();
+          updateRotationDisplay();
+          
+          enemyListDiv.querySelectorAll('canvas').forEach(c => c.classList.remove('selected'));
+        };
+        
         tilePicker.appendChild(tile);
       });
     }
 
-    async function refreshMapList(){
-      const res=await fetch('/api/map-editor/maps');
-      const j=await res.json();
-      const sel=document.getElementById('mapList');
-      sel.innerHTML='';
-      j.maps.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;sel.appendChild(o);});
-    }
-
-    document.getElementById('newMapBtn').onclick=newMap;
-    function newMap(){
-      mapW=parseInt(document.getElementById('mapW').value)||32;
-      mapH=parseInt(document.getElementById('mapH').value)||32;
-      canvas.width=mapW*tileW;
-      canvas.height=mapH*tileH;
-      ground=Array.from({length:mapH},()=>Array(mapW).fill(null));
-      objects=[];
-      enemies=[];
-      drawMap();
-    }
-
-    async function loadAtlas(){
-      const path=atlasSelect.value; if(!path) return;
-      await spriteDatabase.loadAtlases([path]);
-      populateGroupSelect();
-      updateTilePicker();
-    }
-    document.getElementById('loadAtlasBtn')?.addEventListener('click',loadAtlas);
-
-    // Utility to translate mouse event to tile coords (returns null if out of bounds)
-    function eventToTile(e){
-      const rect=canvas.getBoundingClientRect();
-      const x=Math.floor((e.clientX-rect.left)/tileW);
-      const y=Math.floor((e.clientY-rect.top)/tileH);
-      if(x<0||y<0||x>=mapW||y>=mapH) return null;
-      return {x,y};
-    }
-
-    function paint(x,y,isErase=false){
-      const mode=document.getElementById('modeSelect').value;
-      if(mode==='ground'){
-        ground[y][x]=isErase?null:{sprite:currentTile,rot:currentRot};
-      }else if(mode==='object'){
-        objects=objects.filter(o=>!(o.x===x&&o.y===y));
-        if(!isErase) objects.push({x,y,sprite:currentTile,rot:currentRot});
-      }else if(mode==='enemy'){
-        enemies=enemies.filter(o=>!(o.x===x&&o.y===y));
-        if(!isErase) enemies.push({x,y,sprite:currentTile,rot:currentRot});
+    function highlightTile(selectedElement) {
+      tilePicker.querySelectorAll('canvas').forEach(canvas => {
+        canvas.style.outline = '';
+      });
+      if (selectedElement) {
+        selectedElement.style.outline = '2px solid #fff';
       }
     }
 
-    canvas.addEventListener('mousedown',(e)=>{
-      if(e.button===2){ /* right click erase */ }
-      isMouseDown=true;
-      const pos=eventToTile(e); if(!pos) return;
-      const isErase=e.button===2;
-      paint(pos.x,pos.y,isErase);
+    function updateCurrentTileDisplay() {
+      const displayCtx = currentTileDisplay.getContext('2d');
+      displayCtx.fillStyle = '#000';
+      displayCtx.fillRect(0, 0, 64, 64);
+      
+      if (currentTile) {
+        displayCtx.save();
+        displayCtx.translate(32, 32);
+        displayCtx.rotate(currentRot * Math.PI / 2);
+        // Draw larger, clearer sprite
+        spriteDatabase.drawSprite(displayCtx, currentTile, -28, -28, 56, 56);
+        displayCtx.restore();
+      }
+    }
+
+    function updateRotationDisplay() {
+      rotDisplay.textContent = (currentRot * 90) + '°';
+    }
+
+    function updateZoomDisplay() {
+      zoomDisplay.textContent = Math.round(camera.zoom * 100) + '%';
+    }
+
+    function updateBrushSizeDisplay() {
+      brushSizeDisplay.textContent = `${brushSize}x${brushSize}`;
+    }
+
+    function updateStatus(message) {
+      statusBar.textContent = message;
+      setTimeout(() => {
+        statusBar.textContent = `Zoom: ${Math.round(camera.zoom * 100)}% | Layer: ${currentLayer} | Mode: ${modeSelect.value}`;
+      }, 2000);
+    }
+
+    // ============= MAP OPERATIONS =============
+    function newMap() {
+      mapW = +document.getElementById('mapW').value || 32;
+      mapH = +document.getElementById('mapH').value || 32;
+      
+      // Set canvas to actual pixel size for the map
+      const pixelWidth = mapW * tileW;
+      const pixelHeight = mapH * tileH;
+      
+      canvas.width = pixelWidth;
+      canvas.height = pixelHeight;
+      
+      // Set CSS size based on zoom to avoid the scaling issue
+      updateCanvasSize();
+      
+      // Initialize with default layers
+      layers = [
+        { name: 'ground', grid: createEmptyGrid(), visible: true },
+        { name: 'objects', grid: createEmptyGrid(), visible: true },
+        { name: 'decor', grid: createEmptyGrid(), visible: true }
+      ];
+      
+      entities = [];
+      currentLayer = 0;
+      
+      // Reset camera
+      camera = { x: 0, y: 0, zoom: 1 };
+      zoomIndex = 3;
+      
+      // Clear undo/redo
+      undoStack = [];
+      redoStack = [];
+      
+      buildLayerSelect();
+      buildLayerVisibility();
+      updateZoomDisplay();
       drawMap();
-    });
+      updateStatus('New map created');
+    }
 
-    canvas.addEventListener('mousemove',(e)=>{
-      if(!isMouseDown) return;
-      const pos=eventToTile(e); if(!pos) return;
-      const isErase=e.buttons===2; // 2 indicates right button pressed
-      paint(pos.x,pos.y,isErase);
+    function updateCanvasSize() {
+      const pixelWidth = mapW * tileW;
+      const pixelHeight = mapH * tileH;
+      
+      canvas.style.width = (pixelWidth * camera.zoom) + 'px';
+      canvas.style.height = (pixelHeight * camera.zoom) + 'px';
+    }
+
+    function createEmptyGrid() {
+      return Array.from({ length: mapH }, () => Array(mapW).fill(null));
+    }
+
+    function addLayer() {
+      const layerName = prompt('Layer name:', `layer_${layers.length}`);
+      if (layerName) {
+        saveState();
+        layers.push({
+          name: layerName,
+          grid: createEmptyGrid(),
+          visible: true
+        });
+        buildLayerSelect();
+        buildLayerVisibility();
+        currentLayer = layers.length - 1;
+        layerSelect.value = currentLayer;
+        updateStatus(`Added layer: ${layerName}`);
+      }
+    }
+
+    function deleteLayer() {
+      if (layers.length <= 1) {
+        alert('Cannot delete the last layer');
+        return;
+      }
+      
+      const layerName = layers[currentLayer].name;
+      if (confirm(`Delete layer "${layerName}"?`)) {
+        saveState();
+        layers.splice(currentLayer, 1);
+        if (currentLayer >= layers.length) {
+          currentLayer = layers.length - 1;
+        }
+        buildLayerSelect();
+        buildLayerVisibility();
+        drawMap();
+        updateStatus(`Deleted layer: ${layerName}`);
+      }
+    }
+
+    function clearCurrentLayer() {
+      if (confirm(`Clear all tiles from layer "${layers[currentLayer].name}"?`)) {
+        saveState();
+        layers[currentLayer].grid = createEmptyGrid();
+        drawMap();
+        updateStatus('Layer cleared');
+      }
+    }
+
+    function copyCurrentLayer() {
+      const layerName = prompt('Name for copied layer:', `${layers[currentLayer].name}_copy`);
+      if (layerName) {
+        saveState();
+        const copiedGrid = JSON.parse(JSON.stringify(layers[currentLayer].grid));
+        layers.push({
+          name: layerName,
+          grid: copiedGrid,
+          visible: true
+        });
+        buildLayerSelect();
+        buildLayerVisibility();
+        currentLayer = layers.length - 1;
+        layerSelect.value = currentLayer;
+        updateStatus(`Copied layer: ${layerName}`);
+      }
+    }
+
+    async function refreshMapList() {
+      try {
+        const response = await fetch('/api/map-editor/maps');
+        const data = await response.json();
+        const mapListSelect = document.getElementById('mapList');
+        
+        mapListSelect.innerHTML = '';
+        data.maps.forEach(mapName => {
+          mapListSelect.appendChild(new Option(mapName, mapName));
+        });
+      } catch (error) {
+        console.error('Failed to refresh map list:', error);
+      }
+    }
+
+    // ============= ZOOM & CAMERA =============
+    function zoomIn() {
+      if (zoomIndex < zoomLevels.length - 1) {
+        zoomIndex++;
+        camera.zoom = zoomLevels[zoomIndex];
+        updateZoomDisplay();
+        updateCanvasSize();
+        drawMap();
+        updateStatus(`Zoomed to ${Math.round(camera.zoom * 100)}%`);
+      }
+    }
+
+    function zoomOut() {
+      if (zoomIndex > 0) {
+        zoomIndex--;
+        camera.zoom = zoomLevels[zoomIndex];
+        updateZoomDisplay();
+        updateCanvasSize();
+        drawMap();
+        updateStatus(`Zoomed to ${Math.round(camera.zoom * 100)}%`);
+      }
+    }
+
+    function resetView() {
+      camera = { x: 0, y: 0, zoom: 1 };
+      zoomIndex = 3;
+      updateZoomDisplay();
+      updateCanvasSize();
       drawMap();
-    });
+      updateStatus('View reset');
+    }
 
-    window.addEventListener('mouseup',()=>{isMouseDown=false;});
+    // ============= CANVAS HELPERS =============
+    function screenToWorld(screenX, screenY) {
+      const rect = canvas.getBoundingClientRect();
+      const canvasX = screenX - rect.left;
+      const canvasY = screenY - rect.top;
+      
+      // Convert to world coordinates - much simpler now
+      const worldX = canvasX / camera.zoom;
+      const worldY = canvasY / camera.zoom;
+      
+      return { x: worldX, y: worldY };
+    }
 
-    // Prevent context menu on canvas (to allow right-click erase)
-    canvas.addEventListener('contextmenu',e=>e.preventDefault());
+    function eventToTile(event) {
+      const world = screenToWorld(event.clientX, event.clientY);
+      const x = Math.floor(world.x / tileW);
+      const y = Math.floor(world.y / tileH);
+      return (x >= 0 && y >= 0 && x < mapW && y < mapH) ? { x, y } : null;
+    }
 
-    function drawMap(){
-      ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
-      // ground layer
-      for(let y=0;y<mapH;y++){
-        for(let x=0;x<mapW;x++){
-          const cell=ground[y][x];
-          if(cell){
-             let spriteName,rot=0;
-             if(typeof cell==='string'){spriteName=cell;}
-             else{spriteName=cell.sprite;rot=cell.rot||0;}
-             ctx.save();
-             const centreX=x*tileW+tileW/2;
-             const centreY=y*tileH+tileH/2;
-             ctx.translate(centreX,centreY);
-             ctx.rotate(rot*Math.PI/2);
-             spriteDatabase.drawSprite(ctx,spriteName,-tileW/2,-tileH/2,tileW,tileH);
-             ctx.restore();
+    function paint(x, y, isErase = false) {
+      const mode = modeSelect.value;
+      
+      // Paint brush area
+      const halfBrush = Math.floor(brushSize / 2);
+      for (let dy = -halfBrush; dy <= halfBrush; dy++) {
+        for (let dx = -halfBrush; dx <= halfBrush; dx++) {
+          const paintX = x + dx;
+          const paintY = y + dy;
+          
+          if (paintX < 0 || paintY < 0 || paintX >= mapW || paintY >= mapH) continue;
+          
+          if (mode === 'tile') {
+            if (currentLayer < layers.length && layers[currentLayer]) {
+              // Ensure grid exists and has the right dimensions
+              if (!layers[currentLayer].grid || layers[currentLayer].grid.length !== mapH) {
+                layers[currentLayer].grid = createEmptyGrid();
+              }
+              if (!layers[currentLayer].grid[paintY]) {
+                layers[currentLayer].grid[paintY] = Array(mapW).fill(null);
+              }
+              
+              layers[currentLayer].grid[paintY][paintX] = isErase ? null : {
+                sprite: currentTile,
+                rot: currentRot
+              };
+            }
+          } else if (mode === 'enemy') {
+            // Remove any existing entity at this position
+            entities = entities.filter(entity => !(entity.x === paintX && entity.y === paintY));
+            
+            // Add new entity if not erasing
+            if (!isErase && currentTile) {
+              entities.push({
+                type: 'enemy',
+                x: paintX,
+                y: paintY,
+                sprite: currentTile,
+                rot: currentRot
+              });
+            }
           }
         }
       }
-      // objects layer (simple draw on top)
-      objects.forEach(o=>{
-        spriteDatabase.drawSprite(ctx,o.sprite,o.x*tileW,o.y*tileH,tileW,tileH);
-      });
-      // enemies layer (tint red outline)
-      enemies.forEach(e=>{
-        spriteDatabase.drawSprite(ctx,e.sprite,e.x*tileW,e.y*tileH,tileW,tileH);
-        ctx.strokeStyle='red';
-        ctx.strokeRect(e.x*tileW,e.y*tileH,tileW,tileH);
-      });
-      ctx.strokeStyle='rgba(255,255,255,0.1)';
-      for(let x=0;x<=mapW;x++){ctx.beginPath();ctx.moveTo(x*tileW,0);ctx.lineTo(x*tileW,mapH*tileH);ctx.stroke();}
-      for(let y=0;y<=mapH;y++){ctx.beginPath();ctx.moveTo(0,y*tileH);ctx.lineTo(mapW*tileW,y*tileH);ctx.stroke();}
     }
 
-    async function saveMap(){
-      const filename=prompt('Save as filename (e.g. myMap.json):'); if(!filename) return;
-      const data={ width:mapW,height:mapH,tileW,tileH,ground,objects,enemies };
-      const res=await fetch('/api/map-editor/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename,data})});
-      const json=await res.json();
-      if(json.success){alert('Saved to '+json.path); refreshMapList();}
-      else alert('Save failed: '+json.error);
-    }
-    document.getElementById('saveMapBtn').onclick=saveMap;
-
-    document.getElementById('loadMapBtn').onclick=async()=>{
-      const f=document.getElementById('mapList').value; if(!f) return;
-      const res=await fetch('/maps/'+f);
-      const data=await res.json();
-      mapW=data.width; mapH=data.height; tileW=data.tileW; tileH=data.tileH;
-      document.getElementById('mapW').value=mapW; document.getElementById('mapH').value=mapH;
-      canvas.width=mapW*tileW; canvas.height=mapH*tileH;
-      ground=data.ground||Array.from({length:mapH},()=>Array(mapW).fill(null));
-      objects=data.objects||[];
-      enemies=data.enemies||[];
-      drawMap();
-    };
-
-    document.addEventListener('keydown',(e)=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveMap();}});
-
-    // Handle R key to rotate current selection
-    document.addEventListener('keydown',e=>{
-      if(e.key==='r'||e.key==='R'){
-        if(currentTile){
-          currentRot=(currentRot+1)%4;
-          // Optional: visual feedback – flash outline color
-          tilePicker.querySelectorAll('canvas').forEach(c=>{
-            if(c.title===currentTile) c.style.outline='2px dashed #0f0';
-          });
+    function paintRectangle(startX, startY, endX, endY, isErase = false) {
+      const mode = modeSelect.value;
+      
+      const minX = Math.min(startX, endX);
+      const maxX = Math.max(startX, endX);
+      const minY = Math.min(startY, endY);
+      const maxY = Math.max(startY, endY);
+      
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          if (x < 0 || y < 0 || x >= mapW || y >= mapH) continue;
+          
+          if (mode === 'tile') {
+            if (currentLayer < layers.length && layers[currentLayer]) {
+              if (!layers[currentLayer].grid || layers[currentLayer].grid.length !== mapH) {
+                layers[currentLayer].grid = createEmptyGrid();
+              }
+              if (!layers[currentLayer].grid[y]) {
+                layers[currentLayer].grid[y] = Array(mapW).fill(null);
+              }
+              
+              layers[currentLayer].grid[y][x] = isErase ? null : {
+                sprite: currentTile,
+                rot: currentRot
+              };
+            }
+          } else if (mode === 'enemy') {
+            entities = entities.filter(entity => !(entity.x === x && entity.y === y));
+            
+            if (!isErase && currentTile) {
+              entities.push({
+                type: 'enemy',
+                x: x,
+                y: y,
+                sprite: currentTile,
+                rot: currentRot
+              });
+            }
+          }
         }
       }
-    });
+    }
 
+    function eyedrop(x, y) {
+      const mode = modeSelect.value;
+      
+      if (mode === 'tile') {
+        if (currentLayer < layers.length && layers[currentLayer].grid[y] && layers[currentLayer].grid[y][x]) {
+          const cell = layers[currentLayer].grid[y][x];
+          if (cell) {
+            currentTile = cell.sprite;
+            currentRot = cell.rot || 0;
+            updateCurrentTileDisplay();
+            updateRotationDisplay();
+            updateStatus(`Picked up: ${cell.sprite}`);
+          }
+        }
+      } else if (mode === 'enemy') {
+        const entity = entities.find(e => e.x === x && e.y === y);
+        if (entity) {
+          currentTile = entity.sprite;
+          currentRot = entity.rot || 0;
+          updateCurrentTileDisplay();
+          updateRotationDisplay();
+          updateStatus(`Picked up: ${entity.sprite}`);
+        }
+      }
+    }
+
+    function floodFill(startX, startY) {
+      if (!currentTile || modeSelect.value !== 'tile') return;
+      
+      const targetCell = layers[currentLayer].grid[startY][startX];
+      const targetSprite = targetCell ? targetCell.sprite : null;
+      const newCell = { sprite: currentTile, rot: currentRot };
+      
+      if (targetSprite === currentTile) return; // Nothing to fill
+      
+      saveState();
+      
+      const stack = [{x: startX, y: startY}];
+      const visited = new Set();
+      
+      while (stack.length > 0) {
+        const {x, y} = stack.pop();
+        const key = `${x},${y}`;
+        
+        if (visited.has(key) || x < 0 || y < 0 || x >= mapW || y >= mapH) continue;
+        
+        const currentCell = layers[currentLayer].grid[y][x];
+        const currentSprite = currentCell ? currentCell.sprite : null;
+        
+        if (currentSprite !== targetSprite) continue;
+        
+        visited.add(key);
+        layers[currentLayer].grid[y][x] = newCell;
+        
+        // Add neighbors
+        stack.push({x: x+1, y}, {x: x-1, y}, {x, y: y+1}, {x, y: y-1});
+      }
+      
+      drawMap();
+      updateStatus('Flood fill completed');
+    }
+
+    // ============= CANVAS EVENTS =============
+    function setupEventListeners() {
+      // Canvas events
+      canvas.addEventListener('mousedown', handleMouseDown);
+      canvas.addEventListener('mousemove', handleMouseMove);
+      canvas.addEventListener('mouseup', handleMouseUp);
+      canvas.addEventListener('contextmenu', e => e.preventDefault());
+      canvas.addEventListener('wheel', handleWheel, { passive: false });
+
+      // UI events
+      document.getElementById('newMapBtn').onclick = newMap;
+      document.getElementById('saveMapBtn').onclick = saveMap;
+      document.getElementById('loadMapBtn').onclick = loadMap;
+      
+      layerSelect.onchange = e => {
+        currentLayer = +e.target.value;
+        updateStatus(`Switched to layer ${currentLayer}`);
+      };
+      
+      addLayerBtn.onclick = addLayer;
+      delLayerBtn.onclick = deleteLayer;
+      
+      rotLeftBtn.onclick = () => {
+        currentRot = (currentRot + 3) % 4;
+        updateCurrentTileDisplay();
+        updateRotationDisplay();
+      };
+      
+      rotRightBtn.onclick = () => {
+        currentRot = (currentRot + 1) % 4;
+        updateCurrentTileDisplay();
+        updateRotationDisplay();
+      };
+
+      // Zoom controls
+      zoomInBtn.onclick = zoomIn;
+      zoomOutBtn.onclick = zoomOut;
+      resetViewBtn.onclick = resetView;
+
+      // Brush size
+      brushSizeSlider.oninput = e => {
+        brushSize = +e.target.value;
+        updateBrushSizeDisplay();
+      };
+
+      // Quick tools
+      document.getElementById('fillTool').onclick = () => {
+        updateStatus('Flood fill mode - click a tile to fill');
+        canvas.style.cursor = 'crosshair';
+        canvas.addEventListener('click', handleFloodFill, { once: true });
+      };
+      
+      document.getElementById('eyedropperTool').onclick = () => {
+        isEyedropping = true;
+        canvas.style.cursor = 'grab';
+        updateStatus('Eyedropper mode - click to pick up a tile');
+      };
+      
+      document.getElementById('clearLayer').onclick = clearCurrentLayer;
+      document.getElementById('copyLayer').onclick = copyCurrentLayer;
+
+      // Enemy panel controls
+      enemyClose.onclick = () => {
+        enemyPanel.classList.add('hidden');
+      };
+
+      // Global keyboard shortcuts
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    function handleMouseDown(event) {
+      if (event.button === 1) { // Middle mouse button
+        isPanning = true;
+        canvas.style.cursor = 'grabbing';
+        return;
+      }
+      
+      // Start drag drawing on Shift+Click
+      if (event.shiftKey && (event.button === 0 || event.button === 2)) {
+        const pos = eventToTile(event);
+        if (pos) {
+          isDragDrawing = true;
+          dragStart = pos;
+          dragEnd = pos;
+          saveState(); // Save state at start of drag
+          updateStatus('Drag to draw rectangle...');
+        }
+        return;
+      }
+      
+      isMouseDown = true;
+      handlePaint(event);
+    }
+
+    function handleMouseMove(event) {
+      if (isPanning && (event.buttons & 4)) { // Middle mouse held
+        camera.x += event.movementX / camera.zoom;
+        camera.y += event.movementY / camera.zoom;
+        drawMap();
+        return;
+      }
+      
+      // Handle drag drawing
+      if (isDragDrawing) {
+        const pos = eventToTile(event);
+        if (pos) {
+          dragEnd = pos;
+          drawMap(); // Redraw with preview
+        }
+        return;
+      }
+      
+      if (isMouseDown) {
+        handlePaint(event);
+      }
+      
+      // Show tile coordinates in status
+      const pos = eventToTile(event);
+      if (pos) {
+        statusBar.textContent = `Tile: ${pos.x}, ${pos.y} | Zoom: ${Math.round(camera.zoom * 100)}% | Layer: ${currentLayer}`;
+      }
+    }
+
+    function handleMouseUp(event) {
+      if (isPanning) {
+        isPanning = false;
+        canvas.style.cursor = 'crosshair';
+      }
+      
+      // Finish drag drawing
+      if (isDragDrawing && dragStart && dragEnd) {
+        const isErase = event.button === 2;
+        paintRectangle(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y, isErase);
+        isDragDrawing = false;
+        dragStart = null;
+        dragEnd = null;
+        drawMap();
+        updateStatus('Rectangle drawn!');
+        return;
+      }
+      
+      isMouseDown = false;
+    }
+
+    function handlePaint(event) {
+      const pos = eventToTile(event);
+      if (!pos) return;
+      
+      // Handle eyedropper
+      if (isEyedropping) {
+        eyedrop(pos.x, pos.y);
+        isEyedropping = false;
+        canvas.style.cursor = 'crosshair';
+        return;
+      }
+      
+      // Save state on first paint action
+      if (!isMouseDown) {
+        saveState();
+      }
+      
+      const isErase = event.button === 2 || event.buttons === 2;
+      paint(pos.x, pos.y, isErase);
+      drawMap();
+    }
+
+    function handleFloodFill(event) {
+      const pos = eventToTile(event);
+      if (pos) {
+        floodFill(pos.x, pos.y);
+      }
+      canvas.style.cursor = 'crosshair';
+    }
+
+    function handleWheel(event) {
+      event.preventDefault();
+      
+      if (event.deltaY < 0) {
+        zoomIn();
+      } else {
+        zoomOut();
+      }
+    }
+
+    function handleKeyDown(event) {
+      // Save shortcut
+      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault();
+        saveMap();
+      }
+      
+      // Undo/Redo
+      if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        undo();
+      }
+      if ((event.ctrlKey || event.metaKey) && (event.key === 'y' || (event.key === 'z' && event.shiftKey))) {
+        event.preventDefault();
+        redo();
+      }
+      
+      // Rotation shortcut
+      if (event.key.toLowerCase() === 'r' && currentTile) {
+        currentRot = (currentRot + 1) % 4;
+        updateCurrentTileDisplay();
+        updateRotationDisplay();
+      }
+      
+      // Toggle enemy panel
+      if (event.shiftKey && event.key.toLowerCase() === 'e') {
+        enemyPanel.classList.toggle('hidden');
+      }
+      
+      // Eyedropper
+      if (event.code === 'Space' && !event.repeat) {
+        event.preventDefault();
+        isEyedropping = true;
+        canvas.style.cursor = 'grab';
+        updateStatus('Eyedropper mode - click to pick up a tile');
+      }
+      
+      // Brush size shortcuts
+      if (event.key >= '1' && event.key <= '5') {
+        brushSize = +event.key;
+        brushSizeSlider.value = brushSize;
+        updateBrushSizeDisplay();
+      }
+      
+      // Quick zoom shortcuts
+      if (event.key === '=' || event.key === '+') {
+        zoomIn();
+      }
+      if (event.key === '-') {
+        zoomOut();
+      }
+      if (event.key === '0') {
+        resetView();
+      }
+    }
+
+    // ============= DRAWING =============
+    function drawMap() {
+      // Clear canvas
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // No transform needed now - canvas is sized correctly
+      
+      // Draw layers (bottom to top)
+      layers.forEach(layer => {
+        if (layer.visible === false) return;
+        
+        const grid = layer.grid;
+        if (!grid) return;
+        
+        for (let y = 0; y < mapH; y++) {
+          if (!grid[y]) continue;
+          for (let x = 0; x < mapW; x++) {
+            const cell = grid[y][x];
+            if (!cell) continue;
+            
+            ctx.save();
+            ctx.translate(x * tileW + tileW / 2, y * tileH + tileH / 2);
+            ctx.rotate((cell.rot || 0) * Math.PI / 2);
+            spriteDatabase.drawSprite(ctx, cell.sprite, -tileW / 2, -tileH / 2, tileW, tileH);
+            ctx.restore();
+          }
+        }
+      });
+      
+      // Draw entities
+      entities.forEach(entity => {
+        ctx.save();
+        ctx.translate(entity.x * tileW + tileW / 2, entity.y * tileH + tileH / 2);
+        ctx.rotate((entity.rot || 0) * Math.PI / 2);
+        spriteDatabase.drawSprite(ctx, entity.sprite, -tileW / 2, -tileH / 2, tileW, tileH);
+        ctx.restore();
+        
+        // Draw red outline for enemies
+        if (entity.type === 'enemy') {
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(entity.x * tileW, entity.y * tileH, tileW, tileH);
+        }
+      });
+      
+      // Draw drag rectangle preview
+      if (isDragDrawing && dragStart && dragEnd) {
+        const minX = Math.min(dragStart.x, dragEnd.x);
+        const maxX = Math.max(dragStart.x, dragEnd.x);
+        const minY = Math.min(dragStart.y, dragEnd.y);
+        const maxY = Math.max(dragStart.y, dragEnd.y);
+        
+        ctx.strokeStyle = 'yellow';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
+          minX * tileW, 
+          minY * tileH, 
+          (maxX - minX + 1) * tileW, 
+          (maxY - minY + 1) * tileH
+        );
+        
+        // Show preview of what will be painted
+        ctx.globalAlpha = 0.5;
+        for (let y = minY; y <= maxY; y++) {
+          for (let x = minX; x <= maxX; x++) {
+            if (currentTile && modeSelect.value === 'tile') {
+              ctx.save();
+              ctx.translate(x * tileW + tileW / 2, y * tileH + tileH / 2);
+              ctx.rotate(currentRot * Math.PI / 2);
+              spriteDatabase.drawSprite(ctx, currentTile, -tileW / 2, -tileH / 2, tileW, tileH);
+              ctx.restore();
+            }
+          }
+        }
+        ctx.globalAlpha = 1.0;
+      }
+      
+      // Draw grid overlay (only when zoomed in enough)
+      if (camera.zoom >= 0.5) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= mapW; x++) {
+          ctx.beginPath();
+          ctx.moveTo(x * tileW, 0);
+          ctx.lineTo(x * tileW, mapH * tileH);
+          ctx.stroke();
+        }
+        for (let y = 0; y <= mapH; y++) {
+          ctx.beginPath();
+          ctx.moveTo(0, y * tileH);
+          ctx.lineTo(mapW * tileW, y * tileH);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // ============= SAVE/LOAD =============
+    async function saveMap() {
+      const filename = prompt('Save map as:');
+      if (!filename) return;
+      
+      const mapData = {
+        width: mapW,
+        height: mapH,
+        tileW: tileW,
+        tileH: tileH,
+        layers: layers,
+        entities: entities
+      };
+      
+      try {
+        const response = await fetch('/api/map-editor/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: filename,
+            data: mapData
+          })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          updateStatus(`Map saved to ${result.path}`);
+          await refreshMapList();
+        } else {
+          alert(`Save failed: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('Save failed:', error);
+        alert('Save failed: ' + error.message);
+      }
+    }
+
+    async function loadMap() {
+      const filename = document.getElementById('mapList').value;
+      if (!filename) return;
+      
+      try {
+        const response = await fetch('/maps/' + filename);
+        const mapData = await response.json();
+        
+        // Load basic properties
+        mapW = mapData.width || 32;
+        mapH = mapData.height || 32;
+        tileW = mapData.tileW || 16;
+        tileH = mapData.tileH || 16;
+        
+        canvas.width = mapW * tileW;
+        canvas.height = mapH * tileH;
+        
+        // Update canvas size for zoom
+        updateCanvasSize();
+        
+        // Load layers - with robust backwards compatibility
+        if (mapData.layers && Array.isArray(mapData.layers)) {
+          // New format - ensure all layers have proper structure
+          layers = mapData.layers.map(layer => ({
+            name: layer.name || 'unknown',
+            grid: layer.grid || createEmptyGrid(),
+            visible: layer.visible !== false
+          }));
+        } else {
+          // Old format - convert legacy structure
+          layers = [];
+          
+          // Convert old ground/objects/decor arrays
+          if (mapData.ground) {
+            layers.push({ 
+              name: 'ground', 
+              grid: ensureGridSize(mapData.ground),
+              visible: true 
+            });
+          }
+          if (mapData.objects) {
+            layers.push({ 
+              name: 'objects', 
+              grid: ensureGridSize(mapData.objects),
+              visible: true 
+            });
+          }
+          if (mapData.decor) {
+            layers.push({ 
+              name: 'decor', 
+              grid: ensureGridSize(mapData.decor),
+              visible: true 
+            });
+          }
+          
+          // Ensure at least one layer exists
+          if (layers.length === 0) {
+            layers.push({ 
+              name: 'ground', 
+              grid: createEmptyGrid(),
+              visible: true 
+            });
+          }
+        }
+        
+        // Ensure all layers have the correct grid size
+        layers.forEach(layer => {
+          if (!layer.grid || layer.grid.length !== mapH) {
+            layer.grid = createEmptyGrid();
+          } else {
+            // Ensure each row has the correct width
+            for (let y = 0; y < mapH; y++) {
+              if (!layer.grid[y] || layer.grid[y].length !== mapW) {
+                layer.grid[y] = Array(mapW).fill(null);
+              }
+            }
+          }
+        });
+        
+        // Load entities - with backwards compatibility
+        entities = mapData.entities || mapData.enemies || [];
+        
+        currentLayer = 0;
+        camera = { x: 0, y: 0, zoom: 1 };
+        zoomIndex = 3;
+        
+        // Clear undo/redo
+        undoStack = [];
+        redoStack = [];
+        
+        buildLayerSelect();
+        buildLayerVisibility();
+        updateZoomDisplay();
+        drawMap();
+        
+        updateStatus(`Map "${filename}" loaded successfully`);
+      } catch (error) {
+        console.error('Load failed:', error);
+        updateStatus(`Load failed: ${error.message}`);
+        // Don't show alert, just log and show in status
+      }
+    }
+
+    // Helper function to ensure grid matches current map dimensions
+    function ensureGridSize(grid) {
+      if (!grid || !Array.isArray(grid)) return createEmptyGrid();
+      
+      const newGrid = createEmptyGrid();
+      for (let y = 0; y < Math.min(grid.length, mapH); y++) {
+        if (grid[y] && Array.isArray(grid[y])) {
+          for (let x = 0; x < Math.min(grid[y].length, mapW); x++) {
+            newGrid[y][x] = grid[y][x];
+          }
+        }
+      }
+      return newGrid;
+    }
+
+    // ============= ENEMY PANEL DRAG =============
+    function enableEnemyPanelDrag() {
+      let isDragging = false;
+      let dragOffsetX = 0;
+      let dragOffsetY = 0;
+      
+      enemyHeader.addEventListener('mousedown', event => {
+        if (event.target === enemyClose) return; // Don't drag when clicking close button
+        
+        isDragging = true;
+        dragOffsetX = event.clientX - enemyPanel.offsetLeft;
+        dragOffsetY = event.clientY - enemyPanel.offsetTop;
+        enemyHeader.style.cursor = 'grabbing';
+      });
+      
+      window.addEventListener('mousemove', event => {
+        if (isDragging) {
+          enemyPanel.style.left = (event.clientX - dragOffsetX) + 'px';
+          enemyPanel.style.top = (event.clientY - dragOffsetY) + 'px';
+        }
+      });
+      
+      window.addEventListener('mouseup', () => {
+        isDragging = false;
+        enemyHeader.style.cursor = 'move';
+      });
+    }
+
+    // ============= START =============
     init();
   </script>
 </body>
-</html> 
+</html>

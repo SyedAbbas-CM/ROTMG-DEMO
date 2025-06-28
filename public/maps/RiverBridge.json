@@ -1,0 +1,6363 @@
+{
+  "width": 32,
+  "height": 32,
+  "tileW": 16,
+  "tileH": 16,
+  "layers": [
+    {
+      "name": "ground",
+      "grid": [
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_2_12",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_19",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_4_19",
+            "rot": 2
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ],
+        [
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          },
+          {
+            "sprite": "8-Bit_Remaster_World_sprite_5_10",
+            "rot": 0
+          }
+        ]
+      ],
+      "visible": true
+    },
+    {
+      "name": "objects",
+      "grid": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      ],
+      "visible": true
+    },
+    {
+      "name": "decor",
+      "grid": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      ],
+      "visible": true
+    }
+  ],
+  "entities": []
+}

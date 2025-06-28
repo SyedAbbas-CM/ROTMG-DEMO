@@ -1,0 +1,1261 @@
+{
+  "meta": {
+    "image": "assets/images/Mixed_Units.png",
+    "imageW": 983,
+    "imageH": 1040
+  },
+  "sprites": [
+    {
+      "name": "Mixed_Units_0_0",
+      "group": "auto",
+      "row": 0,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_0_1",
+      "group": "auto",
+      "row": 0,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_0_2",
+      "group": "auto",
+      "row": 0,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_0_3",
+      "group": "auto",
+      "row": 0,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_0_4",
+      "group": "auto",
+      "row": 0,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_0_5",
+      "group": "auto",
+      "row": 0,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_0_6",
+      "group": "auto",
+      "row": 0,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_0_7",
+      "group": "auto",
+      "row": 0,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_0_8",
+      "group": "auto",
+      "row": 0,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_0_9",
+      "group": "auto",
+      "row": 0,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_0_10",
+      "group": "auto",
+      "row": 0,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_0_11",
+      "group": "auto",
+      "row": 0,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_0",
+      "group": "auto",
+      "row": 1,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_1",
+      "group": "auto",
+      "row": 1,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_2",
+      "group": "auto",
+      "row": 1,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_3",
+      "group": "auto",
+      "row": 1,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_4",
+      "group": "auto",
+      "row": 1,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_5",
+      "group": "auto",
+      "row": 1,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_6",
+      "group": "auto",
+      "row": 1,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_7",
+      "group": "auto",
+      "row": 1,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_8",
+      "group": "auto",
+      "row": 1,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_9",
+      "group": "auto",
+      "row": 1,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_10",
+      "group": "auto",
+      "row": 1,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_1_11",
+      "group": "auto",
+      "row": 1,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_0",
+      "group": "auto",
+      "row": 2,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_1",
+      "group": "auto",
+      "row": 2,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_2",
+      "group": "auto",
+      "row": 2,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_3",
+      "group": "auto",
+      "row": 2,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_4",
+      "group": "auto",
+      "row": 2,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_5",
+      "group": "auto",
+      "row": 2,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_6",
+      "group": "auto",
+      "row": 2,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_7",
+      "group": "auto",
+      "row": 2,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_8",
+      "group": "auto",
+      "row": 2,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_9",
+      "group": "auto",
+      "row": 2,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_10",
+      "group": "auto",
+      "row": 2,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_2_11",
+      "group": "auto",
+      "row": 2,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_0",
+      "group": "auto",
+      "row": 3,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_1",
+      "group": "auto",
+      "row": 3,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_2",
+      "group": "auto",
+      "row": 3,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_3",
+      "group": "auto",
+      "row": 3,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_4",
+      "group": "auto",
+      "row": 3,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_5",
+      "group": "auto",
+      "row": 3,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_6",
+      "group": "auto",
+      "row": 3,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_7",
+      "group": "auto",
+      "row": 3,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_8",
+      "group": "auto",
+      "row": 3,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_9",
+      "group": "auto",
+      "row": 3,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_10",
+      "group": "auto",
+      "row": 3,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_3_11",
+      "group": "auto",
+      "row": 3,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_0",
+      "group": "auto",
+      "row": 4,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_1",
+      "group": "auto",
+      "row": 4,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_2",
+      "group": "auto",
+      "row": 4,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_3",
+      "group": "auto",
+      "row": 4,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_4",
+      "group": "auto",
+      "row": 4,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_5",
+      "group": "auto",
+      "row": 4,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_6",
+      "group": "auto",
+      "row": 4,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_7",
+      "group": "auto",
+      "row": 4,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_8",
+      "group": "auto",
+      "row": 4,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_9",
+      "group": "auto",
+      "row": 4,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_10",
+      "group": "auto",
+      "row": 4,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_4_11",
+      "group": "auto",
+      "row": 4,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_0",
+      "group": "auto",
+      "row": 5,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_1",
+      "group": "auto",
+      "row": 5,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_2",
+      "group": "auto",
+      "row": 5,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_3",
+      "group": "auto",
+      "row": 5,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_4",
+      "group": "auto",
+      "row": 5,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_5",
+      "group": "auto",
+      "row": 5,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_6",
+      "group": "auto",
+      "row": 5,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_7",
+      "group": "auto",
+      "row": 5,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_8",
+      "group": "auto",
+      "row": 5,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_9",
+      "group": "auto",
+      "row": 5,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_10",
+      "group": "auto",
+      "row": 5,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_5_11",
+      "group": "auto",
+      "row": 5,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_0",
+      "group": "auto",
+      "row": 6,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_1",
+      "group": "auto",
+      "row": 6,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_2",
+      "group": "auto",
+      "row": 6,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_3",
+      "group": "auto",
+      "row": 6,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_4",
+      "group": "auto",
+      "row": 6,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_5",
+      "group": "auto",
+      "row": 6,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_6",
+      "group": "auto",
+      "row": 6,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_7",
+      "group": "auto",
+      "row": 6,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_8",
+      "group": "auto",
+      "row": 6,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_9",
+      "group": "auto",
+      "row": 6,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_10",
+      "group": "auto",
+      "row": 6,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_6_11",
+      "group": "auto",
+      "row": 6,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_0",
+      "group": "auto",
+      "row": 7,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_1",
+      "group": "auto",
+      "row": 7,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_2",
+      "group": "auto",
+      "row": 7,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_3",
+      "group": "auto",
+      "row": 7,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_4",
+      "group": "auto",
+      "row": 7,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_5",
+      "group": "auto",
+      "row": 7,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_6",
+      "group": "auto",
+      "row": 7,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_7",
+      "group": "auto",
+      "row": 7,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_8",
+      "group": "auto",
+      "row": 7,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_9",
+      "group": "auto",
+      "row": 7,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_10",
+      "group": "auto",
+      "row": 7,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_7_11",
+      "group": "auto",
+      "row": 7,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_0",
+      "group": "auto",
+      "row": 8,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_1",
+      "group": "auto",
+      "row": 8,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_2",
+      "group": "auto",
+      "row": 8,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_3",
+      "group": "auto",
+      "row": 8,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_4",
+      "group": "auto",
+      "row": 8,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_5",
+      "group": "auto",
+      "row": 8,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_6",
+      "group": "auto",
+      "row": 8,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_7",
+      "group": "auto",
+      "row": 8,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_8",
+      "group": "auto",
+      "row": 8,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_9",
+      "group": "auto",
+      "row": 8,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_10",
+      "group": "auto",
+      "row": 8,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_8_11",
+      "group": "auto",
+      "row": 8,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_0",
+      "group": "auto",
+      "row": 9,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_1",
+      "group": "auto",
+      "row": 9,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_2",
+      "group": "auto",
+      "row": 9,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_3",
+      "group": "auto",
+      "row": 9,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_4",
+      "group": "auto",
+      "row": 9,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_5",
+      "group": "auto",
+      "row": 9,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_6",
+      "group": "auto",
+      "row": 9,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_7",
+      "group": "auto",
+      "row": 9,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_8",
+      "group": "auto",
+      "row": 9,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_9",
+      "group": "auto",
+      "row": 9,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_10",
+      "group": "auto",
+      "row": 9,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_9_11",
+      "group": "auto",
+      "row": 9,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_0",
+      "group": "auto",
+      "row": 10,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_1",
+      "group": "auto",
+      "row": 10,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_2",
+      "group": "auto",
+      "row": 10,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_3",
+      "group": "auto",
+      "row": 10,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_4",
+      "group": "auto",
+      "row": 10,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_5",
+      "group": "auto",
+      "row": 10,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_6",
+      "group": "auto",
+      "row": 10,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_7",
+      "group": "auto",
+      "row": 10,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_8",
+      "group": "auto",
+      "row": 10,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_9",
+      "group": "auto",
+      "row": 10,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_10",
+      "group": "auto",
+      "row": 10,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_10_11",
+      "group": "auto",
+      "row": 10,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_0",
+      "group": "auto",
+      "row": 11,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_1",
+      "group": "auto",
+      "row": 11,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_2",
+      "group": "auto",
+      "row": 11,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_3",
+      "group": "auto",
+      "row": 11,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_4",
+      "group": "auto",
+      "row": 11,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_5",
+      "group": "auto",
+      "row": 11,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_6",
+      "group": "auto",
+      "row": 11,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_7",
+      "group": "auto",
+      "row": 11,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_8",
+      "group": "auto",
+      "row": 11,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_9",
+      "group": "auto",
+      "row": 11,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_10",
+      "group": "auto",
+      "row": 11,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_11_11",
+      "group": "auto",
+      "row": 11,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_0",
+      "group": "auto",
+      "row": 12,
+      "col": 0,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_1",
+      "group": "auto",
+      "row": 12,
+      "col": 1,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_2",
+      "group": "auto",
+      "row": 12,
+      "col": 2,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_3",
+      "group": "auto",
+      "row": 12,
+      "col": 3,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_4",
+      "group": "auto",
+      "row": 12,
+      "col": 4,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_5",
+      "group": "auto",
+      "row": 12,
+      "col": 5,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_6",
+      "group": "auto",
+      "row": 12,
+      "col": 6,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_7",
+      "group": "auto",
+      "row": 12,
+      "col": 7,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_8",
+      "group": "auto",
+      "row": 12,
+      "col": 8,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_9",
+      "group": "auto",
+      "row": 12,
+      "col": 9,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_10",
+      "group": "auto",
+      "row": 12,
+      "col": 10,
+      "width": 80,
+      "height": 80
+    },
+    {
+      "name": "Mixed_Units_12_11",
+      "group": "auto",
+      "row": 12,
+      "col": 11,
+      "width": 80,
+      "height": 80
+    }
+  ],
+  "defaultSpriteWidth": 80,
+  "defaultSpriteHeight": 80,
+  "path": "assets/images/Mixed_Units.png",
+  "name": "Mixed_Units"
+}
