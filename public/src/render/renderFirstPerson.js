@@ -510,7 +510,8 @@ function updateVisibleTiles() {
         switch (tile.type) {
           case TILE_IDS.FLOOR: {
             matrix = new THREE.Matrix4().makeTranslation(position.x, position.y, position.z);
-            pushMatrix(floorInstancedMesh, matrix);
+            // Use the InstancedMesh selected earlier (per-sprite if applicable)
+            pushMatrix(instMesh, matrix);
             break;
           }
           case TILE_IDS.WALL:
@@ -526,18 +527,15 @@ function updateVisibleTiles() {
             composed.compose(new THREE.Vector3(position.x, posY, position.z), quatIdentity, scale);
             matrix = composed;
 
-            if (tile.type === TILE_IDS.WALL) {
-              pushMatrix(wallInstancedMesh, matrix);
-            } else if (tile.type === TILE_IDS.OBSTACLE) {
-              pushMatrix(obstacleInstancedMesh, matrix);
-            } else {
-              pushMatrix(mountainInstancedMesh, matrix);
-            }
+            // Push into whichever InstancedMesh represents this tile's
+            // concrete sprite.  For default art this is the canonical mesh;
+            // for map-specific sprites it is a dedicated per-sprite mesh.
+            pushMatrix(instMesh, matrix);
             break;
           }
           case TILE_IDS.WATER: {
             matrix = new THREE.Matrix4().makeTranslation(position.x, position.y, position.z);
-            pushMatrix(waterInstancedMesh, matrix);
+            pushMatrix(instMesh, matrix);
             break;
           }
           case undefined: {
