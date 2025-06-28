@@ -212,6 +212,64 @@ const mapManager = new MapManager({
   mapStoragePath: path.join(__dirname, 'maps')
 });
 
+// ---------------------------------------------------------------------------
+// Per-world manager containers
+// ---------------------------------------------------------------------------
+// Each world / map gets its own trio of managers so logic runs fully isolated.
+const worldContexts = new Map(); // mapId → { bulletMgr, enemyMgr, collisionMgr }
+
+/**
+ * Lazy-create (or fetch) the manager bundle for a given mapId.
+ * Always returns the same object for the same world.
+ */
+function getWorldCtx(mapId) {
+  if (!worldContexts.has(mapId)) {
+    const bulletMgr = new BulletManager(10000);
+    const enemyMgr  = new EnemyManager(1000);
+    const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager);
+    worldContexts.set(mapId, { bulletMgr, enemyMgr, collMgr });
+  }
+  return worldContexts.get(mapId);
+}
+
+// ---------------------------------------------------------------------------
+// Damage players from enemy bullets belonging to the same world context
+// ---------------------------------------------------------------------------
+function applyEnemyBulletsToPlayers(bulletMgr, players) {
+  const bulletCount = bulletMgr.bulletCount;
+  for (let bi = 0; bi < bulletCount; bi++) {
+    if (bulletMgr.life[bi] <= 0) continue;
+
+    const ownerId = bulletMgr.ownerId[bi];
+    // Only bullets owned by enemies hurt players
+    if (typeof ownerId !== 'string' || !ownerId.startsWith('enemy_')) continue;
+
+    const bx = bulletMgr.x[bi];
+    const by = bulletMgr.y[bi];
+    const bw = bulletMgr.width[bi];
+    const bh = bulletMgr.height[bi];
+
+    for (const player of players) {
+      if (!player || player.health <= 0) continue;
+
+      const pw = 1, ph = 1;
+      const hit = (
+        bx - bw / 2 < player.x + pw / 2 &&
+        bx + bw / 2 > player.x - pw / 2 &&
+        by - bh / 2 < player.y + ph / 2 &&
+        by + bh / 2 > player.y - ph / 2
+      );
+
+      if (hit) {
+        const dmg = bulletMgr.damage ? bulletMgr.damage[bi] : 10;
+        player.health -= dmg;
+        if (player.health < 0) player.health = 0;
+        bulletMgr.markForRemoval(bi);
+      }
+    }
+  }
+}
+
 // Setup map routes
 app.get('/api/maps', (req, res) => {
   // Return list of available maps
@@ -472,15 +530,9 @@ if (ENABLE_FIXED_MAP_LOADING) {
   })();
 }
 
-// Create bullet manager
-const bulletManager = new BulletManager(10000);
-console.log('bulletManager is', typeof bulletManager, bulletManager?.addBullet ? 'OK' : 'NO addBullet'); // PROBE: Check bulletManager validity
-
-// Create enemy manager
-const enemyManager = new EnemyManager(1000);
-
-// Create collision manager
-const collisionManager = new CollisionManager(bulletManager, enemyManager, mapManager);
+// Initialise manager bundle for the procedural default world
+const { bulletMgr: bulletManager, enemyMgr: enemyManager, collMgr: collisionManager } = getWorldCtx(defaultMapId);
+console.log('[WORLD_CTX] Default world managers ready – bullets:', typeof bulletManager, 'enemies:', typeof enemyManager);
 
 // WebSocket server state
 const clients = new Map(); // clientId -> { socket, player, lastUpdate, mapId }
@@ -605,115 +657,41 @@ wss.on('connection', (socket, req) => {
  */
 function updateGame() {
   const now = Date.now();
-  const deltaTime = (now - gameState.lastUpdateTime) / 1000; // Convert to seconds
+  const deltaTime = (now - gameState.lastUpdateTime) / 1000;
   gameState.lastUpdateTime = now;
-  
-  // Periodically log connected clients for debugging
-  if (DEBUG.playerPositions && now % 30000 < 50) { // Every 30 seconds instead of 5
-    console.log(`Server has ${clients.size} connected clients:`);
-    clients.forEach((client, id) => {
-      console.log(`- Client ${id}: pos(${client.player.x.toFixed(0)}, ${client.player.y.toFixed(0)}), hp: ${client.player.health}`);
-    });
+
+  // Log connected clients occasionally
+  if (DEBUG.playerPositions && now % 30000 < 50) {
+    console.log(`[SERVER] ${clients.size} connected client(s)`);
   }
-  
-  // Create a target object using the first connected player
-  // If no players, use a default position
-  let target = null;
-  for (const [id, client] of clients.entries()) {
-    target = client.player;
-    break;
+
+  // Group players by world for quick look-ups
+  const playersByWorld = new Map();
+  clients.forEach(({ player, mapId }) => {
+    if (!playersByWorld.has(mapId)) playersByWorld.set(mapId, []);
+    playersByWorld.get(mapId).push(player);
+  });
+
+  // Iterate over EVERY world context (even empty ones – keeps bullets moving)
+  let totalActiveEnemies = 0;
+  worldContexts.forEach((ctx, mapId) => {
+    const players = playersByWorld.get(mapId) || [];
+    const target  = players[0] || null;
+
+    ctx.bulletMgr.update(deltaTime);
+    totalActiveEnemies += ctx.enemyMgr.update(deltaTime, ctx.bulletMgr, target, mapManager);
+
+    // Enemy ↔ bullet collisions (enemy takes damage)
+    ctx.collMgr.checkCollisions();
+
+    // Enemy bullets → players damage
+    applyEnemyBulletsToPlayers(ctx.bulletMgr, players);
+  });
+
+  if (DEBUG.activeCounts && totalActiveEnemies > 0 && now % 5000 < 50) {
+    console.log(`[SERVER] Active enemies: ${totalActiveEnemies} across ${worldContexts.size} worlds`);
   }
-  
-  // Default target if no players
-  if (!target) {
-    target = { x: 256, y: 256 };
-  }
-  
-  // Update bullets
-  const activeBullets = bulletManager.update(deltaTime);
-  if (DEBUG.activeCounts && activeBullets > 0 && now % 5000 < 50) { // Only log every 5 seconds
-    console.log(`Active bullets: ${activeBullets}`);
-  }
-  
-  // Update enemies with target
-  const activeEnemies = enemyManager.update(deltaTime, bulletManager, target, mapManager);
-  if (DEBUG.activeCounts && activeEnemies > 0 && now % 5000 < 50) { // Only log every 5 seconds
-    console.log(`Active enemies: ${activeEnemies}, targeting position (${target.x.toFixed(2)}, ${target.y.toFixed(2)})`);
-  }
-  
-  // Check for collisions
-  const collisions = collisionManager.checkCollisions();
-  if (DEBUG.collisions && collisions > 0) {
-    console.log(`${collisions} collisions detected by server collision system`);
-  }
-  
-  /* ---------------- PLAYER HIT DETECTION ---------------- */
-  // Detect enemy bullets hitting players (simple AABB in tile units)
-  const bulletCount = bulletManager.bulletCount;
-  for (let bi = 0; bi < bulletCount; bi++) {
-    if (bulletManager.life[bi] <= 0) continue; // dead bullet
 
-    const ownerId = bulletManager.ownerId[bi];
-    // Only process bullets whose owner is an enemy (starts with "enemy_")
-    if (typeof ownerId !== 'string' || !ownerId.startsWith('enemy_')) {
-      continue;
-    }
-
-    // World isolation: ignore bullets from other maps
-    const bulletWorldId = bulletManager.worldId ? bulletManager.worldId[bi] : null;
-
-    const bx = bulletManager.x[bi];
-    const by = bulletManager.y[bi];
-    const bw = bulletManager.width[bi];
-    const bh = bulletManager.height[bi];
-
-    // Iterate over players
-    clients.forEach((client, pid) => {
-      // Skip players in other worlds
-      if (bulletWorldId && bulletWorldId !== client.mapId) return;
-
-      const player = client.player;
-      if (!player || player.health <= 0) return;
-
-      const pw = 1; // player width in tile units (assume 1×1)
-      const ph = 1;
-
-      // Treat positions as centres rather than top-left corners
-      const bMinX = bx - bw / 2;
-      const bMaxX = bx + bw / 2;
-      const bMinY = by - bh / 2;
-      const bMaxY = by + bh / 2;
-
-      const pMinX = player.x - pw / 2;
-      const pMaxX = player.x + pw / 2;
-      const pMinY = player.y - ph / 2;
-      const pMaxY = player.y + ph / 2;
-
-      const hit = (
-        bMinX < pMaxX &&
-        bMaxX > pMinX &&
-        bMinY < pMaxY &&
-        bMaxY > pMinY
-      );
-
-      if (hit) {
-        // Apply damage
-        const dmg = bulletManager.damage ? bulletManager.damage[bi] : 10;
-        player.health -= dmg;
-        if (player.health < 0) player.health = 0;
-
-        // Remove bullet
-        bulletManager.markForRemoval(bi);
-
-        if (DEBUG.collisions) {
-          console.log(`Player ${pid} hit by ${ownerId} bullet (${bulletManager.id[bi]}), dmg ${dmg}, hp ${player.health}`);
-        }
-
-        // Optionally broadcast immediate hit packet (future)
-      }
-    });
-  }
-  
   // ---------------- PORTAL HANDLING ----------------
   handlePortals();
   
@@ -722,7 +700,7 @@ function updateGame() {
     gameState.lastEnemySpawnTime = now;
     
     // Spawn only 1 new enemy if below threshold (was 1-3)
-    if (enemyManager.getActiveEnemyCount() < 10) { // Reduced enemy cap from 50 to 10
+    if (getWorldCtx(gameState.mapId).enemyMgr.getActiveEnemyCount() < 10) {
       const count = 1; // Fixed to 1 enemy per spawn instead of random 1-3
       
       // Get a random connected player to spawn near
@@ -748,7 +726,7 @@ function updateGame() {
           }
           
           // Spawn enemy
-          enemyManager.spawnEnemyById(type, x, y, gameState.mapId);
+          getWorldCtx(gameState.mapId).enemyMgr.spawnEnemyById(type, x, y, gameState.mapId);
         }
         
         if (DEBUG.enemySpawns) {
@@ -785,9 +763,10 @@ function broadcastWorldUpdates() {
     const players = {};
     idSet.forEach(cid => { players[cid] = clients.get(cid).player; });
 
-    // Pull enemies and bullets belonging to this world only
-    const enemies = enemyManager.getEnemiesData(mapId);
-    const bullets = bulletManager.getBulletsData(mapId);
+    // Use per-world managers
+    const ctx = getWorldCtx(mapId);
+    const enemies = ctx.enemyMgr.getEnemiesData(mapId);
+    const bullets = ctx.bulletMgr.getBulletsData(mapId);
 
     // Optionally clamp by map bounds to avoid stray entities outside map
     const meta = mapManager.getMapMetadata(mapId) || { width: 0, height: 0 };
@@ -825,8 +804,8 @@ function broadcastWorldUpdates() {
         timestamp: now
       };
 
-      if (bulletManager.stats) {
-        payload.bulletStats = { ...bulletManager.stats };
+      if (ctx.bulletMgr.stats) {
+        payload.bulletStats = { ...ctx.bulletMgr.stats };
       }
 
       sendToClient(c.socket, MessageType.WORLD_UPDATE, payload);
@@ -837,14 +816,14 @@ function broadcastWorldUpdates() {
       const c = clients.get(cid);
       if (c) sendToClient(c.socket, MessageType.PLAYER_LIST, players);
     });
-  });
 
-  // Reset bullet stats counters once per frame
-  if (bulletManager.stats) {
-    bulletManager.stats.wallHit = 0;
-    bulletManager.stats.entityHit = 0;
-    bulletManager.stats.created = 0;
-  }
+    // Reset bullet stats counters once per frame for this world
+    if (ctx.bulletMgr.stats) {
+      ctx.bulletMgr.stats.wallHit = 0;
+      ctx.bulletMgr.stats.entityHit = 0;
+      ctx.bulletMgr.stats.created = 0;
+    }
+  });
 }
 
 // Start game update loop
@@ -915,10 +894,12 @@ tryListen(START_PORT);
 process.on('SIGINT', () => {
   console.log('\nShutting down server...');
   
-  // Clean up resources
-  if (collisionManager.cleanup) collisionManager.cleanup();
-  if (enemyManager.cleanup) enemyManager.cleanup();
-  if (bulletManager.cleanup) bulletManager.cleanup();
+  // Clean up resources for every world
+  worldContexts.forEach((ctx) => {
+    if (ctx.collMgr.cleanup) ctx.collMgr.cleanup();
+    if (ctx.enemyMgr.cleanup) ctx.enemyMgr.cleanup();
+    if (ctx.bulletMgr.cleanup) ctx.bulletMgr.cleanup();
+  });
   
   server.close(() => {
     console.log('Server closed');
@@ -941,27 +922,25 @@ export {
  * @param {number} clientId - Client ID
 */
 function sendInitialState(socket, clientId) {
-  // Send player list
+  const newClient = clients.get(clientId);
   const players = {};
-  clients.forEach((client, id) => {
-    if (id !== clientId) { // Don't include the new player
-      players[id] = client.player;
+  clients.forEach((other, id) => {
+    if (other.mapId === newClient.mapId) {
+      players[id] = other.player;
     }
   });
   
   // FIXED: Send just the players object directly
   sendToClient(socket, MessageType.PLAYER_LIST, players);
   
-  // Send enemy list
-  const client = clients.get(clientId);
-  const enemies = enemyManager.getEnemiesData(client.mapId);
+  // Send enemy & bullet lists for the client's current world
+  const enemies = getWorldCtx(newClient.mapId).enemyMgr.getEnemiesData(newClient.mapId);
+  const bullets = getWorldCtx(newClient.mapId).bulletMgr.getBulletsData(newClient.mapId);
   sendToClient(socket, MessageType.ENEMY_LIST, {
     enemies,
     timestamp: Date.now()
   });
   
-  // Send bullet list
-  const bullets = bulletManager.getBulletsData(client.mapId);
   sendToClient(socket, MessageType.BULLET_LIST, {
     bullets,
     timestamp: Date.now()
@@ -1100,10 +1079,12 @@ function handleBulletCreate(clientId, data) {
   const client = clients.get(clientId);
   if (!client) return;
   
-  // Create bullet
+  // Resolve world context for this shooter
+  const ctx = getWorldCtx(client.mapId);
+
   let bulletId;
   try {
-    bulletId = bulletManager.addBullet({
+    bulletId = ctx.bulletMgr.addBullet({
       x: data.x,
       y: data.y,
       vx: Math.cos(data.angle) * data.speed,
@@ -1123,8 +1104,8 @@ function handleBulletCreate(clientId, data) {
     return;
   }
   
-  // Broadcast new bullet to all clients
-  broadcast(MessageType.BULLET_CREATE, {
+  // Broadcast only to clients in the same world to save bandwidth
+  broadcastToMap(MessageType.BULLET_CREATE, {
     id: bulletId,
     x: data.x,
     y: data.y,
@@ -1136,7 +1117,7 @@ function handleBulletCreate(clientId, data) {
     spriteName: data.spriteName || null,
     worldId: client.mapId,
     timestamp: Date.now()
-  });
+  }, client.mapId);
 }
 
 /**
@@ -1145,10 +1126,13 @@ function handleBulletCreate(clientId, data) {
  * @param {Object} data - Collision data
  */
 function handleCollision(clientId, data) {
+  const client = clients.get(clientId);
+  if (!client) return;
   // Validate collision on server
+  const ctx = getWorldCtx(client.mapId);
   let result;
   try {
-    result = collisionManager.validateCollision({
+    result = ctx.collMgr.validateCollision({
       bulletId: data.bulletId,
       enemyId: data.enemyId,
       timestamp: data.timestamp,
@@ -1185,7 +1169,6 @@ function handleCollision(clientId, data) {
     }
     
     // Send rejection only to the reporting client
-    const client = clients.get(clientId);
     if (client) {
       sendToClient(client.socket, MessageType.COLLISION_RESULT, {
         valid: false,
@@ -1351,8 +1334,25 @@ function broadcast(type, data) {
 function broadcastExcept(type, data, excludeClientId) {
   wss.clients.forEach(client => {
     const clientId = getClientIdFromSocket(client);
-    if (client.readyState === 1 && clientId !== excludeClientId) { // WebSocket.OPEN
+    if (client.readyState === 1 && clientId !== excludeClientId) {
       sendToClient(client, type, data);
+    }
+  });
+}
+
+/**
+ * Broadcast a message to only those clients whose current map matches mapId.
+ * @param {number} type - Message type
+ * @param {Object} data - Message data
+ * @param {string} mapId - Map ID
+ */
+function broadcastToMap(type, data, mapId) {
+  if (!mapId) {
+    return broadcast(type, data);
+  }
+  clients.forEach((client) => {
+    if (client.mapId === mapId && client.socket.readyState === 1) {
+      sendToClient(client.socket, type, data);
     }
   });
 }
@@ -1401,7 +1401,7 @@ function spawnInitialEnemies(count) {
       y = Math.max(1, Math.min(mapManager.height - 1, y));
     }
 
-    enemyManager.spawnEnemyById(type, x, y, gameState.mapId);
+    getWorldCtx(gameState.mapId).enemyMgr.spawnEnemyById(type, x, y, gameState.mapId);
   }
 }
 
@@ -1415,10 +1415,12 @@ function handlePlayerListRequest(clientId) {
     const client = clients.get(clientId);
     if (!client) return;
     
-    // Get player data
+    // Get players only in the same map as requester
     const players = {};
     clients.forEach((otherClient, id) => {
-        players[id] = otherClient.player;
+        if (otherClient.mapId === client.mapId) {
+            players[id] = otherClient.player;
+        }
     });
     
     // Send player list directly to the client
@@ -1668,7 +1670,7 @@ function spawnMapEnemies(mapId){
   spawns.forEach(e=>{
     if(e&&e.sprite!==undefined){
       const id=typeof e.sprite==='string'?e.sprite:e.id||e.type;
-      enemyManager.spawnEnemyById(id, e.x || 0, e.y || 0, mapId);
+      getWorldCtx(mapId).enemyMgr.spawnEnemyById(id, e.x || 0, e.y || 0, mapId);
     }
   });
   if(DEBUG.enemySpawns){console.log(`[MAP] spawned ${spawns.length} enemies from map ${mapId}`);}
@@ -1712,6 +1714,8 @@ function switchEntireWorldToMap(destMapId){
       height: meta.height,
       tileSize: meta.tileSize,
       chunkSize: meta.chunkSize,
+      spawnX,
+      spawnY,
       timestamp: Date.now()
     });
   });

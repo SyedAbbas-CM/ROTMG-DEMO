@@ -618,9 +618,12 @@ function initializeGameState() {
         onWorldSwitch: (data) => {
             console.log(`[GAME] onWorldSwitch → ${data.mapId}`);
 
-            // 1) Dispose previous world (if any)
+            // 1) Dispose previous world (if any) and purge 3-D instanced meshes
             if (gameState.world && typeof gameState.world.dispose === 'function') {
                 gameState.world.dispose();
+            }
+            if (window.disposeFirstPersonView) {
+                try { window.disposeFirstPersonView(); } catch(err){ console.warn('[WORLD_SWITCH] disposeFirstPersonView failed', err); }
             }
 
             // 2) Build new world container which owns its own managers

@@ -63,10 +63,17 @@ export class PlayerManager {
                 continue;
             }
             
-            // Skip if invalid data
-            if (!data || typeof data !== 'object' || data.x === undefined || data.y === undefined) {
-                throttledLog('invalid-data', `Invalid player data for ID: ${id}`, data, 5000);
-                continue;
+            // Robust validation – if coordinates are bogus but we already have
+            // a previous snapshot keep the last valid position instead of
+            // deleting the player (prevents 'pop-out' on packet loss).
+            if (!data || typeof data !== 'object' || !Number.isFinite(data.x) || !Number.isFinite(data.y)) {
+                const existing = this.players.get(id);
+                if (existing) {
+                    data = { ...existing, ...data }; // merge, keep good x/y
+                } else {
+                    throttledLog('invalid-data', `Invalid player data for ID: ${id}`, data, 5000);
+                    continue;
+                }
             }
             
             updatedPlayers.add(id);
@@ -110,21 +117,13 @@ export class PlayerManager {
             }
         }
         
-        // Remove players not in update after a timeout
-        // This helps with temporary network issues
-        if (updatedPlayers.size > 0) {
-            // Clean up players that haven't been updated for too long
-            const staleTimeout = 10000; // 10 seconds
-            const now = Date.now();
-            
-            for (const [id, player] of this.players.entries()) {
-                if (!updatedPlayers.has(id) && now - player.lastServerUpdate > staleTimeout) {
-                    this.players.delete(id);
-                    this.playerAnimators.delete(id);
-                    throttledLog('remove-player', `Removed stale player: ${id}`);
-                }
-            }
-        }
+        // --------------------------------------------------------------------
+        // DO NOT auto-delete players that are merely missing from a delta-update.
+        // The authoritative server will send PLAYER_LEAVE / WORLD_SWITCH events
+        // when a player is *actually* gone.  Keeping the entry around prevents
+        // the 10-second "pop-out" bug when someone stands still or momentarily
+        // leaves our interest radius.
+        // --------------------------------------------------------------------
     }
     
     /**
@@ -353,9 +352,19 @@ export class PlayerManager {
                 // Translate to player position
                 ctx.translate(screenX, screenY);
                 
-                // If player has a rotation, use it
+                // Clamp rotation to 4 cardinal directions – prevents sprite
+                // from mirroring upside-down when first-person camera yaw is
+                // continuous.
                 if (typeof player.rotation === 'number') {
-                    ctx.rotate(player.rotation);
+                    const ninety = Math.PI / 2;
+                    const snapped = Math.round(player.rotation / ninety) * ninety;
+                    // Apply only if change exceeds 5° to avoid jitter
+                    const prev = player._lastSnapRot ?? snapped;
+                    const diff = Math.abs(prev - snapped);
+                    if (diff > (Math.PI / 36)) { // 5° in radians
+                        player._lastSnapRot = snapped;
+                    }
+                    ctx.rotate(player._lastSnapRot || snapped);
                 }
                 
                 // Get player animator
@@ -494,9 +503,19 @@ export class PlayerManager {
                 // Translate to player position for proper rotation
                 ctx.translate(screenX, screenY);
                 
-                // Apply rotation if player has it
+                // Clamp rotation to 4 cardinal directions – prevents sprite
+                // from mirroring upside-down when first-person camera yaw is
+                // continuous.
                 if (typeof player.rotation === 'number') {
-                    ctx.rotate(player.rotation);
+                    const ninety = Math.PI / 2;
+                    const snapped = Math.round(player.rotation / ninety) * ninety;
+                    // Apply only if change exceeds 5° to avoid jitter
+                    const prev = player._lastSnapRot ?? snapped;
+                    const diff = Math.abs(prev - snapped);
+                    if (diff > (Math.PI / 36)) { // 5° in radians
+                        player._lastSnapRot = snapped;
+                    }
+                    ctx.rotate(player._lastSnapRot || snapped);
                 }
                 
                 // Draw simple colored rectangle

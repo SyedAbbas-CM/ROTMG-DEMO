@@ -268,7 +268,44 @@ export class ClientBulletManager {
           this.spriteName[index] = bullet.spriteName;
         }
       } else {
-        // Add new bullet if we don't have it
+        // Try to reconcile with a locally predicted bullet (same owner & close position)
+        if (bullet.ownerId === window.gameState?.character?.id) {
+          let bestIdx = -1;
+          let bestDistSq = Infinity;
+          for (const localId of this.localBullets) {
+            const idx = this.findIndexById(localId);
+            if (idx === -1) continue;
+            // Compare positions
+            const dx = this.x[idx] - bullet.x;
+            const dy = this.y[idx] - bullet.y;
+            const distSq = dx*dx + dy*dy;
+            if (distSq < 1.0 && distSq < bestDistSq) { // ε² = 1 tile²
+              bestDistSq = distSq;
+              bestIdx = idx;
+            }
+          }
+          if (bestIdx !== -1) {
+            // Overwrite local bullet slot with authoritative data
+            this.idToIndex.delete(this.id[bestIdx]);
+            this.localBullets.delete(this.id[bestIdx]);
+
+            this.id[bestIdx] = bullet.id;
+            this.x[bestIdx] = bullet.x;
+            this.y[bestIdx] = bullet.y;
+            this.vx[bestIdx] = bullet.vx;
+            this.vy[bestIdx] = bullet.vy;
+            this.life[bestIdx] = bullet.life || bullet.lifetime || 3.0;
+            this.width[bestIdx] = bullet.width || 5;
+            this.height[bestIdx] = bullet.height || 5;
+            this.damage[bestIdx] = bullet.damage || 10;
+            this.worldId[bestIdx] = bullet.worldId;
+            this.spriteName[bestIdx] = bullet.spriteName || this.spriteName[bestIdx];
+
+            this.idToIndex.set(bullet.id, bestIdx);
+            continue; // reconciled, skip normal add
+          }
+        }
+        // Add new bullet if no reconciliation happened
         this.addBullet(bullet);
       }
     }

@@ -5,7 +5,7 @@ import { spriteManager } from '../assets/spriteManager.js';
 import * as THREE from 'three';
 import { spriteDatabase } from '../assets/SpriteDatabase.js';
 
-// Caches for THREE.Texture per spriteName so we don’t create multiple copies
+// Caches for THREE.Texture per spriteName so we don't create multiple copies
 const textureCache = new Map();
 
 function getSpriteTexture(spriteName) {
@@ -44,6 +44,11 @@ const UPDATE_DISTANCE = 0.5; // Distance player must move before updating visibl
 // InstancedMeshes for different tile types
 let floorInstancedMesh, wallInstancedMesh, obstacleInstancedMesh, waterInstancedMesh, mountainInstancedMesh, rampInstancedMesh;
 
+// Geometry templates accessible to dynamic mesh factory
+let floorGeometryTemplate = null;
+let wallGeometryTemplate  = null;
+let floorGeometryWaterTemplate = null; // same as floor
+
 // Bullet rendering constants and variables
 const BULLET_MAX_INSTANCES = 2048;
 const BULLET_SCALE_3D = SCALING_3D * 0.25; // larger bullet spheres
@@ -69,12 +74,73 @@ const DEBUG_FREQUENCY = 0.01; // How often to print debug info
 // Tile cache to prevent unnecessary renderings
 const fpsTileCache = new Map();
 
+// ---------------------------------------------------------------------------
+// Per-sprite material caches – one Map per tile type so we reuse materials and
+// avoid leaking dozens of identical THREE.Material instances when switching
+// between worlds.
+// ---------------------------------------------------------------------------
+const floorMaterialCache     = new Map();
+const wallMaterialCache      = new Map();
+const obstacleMaterialCache  = new Map();
+const waterMaterialCache     = new Map();
+const mountainMaterialCache  = new Map();
+
+// ---------------------------------------------------------------------------
+// InstancedMesh caches
+// ---------------------------------------------------------------------------
+//   meshesByType.floor ↦ Map(spriteKey → InstancedMesh)
+//   same for wall / obstacle / water / mountain
+// These are populated lazily by getInstancedMesh().  On a world switch the
+// caller should clear all maps and dispose the meshes via
+// forceDisposeFirstPersonView().  This infrastructure is added now; the full
+// migration of updateVisibleTiles() will follow in the next patch.
+const meshesByType = {
+  floor:     new Map(),
+  wall:      new Map(),
+  obstacle:  new Map(),
+  water:     new Map(),
+  mountain:  new Map()
+};
+
+function getInstancedMesh(tileType, spriteKey) {
+  let cache;
+  let baseGeometry;
+  switch (tileType) {
+    case TILE_IDS.FLOOR:    cache = meshesByType.floor;    baseGeometry = floorGeometryTemplate; break;
+    case TILE_IDS.WALL:     cache = meshesByType.wall;     baseGeometry = wallGeometryTemplate;  break;
+    case TILE_IDS.OBSTACLE: cache = meshesByType.obstacle; baseGeometry = wallGeometryTemplate;  break;
+    case TILE_IDS.WATER:    cache = meshesByType.water;    baseGeometry = floorGeometryTemplate; break;
+    case TILE_IDS.MOUNTAIN: cache = meshesByType.mountain; baseGeometry = wallGeometryTemplate;  break;
+    default: return null;
+  }
+  if (!spriteKey) spriteKey = '__DEFAULT__';
+  if (cache.has(spriteKey)) return cache.get(spriteKey);
+
+  // We need the material – reuse (or create) one via createTileMaterial.
+  // NOTE: createTileMaterial expects a spriteOverride for per-sprite art.  For
+  // the default key we pass null so it uses TILE_SPRITES mapping.
+  const mat = createTileMaterial(null, tileType, spriteKey === '__DEFAULT__' ? null : spriteKey);
+  const mesh = new THREE.InstancedMesh(baseGeometry.clone(), mat, MAX_INSTANCES);
+  mesh.frustumCulled = false;
+  mesh.name = `${TILE_IDS[tileType] || tileType}_${spriteKey}`;
+  // We'll add the mesh to the scene from addFirstPersonElements() once we have
+  // access to the THREE.Scene reference.  For now we just cache it.
+  cache.set(spriteKey, mesh);
+  if (sceneGlobalRef) sceneGlobalRef.add(mesh); // sceneGlobalRef set in addFirstPersonElements
+  return mesh;
+}
+
+// We capture the scene reference so getInstancedMesh() can insert meshes later
+let sceneGlobalRef = null;
+
 /**
  * Initializes and adds first-person elements to the scene.
  * @param {THREE.Scene} scene - The Three.js scene to add elements to.
  * @param {Function} callback - Function to call once elements are added.
  */
 export function addFirstPersonElements(scene, callback) {
+  // Keep global reference so dynamically created InstancedMeshes can attach
+  sceneGlobalRef = scene;
   console.log('[FirstPerson] Adding first-person elements to the scene.');
 
   // Create a THREE.Texture from the loaded Image
@@ -101,7 +167,11 @@ export function addFirstPersonElements(scene, callback) {
   const floorGeometry = new THREE.PlaneGeometry(SCALING_3D, SCALING_3D);
   floorGeometry.rotateX(-Math.PI / 2); // Rotate the plane to face upwards
 
+  floorGeometryTemplate = floorGeometry;  // make available globally
+
   const wallGeometry = new THREE.BoxGeometry(SCALING_3D, SCALING_3D * 3, SCALING_3D);
+
+  wallGeometryTemplate = wallGeometry;
 
   console.log(`[FirstPerson] Creating InstancedMeshes with maxInstances: ${MAX_INSTANCES}`);
 
@@ -197,9 +267,26 @@ export function addFirstPersonElements(scene, callback) {
  * Creates a material for a specific tile type from a tile sprite sheet.
  * @param {THREE.Texture} texture - The loaded texture for the sprite sheet.
  * @param {number} tileType - The TILE_IDS value for which to create the material.
+ * @param {string} spriteOverride - Optional sprite name to override the default sprite.
  * @returns {THREE.MeshStandardMaterial} - The created material.
  */
-function createTileMaterial(texture, tileType) {
+function createTileMaterial(texture, tileType, spriteOverride = null) {
+  // 1) If a specific sprite name was requested (map-specific art) generate
+  //    a material directly from that sprite.  We ignore the sprite sheet /
+  //    TILE_SPRITES mapping in that case.
+  if (spriteOverride && spriteDatabase?.hasSprite?.(spriteOverride)) {
+    const tex = getSpriteTexture(spriteOverride);
+    if (tex) {
+      return new THREE.MeshStandardMaterial({
+        map: tex,
+        transparent: true,
+        side: THREE.DoubleSide,
+        emissive: new THREE.Color(0x000000),
+        emissiveIntensity: 0
+      });
+    }
+  }
+
   const spritePos = TILE_SPRITES[tileType];
   // Determine sprite size dynamically from the loaded sheet (falls back to TILE_SIZE)
   const sheetCfg = spriteManager.getSpriteSheet('tile_sprites')?.config;
@@ -340,13 +427,14 @@ function updateVisibleTiles() {
     mapManager.updateVisibleChunks(cameraTileX, cameraTileY);
   }
 
-  // Temporary arrays to store matrix transformations for each tile type
-  const floorMatrices = [];
-  const wallMatrices = [];
-  const obstacleMatrices = [];
-  const waterMatrices = [];
-  const mountainMatrices = [];
-  const rampMatrices = [];
+  // Store matrices per InstancedMesh so we can support many meshes (one per sprite)
+  const matricesByMesh = new Map();
+  const pushMatrix = (mesh, mat) => {
+    if (!mesh) return;
+    if (!matricesByMesh.has(mesh)) matricesByMesh.set(mesh, []);
+    matricesByMesh.get(mesh).push(mat);
+  };
+  const rampMatrices = []; // ramps unchanged for now
 
   if (DEBUG_RENDERING && Math.random() < DEBUG_FREQUENCY) {
     console.log(`[FirstPerson] Updating visible tiles around position (${cameraTileX}, ${cameraTileY}).`);
@@ -391,10 +479,38 @@ function updateVisibleTiles() {
         let matrix;
         const quatIdentity = new THREE.Quaternion();
 
+        // Map-specific sprite override detection ---------------------------
+        let spriteOverride = null;
+        if (tile.spriteName) {
+          spriteOverride = tile.spriteName;
+        } else if (tile.properties?.sprite) {
+          spriteOverride = tile.properties.sprite;
+        }
+
+        // Pick the correct material cache & instanced mesh for this tile
+        let matCache = null;
+        let instMesh  = null;
+        switch (tile.type) {
+          case TILE_IDS.FLOOR:     matCache = floorMaterialCache;     instMesh = floorInstancedMesh;     break;
+          case TILE_IDS.WALL:      matCache = wallMaterialCache;      instMesh = wallInstancedMesh;      break;
+          case TILE_IDS.OBSTACLE:  matCache = obstacleMaterialCache;  instMesh = obstacleInstancedMesh;  break;
+          case TILE_IDS.WATER:     matCache = waterMaterialCache;     instMesh = waterInstancedMesh;     break;
+          case TILE_IDS.MOUNTAIN:  matCache = mountainMaterialCache;  instMesh = mountainInstancedMesh;  break;
+        }
+
+        // If we have a per-tile sprite override, pick / create a dedicated
+        // InstancedMesh for it so we never change the material of other
+        // tiles already rendered.
+        if (spriteOverride) {
+          instMesh = getInstancedMesh(tile.type, spriteOverride);
+        }
+
+        // ------------------------------------------------------------------
+
         switch (tile.type) {
           case TILE_IDS.FLOOR: {
             matrix = new THREE.Matrix4().makeTranslation(position.x, position.y, position.z);
-            floorMatrices.push(matrix);
+            pushMatrix(floorInstancedMesh, matrix);
             break;
           }
           case TILE_IDS.WALL:
@@ -410,16 +526,18 @@ function updateVisibleTiles() {
             composed.compose(new THREE.Vector3(position.x, posY, position.z), quatIdentity, scale);
             matrix = composed;
 
-            if (tile.type === TILE_IDS.WALL || tile.type === TILE_IDS.OBSTACLE) {
-              wallMatrices.push(matrix);
+            if (tile.type === TILE_IDS.WALL) {
+              pushMatrix(wallInstancedMesh, matrix);
+            } else if (tile.type === TILE_IDS.OBSTACLE) {
+              pushMatrix(obstacleInstancedMesh, matrix);
             } else {
-              mountainMatrices.push(matrix);
+              pushMatrix(mountainInstancedMesh, matrix);
             }
             break;
           }
           case TILE_IDS.WATER: {
             matrix = new THREE.Matrix4().makeTranslation(position.x, position.y, position.z);
-            waterMatrices.push(matrix);
+            pushMatrix(waterInstancedMesh, matrix);
             break;
           }
           case undefined: {
@@ -436,7 +554,7 @@ function updateVisibleTiles() {
               const scale = new THREE.Vector3(1,1,1);
               matrix = new THREE.Matrix4();
               matrix.compose(position, quat, scale);
-              rampMatrices.push(matrix);
+              pushMatrix(rampInstancedMesh, matrix);
             }
             break;
           }
@@ -468,12 +586,18 @@ function updateVisibleTiles() {
   };
 
   // Update each InstancedMesh
-  updateInstancedMesh(floorInstancedMesh, floorMatrices);
-  updateInstancedMesh(wallInstancedMesh, wallMatrices);
-  updateInstancedMesh(obstacleInstancedMesh, obstacleMatrices);
-  updateInstancedMesh(waterInstancedMesh, waterMatrices);
-  updateInstancedMesh(mountainInstancedMesh, mountainMatrices);
+  updateInstancedMesh(floorInstancedMesh, matricesByMesh.get(floorInstancedMesh) || []);
+  updateInstancedMesh(wallInstancedMesh, matricesByMesh.get(wallInstancedMesh) || []);
+  updateInstancedMesh(obstacleInstancedMesh, matricesByMesh.get(obstacleInstancedMesh) || []);
+  updateInstancedMesh(waterInstancedMesh, matricesByMesh.get(waterInstancedMesh) || []);
+  updateInstancedMesh(mountainInstancedMesh, matricesByMesh.get(mountainInstancedMesh) || []);
   updateInstancedMesh(rampInstancedMesh, rampMatrices);
+
+  // Update any dynamically-created per-sprite meshes not covered above
+  matricesByMesh.forEach((matArr, mesh) => {
+    if (mesh === floorInstancedMesh || mesh === wallInstancedMesh || mesh === obstacleInstancedMesh || mesh === waterInstancedMesh || mesh === mountainInstancedMesh) return;
+    updateInstancedMesh(mesh, matArr);
+  });
 
   if (DEBUG_RENDERING && Math.random() < 0.01) {
     console.log(`[FP] mesh counts floor:${floorInstancedMesh?.count} wall:${wallInstancedMesh?.count}`);
@@ -481,11 +605,11 @@ function updateVisibleTiles() {
 
   if (DEBUG_RENDERING && Math.random() < DEBUG_FREQUENCY) {
     console.log('[FirstPerson] Visible tiles updated:', {
-      floors: floorMatrices.length,
-      walls: wallMatrices.length,
-      obstacles: obstacleMatrices.length,
-      water: waterMatrices.length,
-      mountains: mountainMatrices.length,
+      floors: matricesByMesh.get(floorInstancedMesh)?.length || 0,
+      walls: matricesByMesh.get(wallInstancedMesh)?.length || 0,
+      obstacles: matricesByMesh.get(obstacleInstancedMesh)?.length || 0,
+      water: matricesByMesh.get(waterInstancedMesh)?.length || 0,
+      mountains: matricesByMesh.get(mountainInstancedMesh)?.length || 0,
       ramps: rampMatrices.length
     });
   }
@@ -623,4 +747,47 @@ export function forceUpdateFirstPersonView() {
     console.log('[FirstPerson] Forcing update of first-person view');
   }
   updateVisibleTiles();
+}
+
+// ---------------------------------------------------------------------------
+// Dispose meshes / materials when switching worlds to avoid leaks & texture
+// inheritance.
+// ---------------------------------------------------------------------------
+export function disposeFirstPersonView() {
+  // Dispose all cached materials & textures
+  const disposeMaterial = (mat) => {
+    if (!mat) return;
+    if (mat.map) { mat.map.dispose?.(); }
+    mat.dispose?.();
+  };
+
+  [floorMaterialCache, wallMaterialCache, obstacleMaterialCache, waterMaterialCache, mountainMaterialCache].forEach(cache => {
+    cache.forEach(disposeMaterial);
+    cache.clear();
+  });
+
+  // Dispose all InstancedMeshes and geometries
+  Object.values(meshesByType).forEach(map => {
+    map.forEach(mesh => {
+      if (sceneGlobalRef) sceneGlobalRef.remove(mesh);
+      mesh.geometry?.dispose?.();
+      disposeMaterial(mesh.material);
+    });
+    map.clear();
+  });
+
+  // Also clear texture cache
+  textureCache.forEach(tex => tex.dispose?.());
+  textureCache.clear();
+
+  console.log('[FirstPerson] Disposed first-person view resources');
+}
+
+// Expose for consumers like game.js world-switch handler
+if (typeof window !== 'undefined') {
+  window.disposeFirstPersonView = disposeFirstPersonView;
+  // Ensure resources are freed when the tab is closed or reloaded
+  window.addEventListener('beforeunload', () => {
+    try { disposeFirstPersonView(); } catch(e) {}
+  });
 }
