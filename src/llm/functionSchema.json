@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LLM Boss Action Plan",
+  "type": "object",
+  "properties": {
+    "intent": { "type": "string" },
+    "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+    "actions": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Action" }
+    }
+  },
+  "required": ["intent", "actions"],
+  "definitions": {
+    "Vector2": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "Action": {
+      "type": "object",
+      "properties": {
+        "ability": {
+          "type": "string",
+          "enum": ["cone_aoe", "radial_burst", "dash", "spawn_minions", "reposition", "wait", "taunt"]
+        },
+        "args": { "type": "object" }
+      },
+      "required": ["ability"]
+    }
+  }
+} 

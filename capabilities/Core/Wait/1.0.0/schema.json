@@ -1,0 +1,17 @@
+{
+  "$id": "Core:Wait@1.0.0",
+  "title": "Core:Wait",
+  "type": "object",
+  "required": ["type"],
+  "properties": {
+    "type": { "const": "Core:Wait@1.0.0" }
+    ,"limits": {
+      "type": "object",
+      "properties": {
+        "cpuMs": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+} 

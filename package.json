@@ -4,8 +4,10 @@
   "type": "module",
   "main": "Server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "start": "node server.js",
+    "generate:union": "node ci-tools/generateUnionSchema.js",
+    "generate:types": "node ci-tools/generateTypes.js"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +17,18 @@
     "express": "^4.19.2",
     "noisejs": "^2.1.0",
     "three": "^0.170.0",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "uuid": "^9.0.0",
+    "dotenv": "^16.4.0",
+    "@google/generative-ai": "^0.3.0",
+    "ajv": "^8.12.0",
+    "@opentelemetry/api": "^1.8.0",
+    "@opentelemetry/sdk-trace-node": "^1.8.0",
+    "@opentelemetry/sdk-trace-base": "^1.8.0",
+    "xxhash-wasm": "^1.0.2",
+    "ollama": "^0.5.16"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   }
 }

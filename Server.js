@@ -1,5 +1,6 @@
 // File: server.js
 
+import 'dotenv/config';
 import express from 'express';
 import http from 'http';
 import { WebSocketServer } from 'ws';
@@ -15,6 +16,11 @@ import CollisionManager from './src/CollisionManager.js';
 import BehaviorSystem from './src/BehaviorSystem.js';
 import { entityDatabase } from './src/assets/EntityDatabase.js';
 import { NETWORK_SETTINGS } from './public/src/constants/constants.js';
+// ---- Hyper-Boss LLM stack ----
+import BossManager from './src/BossManager.js';
+import LLMBossController from './src/LLMBossController.js';
+import BossSpeechController from './src/BossSpeechController.js';
+import './src/telemetry/index.js'; // OpenTelemetry setup
 
 // Debug flags to control logging
 const DEBUG = {
@@ -35,6 +41,13 @@ const DEBUG = {
 
 // Expose debug flags globally so helper classes can reference them
 globalThis.DEBUG = DEBUG;
+
+// --------------------------------------------------
+// Hyper-Boss globals (single boss testbed)
+// --------------------------------------------------
+let bossManager       = null;
+let llmBossController = null;
+let bossSpeechCtrl    = null;
 
 // -----------------------------------------------------------------------------
 // Feature flags
@@ -548,7 +561,7 @@ const gameState = {
 };
 
 // Spawn initial enemies for the game world
-spawnInitialEnemies(2);
+spawnInitialEnemies();
 
 // also spawn any enemies defined inside the procedural map metadata (none by default)
 spawnMapEnemies(gameState.mapId);
@@ -678,14 +691,26 @@ function updateGame() {
     const players = playersByWorld.get(mapId) || [];
     const target  = players[0] || null;
 
+    // ---------- Boss logic first so mirroring happens before physics & collisions ----------
+    if (bossManager && mapId === gameState.mapId) {
+      bossManager.tick(deltaTime, ctx.bulletMgr);
+      if (llmBossController) llmBossController.tick(deltaTime, players).catch(()=>{});
+      if (bossSpeechCtrl)    bossSpeechCtrl.tick(deltaTime, players).catch(()=>{});
+    }
+
+    // ---------- Physics & AI update ----------
     ctx.bulletMgr.update(deltaTime);
     totalActiveEnemies += ctx.enemyMgr.update(deltaTime, ctx.bulletMgr, target, mapManager);
 
-    // Enemy ↔ bullet collisions (enemy takes damage)
     ctx.collMgr.checkCollisions();
-
-    // Enemy bullets → players damage
     applyEnemyBulletsToPlayers(ctx.bulletMgr, players);
+
+    // Hyper-boss lives in default world only (gameState.mapId)
+    if (bossManager && mapId === gameState.mapId) {
+      bossManager.tick(deltaTime, ctx.bulletMgr);
+      if (llmBossController) llmBossController.tick(deltaTime, players).catch(()=>{});
+      if (bossSpeechCtrl)    bossSpeechCtrl.tick(deltaTime, players).catch(()=>{});
+    }
   });
 
   if (DEBUG.activeCounts && totalActiveEnemies > 0 && now % 5000 < 50) {
@@ -694,47 +719,6 @@ function updateGame() {
 
   // ---------------- PORTAL HANDLING ----------------
   handlePortals();
-  
-  // Check for enemy spawns
-  if (now - gameState.lastEnemySpawnTime > gameState.enemySpawnInterval) {
-    gameState.lastEnemySpawnTime = now;
-    
-    // Spawn only 1 new enemy if below threshold (was 1-3)
-    if (getWorldCtx(gameState.mapId).enemyMgr.getActiveEnemyCount() < 10) {
-      const count = 1; // Fixed to 1 enemy per spawn instead of random 1-3
-      
-      // Get a random connected player to spawn near
-      const playerClients = Array.from(clients.values());
-      if (playerClients.length > 0) {
-        const randomPlayer = playerClients[Math.floor(Math.random() * playerClients.length)];
-        
-        for (let i = 0; i < count; i++) {
-          // Red Demon entity ID
-          const type = 'red_demon';
-          
-          // Spawn near the selected player (within 100-200 units)
-          const distance = 100 + Math.random() * 100; // Distance from player: 100-200 units
-          const angle = Math.random() * Math.PI * 2; // Random angle
-          
-          let x = randomPlayer.player.x + Math.cos(angle) * distance;
-          let y = randomPlayer.player.y + Math.sin(angle) * distance;
-          
-          // Clamp spawn inside world bounds
-          if (mapManager) {
-            x = Math.max(1, Math.min(mapManager.width - 1, x));
-            y = Math.max(1, Math.min(mapManager.height - 1, y));
-          }
-          
-          // Spawn enemy
-          getWorldCtx(gameState.mapId).enemyMgr.spawnEnemyById(type, x, y, gameState.mapId);
-        }
-        
-        if (DEBUG.enemySpawns) {
-          console.log(`Spawned ${count} new enemy near player at (${randomPlayer.player.x.toFixed(1)}, ${randomPlayer.player.y.toFixed(1)})`);
-        }
-      }
-    }
-  }
   
   // Broadcast world updates
   broadcastWorldUpdates();
@@ -1375,34 +1359,17 @@ function getClientIdFromSocket(socket) {
  * Spawn initial enemies for the game world
  * @param {number} count - Number of enemies to spawn
  */
-function spawnInitialEnemies(count) {
-  // Use current map dimensions for a valid centre point
-  const mapMeta = mapManager.getMapMetadata(gameState.mapId);
-  const mapWidth = mapMeta?.width || 64;
-  const mapHeight = mapMeta?.height || 64;
-  const centerX = mapWidth / 2;
-  const centerY = mapHeight / 2;
-  const spawnRadius = 10; // smaller radius inside map bounds
+function spawnInitialEnemies() {
+  if (bossManager) return; // already initialised
+  const ctx = getWorldCtx(gameState.mapId);
+  if (!ctx) return;
 
-  if (DEBUG.enemySpawns) {
-    console.log(`Spawning ${count} initial enemies around centre (${centerX},${centerY})`);
-  }
+  bossManager = new BossManager(ctx.enemyMgr);
+  bossManager.spawnBoss('hyper_demon', Math.floor(mapManager.width/2), Math.floor(mapManager.height/2), gameState.mapId);
 
-  for (let i = 0; i < count; i++) {
-    const type = 'red_demon';
-    const angle = Math.random() * Math.PI * 2;
-    const distance = Math.random() * spawnRadius;
-    let x = centerX + Math.cos(angle) * distance;
-    let y = centerY + Math.sin(angle) * distance;
-
-    // Clamp spawn inside world bounds
-    if (mapManager) {
-      x = Math.max(1, Math.min(mapManager.width - 1, x));
-      y = Math.max(1, Math.min(mapManager.height - 1, y));
-    }
-
-    getWorldCtx(gameState.mapId).enemyMgr.spawnEnemyById(type, x, y, gameState.mapId);
-  }
+  llmBossController = new LLMBossController(bossManager, ctx.bulletMgr, mapManager, ctx.enemyMgr);
+  bossSpeechCtrl    = new BossSpeechController(bossManager, { broadcast });
+  console.log('[INIT] Hyper boss spawned and LLM controllers ready');
 }
 
 /**
@@ -1664,17 +1631,8 @@ app.get('/api/sprites/groups', (req,res)=>{
   }
 });
 
-function spawnMapEnemies(mapId){
-  const spawns=mapManager.getEnemySpawns(mapId);
-  if(!spawns||spawns.length===0) return;
-  spawns.forEach(e=>{
-    if(e&&e.sprite!==undefined){
-      const id=typeof e.sprite==='string'?e.sprite:e.id||e.type;
-      getWorldCtx(mapId).enemyMgr.spawnEnemyById(id, e.x || 0, e.y || 0, mapId);
-    }
-  });
-  if(DEBUG.enemySpawns){console.log(`[MAP] spawned ${spawns.length} enemies from map ${mapId}`);}
-}
+// Overridden: disable generic enemy spawns – the world now hosts only the Hyper Demon boss.
+function spawnMapEnemies(_mapId){ /* intentionally left blank */ }
 
 /**
  * Check if any players are standing on a portal tile/object and trigger map switch.

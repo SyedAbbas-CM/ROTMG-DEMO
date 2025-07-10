@@ -1,0 +1,399 @@
+/**
+ * Handle a chat message from a client
+ * @param {string} clientId - Client ID
+ * @param {Object} data - Message data
+ */
+function handleChatMessage(clientId, data) {
+  // Validate message data
+  if (!data || !data.message) {
+    console.warn(`Received invalid chat message from client ${clientId}`);
+    return;
+  }
+  
+  // Get client info
+  const client = clients.get(clientId);
+  if (!client) {
+    console.warn(`Received chat message from unknown client ${clientId}`);
+    return;
+  }
+  
+  // Get player name based on client ID
+  let playerName;
+  
+  // If client has an explicitly set player name, use it
+  if (client.player && client.player.name) {
+    playerName = client.player.name;
+  }
+  // Otherwise use a default format
+  else {
+    playerName = `Player-${clientId}`;
+    
+    // Store this name in the player object for future use
+    if (client.player) {
+      client.player.name = playerName;
+    }
+  }
+  
+  if (DEBUG.chat) {
+    console.log(`Setting chat sender name to: ${playerName} for client ${clientId}`);
+  }
+  
+  // Prepare the message for broadcasting, preserving the original ID if provided
+  const chatMessage = {
+    id: data.id || Date.now(), // Preserve the ID from the client if it exists
+    message: data.message.slice(0, 200), // Limit message length
+    sender: playerName,
+    channel: data.channel || 'All',
+    timestamp: Date.now(),
+    clientId: clientId // Always include the sender's client ID
+  };
+  
+  if (DEBUG.chat) {
+    console.log(`Chat message from ${playerName} (${clientId}): ${chatMessage.message}`);
+  }
+  
+  // Broadcast to all clients in the same map
+  broadcastChat(chatMessage, client.mapId);
+}
+
+/**
+ * Broadcast a chat message to all clients in the same map
+ * @param {Object} chatMessage - Message to broadcast
+ * @param {string} mapId - Map ID
+ */
+function broadcastChat(chatMessage, mapId) {
+  const messageClientId = chatMessage.clientId;
+  
+  // Iterate through all clients
+  for (const [clientId, client] of clients.entries()) {
+    // Check if client is on the same map
+    if (client.mapId === mapId) {
+      // Create a copy of the message for each recipient
+      const messageForClient = {...chatMessage};
+      
+      // Flag if this message is being sent to the original sender
+      if (clientId === messageClientId) {
+        messageForClient.isOwnMessage = true;
+      }
+      
+      // Send chat message to client
+      sendToClient(client.socket, MessageType.CHAT_MESSAGE, messageForClient);
+    }
+  }
+  
+  if (DEBUG.chat) {
+    console.log(`Broadcast chat message to map ${mapId}: ${chatMessage.message}`);
+  }
+}
+
+// ---------------- Map Editor Endpoints -----------------
+const mapsDir = path.join(__dirname, 'public', 'maps');
+if (!fs.existsSync(mapsDir)) fs.mkdirSync(mapsDir, { recursive: true });
+
+// List maps
+app.get('/api/map-editor/maps', (req, res) => {
+  try {
+    const files = fs.readdirSync(mapsDir).filter(f=>f.endsWith('.json'));
+    res.json({ maps: files });
+  } catch(err){
+    console.error('Error listing maps', err);
+    res.status(500).json({ error:'Failed to list maps' });
+  }
+});
+
+// Save map JSON
+app.post('/api/map-editor/save', (req, res) => {
+  const { filename, data } = req.body;
+  if(!filename || !data) return res.status(400).json({ error:'filename and data required'});
+  if(!/^[a-zA-Z0-9_-]+\.json$/.test(filename)) return res.status(400).json({ error:'Invalid filename'});
+  const full = path.join(mapsDir, filename);
+  try {
+    fs.writeFileSync(full, JSON.stringify(data, null, 2));
+    res.json({ success:true, path:`maps/${filename}`});
+  }catch(err){
+    console.error('Error saving map',err);
+    res.status(500).json({error:'Failed to save map'});
+  }
+});
+
+// ---------- ENTITY DATABASE ROUTES ----------
+const entitiesDir = path.join(__dirname, 'public', 'assets', 'entities');
+app.get('/api/entities/:group', (req, res) => {
+  const group = req.params.group;
+  const safe = ['tiles', 'objects', 'enemies', 'items'];
+  if (!safe.includes(group)) return res.status(400).json({ error: 'Invalid group' });
+  const file = path.join(entitiesDir, `${group}.json`);
+  if (!fs.existsSync(file)) return res.json([]);
+  res.sendFile(file);
+});
+app.get('/api/entities', (_req, res) => {
+  const out = {};
+  ['tiles', 'objects', 'enemies', 'items'].forEach(g => {
+    const file = path.join(entitiesDir, `${g}.json`);
+    out[g] = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
+  });
+  res.json(out);
+});
+
+app.post('/api/entities/:group', (req,res)=>{
+  const group=req.params.group;
+  const safe=['tiles','objects','enemies','items'];
+  if(!safe.includes(group)) return res.status(400).json({error:'Invalid group'});
+  const entry=req.body;
+  if(!entry||!entry.id) return res.status(400).json({error:'Entry with id required'});
+  const file=path.join(entitiesDir,`${group}.json`);
+  let arr=[];
+  if(fs.existsSync(file)) arr=JSON.parse(fs.readFileSync(file,'utf8'));
+  const idx=arr.findIndex(e=>e.id===entry.id);
+  if(idx>=0) arr[idx]=entry; else arr.push(entry);
+  fs.writeFileSync(file,JSON.stringify(arr,null,2));
+  // Reload group in memory
+  entityDatabase.loadSync();
+  res.json({success:true});
+});
+
+// ----- Static files ----- Move this BELOW asset-api so that /api/assets/* is not intercepted by serve-static
+app.use(express.static('public'));
+
+app.get('/api/sprites/groups', (req,res)=>{
+  try{
+    const out={};
+    const files=fs.readdirSync(atlasesDirBase).filter(f=>f.endsWith('.json'));
+    files.forEach(f=>{
+      const data=JSON.parse(fs.readFileSync(path.join(atlasesDirBase,f),'utf8'));
+      // groups at top-level
+      if(data.groups){
+        Object.entries(data.groups).forEach(([g,arr])=>{
+          if(!out[g]) out[g]=new Set();
+          arr.forEach(n=>out[g].add(n));
+        });
+      }
+      // per-sprite tags
+      if(Array.isArray(data.sprites)){
+        data.sprites.forEach(s=>{
+          const list=Array.isArray(s.tags)?s.tags: (Array.isArray(s.groups)?s.groups: (s.group?[s.group]:null));
+          if(list){
+            list.forEach(g=>{
+              if(!out[g]) out[g]=new Set();
+              if(s.name) out[g].add(s.name);
+            });
+          }
+        });
+      }
+    });
+    // convert sets to arrays
+    const jsonObj={};
+    Object.entries(out).forEach(([g,set])=>{jsonObj[g]=Array.from(set);});
+    res.json(jsonObj);
+  }catch(err){
+    console.error('[sprites/groups] error',err);
+    res.status(500).json({error:'Failed to aggregate'});
+  }
+});
+
+// Overridden: disable generic enemy spawns – the world now hosts only the Hyper Demon boss.
+function spawnMapEnemies(_mapId){ /* intentionally left blank */ }
+
+/**
+ * Check if any players are standing on a portal tile/object and trigger map switch.
+ */
+function handlePortals(){
+  // Automatic world-wide portal activation disabled.
+  // Interactions are now explicit via MessageType.PORTAL_ENTER.
+}
+
+/**
+ * Simple implementation: switch the *whole* session to a new map.
+ * Sends MAP_INFO to all clients so they reload chunks.
+ */
+function switchEntireWorldToMap(destMapId){
+  if (!destMapId || gameState.mapId === destMapId) return;
+  const meta = mapManager.getMapMetadata(destMapId);
+  if (!meta) return;
+  console.log(`Switching world to map ${destMapId}`);
+
+  gameState.mapId = destMapId;
+
+  // Reposition players at map centre
+  const spawnX = meta.width/2;
+  const spawnY = meta.height/2;
+  clients.forEach((client,id)=>{
+    client.mapId = destMapId;
+    // Keep the per-player worldId in sync so broadcast filtering works correctly
+    if (client.player) {
+      client.player.worldId = destMapId;
+    }
+    client.player.x = spawnX;
+    client.player.y = spawnY;
+    // Send map info so client begins chunk requests
+    sendToClient(client.socket, MessageType.MAP_INFO, {
+      mapId: destMapId,
+      width: meta.width,
+      height: meta.height,
+      tileSize: meta.tileSize,
+      chunkSize: meta.chunkSize,
+      spawnX,
+      spawnY,
+      timestamp: Date.now()
+    });
+  });
+
+  spawnMapEnemies(destMapId);
+}
+
+/**
+ * Handle portal interaction initiated by client
+ */
+function handlePortalEnter(clientId){
+  const client = clients.get(clientId);
+  if(!client) return;
+  const mapId = client.mapId;
+  if(!mapId) return;
+  const portals = mapManager.getObjects(mapId).filter(o=>o.type==='portal' && o.destMap);
+  if(portals.length===0) return;
+
+  // Find nearest within 2 tile radius
+  const px = client.player.x;
+  const py = client.player.y;
+  const portal = portals.find(p=> Math.hypot(p.x - px, p.y - py) <= 2.0);
+  if(!portal){
+    if (DEBUG.connections) console.log(`[PORTAL] Player ${clientId} pressed E but no portal nearby`);
+  }
+  if(!portal) return; // not close enough
+
+  switchPlayerWorld(clientId, portal.destMap);
+}
+
+function switchPlayerWorld(clientId, destMapId){
+  const client = clients.get(clientId);
+  if(!client) return;
+  if(!destMapId || client.mapId === destMapId) return;
+  const meta = mapManager.getMapMetadata(destMapId);
+  if(!meta) return;
+
+  // Choose spawn – centre of map or provided spawn property
+  const spawnX = meta.spawnX !== undefined ? meta.spawnX : Math.floor(meta.width/2);
+  const spawnY = meta.spawnY !== undefined ? meta.spawnY : Math.floor(meta.height/2);
+
+  client.mapId = destMapId;
+  // Keep the per-player worldId in sync so broadcast filtering works correctly
+  if (client.player) {
+    client.player.worldId = destMapId;
+  }
+  client.player.x = spawnX;
+  client.player.y = spawnY;
+
+  // Send world switch packet only to this client
+  sendToClient(client.socket, MessageType.WORLD_SWITCH, {
+    mapId: destMapId,
+    width: meta.width,
+    height: meta.height,
+    tileSize: meta.tileSize,
+    chunkSize: meta.chunkSize,
+    spawnX,
+    spawnY,
+    timestamp: Date.now()
+  });
+
+  // Also send MAP_INFO (client expects this to init chunks)
+  sendToClient(client.socket, MessageType.MAP_INFO, {
+    mapId: destMapId,
+    width: meta.width,
+    height: meta.height,
+    tileSize: meta.tileSize,
+    chunkSize: meta.chunkSize,
+    timestamp: Date.now()
+  });
+
+  // Spawn enemies for new map if not yet done
+  spawnMapEnemies(destMapId);
+}
+
+
+// FILE: testllm.js
+// ❌ Not found in project
+
+
+// FILE: tiles.json
+// ❌ Not found in project
+
+
+// FILE: enemies.json
+// ❌ Not found in project
+
+
+// FILE: bossmanager.js
+// ❌ Not found in project
+
+
+// FILE: bossspeechcontroller.js
+// ❌ Not found in project
+
+
+// FILE: enemymanager.js
+// ❌ Not found in project
+
+
+// FILE: llmbosscontroller.js
+// ❌ Not found in project
+
+
+// FILE: scriptbehaviourrunner.js
+// ❌ Not found in project
+
+
+// FILE: quickjssandbox.js
+// ❌ Not found in project
+
+
+// FILE: difficultycritic.js
+// ❌ Not found in project
+
+
+// FILE: providerfactory.js
+// ❌ Not found in project
+
+
+// FILE: baseprovider.js
+// ❌ Not found in project
+
+
+// FILE: geminiprovider.js
+// ❌ Not found in project
+
+
+// FILE: ollamaprovider.js
+// ❌ Not found in project
+
+
+// FILE: planfunction.js
+// ❌ Not found in project
+
+
+// FILE: functionschema.json
+// ❌ Not found in project
+
+
+// FILE: ndex.js
+// ❌ Not found in project
+
+
+// FILE: dash.js
+// ❌ Not found in project
+
+
+// FILE: radial_burst.js
+// ❌ Not found in project
+
+
+// FILE: mutator_wait.js
+// ❌ Not found in project
+
+
+// FILE: registry.js
+// ❌ Not found in project
+
+
+// FILE: directoryloader.js
+// ❌ Not found in project
+

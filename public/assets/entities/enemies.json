@@ -62,5 +62,24 @@
       "inaccuracy": 5
     },
     "ai": { "behaviorTree": "RedDemonBT" }
+  },
+  {
+    "id": "hyper_demon",
+    "name": "Hyper Demon",
+    "sprite": "red_demon",
+    "hp": 50000,
+    "speed": 0,
+    "width": 1,
+    "height": 1,
+    "renderScale": 2,
+    "attack": {
+      "bulletId": "red_demon_bullet",
+      "cooldown": 1500,
+      "speed": 14,
+      "lifetime": 2500,
+      "count": 8,
+      "spread": 45
+    },
+    "ai": { "behaviorTree": "StaticBoss" }
   }
 ] 

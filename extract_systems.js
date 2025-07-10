@@ -449,13 +449,17 @@ function runExtraction() {
 }
 
 // --- SCRIPT EXECUTION CONTROL ---
-// To run the extraction, uncomment the following line:
-// runExtraction();
+// By default the extraction runs immediately when this script is executed via
+// `node extract_systems.js`.  Pass the flag `--dry` to only print the planned
+// targets without copying any files.
 
-// To just log the targets and planned structure (without copying):
-console.log('\n--- Planned Extraction Targets ---');
-extractionTargets.forEach(t => console.log(`System: ${t.system}, Type: ${t.type}, Source: ${t.source} -> Target: ${t.target}`));
-console.log('\n--- Systems Identified ---');
-allSystemNames.forEach(s => console.log(s));
-console.log('\nScript updated. Run manually by uncommenting `runExtraction();` at the end of the file.');
+if (process.argv.includes('--dry')) {
+  console.log('\n--- Planned Extraction Targets ---');
+  extractionTargets.forEach(t => console.log(`System: ${t.system}, Type: ${t.type}, Source: ${t.source} -> Target: ${t.target}`));
+  console.log('\n--- Systems Identified ---');
+  allSystemNames.forEach(s => console.log(s));
+  console.log('\nExtraction script was run in dry mode. Use `node extract_systems.js` without flags to perform the copy.');
+} else {
+  runExtraction();
+}
 // ------------------------------- 
