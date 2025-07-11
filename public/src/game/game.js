@@ -37,6 +37,7 @@ import { spriteDatabase } from '../assets/SpriteDatabase.js';
 import { tileDatabase } from '../assets/TileDatabase.js';
 import { ClientWorld } from '../world/ClientWorld.js';
 import { entityDatabase } from '../assets/EntityDatabase.js';
+import { speechBubbleManager } from '../ui/SpeechBubbleManager.js';
 
 let renderer, scene, camera;
 let lastTime = 0;
@@ -84,6 +85,38 @@ window.spriteDatabase = spriteDatabase;
 
 // Expose entity database as well so other modules can consume definitions early
 window.entityDatabase = entityDatabase;
+
+// expose globally for network handler
+if (typeof window !== 'undefined') window.speechBubbleManager = speechBubbleManager;
+
+// --------------------------- Loading Screen -----------------------------
+function showLoadingScreen(msg='Loading…') {
+  let div = document.getElementById('loadingOverlay');
+  if (!div) {
+    div = document.createElement('div');
+    div.id = 'loadingOverlay';
+    div.style.position = 'fixed';
+    div.style.top = 0;
+    div.style.left = 0;
+    div.style.width = '100%';
+    div.style.height = '100%';
+    div.style.background = 'rgba(0,0,0,0.8)';
+    div.style.color = '#fff';
+    div.style.fontSize = '24px';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.style.justifyContent = 'center';
+    div.style.zIndex = 9999;
+    document.body.appendChild(div);
+  }
+  div.textContent = msg;
+  div.style.display = 'flex';
+}
+
+function hideLoadingScreen() {
+  const div = document.getElementById('loadingOverlay');
+  if (div) div.style.display = 'none';
+}
 
 export async function initGame() {
     try {
@@ -164,6 +197,22 @@ export async function initGame() {
             spritesPerColumn: 64
         });
         
+        // 32×32 RotMG character/enemy sheet – provides vivid monsters like
+        // Red Demon (row 2 col 1) and Dark Lord (row 3 col 9).  We load it
+        // primarily so we can alias simpler enemy names to these sprites.
+        await spriteManager.loadSpriteSheet({
+          name: 'chars',
+          path: 'assets/images/chars.png',
+          defaultSpriteWidth: 32,
+          defaultSpriteHeight: 32,
+          spritesPerRow: 16,
+          spritesPerColumn: 16
+        });
+        
+        // Define key 32×32 sprites so later alias mapping works safely
+        spriteManager.fetchGridSprite('chars', 2, 1, 'red_demon', 32, 32);
+        spriteManager.fetchGridSprite('chars', 3, 9, 'dark_lord', 32, 32);
+        
         await spriteManager.loadSpriteSheet({ 
             name: 'tile_sprites', 
             path: 'assets/images/Oryx/8-Bit_Remaster_World.png',
@@ -205,6 +254,19 @@ export async function initGame() {
         ].forEach(([alias, row, col]) => {
           spriteManager.fetchGridSprite('enemy_sprites', row, col, alias, 8, 8);
         });
+        
+        // ------------------------------------------------------------------
+        // VISIBILITY PATCH – some grid sprites are nearly blank, resulting in
+        // invisible enemies when they use names like "goblin" and "orc".
+        // Map those aliases to vivid 32×32 creatures from the main chars
+        // atlas so they always render.
+        // ------------------------------------------------------------------
+        if (spriteManager.getSprite('red_demon')) {
+          spriteManager.registerAlias('goblin', 'chars', 'red_demon');
+        }
+        if (spriteManager.getSprite('dark_lord')) {
+          spriteManager.registerAlias('orc',    'chars', 'dark_lord');
+        }
         
         console.log('All sprite sheets loaded.');
 
@@ -618,6 +680,8 @@ function initializeGameState() {
         onWorldSwitch: (data) => {
             console.log(`[GAME] onWorldSwitch → ${data.mapId}`);
 
+            showLoadingScreen('Loading new realm…');
+
             // 1) Dispose previous world (if any) and purge 3-D instanced meshes
             if (gameState.world && typeof gameState.world.dispose === 'function') {
                 gameState.world.dispose();
@@ -651,6 +715,16 @@ function initializeGameState() {
             if (collisionManager && typeof collisionManager.setEntityManagers==='function'){
               collisionManager.setEntityManagers(bulletManager, enemyManager);
             }
+
+            // Rebuild 3-D instanced meshes for the new world so the base
+            // meshes use the correct tile atlas.
+            if (typeof addFirstPersonElements === 'function' && scene) {
+                addFirstPersonElements(scene);
+            }
+
+            // hide loader after a short grace period – in future hook into
+            // mapManager chunk-ready event.
+            setTimeout(hideLoadingScreen, 1500);
         },
         
         // Set all players
@@ -678,7 +752,6 @@ function initializeGameState() {
         
         // Set initial enemies
         setEnemies: (enemies) => {
-            const { enemyManager } = this;
             if (!enemyManager) return;
             const currentWorld = gameState.character?.worldId;
             enemyManager.setEnemies(
@@ -688,7 +761,6 @@ function initializeGameState() {
         
         // Set initial bullets
         setBullets: (bullets) => {
-            const { bulletManager } = this;
             if (!bulletManager) return;
             const currentWorld = gameState.character?.worldId;
             bulletManager.setBullets(
@@ -697,7 +769,7 @@ function initializeGameState() {
         },
         
         // Update world state
-        updateWorld: (enemies, bullets, players) => {
+        updateWorld: (enemies, bullets, players, objects=[]) => {
             // Only log world updates occasionally to reduce console spam
             if (Math.random() < 0.05) {
                 console.log(`World update: ${enemies?.length || 0} enemies, ${bullets?.length || 0} bullets, ${players ? Object.keys(players).length : 0} players`);
@@ -796,6 +868,11 @@ function initializeGameState() {
                 console.warn("[updateWorld] No localPlayer reference, sending unfiltered data");
                 updatePlayers(players);
             }
+
+            // Store latest objects list globally so renderers (e.g. top-down) can draw portals
+            if (typeof window !== 'undefined') {
+                window.currentObjects = Array.isArray(objects) ? objects : [];
+            }
         },
         
         // Add a bullet
@@ -830,6 +907,9 @@ function initializeGameState() {
             }
             
             mapManager.setChunkData(chunkX, chunkY, chunkData);
+
+            // If loading overlay still visible (first chunk), hide now.
+            hideLoadingScreen();
         }
     });
     
@@ -998,6 +1078,9 @@ function update(delta) {
     if (gameUI && gameUI.isInitialized) {
         gameUI.update(gameState);
     }
+
+    // Update speech bubbles lifetime
+    speechBubbleManager.update();
 }
 
 /**
@@ -1018,6 +1101,10 @@ function render() {
         // Use the main render function from render.js
         // This handles clearing the canvas and rendering all entities
         renderGame();
+
+        // After main render draw speech bubbles
+        const ctx = document.getElementById('gameCanvas').getContext('2d');
+        speechBubbleManager.render(ctx);
     }
 }
 
@@ -1520,6 +1607,36 @@ function handleChatCommand(command) {
                 if (player) {
                     gameUI.addChatMessage(`Position: X=${Math.round(player.x)}, Y=${Math.round(player.y)}`, 'system');
                 }
+            }
+            break;
+            
+        case 'maps':
+            // Fetch list of maps from server API and display
+            (async ()=>{
+              try {
+                const res = await fetch('/api/maps');
+                const json = await res.json();
+                const list = json.maps || [];
+                if (list.length===0) {
+                  gameUI?.addChatMessage('No maps available', 'system');
+                  return;
+                }
+                gameUI?.addChatMessage(`Maps: ${list.map(m=>`${m.id} (${m.name})`).join(', ')}`, 'system');
+              } catch(err){
+                gameUI?.addChatMessage('Failed to fetch map list', 'system');
+              }
+            })();
+            break;
+        case 'map':
+        case 'goto':
+            const dest = parts[1];
+            if (!dest) {
+              gameUI?.addChatMessage('Usage: /map <mapId>', 'system');
+              break;
+            }
+            if (window.networkManager?.requestMap) {
+              window.networkManager.requestMap(dest);
+              showLoadingScreen(`Switching to ${dest}…`);
             }
             break;
             

@@ -105,6 +105,9 @@ class BinaryPacket {
     // Chat messages
     CHAT_MESSAGE: 90,
     
+    // Speech bubbles / taunts
+    SPEECH: 91,
+    
     // Portal interaction
     PORTAL_ENTER: 54,      // client -> server (player pressed E near portal)
     WORLD_SWITCH: 55       // server -> client (authoritative map change)

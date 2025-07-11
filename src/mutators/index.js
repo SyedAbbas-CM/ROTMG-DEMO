@@ -12,14 +12,49 @@ import { taunt } from './taunt.js';
 import { trace } from '@opentelemetry/api';
 const tracer = trace.getTracer('game');
 
+// Ultra-flexible mutators for complex behavior composition
+import { spawn_formation } from './spawn_formation.js';
+import { teleport_to_player } from './teleport_to_player.js';
+import { charge_attack } from './charge_attack.js';
+import { heal_self } from './heal_self.js';
+import { shield_phase } from './shield_phase.js';
+import { summon_orbitals } from './summon_orbitals.js';
+import { pattern_shoot } from './pattern_shoot.js';
+import { dynamic_movement } from './dynamic_movement.js';
+import { conditional_trigger } from './conditional_trigger.js';
+import { effect_aura } from './effect_aura.js';
+import { environment_control } from './environment_control.js';
+
 export const Mutators = {
+  // Basic mutators
   'dash': dash,
   'radial_burst': radial_burst,
   'wait': wait,
   'spawn_minions': spawn_minions,
   'cone_aoe': cone_aoe,
   'reposition': reposition,
-  'taunt': taunt
+  'taunt': taunt,
+  
+  // Advanced formation and positioning
+  'spawn_formation': spawn_formation,
+  'teleport_to_player': teleport_to_player,
+  'dynamic_movement': dynamic_movement,
+  
+  // Combat abilities
+  'charge_attack': charge_attack,
+  'pattern_shoot': pattern_shoot,
+  'summon_orbitals': summon_orbitals,
+  
+  // Status and effects
+  'heal_self': heal_self,
+  'shield_phase': shield_phase,
+  'effect_aura': effect_aura,
+  
+  // Behavior control
+  'conditional_trigger': conditional_trigger,
+  
+  // Environment manipulation
+  'environment_control': environment_control
 };
 
 /**

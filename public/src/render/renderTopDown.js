@@ -14,7 +14,7 @@ canvas2D.width = window.innerWidth;
 canvas2D.height = window.innerHeight;
 
 const camera = gameState.camera;
-const scaleFactor = camera.getViewScaleFactor();
+let scaleFactor = 1; // will be updated every frame in renderTopDownView
 
 // Debug flags
 const DEBUG_RENDERING = false;
@@ -37,24 +37,77 @@ export function clearTopDownCache() {
 // Expose via global window for ease of access without circular imports
 window.clearTopDownCache = clearTopDownCache;
 
-// Lazy loader for atlas json – ensures any sheet referenced by map tile gets
-// loaded on demand without blocking the main thread.
-function ensureSheetLoaded(sheetName){
-  if (spriteManager.getSpriteSheet(sheetName)) return;
-  fetch(`/assets/atlases/${sheetName}.json`).then(r=>r.json()).then(cfg=>{
-    cfg.name ||= sheetName;
-    // Provide fallback path for image if missing and meta.image exists
-    if(!cfg.path && cfg.meta && cfg.meta.image){
-      cfg.path = cfg.meta.image.startsWith('/')? cfg.meta.image : ('/' + cfg.meta.image);
-    }
-    return spriteManager.loadSpriteSheet(cfg);
-  }).catch(err=>{
-    if(!ensureSheetLoaded.loggedMissing){ensureSheetLoaded.loggedMissing=new Set();}
-    if(!ensureSheetLoaded.loggedMissing.has(sheetName)){
-      console.warn(`[TopDown] Failed to auto-load sheet ${sheetName}:`,err);
-      ensureSheetLoaded.loggedMissing.add(sheetName);
-    }
-  });
+// ----------------------------------------------------------------------------
+// Safe auto-loader for sprite sheets.
+//  • Guarantees we issue at most ONE network request per sheet.
+//  • Subsequent callers await the same promise instead of spamming fetch().
+//  • Failed sheets are remembered so we don't re-hit the server every frame.
+// ----------------------------------------------------------------------------
+const _sheetPromises = new Map();
+
+function ensureSheetLoaded(sheetName) {
+  if (!sheetName) return Promise.resolve();
+
+  // Already available – done.
+  if (spriteManager.getSpriteSheet(sheetName)) return Promise.resolve();
+
+  // Already loading (or failed once) – return stored promise to dedupe.
+  if (_sheetPromises.has(sheetName)) return _sheetPromises.get(sheetName);
+
+  // Start the network request.
+  const p = fetch(`/assets/atlases/${encodeURIComponent(sheetName)}.json`)
+    .then(res => {
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      return res.json();
+    })
+    .then(cfg => {
+      cfg.name ||= sheetName;
+      if (!cfg.path && cfg.meta && cfg.meta.image) {
+        cfg.path = cfg.meta.image.startsWith('/') ? cfg.meta.image : '/' + cfg.meta.image;
+      }
+      return spriteManager.loadSpriteSheet(cfg);
+    })
+    .catch(err => {
+      console.warn(`[TopDown] Failed to load sheet '${sheetName}':`, err.message);
+      // On failure keep the rejected promise stored so later calls don't retry
+      throw err;
+    });
+
+  _sheetPromises.set(sheetName, p);
+  return p;
+}
+
+// ---------------------------------------------------------------------------
+// Helper to fetch sprite regardless of naming convention.
+// Supports both "tiles2_sprite_6_3" (editor) and "tiles2_6_3" (atlas) names.
+// ---------------------------------------------------------------------------
+function getSpriteFlexible(name, tryLoadSheet=true){
+  if(!name) return null;
+  // First try the exact name
+  let obj = spriteManager.fetchSprite(name);
+  if(obj) return obj;
+
+  // Attempt to normalise: replace "_sprite_" with "_"
+  if(name.includes('_sprite_')){
+    const alt = name.replace('_sprite_','_');
+    obj = spriteManager.fetchSprite(alt);
+    if(obj) return obj;
+  }
+
+  // Attempt to strip trailing rotation or variant (rare)
+  const stripped = name.replace(/_sprite_/,'_').replace(/_rot\d+$/,'');
+  obj = spriteManager.fetchSprite(stripped);
+  if(obj) return obj;
+
+  // As last resort attempt to load the sheet and retry once (for first-frame)
+  if(tryLoadSheet){
+    const parts = name.split('_sprite_')[0].split('_');
+    const sheet = parts[0];
+    ensureSheetLoaded(sheet);
+    return getSpriteFlexible(name,false);
+  }
+
+  return null;
 }
 
 export function renderTopDownView() {
@@ -64,6 +117,12 @@ export function renderTopDownView() {
   if (!mapManager) {
     console.warn("Cannot render map: map manager not available");
     return;
+  }
+
+  // Recompute scale factor each frame to reflect zoom changes & ensure
+  // we have a valid camera before using it.
+  if (camera && typeof camera.getViewScaleFactor === 'function') {
+    scaleFactor = camera.getViewScaleFactor();
   }
 
   // Calculate current time for throttling
@@ -115,10 +174,9 @@ export function renderTopDownView() {
       let spriteSheetName = 'tile_sprites';
       if (tile.properties && tile.properties.sprite) {
         const rawName = tile.properties.sprite;
-        // Try to derive sheet name quickly to preload
         const parts = rawName.split('_sprite_');
         if(parts.length>1){ ensureSheetLoaded(parts[0]); }
-        const spriteObj = spriteManager.fetchSprite(rawName);
+        const spriteObj = getSpriteFlexible(rawName);
         if (spriteObj) {
           spriteSheetName = spriteObj.sheetName;
           spritePos = { x: spriteObj.x, y: spriteObj.y };
@@ -128,7 +186,7 @@ export function renderTopDownView() {
         const rawName=tile.spriteName;
         const parts=rawName.split('_sprite_');
         if(parts.length>1){ ensureSheetLoaded(parts[0]); }
-        const spriteObj = spriteManager.fetchSprite(rawName);
+        const spriteObj = getSpriteFlexible(rawName);
         if (spriteObj) {
           spriteSheetName = spriteObj.sheetName;
           spritePos = { x: spriteObj.x, y: spriteObj.y };
@@ -183,7 +241,10 @@ export function renderTopDownView() {
         drawH * scaleFactor
       );
 
+      /*
       // ---- Height shading -------------------------------------------------
+      // Disabled for now – keeps the tiles crisp.  Re-enable when we add
+      // proper sprite silhouettes or volumetric shadows.
       if (tile.height && tile.height > 0) {
         const alpha = Math.min(tile.height / 15, 1) * 0.35; // up to 35% darken
         ctx.fillStyle = `rgba(0,0,0,${alpha.toFixed(3)})`;
@@ -194,6 +255,7 @@ export function renderTopDownView() {
           drawH * scaleFactor
         );
       }
+      */
       
       // Add debug visualization to help with alignment
       if (DEBUG_RENDERING) {
@@ -238,52 +300,62 @@ export function renderTopDownView() {
   }
 
   /* ---------------------------------------------------------
-   * TEMPORARY PORTAL RENDERING
-   * ---------------------------------------------------------
-   * Draw a placeholder sprite for the portal at world tile (5,5)
-   * until we have a full object-rendering pipeline.
-   */
+   * OBJECT RENDERING – Portals
+   * --------------------------------------------------------- */
   try {
-    const portalWorldX = 5;
-    const portalWorldY = 5;
+    const objects = window.currentObjects || [];
+    if (Array.isArray(objects)) {
+      objects.forEach(obj => {
+        // Render portals, decorative objects *and* billboards so every
+        // non-wall layer appears in the mini-map / top-down view.
+        if (obj.type !== 'portal' && obj.type !== 'decor' && obj.type !== 'billboard') return;
 
-    const portalScreen = camera.worldToScreen(
-      portalWorldX + 0.5,
-      portalWorldY + 0.5,
-      canvas2D.width,
-      canvas2D.height,
-      mapManager.tileSize || TILE_SIZE
-    );
+        const objScreen = camera.worldToScreen(
+          obj.x + 0.5,
+          obj.y + 0.5,
+          canvas2D.width,
+          canvas2D.height,
+          mapManager.tileSize || TILE_SIZE
+        );
 
-    // Pick a sprite from the spriteManager if available; otherwise fallback to magenta circle
-    let drewSprite = false;
-    const portalSheetObj = spriteManager.getSpriteSheet('enemy_sprites');
-    if (portalSheetObj) {
-      const img = portalSheetObj.image;
-      // Use sprite at (0,0) for now
-      const sCfg = portalSheetObj.config;
-      const sw = sCfg.defaultSpriteWidth || TILE_SIZE;
-      const sh = sCfg.defaultSpriteHeight || TILE_SIZE;
-      const scale = scaleFactor * 1.5; // slightly larger so it pops
-      ctx.drawImage(
-        img,
-        0,
-        0,
-        sw,
-        sh,
-        portalScreen.x - (sw * scale / 2),
-        portalScreen.y - (sh * scale / 2),
-        sw * scale,
-        sh * scale
-      );
-      drewSprite = true;
-    }
-    if (!drewSprite) {
-      ctx.fillStyle = 'magenta';
-      const size = TILE_SIZE * scaleFactor;
-      ctx.beginPath();
-      ctx.arc(portalScreen.x, portalScreen.y, size / 2, 0, Math.PI * 2);
-      ctx.fill();
+        const spriteName = obj.sprite || 'tiles2_sprite_6_3';
+        let spriteObj = null;
+        if (spriteName) {
+          const parts = spriteName.split('_sprite_');
+          if (parts.length > 1) ensureSheetLoaded(parts[0]);
+          spriteObj = getSpriteFlexible(spriteName);
+        }
+
+        if (spriteObj && spriteManager.getSpriteSheet(spriteObj.sheetName)) {
+          const sheet = spriteManager.getSpriteSheet(spriteObj.sheetName);
+          const sCfg = sheet.config;
+          const sw = spriteObj.width || sCfg.defaultSpriteWidth || TILE_SIZE;
+          const sh = spriteObj.height || sCfg.defaultSpriteHeight || TILE_SIZE;
+          // Draw every object at exactly one tile so wide sprites (32×32) don't overflow.
+          const drawW = mapManager.tileSize || TILE_SIZE;
+          const drawH = mapManager.tileSize || TILE_SIZE;
+          const scale = scaleFactor * 1.0; // keep slight breathing space; tweak if needed
+
+          ctx.drawImage(
+            sheet.image,
+            spriteObj.x,
+            spriteObj.y,
+            sw,
+            sh,
+            objScreen.x - (drawW * scale / 2),
+            objScreen.y - (drawH * scale / 2),
+            drawW * scale,
+            drawH * scale
+          );
+        } else {
+          // Fallback: simple cyan circle
+          ctx.fillStyle = '#00FFFF';
+          const size = TILE_SIZE * scaleFactor;
+          ctx.beginPath();
+          ctx.arc(objScreen.x, objScreen.y, size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
     }
   } catch (err) {
     console.error('[PortalRender] Failed:', err);

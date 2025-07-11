@@ -631,10 +631,15 @@ export class ClientNetworkManager {
             // Only log occasionally to reduce spam
             throttledLog('world-update', `World update received`, null, 3000);
             
+            // Expose latest world objects globally for renderers (e.g. portals)
+            if (typeof window !== 'undefined') {
+              window.currentObjects = Array.isArray(data.objects) ? data.objects : [];
+            }
+
             if (this.game.updateWorld) {
                 // Check if players is nested inside a 'players' property (from server inconsistency)
                 const players = data.players?.players || data.players;
-                this.game.updateWorld(data.enemies, data.bullets, players);
+                this.game.updateWorld(data.enemies, data.bullets, players, data.objects);
             }
         };
         
@@ -785,11 +790,21 @@ export class ClientNetworkManager {
                 if (window.gameState?.character) {
                     window.gameState.character.x = data.spawnX;
                     window.gameState.character.y = data.spawnY;
-                    // Update local reference of the active world so that all
-                    // subsequent entity filters and collision checks operate
-                    // against the correct realm.
                     window.gameState.character.worldId = data.mapId;
                 }
+            }
+        };
+
+        // Speech bubbles (taunts, player chat, etc.)
+        this.handlers[MessageType.SPEECH] = (data) => {
+            // Expected shape: { id, idType, text, ttlMs }
+            if (window.speechBubbleManager) {
+                window.speechBubbleManager.addBubble({
+                    id: data.id,
+                    idType: data.idType || 'player',
+                    text: data.text || '',
+                    ttl: data.ttlMs || 4000
+                });
             }
         };
     }
@@ -1306,7 +1321,15 @@ export const MessageType = {
     // Chat message
     CHAT_MESSAGE: 90,
 
+    // Speech bubbles / taunts
+    SPEECH: 91,
+
     // Portal interaction
     PORTAL_ENTER: 54,      // client -> server
     WORLD_SWITCH: 55       // server -> client
 };
+
+// Expose for late-loading UI components
+if (typeof window !== 'undefined') {
+  window.MessageType = MessageType;
+}

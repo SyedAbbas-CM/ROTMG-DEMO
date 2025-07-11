@@ -499,6 +499,51 @@ export class MapManager {
         mapData = JSON.parse(data);
       }
       
+      // ------------------------------------------------------------------
+      // Tiled-like format support: if the JSON contains layers with a grid
+      // array but no tileMap, convert it here so the engine can slice
+      // chunks from the resulting 2-D Tile array.
+      // ------------------------------------------------------------------
+      if (!mapData.tileMap && Array.isArray(mapData.layers)) {
+        const groundLayer = mapData.layers.find(l => l.name?.toLowerCase() === 'ground' || l.grid);
+        if (groundLayer && Array.isArray(groundLayer.grid)) {
+          const grid = groundLayer.grid;
+          const height = grid.length;
+          const width  = grid[0]?.length || 0;
+
+          // Fallback to map-level dimensions if supplied
+          mapData.width  = mapData.width  || width;
+          mapData.height = mapData.height || height;
+
+          const tileMap = [];
+          for (let y = 0; y < height; y++) {
+            const row = [];
+            for (let x = 0; x < width; x++) {
+              const cell = grid[y][x];
+              if (cell && typeof cell === 'object' && cell.sprite) {
+                // Object with sprite property
+                row.push(new Tile(TILE_IDS.FLOOR, 0, { sprite: cell.sprite, walkable: true, isWalkable: true }));
+              } else if (typeof cell === 'string') {
+                // Plain sprite alias string
+                row.push(new Tile(TILE_IDS.FLOOR, 0, { sprite: cell, walkable: true, isWalkable: true }));
+              } else if (cell === null) {
+                // Null → wall (impassable)
+                row.push(new Tile(TILE_IDS.WALL, 1, { walkable: false, isWalkable: false }));
+              } else {
+                // Default floor
+                row.push(new Tile(TILE_IDS.FLOOR, 0, { walkable: true, isWalkable: true }));
+              }
+            }
+            tileMap.push(row);
+          }
+
+          mapData.tileMap = tileMap;
+          // Approximate tileSize from metadata if present
+          if (!mapData.tileSize && mapData.tileW) mapData.tileSize = mapData.tileW;
+          console.log('[MapManager] Converted Tiled ground layer to tileMap format');
+        }
+      }
+
       // --- EDITOR COMPATIBILITY -----------------------------------------
       // If mapData comes from our browser editor, it has `ground` (2-D array of
       // sprite names/null) instead of the numeric `tileMap` expected by the
@@ -507,14 +552,210 @@ export class MapManager {
         const tileMap = mapData.ground.map(row =>
           row.map(cell => {
             // Null → impassable wall
-            if (cell === null) return new Tile(TILE_IDS.WALL, 0, { sprite: null, walkable:false });
+            if (cell === null) return new Tile(TILE_IDS.WALL, 1, { sprite: null, walkable:false, isWalkable:false });
 
             // Non-null string assumed to be sprite key – treat as walkable floor with sprite override
-            return new Tile(TILE_IDS.FLOOR, 0, { sprite: cell, walkable:true });
+            return new Tile(TILE_IDS.FLOOR, 0, { sprite: cell, walkable:true, isWalkable:true });
           })
         );
         mapData.tileMap = tileMap;
       }
+
+      // ------------------------------------------------------------------
+      // Multi-layer support (map-editor.html)
+      // If the map contains `layers` and `entities`, and we have not yet
+      // produced a tileMap, build one by flattening layers. Also extract
+      // objects and enemy spawns so the runtime engine can use them.
+      // ------------------------------------------------------------------
+      if (!mapData.tileMap && Array.isArray(mapData.layers)) {
+        const h = mapData.height || mapData.tileH || mapData.layers[0]?.grid.length;
+        const w = mapData.width  || mapData.tileW || mapData.layers[0]?.grid[0]?.length;
+        if (h && w) {
+          // Initialise tileMap with nulls → turns into WALL later if still null
+          const tileMap = Array.from({length:h}, ()=> Array.from({length:w}, ()=> null));
+          const objects = [];
+          const objByCoord = new Map(); // "x,y" -> index in objects array
+
+          // Helper to push object only once per coord/layer
+          const pushObj=(x,y,sprite,layer)=>{
+            objects.push({
+              id: `obj_${x}_${y}_${layer}`,
+              type: layer === 'portal' ? 'portal' : 'decor',
+              sprite,
+              x,
+              y
+            });
+          };
+
+          // Iterate layers in order (ground first → top)
+          mapData.layers.forEach((layer, layerIdx)=>{
+            if(!Array.isArray(layer.grid)) return;
+            const lname = (layer.name||'').toLowerCase();
+            for(let y=0;y<h;y++){
+              const row = layer.grid[y]; if(!row) continue;
+              for(let x=0;x<w;x++){
+                const cell = row[x];
+                if(!cell) continue;
+                const sprite = typeof cell==='string'?cell: cell.sprite;
+                if(!sprite) continue;
+
+                // Decide how this layer affects gameplay
+                if (lname==='ground' || layerIdx===0) {
+                  // Base walkable floor
+                  if(!tileMap[y][x]) tileMap[y][x] = new Tile(TILE_IDS.FLOOR, 0, { sprite, walkable:true, isWalkable:true });
+                } else if (lname.includes('wall') || (lname==='objects' && layerIdx===1)) {
+                  tileMap[y][x] = new Tile(TILE_IDS.WALL, 1, { sprite, walkable:false, isWalkable:false });
+                } else {
+                  // Decorative / object layer – keep tile walkable but spawn object for renderer
+                  if(!tileMap[y][x]) tileMap[y][x] = new Tile(TILE_IDS.FLOOR, 0, { sprite:null, walkable:true, isWalkable:true });
+                  const key = `${x},${y}`;
+                  const objData = {
+                    id: `obj_${x}_${y}_${layerIdx}`,
+                    type: lname === 'portal' ? 'portal' : (layerIdx>=2 ? 'billboard' : 'decor'),
+                    sprite,
+                    x,
+                    y,
+                    z: layerIdx           // use layer index as simple z-order
+                  };
+                  if (objByCoord.has(key)) {
+                    // Replace if this layer is above previous
+                    const prevIdx = objByCoord.get(key);
+                    if (layerIdx > objects[prevIdx].z) {
+                      objects[prevIdx] = objData;
+                    }
+                  } else {
+                    objByCoord.set(key, objects.length);
+                    objects.push(objData);
+                  }
+                }
+              }
+            }
+          });
+
+          // Fill any remaining null with default floor so renderers have a base
+          for (let yy = 0; yy < h; yy++) {
+            for (let xx = 0; xx < w; xx++) {
+              if (!tileMap[yy][xx]) tileMap[yy][xx] = new Tile(TILE_IDS.FLOOR, 0, { walkable: true, isWalkable:true });
+            }
+          }
+
+          // Merge results back into mapData so downstream logic sees them
+          mapData.tileMap = tileMap;
+          mapData.objects = Array.isArray(mapData.objects) ? [...mapData.objects, ...objects] : objects;
+
+          if (!mapData.tileSize && mapData.tileW) mapData.tileSize = mapData.tileW;
+          console.log(`[MapManager] Multi-layer map flattened: ${w}×${h}, objects=${objects.length}`);
+        }
+      }
+
+      // Entities → enemySpawns conversion
+      if (Array.isArray(mapData.entities)) {
+        const enemySpawns = mapData.entities.filter(e => e.type === 'enemy').map(e => ({
+          id: e.id || e.sprite,
+          sprite: e.sprite,
+          x: e.x,
+          y: e.y
+        }));
+        mapData.enemySpawns = Array.isArray(mapData.enemySpawns) ? [...mapData.enemySpawns, ...enemySpawns] : enemySpawns;
+      }
+
+      // --------------------------------------------------------------
+      // SECOND PASS – other layers (objects / walls / decor)
+      // If we already built a tileMap from the ground layer but the
+      // original JSON still includes more layers, walk those layers
+      // now so we can inject walls and decorative objects instead of
+      // ignoring them entirely.
+      // --------------------------------------------------------------
+      try {
+        if (Array.isArray(mapData.layers) && mapData.layers.length > 1) {
+          const h = mapData.tileMap.length;
+          const w = mapData.tileMap[0]?.length || 0;
+          const extraObjects = [];
+
+          mapData.layers.forEach((layer, layerIdx) => {
+            // Skip the first/ground layer – already consumed.
+            if (layerIdx === 0) return;
+            if (!Array.isArray(layer.grid)) return;
+
+            const lname = (layer.name || '').toLowerCase();
+
+            for (let y = 0; y < h; y++) {
+              const row = layer.grid[y];
+              if (!row) continue;
+              for (let x = 0; x < w; x++) {
+                const cell = row[x];
+                if (!cell) continue;
+
+                const sprite = typeof cell === 'string' ? cell : cell.sprite;
+                if (!sprite) continue;
+
+                // -----------------------------------------------------------------
+                // Decide if this sprite should block movement.
+                // Rule-set (highest priority first):
+                //   A) Everything on layer index 1 acts as a wall (hall walls).
+                //   B) TileDatabase says walkable:false ⇒ wall.
+                //   C) Fallback heuristics (filename contains wall/door/gate etc.).
+                // -----------------------------------------------------------------
+                let blocks = (layerIdx === 1); // A)
+
+                if (!blocks) {
+                  const dbDef = tileDatabase?.get(sprite); // B)
+                  if (dbDef && dbDef.walkable === false) blocks = true;
+                }
+
+                if (!blocks) {                                  // C)
+                  const lower = sprite.toLowerCase();
+                  if (lower.includes('wall') || lower.includes('door') || lower.includes('gate')) blocks = true;
+                  if (lower.includes('world_sprite_2_')) blocks = true; // SampleNexus perimeter
+                }
+
+                if (blocks) {
+                  // Impassable wall – override whatever is there (no separate object)
+                  mapData.tileMap[y][x] = new Tile(TILE_IDS.WALL, 1, { sprite, walkable: false, isWalkable: false });
+                  continue; // skip object-push for walls to avoid duplicate draw
+                } else {
+                  // Decorative / interactive object (walk-through)
+                  const key = `${x},${y}`;
+                  const objData = {
+                    id: `obj_${x}_${y}_${layerIdx}`,
+                    type: lname === 'portal' ? 'portal' : (layerIdx>=2 ? 'billboard' : 'decor'),
+                    sprite,
+                    x,
+                    y,
+                    z: layerIdx           // use layer index as simple z-order
+                  };
+                  if (objByCoord.has(key)) {
+                    // Replace if this layer is above previous
+                    const prevIdx = objByCoord.get(key);
+                    if (layerIdx > objects[prevIdx].z) {
+                      objects[prevIdx] = objData;
+                    }
+                  } else {
+                    objByCoord.set(key, objects.length);
+                    objects.push(objData);
+                  }
+
+                  // Underlying tile must be walkable floor
+                  mapData.tileMap[y][x] = new Tile(TILE_IDS.FLOOR, 0, { sprite: null, walkable: true, isWalkable: true });
+                }
+              }
+            }
+          });
+
+          if (extraObjects.length) {
+            mapData.objects = Array.isArray(mapData.objects)
+              ? [...mapData.objects, ...extraObjects]
+              : extraObjects;
+            console.log(`[MapManager] Added ${extraObjects.length} objects from extra layers`);
+          }
+        }
+      } catch (e) {
+        console.warn('[MapManager] Second-pass layer merge failed:', e);
+      }
+
+      // ------------------------------------------------------------------
+      // Continue with normal setMapData flow
+      // ------------------------------------------------------------------
 
       // Set map data and get ID
       const mapId = this.setMapData(mapData);
@@ -772,7 +1013,9 @@ export class MapManager {
       procedural: false,
       tileMap: mapData.tileMap || null, // full 2-D array of tile objects / IDs
       objects: mapData.objects || [],   // decorative / interactive objects
-      enemySpawns: mapData.enemies || [] // enemy spawn markers
+      enemySpawns: mapData.enemySpawns || mapData.enemies || [], // enemy spawn markers
+      entryPoints: mapData.entryPoints || [],
+      portals: mapData.portals || []
     };
     this.maps.set(mapId, meta);
 
@@ -881,7 +1124,7 @@ export class MapManager {
           cell = new Tile(cell, 0);
         } else if (typeof cell === 'string') {
           // Treat plain string as sprite alias mapped to walkable floor
-          cell = new Tile(TILE_IDS.FLOOR, 0, { sprite: cell, walkable: true });
+          cell = new Tile(TILE_IDS.FLOOR, 0, { sprite: cell, walkable: true, isWalkable: true });
         }
         row.push(cell);
       }
@@ -896,6 +1139,12 @@ export class MapManager {
   }
   getEnemySpawns(mapId){
     const meta=this.getMapMetadata(mapId); return meta&&Array.isArray(meta.enemySpawns)?meta.enemySpawns:[];
+  }
+  getEntryPoints(mapId){
+    const meta=this.getMapMetadata(mapId); return meta&&Array.isArray(meta.entryPoints)?meta.entryPoints:[];
+  }
+  getPortals(mapId){
+    const meta=this.getMapMetadata(mapId); return meta&&Array.isArray(meta.portals)?meta.portals:[];
   }
 }
 

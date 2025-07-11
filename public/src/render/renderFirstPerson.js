@@ -8,24 +8,88 @@ import { spriteDatabase } from '../assets/SpriteDatabase.js';
 // Caches for THREE.Texture per spriteName so we don't create multiple copies
 const textureCache = new Map();
 
+// Global reference to the main tile-atlas texture so createTileMaterial can
+// fall back to it when we call it with `texture === null` (happens after a
+// world-switch when per-sprite meshes are created lazily).
+let tileSheetTexture = null; // set in addFirstPersonElements()
+
+// ---------------------------------------------------------------------------
+// Shared helpers (duplicated from renderTopDown.js) – sheet auto-loader and
+// sprite-name normaliser so the first-person renderer understands the
+// "tiles2_sprite_6_3" convention produced by the map editor.
+// ---------------------------------------------------------------------------
+
+const _sheetPromisesFP = new Map();
+function ensureSheetLoadedFP(sheetName){
+  if(!sheetName) return Promise.resolve();
+  if(spriteManager.getSpriteSheet(sheetName)) return Promise.resolve();
+  if(_sheetPromisesFP.has(sheetName)) return _sheetPromisesFP.get(sheetName);
+  const p = fetch(`/assets/atlases/${encodeURIComponent(sheetName)}.json`).then(r=>r.json()).then(cfg=>{
+    cfg.name ||= sheetName;
+    if(!cfg.path && cfg.meta && cfg.meta.image){
+      cfg.path = cfg.meta.image.startsWith('/')? cfg.meta.image : ('/' + cfg.meta.image);
+    }
+    return spriteManager.loadSpriteSheet(cfg);
+  }).catch(err=>{console.warn('[FirstPerson] Failed to load sheet', sheetName, err); throw err;});
+  _sheetPromisesFP.set(sheetName,p);
+  return p;
+}
+
+function getSpriteFlexibleFP(name, tryLoadSheet=true){
+  if(!name) return null;
+  let obj = spriteManager.fetchSprite(name);
+  if(obj) return obj;
+  if(name.includes('_sprite_')){
+    const alt = name.replace('_sprite_','_');
+    obj = spriteManager.fetchSprite(alt);
+    if(obj) return obj;
+  }
+  const stripped = name.replace(/_sprite_/,'_').replace(/_rot\d+$/,'');
+  obj = spriteManager.fetchSprite(stripped);
+  if(obj) return obj;
+  if(tryLoadSheet){
+    const sheet = name.split('_sprite_')[0].split('_')[0];
+    return ensureSheetLoadedFP(sheet).then(()=>getSpriteFlexibleFP(name,false));
+  }
+  return null;
+}
+
 function getSpriteTexture(spriteName) {
   if (textureCache.has(spriteName)) return textureCache.get(spriteName);
 
-  if (!spriteDatabase || !spriteDatabase.hasSprite(spriteName)) {
-    return null;
+  // First try via spriteManager (supports flexible names)
+  const spr = getSpriteFlexibleFP(spriteName,false);
+  if(spr){
+    const sheetObj = spriteManager.getSpriteSheet(spr.sheetName);
+    if(sheetObj){
+      const canvas = document.createElement('canvas');
+      canvas.width = spr.width;
+      canvas.height = spr.height;
+      const ctx2d = canvas.getContext('2d');
+      ctx2d.drawImage(sheetObj.image, spr.x, spr.y, spr.width, spr.height, 0,0, spr.width, spr.height);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+      textureCache.set(spriteName, tex);
+      return tex;
+    }
   }
 
-  const frame = spriteDatabase.getSprite(spriteName);
-  const canvas = document.createElement('canvas');
-  canvas.width = frame.width;
-  canvas.height = frame.height;
-  const ctx = canvas.getContext('2d');
-  spriteDatabase.drawSprite(ctx, spriteName, 0, 0, frame.width, frame.height);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.NearestFilter;
-  textureCache.set(spriteName, texture);
-  return texture;
+  // Fallback – use legacy spriteDatabase (lofi_* etc.)
+  if (spriteDatabase && spriteDatabase.hasSprite(spriteName)) {
+    const frame = spriteDatabase.getSprite(spriteName);
+    const canvas = document.createElement('canvas');
+    canvas.width = frame.width;
+    canvas.height = frame.height;
+    const ctx = canvas.getContext('2d');
+    spriteDatabase.drawSprite(ctx, spriteName, 0, 0, frame.width, frame.height);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    textureCache.set(spriteName, texture);
+    return texture;
+  }
+
+  return null;
 }
 
 // Groups that hold dynamic sprites
@@ -154,7 +218,9 @@ export function addFirstPersonElements(scene, callback) {
   
   const tileTexture = new THREE.Texture(tileSheetObj.image);
   tileTexture.needsUpdate = true; // Update the texture
-  console.log('[FirstPerson] Created THREE.Texture from tile sprite sheet.');
+
+  // Store so later calls to createTileMaterial(null, …) can reuse it.
+  tileSheetTexture = tileTexture;
 
   // Create materials for each tile type
   const floorMaterial = createTileMaterial(tileTexture, TILE_IDS.FLOOR);
@@ -245,6 +311,11 @@ export function addFirstPersonElements(scene, callback) {
     bulletSpriteGroup.name = 'bulletSprites';
     scene.add(bulletSpriteGroup);
 
+    billboardSpriteGroup = new THREE.Group();
+    billboardSpriteGroup.name = 'billboardSprites';
+    scene.add(billboardSpriteGroup);
+    console.log('[FirstPerson] Added billboardSpriteGroup to the scene');
+
     // Set initial player position for tracking updates
     if (gameState && gameState.character) {
       lastUpdateX = gameState.character.x;
@@ -271,19 +342,31 @@ export function addFirstPersonElements(scene, callback) {
  * @returns {THREE.MeshStandardMaterial} - The created material.
  */
 function createTileMaterial(texture, tileType, spriteOverride = null) {
-  // 1) If a specific sprite name was requested (map-specific art) generate
-  //    a material directly from that sprite.  We ignore the sprite sheet /
-  //    TILE_SPRITES mapping in that case.
-  if (spriteOverride && spriteDatabase?.hasSprite?.(spriteOverride)) {
-    const tex = getSpriteTexture(spriteOverride);
-    if (tex) {
-      return new THREE.MeshStandardMaterial({
-        map: tex,
-        transparent: true,
-        side: THREE.DoubleSide,
-        emissive: new THREE.Color(0x000000),
-        emissiveIntensity: 0
-      });
+  if (!texture) texture = tileSheetTexture; // fallback to global atlas
+
+  if (spriteOverride) {
+    // Try via spriteManager first (supports flexible names)
+    const spr = getSpriteFlexibleFP(spriteOverride,false);
+    if(spr){
+      ensureSheetLoadedFP(spr.sheetName);
+      const sheetObj = spriteManager.getSpriteSheet(spr.sheetName);
+      if(sheetObj){
+        const canvas = document.createElement('canvas');
+        canvas.width = spr.width; canvas.height = spr.height;
+        const ctx2d = canvas.getContext('2d');
+        ctx2d.drawImage(sheetObj.image, spr.x, spr.y, spr.width, spr.height, 0,0, spr.width, spr.height);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+        return new THREE.MeshStandardMaterial({ map: tex, transparent:true, side:THREE.DoubleSide });
+      }
+    }
+
+    // Legacy fallback via spriteDatabase
+    if (spriteDatabase?.hasSprite?.(spriteOverride)) {
+      const tex = getSpriteTexture(spriteOverride);
+      if (tex) {
+        return new THREE.MeshStandardMaterial({ map: tex, transparent:true, side:THREE.DoubleSide });
+      }
     }
   }
 
@@ -611,6 +694,33 @@ function updateVisibleTiles() {
       ramps: rampMatrices.length
     });
   }
+
+  /* ---------- BILLBOARD SPRITES (decor layer >=2) ---------- */
+  if (billboardSpriteGroup && window.currentObjects) {
+    const objs = window.currentObjects.filter(o=>o.type==='billboard');
+    const activeIds = new Set();
+    objs.forEach(obj=>{
+      activeIds.add(obj.id);
+      let spr = billboardSpriteMap.get(obj.id);
+      if(!spr){
+        const tex = obj.sprite ? getSpriteTexture(obj.sprite) : null;
+        const mat = new THREE.SpriteMaterial({ map: tex||null, color: tex?0xffffff:0x00ff00, transparent:true });
+        spr = new THREE.Sprite(mat);
+        spr.scale.set(SCALING_3D, SCALING_3D, 1);
+        billboardSpriteGroup.add(spr);
+        billboardSpriteMap.set(obj.id, spr);
+      }
+      spr.position.set(obj.x*SCALING_3D, (SCALING_3D*0.5), obj.y*SCALING_3D);
+    });
+    // remove obsolete
+    billboardSpriteMap.forEach((sprite,id)=>{
+      if(!activeIds.has(id)){
+        billboardSpriteGroup.remove(sprite);
+        sprite.material.map?.dispose(); sprite.material.dispose();
+        billboardSpriteMap.delete(id);
+      }
+    });
+  }
 }
 
 /**
@@ -763,6 +873,23 @@ export function disposeFirstPersonView() {
     cache.forEach(disposeMaterial);
     cache.clear();
   });
+
+  // Dispose and remove the canonical base meshes (if they still exist)
+  const baseMeshes = [floorInstancedMesh, wallInstancedMesh, obstacleInstancedMesh, waterInstancedMesh, mountainInstancedMesh, rampInstancedMesh];
+  baseMeshes.forEach(mesh => {
+    if (!mesh) return;
+    if (sceneGlobalRef) sceneGlobalRef.remove(mesh);
+    mesh.geometry?.dispose?.();
+    disposeMaterial(mesh.material);
+  });
+
+  floorInstancedMesh = wallInstancedMesh = obstacleInstancedMesh = waterInstancedMesh = mountainInstancedMesh = rampInstancedMesh = null;
+
+  // Dispose atlas texture
+  if (tileSheetTexture) {
+    tileSheetTexture.dispose?.();
+    tileSheetTexture = null;
+  }
 
   // Dispose all InstancedMeshes and geometries
   Object.values(meshesByType).forEach(map => {

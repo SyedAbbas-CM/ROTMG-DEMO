@@ -1,1098 +1,1656 @@
-{
-  "width": 32,
-  "height": 32,
-  "tileW": 16,
-  "tileH": 16,
-  "ground": [
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_8",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_3_5",
-      "lofi_environment_sprite_3_5",
-      "lofi_environment_sprite_3_5",
-      "lofi_environment_sprite_3_5",
-      "lofi_environment_sprite_3_5",
-      "lofi_environment_sprite_3_5",
-      "lofi_environment_sprite_3_5",
-      "lofi_environment_sprite_3_5",
-      "lofi_environment_sprite_3_5"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_5",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "lofi_environment_sprite_2_6",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_5",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_2_8",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_5",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_7_0",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "lofi_environment_sprite_3_9",
-      "lofi_environment_sprite_3_9",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "lofi_environment_sprite_3_9",
-      "lofi_environment_sprite_3_9",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ],
-    [
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      "8-Bit_Remaster_World_sprite_4_18",
-      "8-Bit_Remaster_World_sprite_4_18",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "8-Bit_Remaster_World_sprite_4_15",
-      "lofi_environment_sprite_2_6",
-      "lofi_environment_sprite_2_6"
-    ]
-  ],
-  "objects": [],
-  "enemies": []
-}
+ Map save function available. Use window.saveMapData() in the console to download map data.
+ TopDown view render function registered: Success
+ Strategic view render system initialized. Function available: true
+ Coordinate utilities initialized
+ Starting game initialization...
+ Logger system initialized
+ Logger system initialized
+ Log level for default set to NONE
+ Log level for player set to ERROR
+ Log level for input set to ERROR
+ Log level for camera set to ERROR
+ Log level for render set to ERROR
+ Log level for movement set to ERROR
+ Log level for network set to ERROR
+ Log level for collision set to ERROR
+ Log level for coordinate set to ERROR
+ === Current Log Level Settings ===
+ Global override: Not set
+ 
+Module settings:
+ - default: NONE (0)
+ - player: ERROR (1)
+ - camera: ERROR (1)
+ - input: ERROR (1)
+ - render: ERROR (1)
+ - movement: ERROR (1)
+ - network: ERROR (1)
+ - collision: ERROR (1)
+ - coordinate: ERROR (1)
+ 
+Use window.gameLogger.setLogLevel(module, level) to change a specific module
+ Use window.gameLogger.setGlobalLogLevel(level) to override all modules
+ Use window.gameLogger.displayLogLevels() to show this information again
+ ===============================
+ Initializing sprite database...
+ 🎨 Initializing sprite database system...
+ [SpriteDB] Attempting to load 11 sprite atlases...
+ Registered atlas "chars" with 255 sprites
+ Registered atlas "chars2" with 256 sprites
+ Registered atlas "8-Bit_Remaster_World" with 253 sprites
+ Registered atlas "Mixed_Units" with 156 sprites
+ Registered atlas "chars" with 255 sprites
+ Registered atlas "chars2" with 256 sprites
+ Registered atlas "lofi_environment" with 256 sprites
+ Registered atlas "lofi_obj" with 256 sprites
+ Registered atlas "lofi_obj_packB" with 72 sprites
+ Registered atlas "tiles" with 256 sprites
+ Registered atlas "tiles2" with 256 sprites
+ [SpriteDB] ✅ Finished loading. Atlases: 11, Sprites: 2527. (110.00ms)
+ [EntityDB] Loaded – tiles:1 objects:1 enemies:4
+ [TileDB] merged 1 external tile defs (total 1)
+ [SpriteDB] Loaded 6 entities
+ ✅ Sprite database ready. Stats: Object
+ ✅ Entity database ready – enemy count: 4
+ [EntityDB] Loaded – tiles:1 objects:1 enemies:4
+ [TileDB] loaded 10 tiles from assets/database/tiles.json
+ Loading sprite sheets...
+ Loaded sprite sheet "character_sprites" with 1056 sprites
+ Character sprites loaded successfully: Object
+ Loaded sprite sheet "enemy_sprites" with 130 sprites
+ Loaded sprite sheet "tile_sprites" with 112 sprites
+ Loaded sprite sheet "bullet_sprites" with 161 sprites
+ All sprite sheets loaded.
+ Coordinate utilities initialized
+ Coordinate utilities initialized.
+ Created local player: Player
+ ClientBulletManager initialized with capacity for 10000 bullets
+ Enemy type Goblin assigned grid sprite (0, 0) from chars2 atlas
+ Enemy type Orc assigned grid sprite (32, 0) from chars2 atlas
+ Enemy type Skeleton mapped to sprite (96, 0)
+ Enemy type Troll assigned grid sprite (96, 0) from chars2 atlas
+ Enemy type Wizard assigned grid sprite (128, 0) from chars2 atlas
+ Enemy type enemy_5 assigned grid sprite (160, 0) from chars2 atlas
+ Enemy type Red Demon mapped to sprite (32, 64)
+ ClientEnemyManager sprite mapping: Goblin(0,0), Orc(32,0), Skeleton(96,0), Troll(96,0), Wizard(128,0), enemy_5(160,0), Red Demon(32,64)
+ ClientMapManager initialized, procedural generation disabled
+ ClientNetworkManager initialized with server URL: ws://127.0.0.1:3000
+ NetworkManager successfully initialized in CollisionManager
+ Created collision manager with networkManager: ClientCollisionManager
+ Game state initialized with all managers
+ Sprite editor container already exists in HTML
+ Three.js Renderer initialized.
+ Three.js Scene created.
+ Three.js Camera created and positioned.
+ Controls initialized.
+ Hemisphere Light added to the scene.
+ Ambient Light added to the scene.
+ Directional Light added to the scene.
+ [FirstPerson] Adding first-person elements to the scene.
+ [FirstPerson] Creating InstancedMeshes with maxInstances: 4096
+ [FirstPerson] Added floorInstancedMesh to the scene
+ [FirstPerson] Added wallInstancedMesh to the scene
+ [FirstPerson] Added obstacleInstancedMesh to the scene
+ [FirstPerson] Added waterInstancedMesh to the scene
+ [FirstPerson] Added mountainInstancedMesh to the scene
+ [FirstPerson] Added rampInstancedMesh to the scene
+ [FirstPerson] Added bulletInstancedMesh to the scene
+ [MapManager] Updating visible chunks LOCALLY around (5.0, 5.0)
+ [MapManager] Local update center chunk: (0, 0), distance: 4
+ [MapManager] 81 chunks in view distance not loaded: (-4,-4), (-3,-4), (-2,-4), (-1,-4), (0,-4), (1,-4), (2,-4), (3,-4), (4,-4), (-4,-3), (-3,-3), (-2,-3), (-1,-3), (0,-3), (1,-3), (2,-3), (3,-3), (4,-3), (-4,-2), (-3,-2), (-2,-2), (-1,-2), (0,-2), (1,-2), (2,-2), (3,-2), (4,-2), (-4,-1), (-3,-1), (-2,-1), (-1,-1), (0,-1), (1,-1), (2,-1), (3,-1), (4,-1), (-4,0), (-3,0), (-2,0), (-1,0), (0,0), (1,0), (2,0), (3,0), (4,0), (-4,1), (-3,1), (-2,1), (-1,1), (0,1), (1,1), (2,1), (3,1), (4,1), (-4,2), (-3,2), (-2,2), (-1,2), (0,2), (1,2), (2,2), (3,2), (4,2), (-4,3), (-3,3), (-2,3), (-1,3), (0,3), (1,3), (2,3), (3,3), (4,3), (-4,4), (-3,4), (-2,4), (-1,4), (0,4), (1,4), (2,4), (3,4), (4,4)
+ Queued message type 51 for later sending
+ Requested chunk (0, 0) on-demand
+ Queued message type 51 for later sending
+ Requested chunk (1, 0) on-demand
+ Queued message type 51 for later sending
+ Requested chunk (0, 1) on-demand
+ Queued message type 51 for later sending
+ Requested chunk (1, 1) on-demand
+ [FirstPerson] Initial tiles rendered around the character.
+ First-person elements added. Connecting to server...
+ Initializing Game UI...
+ Attempting to connect to server at ws://127.0.0.1:3000
+ Connecting to server: ws://127.0.0.1:3000
+ Window resize event listener added.
+ DebugTools ready. Try `DebugTools.listSprites()`
+ Connected to server
+ Chat message handler registered for type: 90
+ Connection to server successful
+ Connected to server. Starting the game loop.
+ Received client ID: 2
+ [setClientId] Received client ID from server: 2
+ [setClientId] Updated gameState.character.id to 2
+ [setClientId] Local player ID set to: 2
+ [setClientId] Current players in playerManager: 
+ Received map info: Object
+ Received map data from server: Object
+ Map initialized: map_3 (32x32)
+ Map properties: tileSize=16, chunkSize=16
+ [NETWORK] Received player list: 1 players (IDs: 2)
+ Player sample: null
+ Sample player data for 2: Object
+ Received enemies list: 1 enemies
+ Enemy sample: ID=enemy_1, Pos=(1.00, 31.00), Health=350
+ Received enemies list: 1 enemies null
+ Added enemy enemy_1 of type Red Demon at (1, 31)
+ Received bullets list: 0 bullets
+ Received bullets list: 0 bullets null
+ Set 0 bullets from server, total bullets: 0
+ World update: 1 enemies, 0 bullets, 1 players
+ World update received null
+game.js:1297 EMERGENCY FIX: Character detected in wall at position (5, 5)
+checkAndFixStuckCharacter @ game.js:1297
+game.js:1301 CRITICAL: Found character at the known problematic position (5,5). Applying emergency fix...
+checkAndFixStuckCharacter @ game.js:1301
+game.js:1332 EMERGENCY FIX: Used extreme fallback position (20, 20)
+checkAndFixStuckCharacter @ game.js:1332
+ Enemy sprite sheet loaded: 512x512 Object
+ Received chunk data for (0, 0)
+ Map debug object created. Access it via window.mapDebug in the console
+ Received chunk data for (0, 0) Object
+ [CLI] store 0 0
+ Received chunk data for (1, 0)
+ Received chunk data for (1, 0) Object
+ [CLI] store 1 0
+ Received chunk data for (0, 1)
+ Received chunk data for (0, 1) Object
+ [CLI] store 0 1
+ Received chunk data for (1, 1)
+ Received chunk data for (1, 1) Object
+ [CLI] store 1 1
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "tiles2" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ 🔄 Reinitializing enemy sprite coordinates...
+ Enemy type Goblin assigned grid sprite (0, 0) from chars2 atlas
+ Enemy type Orc assigned grid sprite (32, 0) from chars2 atlas
+ Enemy type Skeleton mapped to sprite (96, 0)
+ Enemy type Troll assigned grid sprite (96, 0) from chars2 atlas
+ Enemy type Wizard assigned grid sprite (128, 0) from chars2 atlas
+ Enemy type enemy_5 assigned grid sprite (160, 0) from chars2 atlas
+ Enemy type Red Demon mapped to sprite (32, 64)
+ Enemy type red_demon_bullet assigned grid sprite (224, 0) from chars2 atlas
+ ClientEnemyManager sprite mapping: Goblin(0,0), Orc(32,0), Skeleton(96,0), Troll(96,0), Wizard(128,0), enemy_5(160,0), Red Demon(32,64), red_demon_bullet(224,0)
+ ✅ Enemy sprite coordinates updated
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Map boundaries: width=32, height=32
+ Player position in tiles: (20, 20)
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Remaining players after filtering: 
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] No other players to update after filtering
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Remaining players after filtering: 
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Enemy sprite sheet loaded: Object
+ All enemy sprite mappings verified successfully
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 5 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Renderer and camera updated on window resize.
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] No other players to update after filtering
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ [NETWORK] Received player list: 1 players (IDs: 2)
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Component minimap initialized
+ Component characterPanel initialized
+ Component chatPanel initialized
+ Component unitBar initialized
+ Component controlBar initialized
+ All UI components initialized successfully
+ Game UI loaded successfully
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ Loaded sprite sheet "lofi_environment" with 256 sprites
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Player IDs in update: 2
+ [updateWorld] Local player ID: 2
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Player IDs in update: 2
+ [updateWorld] Local player ID: 2
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Filtered out local player (2) from update
+ World update: 1 enemies, 5 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] No other players to update after filtering
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ Ping handler registered for DebugOverlay
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Filtered out local player (2) from update
+ World update: 1 enemies, 5 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ Chat network listeners initialized for message type: 90
+ World update: 1 enemies, 0 bullets, 1 players
+ [NETWORK] Received player list: 1 players (IDs: 2)
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Player IDs in update: 2
+ [updateWorld] Local player ID: 2
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ Map boundaries: width=32, height=32
+ Player position in tiles: (20, 20)
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ Map boundaries: width=32, height=32
+ Player position in tiles: (20, 20)
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Filtered out local player (2) from update
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 5 bullets, 1 players
+ [updateWorld] Filtered out local player (2) from update
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Filtered out local player (2) from update
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ Map boundaries: width=32, height=32
+ Player position in tiles: (20, 20)
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Player IDs in update: 2
+ [updateWorld] Local player ID: 2
+ World update: 1 enemies, 0 bullets, 1 players
+ World update received null
+ [NETWORK] Received player list: 1 players (IDs: 2)
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Player IDs in update: 2
+ [updateWorld] Local player ID: 2
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Player IDs in update: 2
+ [updateWorld] Local player ID: 2
+ [updateWorld] Remaining players after filtering: 
+ World update: 1 enemies, 0 bullets, 1 players
+ [updateWorld] Filtered out local player (2) from update
+ World update: 1 enemies, 0 bullets, 1 players
+ World update: 1 enemies, 5 bullets, 1 players
+ WALL COLLISION DETECTED:
+- Bullet world position: (-0.14, 30.64)
+- Bullet tile position: (-1, 1) [using tileSize=16]
+- Bullet ID: bullet_88
+- Bullet owner: enemy_1
+ - Tile at collision: null
+ClientCollisionManager.js:489 Detected 1 bullet-wall collisions this frame
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:826 [updateWorld] Remaining players after filtering: 
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:834 [updateWorld] No other players to update after filtering
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:746 World update: 1 enemies, 0 bullets, 1 players
+game.js:750 [updateWorld] Player IDs in update: 2
+game.js:751 [updateWorld] Local player ID: 2
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:834 [updateWorld] No other players to update after filtering
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:826 [updateWorld] Remaining players after filtering: 
+ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:14 [NETWORK] Received player list: 1 players (IDs: 2)
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:746 World update: 1 enemies, 0 bullets, 1 players
+game.js:750 [updateWorld] Player IDs in update: 2
+game.js:751 [updateWorld] Local player ID: 2
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:834 [updateWorld] No other players to update after filtering
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:818 [updateWorld] Filtered out local player (2) from update
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:834 [updateWorld] No other players to update after filtering
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:826 [updateWorld] Remaining players after filtering: 
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:826 [updateWorld] Remaining players after filtering: 
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:746 World update: 1 enemies, 0 bullets, 1 players
+game.js:750 [updateWorld] Player IDs in update: 2
+game.js:751 [updateWorld] Local player ID: 2
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:818 [updateWorld] Filtered out local player (2) from update
+ClientNetworkManager.js:12 Player sample: null
+ClientNetworkManager.js:560 Sample player data for 2: {id: 2, x: 7.906667220511153, y: 9.218772735929376, rotation: 0, health: 100, …}
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:14 [NETWORK] Received player list: 1 players (IDs: 2)
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:746 World update: 1 enemies, 0 bullets, 1 players
+game.js:750 [updateWorld] Player IDs in update: 2
+game.js:751 [updateWorld] Local player ID: 2
+ClientMapManager.js:434 Map boundaries: width=32, height=32
+ClientMapManager.js:435 Player position in tiles: (20, 20)
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:746 World update: 1 enemies, 0 bullets, 1 players
+game.js:750 [updateWorld] Player IDs in update: 2
+game.js:751 [updateWorld] Local player ID: 2
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:834 [updateWorld] No other players to update after filtering
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:12 World update received null
+game.js:746 World update: 1 enemies, 0 bullets, 1 players
+game.js:750 [updateWorld] Player IDs in update: 2
+game.js:751 [updateWorld] Local player ID: 2
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:14 [NETWORK] Received player list: 1 players (IDs: 2)
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:818 [updateWorld] Filtered out local player (2) from update
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:834 [updateWorld] No other players to update after filtering
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:746 World update: 1 enemies, 0 bullets, 1 players
+game.js:750 [updateWorld] Player IDs in update: 2
+game.js:751 [updateWorld] Local player ID: 2
+game.js:834 [updateWorld] No other players to update after filtering
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:834 [updateWorld] No other players to update after filtering
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:818 [updateWorld] Filtered out local player (2) from update
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:746 World update: 1 enemies, 0 bullets, 1 players
+game.js:750 [updateWorld] Player IDs in update: 2
+game.js:751 [updateWorld] Local player ID: 2
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:818 [updateWorld] Filtered out local player (2) from update
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:746 World update: 1 enemies, 0 bullets, 1 players
+game.js:750 [updateWorld] Player IDs in update: 2
+game.js:751 [updateWorld] Local player ID: 2
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:826 [updateWorld] Remaining players after filtering: 
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:818 [updateWorld] Filtered out local player (2) from update
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+game.js:746 World update: 1 enemies, 0 bullets, 1 players
+game.js:750 [updateWorld] Player IDs in update: 2
+game.js:751 [updateWorld] Local player ID: 2
+ClientNetworkManager.js:14 [NETWORK] Received player list: 1 players (IDs: 2)
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
+game.js:834 [updateWorld] No other players to update after filtering
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
+ClientEnemyManager.js:340 Added enemy enemy_2 of type Red Demon at (1, 16.9495849609375)
+ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 2 enemies, 5 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
+ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] Player IDs in update: 2
+ [updateWorld] Local player ID: 2
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 5 bullets, 1 players
+ WALL COLLISION DETECTED:
+- Bullet world position: (-0.15, 30.63)
+- Bullet tile position: (-1, 1) [using tileSize=16]
+- Bullet ID: bullet_128
+- Bullet owner: enemy_1
+ - Tile at collision: null
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] Remaining players after filtering: 
+ [NETWORK] Received player list: 1 players (IDs: 2)
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] No other players to update after filtering
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 5 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] Remaining players after filtering: 
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 5 bullets, 1 players
+ WALL COLLISION DETECTED:
+- Bullet world position: (-0.15, 30.64)
+- Bullet tile position: (-1, 1) [using tileSize=16]
+- Bullet ID: bullet_138
+- Bullet owner: enemy_1
+ - Tile at collision: null
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] Player IDs in update: 2
+ [updateWorld] Local player ID: 2
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ Map boundaries: width=32, height=32
+ Player position in tiles: (20, 20)
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] Remaining players after filtering: 
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] Filtered out local player (2) from update
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ Map boundaries: width=32, height=32
+ Player position in tiles: (20, 20)
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 5 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] Filtered out local player (2) from update
+ World update: 2 enemies, 0 bullets, 1 players
+ World update received null
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [NETWORK] Received player list: 1 players (IDs: 2)
+ World update: 2 enemies, 5 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] Remaining players after filtering: 
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] Player IDs in update: 2
+ [updateWorld] Local player ID: 2
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] No other players to update after filtering
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] Player IDs in update: 2
+ [updateWorld] Local player ID: 2
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 5 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players
+ [updateWorld] No other players to update after filtering
+ World update: 2 enemies, 0 bullets, 1 players
+ World update: 2 enemies, 0 bullets, 1 players

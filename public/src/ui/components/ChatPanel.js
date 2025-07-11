@@ -2,6 +2,7 @@
  * Chat panel component for displaying and sending messages
  */
 import { UIComponent } from '../UIManager.js';
+import { MessageType as MT } from '../../network/ClientNetworkManager.js';
 
 export class ChatPanel extends UIComponent {
   /**
@@ -356,14 +357,7 @@ export class ChatPanel extends UIComponent {
     
     try {
       // Import MessageType from the network manager
-      let MessageType;
-      if (window.MessageType) {
-        MessageType = window.MessageType;
-      } else {
-        // Hardcode the value if we can't import it
-        MessageType = { CHAT_MESSAGE: 90 };
-        console.warn('Using hardcoded MessageType.CHAT_MESSAGE value (90)');
-      }
+      let MessageType = window.MessageType || MT;
       
       // Register for binary CHAT_MESSAGE (type 90) from server
       this.gameState.networkManager.on(MessageType.CHAT_MESSAGE, (data) => {

@@ -243,12 +243,18 @@ export function initControls() {
  * @param {MouseEvent} event - Mouse event
  */
 function onMouseMove(event) {
+    const character = gameState.character;
+    if (!character) return;
+    // Ensure rotation object exists – it may still be 0 right after connect
+    if (typeof character.rotation !== 'object' || character.rotation === null) {
+        character.rotation = { yaw: 0, pitch: 0 };
+    }
     const sensitivity = MOUSE_SENSITIVITY;
-    gameState.character.rotation.yaw -= event.movementX * sensitivity;
-    gameState.character.rotation.pitch -= event.movementY * sensitivity;
+    character.rotation.yaw -= event.movementX * sensitivity;
+    character.rotation.pitch -= event.movementY * sensitivity;
 
     // Clamp the pitch to prevent flipping
-    gameState.character.rotation.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, gameState.character.rotation.pitch));
+    character.rotation.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, character.rotation.pitch));
 }
 
 /**
