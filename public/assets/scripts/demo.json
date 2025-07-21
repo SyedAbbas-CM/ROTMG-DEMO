@@ -1,0 +1,8 @@
+{
+  "meta": { "name": "demo" },
+  "nodes": [
+    { "type": "Emitter:RadialBurst@1.0.0", "projectiles": 8, "speed": 6 },
+    { "type": "wait", "duration": 1.0 },
+    { "type": "Movement:Dash@1.0.0", "dx": 3, "dy": 0, "speed": 8, "duration": 0.4 }
+  ]
+} 

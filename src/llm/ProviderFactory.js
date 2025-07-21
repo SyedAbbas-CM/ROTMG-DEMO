@@ -1,10 +1,11 @@
 // File: src/llm/ProviderFactory.js
 import GeminiProvider from './providers/GeminiProvider.js';
 import OllamaProvider from './providers/OllamaProvider.js';
+import MockProvider from './providers/MockProvider.js';
 
 export function createProvider() {
   const backend = process.env.LLM_BACKEND || 'gemini';
-  const model   = process.env.LLM_MODEL   || 'gemini-1.5-pro-latest';
+  const model   = process.env.LLM_MODEL   || 'models/gemini-2.5-flash';
   const opts = {
     model,
     temperature: +process.env.LLM_TEMP      || 0.7,
@@ -20,6 +21,9 @@ export function createProvider() {
 
     case 'ollama':
       return new OllamaProvider(opts);
+
+    case 'mock':
+      return new MockProvider(opts);
 
     default:
       throw new Error(`Unknown LLM_BACKEND '${backend}'`);

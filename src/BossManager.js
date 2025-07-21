@@ -37,6 +37,9 @@ export default class BossManager {
 
     // Per-boss action queue (array of arrays) – filled by ScriptBehaviourRunner / LLM
     this.actionQueue = Array.from({ length: maxBosses }, () => []);
+
+    // Track previous health to compute delta within buildSnapshot()
+    this.prevHp = new Float32Array(maxBosses).fill(1.0);
   }
 
   /**
@@ -105,12 +108,17 @@ export default class BossManager {
           const twoPi = Math.PI * 2;
           for (let p = 0; p < projectiles; p++) {
             const theta = (p / projectiles) * twoPi;
+            const eid = this.enemyIndex[i] >= 0 ? this.enemyMgr.id[this.enemyIndex[i]] : this.id[i];
             bulletMgr.addBullet({
               x: this.x[i],
               y: this.y[i],
               vx: Math.cos(theta) * speed,
               vy: Math.sin(theta) * speed,
-              owner: 'boss',
+              ownerId: eid,
+              damage: 8,
+              width: 0.6,
+              height: 0.6,
+              spriteName: null,
               worldId: this.worldId[i]
             });
           }
@@ -122,12 +130,35 @@ export default class BossManager {
   }
 
   /**
-   * Produce a compact JSON snapshot for the LLM.
-   * players: array of {id,x,y,hp,vx,vy}
+   * Build a lightweight snapshot for the LLM containing additional tactical
+   * context (bullets around boss, recent damage, etc.).
+   * @param {Array}  players      – trimmed array sent from LLMBossController
+   * @param {BulletManager|null} bulletMgr – optional bullet manager reference
+   * @param {number} tickNumber   – server tick counter
    */
-  buildSnapshot(players, tickNumber = 0) {
+  buildSnapshot(players, bulletMgr = null, tickNumber = 0) {
     if (!this.bossCount) return null;
     const i = 0;
+    // ---------- bullets summary (if manager provided) ----------
+    let bulletsNear = 0;
+    let uniqueAttackers = new Set();
+    if (bulletMgr && bulletMgr.bulletCount) {
+      const R2 = 144; // radius^2 (12 tiles) – tweak later
+      for (let b = 0; b < bulletMgr.bulletCount; b++) {
+        if (bulletMgr.worldId[b] !== this.worldId[i]) continue;
+        const dx = bulletMgr.x[b] - this.x[i];
+        const dy = bulletMgr.y[b] - this.y[i];
+        if (dx*dx + dy*dy <= R2) {
+          bulletsNear++;
+          if (bulletMgr.ownerId[b]) uniqueAttackers.add(bulletMgr.ownerId[b]);
+        }
+      }
+    }
+
+    // ---------- recent damage (since last snapshot) ----------
+    const hpDelta = Number((this.hp[i] - this.prevHp[i]).toFixed(3));
+    this.prevHp[i] = this.hp[i];
+
     const snap = {
       tick : tickNumber,
       boss : {
@@ -136,7 +167,10 @@ export default class BossManager {
         phase   : this.phase[i],
         cooldowns : {
           aoe  : Number(this.cooldownAOE[i].toFixed(1))
-        }
+        },
+        damageDelta : hpDelta,              // negative = damage taken
+        bulletsNear,
+        attackers   : Array.from(uniqueAttackers).slice(0,8)
       },
       players : players.slice(0, 8).map(p => ({
         id  : p.id,
@@ -151,9 +185,9 @@ export default class BossManager {
   /** Lightweight helper for server broadcast. */
   getBossData(worldId) {
     if (!this.bossCount) return [];
-    // todo filter by worldId later
     const arr = [];
     for (let i = 0; i < this.bossCount; i++) {
+      if (worldId && this.worldId[i] !== worldId) continue;
       arr.push({
         id   : this.id[i],
         x    : this.x[i],

@@ -23,7 +23,7 @@
       "properties": {
         "ability": {
           "type": "string",
-          "enum": ["cone_aoe", "radial_burst", "dash", "spawn_minions", "reposition", "wait", "taunt"]
+          "enum": ["cone_aoe","radial_burst","dash","spawn_minions","reposition","wait","taunt","spawn_formation","teleport_to_player","dynamic_movement","charge_attack","pattern_shoot","summon_orbitals","heal_self","shield_phase","effect_aura","conditional_trigger","environment_control","projectile_spread"]
         },
         "args": { "type": "object" }
       },

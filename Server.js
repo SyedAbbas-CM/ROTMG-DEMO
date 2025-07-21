@@ -21,6 +21,8 @@ import BossManager from './src/BossManager.js';
 import LLMBossController from './src/LLMBossController.js';
 import BossSpeechController from './src/BossSpeechController.js';
 import './src/telemetry/index.js'; // OpenTelemetry setup
+import llmRoutes from './src/routes/llmRoutes.js';
+import hotReloadRoutes from './src/routes/hotReloadRoutes.js';
 
 // Debug flags to control logging
 const DEBUG = {
@@ -1369,6 +1371,18 @@ function spawnInitialEnemies() {
 
   llmBossController = new LLMBossController(bossManager, ctx.bulletMgr, mapManager, ctx.enemyMgr);
   bossSpeechCtrl    = new BossSpeechController(bossManager, { broadcast });
+
+  // Load demo script if present (Phase-A capability test)
+  try {
+    const demoPath = path.join(__dirname, 'public', 'assets', 'scripts', 'demo.json');
+    if (fs.existsSync(demoPath)) {
+      const script = JSON.parse(fs.readFileSync(demoPath, 'utf8'));
+      llmBossController.runner.load(script);
+      console.log('[INIT] Demo script loaded into runner');
+    }
+  } catch (err) {
+    console.warn('[INIT] Failed to load demo script', err.message);
+  }
   console.log('[INIT] Hyper boss spawned and LLM controllers ready');
 }
 
@@ -1377,7 +1391,9 @@ function spawnInitialEnemies() {
  * @param {number} clientId - Client ID
  */
 function handlePlayerListRequest(clientId) {
-    console.log(`Client ${clientId} requested player list`);
+    if (globalThis.DEBUG?.playerList) {
+      console.log(`Client ${clientId} requested player list`);
+    }
     
     const client = clients.get(clientId);
     if (!client) return;
@@ -1391,7 +1407,9 @@ function handlePlayerListRequest(clientId) {
     });
     
     // Send player list directly to the client
-    console.log(`Sending player list to client ${clientId}: ${Object.keys(players).length} players`);
+    if (globalThis.DEBUG?.playerList) {
+      console.log(`Sending player list to client ${clientId}: ${Object.keys(players).length} players`);
+    }
     sendToClient(client.socket, MessageType.PLAYER_LIST, players);
 }
 
@@ -1748,3 +1766,6 @@ function switchPlayerWorld(clientId, destMapId){
   // Spawn enemies for new map if not yet done
   spawnMapEnemies(destMapId);
 }
+
+app.use('/api/llm', llmRoutes);
+app.use(hotReloadRoutes);

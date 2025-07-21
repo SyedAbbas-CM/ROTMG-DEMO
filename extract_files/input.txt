@@ -1,27 +1,202 @@
-server.js
-scripts               
-testLLM.js
-tiles.json
-enemies.json      
-BossManager.js
-BossSpeechController.js
-EnemyManager.js
-LLMBossController.js
-ScriptBehaviourRunner.js
-QuickJSSandbox.js
-DifficultyCritic.js
-ProviderFactory.js
-BaseProvider.js
-GeminiProvider.js
-OllamaProvider.js
-planFunction.js
-functionSchema.json
-ndex.js
-dash.js
-radial_burst.js
-mutator_wait.js
-cone_aoe.js         (cursor)
-spawn_minions.js    (cursor)
-reposition.js       (cursor)
-Registry.js
-DirectoryLoader.js
+SECTION: llm
+
+[llm]
+src/BossManager.js
+src/LLMBossController.js
+src/BossSpeechController.js
+
+
+src/llm/ProviderFactory.js
+src/llm/planFunction.js
+src/llm/functionSchema.json
+src/llm/speechSchema.json
+src/llm/llmLogger.js
+
+
+src/llm/providers/BaseProvider.js
+src/llm/providers/GeminiProvider.js
+src/llm/providers/OllamaProvider.js
+src/llm/providers/MockProvider.js
+
+
+src/routes/llmRoutes.js
+
+
+scripts/testLLM.js
+
+
+tests/providerFactory.test.js
+
+SECTION: server
+
+[server]
+Server.js
+
+SECTION: core
+
+[core]
+src/MapManager.js
+src/MapObjectManager.js
+src/world/constants.js
+src/world/mapLoader.js
+src/world/packed_tile.js
+src/world/tile.js
+src/world/AdvancedPerlinNoise.js
+src/world/PerlinNoise.js
+maps/plus_playable_tilemap.json
+maps/server_map_map_1.json
+maps/simple_map_map_1.json
+maps/fat_plus_playable_tilemap.json
+maps/flat_world.json
+
+SECTION: entity
+
+[entity]
+src/EnemyManager.js
+src/BulletManager.js
+src/CollisionManager.js
+
+SECTION: behavior
+
+[behavior]
+src/BehaviorSystem.js
+src/BehaviorTree.js
+src/BehaviorState.js
+src/Behaviors.js
+src/ScriptBehaviourRunner.js
+src/DslInterpreter.js
+src/Behaviours/enemy-behaviors.js
+src/Behaviours/EnemyBehaviors.js
+src/Behaviours/Research/Enemy_Behaviour_Research.txt
+src/Behaviours/Research/Enemy_Behaviour_Roadmap.txt
+src/Behaviours/Research/Roadmap.txt
+src/Behaviours/Research/Collision_Optimization.txt
+src/Behaviours/Research/Collision_Optimization_Roadmap.txt
+src/Behaviours/Research/Bullet_Optimization.txt
+src/Behaviours/Research/Bullet_Optimizaion_Roadmap.txt
+
+SECTION: registry
+
+[registry]
+src/registry/Registry.js
+src/registry/DirectoryLoader.js
+src/registry/HotReloadWatcher.js
+src/registry/index.js
+src/registry/brick-union.schema.json
+capabilities/Core/Wait/1.0.0/implementation.js
+capabilities/Core/Wait/1.0.0/schema.json
+capabilities/Movement/Dash/1.0.0/implementation.js
+capabilities/Movement/Dash/1.0.0/schema.json
+capabilities/Emitter/RadialBurst/1.0.0/implementation.js
+capabilities/Emitter/RadialBurst/1.0.0/schema.json
+
+SECTION: performance
+
+[performance]
+src/wasm/BulletUpdate.cpp
+src/wasm/bulletUpdate.wasm
+src/wasm/collision.cpp
+src/wasmLoader.js
+src/shared/spatialGrid.js
+
+SECTION: telemetry
+
+[telemetry]
+src/telemetry/index.js
+src/telemetry/PrettyConsoleSpanExporter.js
+
+SECTION: critic
+
+[critic]
+src/critic/DifficultyCritic.js
+src/simulator/HeadlessSimulator.js
+
+SECTION: network
+
+[network]
+src/NetworkManager.js
+
+SECTION: assets
+
+[assets]
+src/assets/EntityDatabase.js
+src/assets/TileDatabase.js
+src/assets/items.json
+src/assets/units.json
+src/database.js
+
+SECTION: units
+
+[units]
+src/units/SoldierManager.js
+src/units/UnitCommandBuffer.js
+src/units/UnitNetworkAdaptor.js
+src/units/UnitSystems.js
+src/units/UnitTypes.js
+
+SECTION: inventory
+
+[inventory]
+src/InventoryManager.js
+src/ItemManager.js
+
+SECTION: api
+
+[api]
+src/routes/mapRoutes.js
+src/routes/spriteRoutes.js
+src/routes/llmRoutes.js
+src/routes/hotReloadRoutes.js
+
+SECTION: transitions
+
+[transitions]
+src/Transitions.js
+
+SECTION: sandbox
+
+[sandbox]
+src/sandbox/QuickJSSandbox.js
+
+SECTION: extraction
+
+[extraction]
+extract_files/extractfiles.cjs
+extract_files/input.txt
+extract_files/chunks/default/chunk-1.txt
+extract_files/chunks/default/chunk-2.txt
+extract_files/chunks/default/chunk-3.txt
+extract_systems.js
+extract_game_systems.sh
+
+SECTION: scripts
+
+[scripts]
+scripts/testLLM.js
+ci-tools/generateTypes.js
+ci-tools/generateUnionSchema.js
+
+SECTION: tests
+
+[tests]
+tests/hash.test.js
+tests/providerFactory.test.js
+tests/dsl-interpreter.spec.js
+
+SECTION: config
+
+[config]
+package.json
+jest.config.js
+.env.example.txt
+.vscode/settings.json
+.eslintrc.js
+.gitignore
+.gitattributes
+
+SECTION: docs
+
+[docs]
+README.md
+logs.txt
+public/assets/scripts/demo.json

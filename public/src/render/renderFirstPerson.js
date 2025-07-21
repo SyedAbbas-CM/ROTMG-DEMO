@@ -95,6 +95,8 @@ function getSpriteTexture(spriteName) {
 // Groups that hold dynamic sprites
 let enemySpriteGroup;
 let bulletSpriteGroup;
+let billboardSpriteGroup; // holds UI billboards (names, hp bars)
+const billboardSpriteMap = new Map(); // id -> Sprite mapping for billboards
 const enemySpriteMap = new Map(); // enemyId -> sprite
 const bulletSpritePool = []; // reusable pool
 let bulletPoolIndex = 0;
@@ -473,6 +475,11 @@ function useFallbackMaterials(scene) {
     scene.add(mountainInstancedMesh);
     console.log('[FirstPerson] Added fallbackMountainInstancedMesh to the scene');
 
+    if (!billboardSpriteGroup) {
+      billboardSpriteGroup = new THREE.Group();
+      scene.add(billboardSpriteGroup);
+    }
+
     // Initial render of tiles around the character
     updateVisibleTiles();
     console.log('[FirstPerson] Initial fallback tiles rendered around the character.');
@@ -486,6 +493,8 @@ function useFallbackMaterials(scene) {
  * Only renders tiles within the VIEW_RADIUS of the character.
  */
 function updateVisibleTiles() {
+  if (!floorInstancedMesh || !sceneGlobalRef || !bulletInstancedMesh || !enemySpriteGroup || !billboardSpriteGroup) return;
+
   const character = gameState.character;
   if (!character) {
     console.warn('[FirstPerson] Cannot update visible tiles: character not found');

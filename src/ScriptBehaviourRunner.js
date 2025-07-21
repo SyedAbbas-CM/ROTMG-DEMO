@@ -3,6 +3,7 @@
 // fs/path imports no longer needed after DSL removal
 
 import { registry } from './registry/index.js';
+import DslInterpreter from './DslInterpreter.js';
 
 // OLD DSL imports removed (Mutators, Ajv)
 
@@ -15,6 +16,7 @@ export default class ScriptBehaviourRunner {
     this.bulletMgr = bulletMgr;
     this.enemyMgr = enemyMgr;
     this.bossIdx = bossIdx;
+    this.interpreter = new DslInterpreter();
     this.reset();
   }
 
@@ -28,12 +30,25 @@ export default class ScriptBehaviourRunner {
 
   load(scriptObj) {
     this.script = scriptObj;
-    this._gotoState(scriptObj.entry);
-    console.log('[ScriptRunner] Script loaded', scriptObj.meta?.name || 'unnamed');
+    if (Array.isArray(scriptObj?.nodes)) {
+      // Switch to interpreter mode
+      this.interpreter.load(scriptObj.nodes);
+      console.log('[ScriptRunner] Script(nodes) loaded');
+    } else {
+      this._gotoState(scriptObj.entry);
+      console.log('[ScriptRunner] Script loaded', scriptObj.meta?.name || 'unnamed');
+    }
     return true;
   }
 
   tick(dt) {
+    // Interpreter path
+    if (this.script?.nodes) {
+      const nodes = this.interpreter.tick(dt);
+      const q = this.bossMgr.actionQueue[this.bossIdx];
+      for (const n of nodes) q.push(n);
+      return;
+    }
     if (!this.script) return;
     this.stateClock += dt;
 
