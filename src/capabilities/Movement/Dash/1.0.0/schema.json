@@ -1,0 +1,14 @@
+{
+  "$id": "Movement:Dash@1.0.0",
+  "title": "Movement:Dash",
+  "type": "object",
+  "required": ["type"],
+  "properties": {
+    "type": { "const": "Movement:Dash@1.0.0" },
+    "dx": { "type": "number", "default": 0 },
+    "dy": { "type": "number", "default": 0 },
+    "speed": { "type": "number", "minimum": 0.1, "maximum": 100, "default": 10 },
+    "duration": { "type": "number", "minimum": 0, "maximum": 10, "default": 0.5 }
+  },
+  "additionalProperties": false
+} 

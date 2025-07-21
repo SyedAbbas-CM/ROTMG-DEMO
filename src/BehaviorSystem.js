@@ -4,7 +4,7 @@
  */
 
 import { BehaviorState } from './BehaviorState.js';
-import * as Behaviors from './Behaviors.js';
+import * as Behaviors from './BehaviorsCore.js';
 import * as Transitions from './Transitions.js';
 
 /**
@@ -44,6 +44,9 @@ export default class BehaviorSystem {
     
     // Type 4: Melee enemy - aggressively chases but doesn't shoot
     this.registerBehaviorTemplate(4, this.createMeleeEnemyBehavior());
+    
+    // Type 5: Advanced enemy with orbit and teleport tactics
+    this.registerBehaviorTemplate(5, this.createAdvancedEnemyBehavior());
   }
   
   /**
@@ -331,6 +334,45 @@ export default class BehaviorSystem {
         b.cooldownMultiplier = shootCooldown / 1.0; // assume enemyManager.cooldown default already holds shootCooldown; multiplier keeps ratio
       }
     });
+
+    return idleState;
+  }
+
+  /**
+   * Create behavior template for Advanced enemy (Type 5)
+   */
+  createAdvancedEnemyBehavior() {
+    // Idle state wandering
+    const idleState = new BehaviorState('idle', [
+      new Behaviors.Wander(0.6)
+    ]);
+
+    // Orbit shoot state around player
+    const orbitState = new BehaviorState('orbitShoot', [
+      new Behaviors.Orbit(1.0, 6),
+      new Behaviors.Shoot(1.2, 3, Math.PI / 10)
+    ]);
+
+    // Teleport away when player too close
+    const teleportState = new BehaviorState('teleport', [
+      new Behaviors.RunAway(2.5, 400),
+      new Behaviors.Shoot(0.8, 5, Math.PI / 6)
+    ]);
+
+    // Swirl rage state when low health
+    const swirlState = new BehaviorState('swirl', [
+      new Behaviors.Swirl(1.5, 5, 8, true),
+      new Behaviors.Shoot(0.4, 8, Math.PI / 8)
+    ]);
+
+    // Transitions
+    idleState.addTransition(new Transitions.PlayerWithinRange(300, orbitState));
+    orbitState.addTransition(new Transitions.NoPlayerWithinRange(350, idleState));
+    orbitState.addTransition(new Transitions.PlayerWithinRange(80, teleportState));
+    teleportState.addTransition(new Transitions.NoPlayerWithinRange(120, orbitState));
+    teleportState.addTransition(new Transitions.TimedTransition(5.0, orbitState));
+    orbitState.addTransition(new Transitions.HealthBelow(0.5, swirlState));
+    swirlState.addTransition(new Transitions.HealthAbove(0.7, orbitState));
 
     return idleState;
   }

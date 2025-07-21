@@ -1,12 +1,13 @@
 import { createProvider } from './llm/ProviderFactory.js';
 import { logLLM } from './llm/llmLogger.js';
+import llmConfig from './config/llmConfig.js';
 
 export default class BossSpeechController {
   constructor(bossMgr, networkMgr) {
     this.bossMgr = bossMgr;
     this.networkMgr = networkMgr;
     this.timer = 0;
-    this.period = 5; // seconds
+    this.period = llmConfig.speechPeriodSec;
 
     this.provider = null;
   }

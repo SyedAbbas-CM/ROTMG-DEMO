@@ -31,7 +31,19 @@ export const issueActionsFn = {
                 'wait',
                 'spawn_minions',
                 'reposition',
-                'taunt'
+                'taunt',
+                'spawn_formation',
+                'teleport_to_player',
+                'dynamic_movement',
+                'charge_attack',
+                'pattern_shoot',
+                'summon_orbitals',
+                'heal_self',
+                'shield_phase',
+                'effect_aura',
+                'conditional_trigger',
+                'environment_control',
+                'projectile_spread'
               ]
             },
             args:    { type: 'object' },

@@ -1,6 +1,209 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Capability Brick Union (auto-generated)",
-  "description": "Union schema of every capability brick. This file is populated by ci-tools/generateUnionSchema.js during CI or dev setup.",
-  "oneOf": []
-} 
+  "title": "Capability Brick Union",
+  "description": "Auto-generated. DO NOT EDIT.",
+  "oneOf": [
+    {
+      "$id": "Core:Wait@1.0.0",
+      "title": "Core:Wait",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Core:Wait@1.0.0"
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 1
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "title": "Core:Wait",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "Core:Wait@1.0.0"
+            },
+            "duration": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10,
+              "default": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "projectiles": {
+              "maximum": 400
+            },
+            "speed": {
+              "maximum": 100
+            },
+            "radius": {
+              "maximum": 15
+            }
+          }
+        }
+      ]
+    },
+    {
+      "$id": "Emitter:RadialBurst@1.0.0",
+      "title": "Emitter:RadialBurst",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Emitter:RadialBurst@1.0.0"
+        },
+        "projectiles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 400,
+          "default": 12
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 100,
+          "default": 8
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "title": "Emitter:RadialBurst",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "Emitter:RadialBurst@1.0.0"
+            },
+            "projectiles": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 400,
+              "default": 12
+            },
+            "speed": {
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 100,
+              "default": 8
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "projectiles": {
+              "maximum": 400
+            },
+            "speed": {
+              "maximum": 100
+            },
+            "radius": {
+              "maximum": 15
+            }
+          }
+        }
+      ]
+    },
+    {
+      "$id": "Movement:Dash@1.0.0",
+      "title": "Movement:Dash",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Movement:Dash@1.0.0"
+        },
+        "dx": {
+          "type": "number",
+          "default": 0
+        },
+        "dy": {
+          "type": "number",
+          "default": 0
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 100,
+          "default": 10
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 0.5
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "title": "Movement:Dash",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "Movement:Dash@1.0.0"
+            },
+            "dx": {
+              "type": "number",
+              "default": 0
+            },
+            "dy": {
+              "type": "number",
+              "default": 0
+            },
+            "speed": {
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 100,
+              "default": 10
+            },
+            "duration": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10,
+              "default": 0.5
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "projectiles": {
+              "maximum": 400
+            },
+            "speed": {
+              "maximum": 100
+            },
+            "radius": {
+              "maximum": 15
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 // src/BehaviorTree.js – Minimal runtime to mirror RotMG-style state machine trees
 // This file is server-side only (Node.js). It does NOT import any DOM code.
 
-import { Shoot as ShootBehaviour, Wander as WanderBehaviour, Chase as ChaseBehaviour } from './Behaviors.js';
+import { Shoot as ShootBehaviour, Wander as WanderBehaviour, Chase as ChaseBehaviour } from './BehaviorsCore.js';
 
 /**
  * Leaf behaviour registry – map JSON "type" strings to the Behaviour classes we already have.
