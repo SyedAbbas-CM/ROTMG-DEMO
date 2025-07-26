@@ -92,6 +92,15 @@ export default class BehaviorSystem {
     if (state.onEntry) {
       state.onEntry(index, this.stateData[index]);
     }
+
+    // Initialise each behaviour (once per state entry)
+    if (state.behaviors) {
+      for (const behavior of state.behaviors) {
+        if (typeof behavior.init === 'function') {
+          behavior.init(this.stateData[index]);
+        }
+      }
+    }
   }
   
   /**

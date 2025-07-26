@@ -12,6 +12,11 @@ src/llm/functionSchema.json
 src/llm/speechSchema.json
 src/llm/llmLogger.js
 
+src/config/llmConfig.js
+
+# New flexible projectile emitter capability
+src/capabilities/Emitter/ProjectileSpread/1.0.0/schema.json
+src/capabilities/Emitter/ProjectileSpread/1.0.0/implementation.js
 
 src/llm/providers/BaseProvider.js
 src/llm/providers/GeminiProvider.js

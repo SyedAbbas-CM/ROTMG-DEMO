@@ -18,6 +18,9 @@ export const gameState = {
     map: null,
     collisionManager: null,
     playerManager: null,
+
+    // Loot bags currently visible to the client
+    bags: [],
     
     // Tracking info
     lastUpdateX: character.x,

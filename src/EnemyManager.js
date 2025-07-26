@@ -5,6 +5,8 @@ import { entityDatabase } from './assets/EntityDatabase.js';
 import fs from 'fs';
 import path from 'path';
 import { parseBehaviourTree, BehaviourTreeRunner } from './BehaviorTree.js';
+import { rollDropTable } from './DropSystem.js';
+import { loadEnemyDefinitions, compileEnemy } from './EnemyDefinitionLoader.js';
 
 /**
  * EnemyManager handles enemy creation, updating, and removal.
@@ -110,7 +112,12 @@ export default class EnemyManager {
           projectileCount: 1,
           spread: 0,
           inaccuracy: 0.1,
-          behavior: 'aggressive'
+          behavior: 'aggressive',
+          dropTable:[
+            { id:1001, prob:0.3, bagType:0 },  // Ironveil Sword in white bag
+            { id:1004, prob:0.1, bagType:1 },  // Greenwatch Sword in brown bag
+            { id:1007, prob:0.02, bagType:2 } // Skysteel Sword in purple bag
+          ]
         },
         {
           id: 1,
@@ -199,6 +206,8 @@ export default class EnemyManager {
 
     // Load additional enemy definitions from the entity database (e.g. Red Demon)
     this._loadExternalEnemyDefs();
+
+    this.rootStateCache = new Map(); // type -> rootState for lazy registration
   }
 
   /**
@@ -209,82 +218,19 @@ export default class EnemyManager {
    */
   _loadExternalEnemyDefs() {
     try {
-      const entitiesDir = path.join(process.cwd(), 'public', 'assets', 'entities');
-      const enemyPath = path.join(entitiesDir, 'enemies.json');
-      if (!fs.existsSync(enemyPath)) return;
-
-      const raw = JSON.parse(fs.readFileSync(enemyPath, 'utf8'));
-      // Build a quick lookup for bullet templates in same file (ids that appear in other enemies' attack.bulletId)
-      const bulletLookup = new Map();
-      raw.forEach(e => {
-        if (!e.attack && !e.hp) {
-          // Treat as projectile / auxiliary record (e.g. Red Demon Bullet)
-          bulletLookup.set(e.id, e);
-        }
-      });
-
-      raw.forEach(ent => {
-        if (!ent.attack) return; // Skip non-enemy rows (likely projectiles)
-
-        // Skip duplicates
-        if (this.enemyIdToTypeIndex.has(ent.id)) return;
-
-        const bulletEnt = bulletLookup.get(ent.attack.bulletId);
-
-        const bulletSpeed = bulletEnt?.speed || 8;
-        const bulletLifetime = (bulletEnt?.lifetime || 1500) / 1000;
-
-        // Determine projectile pattern
-        const projCount = ent.attack.projectileCount || ent.attack.count || (ent.id === 101 ? 5 : 1);
-        const spreadDeg = ent.attack.spread !== undefined ? ent.attack.spread : (projCount > 1 ? 45 : 0);
-        const spreadRad = spreadDeg * Math.PI / 180;
-
-        const template = {
-          id: ent.id,
-          name: ent.name,
-          spriteName: (ent.sprite || '').trim(),
-          maxHealth: ent.hp || 100,
-          speed: ent.speed || 10,
-          damage: 10,
-          width: 1,
-          height: 1,
-          renderScale: 2,
-          shootRange: 120,
-          shootCooldown: (ent.attack.cooldown || 800) / 1000,
-          bulletSpeed,
-          bulletLifetime,
-          projectileCount: projCount,
-          spread: spreadRad,
-          inaccuracy: 0,
-          behavior: 'aggressive',
-          bulletSpriteName: bulletEnt?.sprite || null
-        };
-
+      const customDir = path.join(process.cwd(), 'public','assets','enemies-custom');
+      const customDefs = loadEnemyDefinitions(customDir);
+      customDefs.forEach(def=>{
+        const {template, rootState} = compileEnemy(def);
         const idx = this.enemyTypes.length;
         this.enemyTypes.push(template);
-        this.enemyIdToTypeIndex.set(ent.id, idx);
-
-        // Register a basic behavior for this new enemy type so AI functions correctly
-        const shootBehavior = this.behaviorSystem.createCustomShootBehavior({
-          projectileCount: template.projectileCount,
-          spread: template.spread,
-          shootCooldown: template.shootCooldown
-        });
-        this.behaviorSystem.registerBehaviorTemplate(idx, shootBehavior);
-
-        // Parse behaviour tree if provided
-        if (ent.behaviourTree) {
-          const root = parseBehaviourTree(ent.behaviourTree);
-          this.behaviourTreeRunners[idx] = new BehaviourTreeRunner(root);
+        this.enemyIdToTypeIndex.set(def.id, idx);
+        if(rootState){
+          this.rootStateCache.set(idx, rootState); // defer registration until first spawn
         }
       });
-
-      if (this.enemyIdToTypeIndex.size > 0) {
-        console.log(`[EnemyManager] Loaded ${this.enemyIdToTypeIndex.size} external enemy definitions from entity DB`);
-      }
-    } catch (err) {
-      console.error('[EnemyManager] Failed to load external enemy definitions', err);
-    }
+      if(customDefs.length) console.log(`[EnemyManager] Loaded ${customDefs.length} custom enemy JSON definitions`);
+    }catch(err){console.error('[EnemyManager] custom enemy load failed',err);}
   }
 
   /**
@@ -358,6 +304,14 @@ export default class EnemyManager {
     
     // Store ID to index mapping
     this.idToIndex.set(enemyId, index);
+    
+    // Lazy-register behavior template if not yet registered
+    if(!this.behaviorSystem.behaviorTemplates.has(type)){
+      const rs = this.rootStateCache.get(type);
+      if(rs){
+        this.behaviorSystem.registerBehaviorTemplate(type, rs);
+      }
+    }
     
     // Initialize behavior for this enemy
     this.behaviorSystem.initBehavior(index, type);
@@ -591,8 +545,18 @@ export default class EnemyManager {
    * @param {string} killedBy - ID of player who killed the enemy
    */
   onDeath(index, killedBy) {
-    // The actual removal is now handled by the death animation
-    // Additional death effects or drops can be added here
+    if (!this._bagManager || !globalThis.itemManager) return;
+    const enemyType = this.type[index];
+    const template = this.enemyTypes[enemyType] || {};
+    const dropTable = template.dropTable || [];
+    const {items, bagType} = rollDropTable(dropTable);
+    if(items.length===0) return;
+    const itemInstanceIds = items.map(defId=>{
+      const inst = globalThis.itemManager.createItem(defId,{x:this.x[index],y:this.y[index]});
+      return inst?.id;
+    }).filter(Boolean);
+    if(itemInstanceIds.length===0) return;
+    this._bagManager.spawnBag(this.x[index], this.y[index], itemInstanceIds, this.worldId[index], 300, bagType);
   }
 
   /**

@@ -136,27 +136,30 @@ class InventoryManager {
         const inventory = this.getInventory(ownerId);
         if (!inventory) return false;
         
-        // Ensure item has maxStackSize defined (use definition if needed)
-        if (item.stackSize > 1 && typeof item.maxStackSize === 'undefined') {
-            // TODO: Need access to ItemManager or item definitions here
-            // For now, assume a default if missing
-            item.maxStackSize = item.maxStackSize || 10; 
-            console.warn(`Item ID ${item.id} missing maxStackSize, assuming ${item.maxStackSize}`);
+        // Pull missing stack metadata from the canonical item definition
+        if (typeof item.maxStackSize === 'undefined') {
+            const def = globalThis?.itemManager?.itemDefinitions?.get?.(item.definitionId);
+            if (def) {
+                item.maxStackSize = def.maxStackSize || 1;
+            } else {
+                // Fallback if definition missing – assume non-stackable (1)
+                item.maxStackSize = 1;
+                console.warn(`[InventoryManager] Definition not found for item ${item.definitionId}; assuming maxStackSize = 1`);
+            }
         }
 
-        // Try to stack with existing items first
-        if (item.stackSize > 1 && item.maxStackSize > 1) {
-            for (let i = 0; i < inventory.size; i++) {
+        // Try to merge with existing stacks whenever possible
+        if (item.maxStackSize > 1) {
+            for (let i = 0; i < inventory.size && item.stackSize > 0; i++) {
                 const slot = inventory.slots[i];
-                if (slot && slot.definitionId === item.definitionId && 
-                    slot.stackSize < slot.maxStackSize) {
+                if (slot && slot.definitionId === item.definitionId && slot.stackSize < slot.maxStackSize) {
                     const space = slot.maxStackSize - slot.stackSize;
                     const toAdd = Math.min(space, item.stackSize);
                     slot.stackSize += toAdd;
                     item.stackSize -= toAdd;
-                    if (item.stackSize <= 0) return true; // Item fully stacked
                 }
             }
+            if (item.stackSize <= 0) return true; // fully merged
         }
         
         // Find empty slot

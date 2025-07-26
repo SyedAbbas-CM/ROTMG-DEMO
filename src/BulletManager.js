@@ -28,6 +28,10 @@ export default class BulletManager {
     this.spriteName = new Array(maxBullets); // For client rendering
     this.worldId = new Array(maxBullets);
 
+    // Per-bullet speed multiplier (used for acceleration / slow effects)
+    this.speedScale = new Float32Array(maxBullets);
+    this.speedScale.fill(1);
+
     // Debug / analytics counters (reset each update)
     this.stats = {
       created: 0,
@@ -72,6 +76,7 @@ export default class BulletManager {
     this.ownerId[index] = bulletData.ownerId || null;
     this.spriteName[index] = bulletData.spriteName || null;
     this.worldId[index] = bulletData.worldId;
+    this.speedScale[index] = 1;
     
     if (this.stats) this.stats.created++;
     return bulletId;
@@ -92,8 +97,9 @@ export default class BulletManager {
     
     for (let i = 0; i < count; i++) {
       // Update position
-      this.x[i] += this.vx[i] * deltaTime;
-      this.y[i] += this.vy[i] * deltaTime;
+      const scale = this.speedScale[i] || 1;
+      this.x[i] += this.vx[i] * scale * deltaTime;
+      this.y[i] += this.vy[i] * scale * deltaTime;
       
       // Decrement lifetime
       this.life[i] -= deltaTime;
@@ -133,6 +139,7 @@ export default class BulletManager {
       this.ownerId[index] = this.ownerId[last];
       this.spriteName[index] = this.spriteName[last];
       this.worldId[index] = this.worldId[last];
+      this.speedScale[index] = this.speedScale[last];
     }
     
     this.bulletCount--;
@@ -151,6 +158,23 @@ export default class BulletManager {
       }
     }
     return false;
+  }
+
+  /**
+   * Simple AoE explosion – iterate bullets or future entity grid.
+   * For now this just marks the projectile for removal.
+   * @param {string|number} bulletIdOrIdx – bullet id or index
+   * @param {number} radius – blast radius (tiles)
+   * @param {number} damage – damage to inflict to entities (todo)
+   */
+  explode(bulletIdOrIdx, radius = 1, damage = 10) {
+    let idx = -1;
+    if (typeof bulletIdOrIdx === 'number') idx = bulletIdOrIdx;
+    else idx = this.findIndexById(bulletIdOrIdx);
+    if (idx === -1) return false;
+    // TODO: apply damage to entities in radius
+    this.markForRemoval(idx);
+    return true;
   }
   
   /**

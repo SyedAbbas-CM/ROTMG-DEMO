@@ -3,6 +3,7 @@
 import { gameState } from '../game/gamestate.js';
 import { TILE_SIZE, TILE_SPRITES } from '../constants/constants.js';
 import { spriteManager } from '../assets/spriteManager.js';
+import { getUIManager } from '../ui/UIManager.js';
 
 // Get 2D Canvas Context
 const canvas2D = document.getElementById('gameCanvas');
@@ -360,6 +361,53 @@ export function renderTopDownView() {
   } catch (err) {
     console.error('[PortalRender] Failed:', err);
   }
+
+  /* ---------------------------------------------------------
+   * BAG RENDERING – Loot bags dropped by enemies
+   * --------------------------------------------------------- */
+  try {
+    const bags = gameState.bags || [];
+    bags.forEach(b => {
+      const bagScreen = camera.worldToScreen(
+        b.x + 0.5,
+        b.y + 0.5,
+        canvas2D.width,
+        canvas2D.height,
+        mapManager.tileSize || TILE_SIZE
+      );
+
+      // Attempt to load bag sprite once; default sheet "objects" with alias 'lootbag_white'
+      let spriteKey = 'items_sprite_lootbag_white';
+      switch(b.bagType){
+        case 1: spriteKey='items_sprite_lootbag_brown'; break;
+        case 2: spriteKey='items_sprite_lootbag_purple'; break;
+        case 3: spriteKey='items_sprite_lootbag_orange'; break;
+        case 4: spriteKey='items_sprite_lootbag_cyan'; break;
+        case 5: spriteKey='items_sprite_lootbag_blue'; break;
+        case 6: spriteKey='items_sprite_lootbag_red'; break;
+      }
+      let spriteObj = getSpriteFlexible(spriteKey);
+      if (!spriteObj) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(bagScreen.x, bagScreen.y, TILE_SIZE * scaleFactor * 0.4, 0, Math.PI*2);
+        ctx.fill();
+      } else {
+        const sheet = spriteManager.getSpriteSheet(spriteObj.sheetName);
+        if (sheet && sheet.image) {
+          const draw = TILE_SIZE * scaleFactor;
+          ctx.drawImage(sheet.image,
+            spriteObj.x, spriteObj.y,
+            spriteObj.width, spriteObj.height,
+            bagScreen.x - draw/2,
+            bagScreen.y - draw/2,
+            draw, draw);
+        }
+      }
+    });
+  } catch(err){
+    console.error('[BagRender] Failed:', err);
+  }
   // ---------------------------------------------------------
 }
 
@@ -368,3 +416,25 @@ window.renderTopDownView = renderTopDownView;
 
 // Log the export to ensure it's registered globally
 console.log("TopDown view render function registered:", window.renderTopDownView ? "Success" : "Failed");
+
+canvas2D.addEventListener('click', (e)=>{
+  const ui = getUIManager();
+  if(!ui || !gameState.bags) return;
+  const rect = canvas2D.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  const clickY = e.clientY - rect.top;
+  // Find nearest bag within 24px screen distance
+  const camera = gameState.camera;
+  const tileSize = TILE_SIZE;
+  let targetBag=null, distSq=Infinity;
+  gameState.bags.forEach(b=>{
+    const screen = camera.worldToScreen(b.x+0.5,b.y+0.5,canvas2D.width,canvas2D.height,tileSize);
+    const dx = screen.x - clickX; const dy = screen.y - clickY;
+    const d2 = dx*dx + dy*dy;
+    if(d2 < 24*24 && d2 < distSq){ targetBag=b; distSq=d2; }
+  });
+  if(targetBag){
+    const lw = ui.components['lootWindow'];
+    if(lw){ lw.openForBag(targetBag, e.clientX, e.clientY); }
+  }
+});

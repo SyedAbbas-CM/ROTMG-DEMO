@@ -84,6 +84,9 @@ class BinaryPacket {
     BULLET_CREATE: 30,
     BULLET_LIST: 31,
     BULLET_REMOVE: 32,
+
+    // Loot bag messages
+    BAG_LIST: 33,
     
     // World update message (full or delta state)
     WORLD_UPDATE: 60,

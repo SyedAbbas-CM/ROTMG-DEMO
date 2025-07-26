@@ -100,6 +100,29 @@ export class Transition {
  * Base class for all behavior components
  */
 export class Behavior {
+  constructor() {
+    // Each behaviour instance gets its own symbol key for per-enemy storage
+    this._storeKey = Symbol('behaviourStore');
+  }
+
+  /**
+   * Optional initialisation that runs once when the parent state becomes active.
+   * Sub-classes can override to set up timers or cached data.
+   * @param {Object} stateData – per-enemy state bag supplied by BehaviourSystem.
+   */
+  init(stateData) { /* default no-op */ }
+
+  /**
+   * Fetch (and lazily create) this behaviour's private storage object.
+   * Mirrors the C# ref object pattern used in RotMG server code.
+   */
+  _getStore(stateData) {
+    // eslint-disable-next-line no-prototype-builtins
+    if (!stateData.hasOwnProperty(this._storeKey)) {
+      stateData[this._storeKey] = {};
+    }
+    return stateData[this._storeKey];
+  }
   /**
    * Execute this behavior
    * @param {number} index - Enemy index

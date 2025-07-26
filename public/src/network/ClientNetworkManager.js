@@ -626,7 +626,14 @@ export class ClientNetworkManager {
                 this.game.setBullets(data.bullets);
             }
         };
-        
+
+        // Loot bag list (initial or refresh)
+        this.handlers[MessageType.BAG_LIST] = (data) => {
+            if (this.game.setBags && data.bags) {
+                this.game.setBags(data.bags);
+            }
+        };
+
         this.handlers[MessageType.WORLD_UPDATE] = (data) => {
             // Only log occasionally to reduce spam
             throttledLog('world-update', `World update received`, null, 3000);
@@ -639,7 +646,10 @@ export class ClientNetworkManager {
             if (this.game.updateWorld) {
                 // Check if players is nested inside a 'players' property (from server inconsistency)
                 const players = data.players?.players || data.players;
-                this.game.updateWorld(data.enemies, data.bullets, players, data.objects);
+                this.game.updateWorld(data.enemies, data.bullets, players, data.objects, data.bags || []);
+                if (this.game.setBags && data.bags) {
+                    this.game.setBags(data.bags);
+                }
             }
         };
         
@@ -1298,6 +1308,9 @@ export const MessageType = {
     BULLET_CREATE: 30,
     BULLET_LIST: 31,
     BULLET_REMOVE: 32,
+
+    // Loot bags
+    BAG_LIST: 33,
     
     // Collision messages
     COLLISION: 40,

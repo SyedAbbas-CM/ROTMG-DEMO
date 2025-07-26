@@ -16,7 +16,7 @@ export default class BossSpeechController {
     this.timer += dt;
     if (this.timer < this.period) return;
     this.timer = 0;
-    const snap = this.bossMgr.buildSnapshot(players, 0);
+    const snap = this.bossMgr.buildSnapshot(players, null, 0);
     try {
       if (!this.provider) this.provider = createProvider();
       const { json: speech } = await (typeof this.provider.generateSpeech === 'function'

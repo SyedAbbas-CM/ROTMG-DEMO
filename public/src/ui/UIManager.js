@@ -150,6 +150,7 @@ export class UIManager {
         const { ChatPanel } = await import('./components/ChatPanel.js');
         const { UnitBar } = await import('./components/UnitBar.js');
         const { ControlBar } = await import('./components/ControlBar.js');
+        const { LootWindow } = await import('./components/LootWindow.js');
         
         // Initialize components with loading promises
         const componentPromises = [
@@ -157,7 +158,8 @@ export class UIManager {
           this.initComponent('characterPanel', CharacterPanel),
           this.initComponent('chatPanel', ChatPanel),
           this.initComponent('unitBar', UnitBar),
-          this.initComponent('controlBar', ControlBar)
+          this.initComponent('controlBar', ControlBar),
+          this.initComponent('lootWindow', LootWindow)
         ];
         
         // Wait for all components to initialize

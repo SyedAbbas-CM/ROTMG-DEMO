@@ -55,6 +55,18 @@ export const issueActionsFn = {
         type: 'object',
         description: 'Full behaviour DSL v1 object (entry, states, limits …)',
       },
+      define_component: {
+        type: 'object',
+        description: 'Propose a new capability brick',
+        properties: {
+          manifest: { type:'string' },
+          impl:      { type:'string' }
+        },
+        required: ['manifest','impl']
+      },
+      self_score: {
+        type:'number', minimum:0, maximum:1
+      }
     },
     // You can enforce one of these client-side after parsing the result:
     // required: ['actions'] 

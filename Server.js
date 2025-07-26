@@ -12,6 +12,8 @@ import { BinaryPacket, MessageType } from './src/NetworkManager.js';
 import BulletManager from './src/BulletManager.js';
 import EnemyManager from './src/EnemyManager.js';
 import CollisionManager from './src/CollisionManager.js';
+import BagManager from './src/BagManager.js';
+import { ItemManager } from './src/ItemManager.js';
 // Import BehaviorSystem
 import BehaviorSystem from './src/BehaviorSystem.js';
 import { entityDatabase } from './src/assets/EntityDatabase.js';
@@ -23,6 +25,7 @@ import BossSpeechController from './src/BossSpeechController.js';
 import './src/telemetry/index.js'; // OpenTelemetry setup
 import llmRoutes from './src/routes/llmRoutes.js';
 import hotReloadRoutes from './src/routes/hotReloadRoutes.js';
+import { logger } from './src/utils/logger.js';
 
 // Debug flags to control logging
 const DEBUG = {
@@ -222,16 +225,28 @@ app.post('/api/assets/images/save', (req, res) => {
   }
 });
 
-// Create server managers
-const mapManager = new MapManager({
-  mapStoragePath: path.join(__dirname, 'maps')
-});
+// Create global server managers
+const mapManager  = new MapManager({ mapStoragePath: path.join(__dirname, 'maps') });
+const itemManager = new ItemManager();
+
+// Load item definitions from JSON (sync read once at startup)
+try {
+  const itemsPath = path.join(__dirname, 'src', 'assets', 'items.json');
+  const defs = JSON.parse(fs.readFileSync(itemsPath, 'utf8'));
+  defs.forEach(def => itemManager.registerItemDefinition(def));
+  console.log(`[ItemManager] Loaded ${defs.length} item definitions.`);
+} catch (err) {
+  console.error('[ItemManager] Failed to load item definitions:', err);
+}
+
+// Expose globally so other modules (EnemyManager) can access lazily
+globalThis.itemManager = itemManager;
 
 // ---------------------------------------------------------------------------
 // Per-world manager containers
 // ---------------------------------------------------------------------------
 // Each world / map gets its own trio of managers so logic runs fully isolated.
-const worldContexts = new Map(); // mapId → { bulletMgr, enemyMgr, collisionMgr }
+const worldContexts = new Map(); // mapId → { bulletMgr, enemyMgr, collisionMgr, bagMgr }
 
 /**
  * Lazy-create (or fetch) the manager bundle for a given mapId.
@@ -242,7 +257,12 @@ function getWorldCtx(mapId) {
     const bulletMgr = new BulletManager(10000);
     const enemyMgr  = new EnemyManager(1000);
     const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager);
-    worldContexts.set(mapId, { bulletMgr, enemyMgr, collMgr });
+    const bagMgr    = new BagManager(500);
+
+    enemyMgr._bagManager = bagMgr; // inject for drops
+
+    logger.info('worldCtx',`Created managers for world ${mapId}`);
+    worldContexts.set(mapId, { bulletMgr, enemyMgr, collMgr, bagMgr });
   }
   return worldContexts.get(mapId);
 }
@@ -563,7 +583,7 @@ const gameState = {
 };
 
 // Spawn initial enemies for the game world
-spawnInitialEnemies();
+// spawnInitialEnemies(); // Function not defined, enemies will spawn via spawnMapEnemies
 
 // also spawn any enemies defined inside the procedural map metadata (none by default)
 spawnMapEnemies(gameState.mapId);
@@ -702,6 +722,7 @@ function updateGame() {
 
     // ---------- Physics & AI update ----------
     ctx.bulletMgr.update(deltaTime);
+    ctx.bagMgr.update(now / 1000);
     totalActiveEnemies += ctx.enemyMgr.update(deltaTime, ctx.bulletMgr, target, mapManager);
 
     ctx.collMgr.checkCollisions();
@@ -760,6 +781,10 @@ function broadcastWorldUpdates() {
     const enemiesClamped = clamp(enemies);
     const bulletsClamped = clamp(bullets);
 
+    // Collect bag data & clamp to map bounds
+    const bags = ctx.bagMgr.getBagsData(mapId);
+    const bagsClamped = clamp(bags);
+
     const objects = mapManager.getObjects(mapId);
 
     // Send tailored update to each client (interest management)
@@ -782,10 +807,17 @@ function broadcastWorldUpdates() {
         return (dx * dx + dy * dy) <= UPDATE_RADIUS_SQ;
       });
 
+      const visibleBags = bagsClamped.filter(b => {
+        const dx = b.x - px;
+        const dy = b.y - py;
+        return (dx * dx + dy * dy) <= UPDATE_RADIUS_SQ;
+      });
+
       const payload = {
         players,
         enemies: visibleEnemies.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         bullets: visibleBullets.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
+        bags:   visibleBags,
         objects,
         timestamp: now
       };
@@ -893,879 +925,3 @@ process.on('SIGINT', () => {
   });
 });
 
-// Export required modules for testing
-export {
-  app,
-  server,
-  mapManager,
-  bulletManager,
-  enemyManager,
-  collisionManager
-};
-
-/** Send initial game state to a new client
- * @param {WebSocket} socket - Client socket
- * @param {number} clientId - Client ID
-*/
-function sendInitialState(socket, clientId) {
-  const newClient = clients.get(clientId);
-  const players = {};
-  clients.forEach((other, id) => {
-    if (other.mapId === newClient.mapId) {
-      players[id] = other.player;
-    }
-  });
-  
-  // FIXED: Send just the players object directly
-  sendToClient(socket, MessageType.PLAYER_LIST, players);
-  
-  // Send enemy & bullet lists for the client's current world
-  const enemies = getWorldCtx(newClient.mapId).enemyMgr.getEnemiesData(newClient.mapId);
-  const bullets = getWorldCtx(newClient.mapId).bulletMgr.getBulletsData(newClient.mapId);
-  sendToClient(socket, MessageType.ENEMY_LIST, {
-    enemies,
-    timestamp: Date.now()
-  });
-  
-  sendToClient(socket, MessageType.BULLET_LIST, {
-    bullets,
-    timestamp: Date.now()
-  });
-}
-
-/**
- * Handle a message from a client
- * @param {number} clientId - Client ID
- * @param {ArrayBuffer} message - Binary message data
- */
-function handleClientMessage(clientId, message) {
-  try {
-    // Decode binary packet
-    const packet = BinaryPacket.decode(message);
-    const { type, data } = packet;
-    
-    // Update client's last activity time
-    const client = clients.get(clientId);
-    if (!client) return;
-    
-    client.lastUpdate = Date.now();
-    
-    // Handle message based on type
-    switch (type) {
-      case MessageType.PING:
-        // Reply with pong
-        sendToClient(client.socket, MessageType.PONG, {
-          time: data.time,
-          serverTime: Date.now()
-        });
-        break;
-        
-      case MessageType.PLAYER_UPDATE:
-        // Update player data
-        handlePlayerUpdate(clientId, data);
-        break;
-        
-      case MessageType.BULLET_CREATE:
-        // Create a new bullet
-        handleBulletCreate(clientId, data);
-        break;
-        
-      case MessageType.COLLISION:
-        // Validate and process collision
-        handleCollision(clientId, data);
-        break;
-        
-      case MessageType.CHUNK_REQUEST:
-        // Send requested chunk
-        handleChunkRequest(clientId, data);
-        break;
-        
-      case MessageType.HANDSHAKE:
-        // Client info already stored at connection, do nothing
-        break;
-        
-      case MessageType.MAP_REQUEST:
-        // Handle map request by ID
-        handleMapRequest(clientId, data);
-        break;
-        
-      case MessageType.PLAYER_LIST_REQUEST:
-        // Handle request for player list
-        handlePlayerListRequest(clientId);
-        break;
-        
-      case MessageType.CHAT_MESSAGE:
-        // Handle chat message
-        handleChatMessage(clientId, data);
-        break;
-        
-      case MessageType.PORTAL_ENTER:
-        handlePortalEnter(clientId);
-        break;
-        
-      default:
-        console.warn(`Unknown message type from client ${clientId}: ${type}`);
-    }
-  } catch (error) {
-    console.error(`Error handling message from client ${clientId}:`, error);
-  }
-}
-
-/**
- * Handle player update
- * @param {number} clientId - Client ID
- * @param {Object} data - Update data
- */
-function handlePlayerUpdate(clientId, data) {
-  const client = clients.get(clientId);
-  if (!client) return;
-  
-  // Update player data
-  const player = client.player;
-  
-  // Store old position for debug logs
-  const oldX = player.x;
-  const oldY = player.y;
-  const oldRotation = player.rotation;
-  
-  // Validate proposed coordinates against the current map so the server
-  // never trusts a client that tries to walk through walls.  If the new
-  // position is blocked we simply keep the previous coordinate.
-  if (data.x !== undefined) {
-    const newX = data.x;
-    if (!mapManager.isWallOrOutOfBounds(newX, player.y)) {
-      player.x = newX;
-    }
-  }
-
-  if (data.y !== undefined) {
-    const newY = data.y;
-    if (!mapManager.isWallOrOutOfBounds(player.x, newY)) {
-      player.y = newY;
-    }
-  }
-  
-  if (data.rotation !== undefined) player.rotation = data.rotation;
-  if (data.health !== undefined) player.health = data.health;
-  
-  player.lastUpdate = Date.now();
-  
-  // Verbose movement trace – disable by default
-  if (globalThis.DEBUG?.playerMovement && (oldX !== player.x || oldY !== player.y || oldRotation !== player.rotation)) {
-    console.log(`Player ${clientId} moved: (${oldX.toFixed(2)}, ${oldY.toFixed(2)}) → (${player.x.toFixed(2)}, ${player.y.toFixed(2)}), rotation: ${player.rotation.toFixed(2)}`);
-  }
-}
-
-/**
- * Handle bullet creation
- * @param {number} clientId - Client ID
- * @param {Object} data - Bullet data
- */
-function handleBulletCreate(clientId, data) {
-  const client = clients.get(clientId);
-  if (!client) return;
-  
-  // Resolve world context for this shooter
-  const ctx = getWorldCtx(client.mapId);
-
-  let bulletId;
-  try {
-    bulletId = ctx.bulletMgr.addBullet({
-      x: data.x,
-      y: data.y,
-      vx: Math.cos(data.angle) * data.speed,
-      vy: Math.sin(data.angle) * data.speed,
-      ownerId: clientId,
-      damage: data.damage || 10,
-      lifetime: data.lifetime || 5.0,
-      spriteName: data.spriteName || null,
-      worldId: client.mapId
-    });
-    
-    if (globalThis.DEBUG?.bulletEvents) {
-      console.log(`Player ${clientId} fired bullet ${bulletId} at angle ${data.angle.toFixed(2)}, position (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
-    }
-  } catch (error) {
-    console.error("Error adding bullet:", error);
-    return;
-  }
-  
-  // Broadcast only to clients in the same world to save bandwidth
-  broadcastToMap(MessageType.BULLET_CREATE, {
-    id: bulletId,
-    x: data.x,
-    y: data.y,
-    angle: data.angle,
-    speed: data.speed,
-    damage: data.damage || 10,
-    lifetime: data.lifetime || 5.0,
-    ownerId: clientId,
-    spriteName: data.spriteName || null,
-    worldId: client.mapId,
-    timestamp: Date.now()
-  }, client.mapId);
-}
-
-/**
- * Handle collision
- * @param {number} clientId - Client ID
- * @param {Object} data - Collision data
- */
-function handleCollision(clientId, data) {
-  const client = clients.get(clientId);
-  if (!client) return;
-  // Validate collision on server
-  const ctx = getWorldCtx(client.mapId);
-  let result;
-  try {
-    result = ctx.collMgr.validateCollision({
-      bulletId: data.bulletId,
-      enemyId: data.enemyId,
-      timestamp: data.timestamp,
-      clientId
-    });
-    
-    if (globalThis.DEBUG?.collisions) {
-      console.log(`Player ${clientId} reported collision: bullet ${data.bulletId} hit enemy ${data.enemyId}, valid: ${result.valid}`);
-    }
-  } catch (error) {
-    console.error("Error validating collision:", error);
-    return;
-  }
-  
-  // Send result to client
-  if (result.valid) {
-    if (globalThis.DEBUG?.collisions) {
-      console.log(`Valid collision: bullet ${result.bulletId} hit enemy ${result.enemyId}, enemy health: ${result.enemyHealth}, killed: ${result.enemyKilled}`);
-    }
-    
-    // Broadcast valid collision to all clients
-    broadcast(MessageType.COLLISION_RESULT, {
-      valid: true,
-      bulletId: result.bulletId,
-      enemyId: result.enemyId,
-      damage: result.damage,
-      enemyHealth: result.enemyHealth,
-      enemyKilled: result.enemyKilled,
-      timestamp: Date.now()
-    });
-  } else {
-    if (globalThis.DEBUG?.collisions) {
-      console.log(`Invalid collision rejected: ${result.reason}`);
-    }
-    
-    // Send rejection only to the reporting client
-    if (client) {
-      sendToClient(client.socket, MessageType.COLLISION_RESULT, {
-        valid: false,
-        reason: result.reason,
-        bulletId: data.bulletId,
-        enemyId: data.enemyId,
-        timestamp: Date.now()
-      });
-    }
-  }
-}
-
-/**
- * Handle map request by ID
- * @param {number} clientId - Client ID
- * @param {Object} data - Request data
- */
-function handleMapRequest(clientId, data) {
-  const client = clients.get(clientId);
-  if (!client) return;
-  
-  console.log(`Client ${clientId} requesting map: ${data.mapId}`);
-  
-  // Check if the requested map exists
-  if (!data.mapId || !storedMaps.has(data.mapId)) {
-    console.log(`Map ${data.mapId} not found, using default`);
-    // Keep existing map
-    return;
-  }
-  
-  // Update client's map ID
-  client.mapId = data.mapId;
-  console.log(`Updated client ${clientId} to use map ${data.mapId}`);
-  
-  // Spawn enemies defined in that map (if not already spawned). This naive version spawns every time the first client switches, but duplicate spawns are prevented by internal manager cap.
-  spawnMapEnemies(data.mapId);
-  
-  // Send map info to client
-  const mapMetadata = mapManager.getMapMetadata(data.mapId);
-  if (!mapMetadata) {
-    if (DEBUG.chunkRequests) {
-      console.log(`Client ${clientId} requested unknown map: ${data.mapId}`);
-    }
-    return;
-  }
-  
-  if (DEBUG.chunkRequests) {
-    console.log(`Sent map info to client ${clientId} for map ${data.mapId}`);
-  }
-  
-  sendToClient(client.socket, MessageType.MAP_INFO, {
-    mapId: data.mapId,
-    width: mapMetadata.width,
-    height: mapMetadata.height,
-    tileSize: mapMetadata.tileSize,
-    chunkSize: mapMetadata.chunkSize,
-    timestamp: Date.now()
-  });
-}
-
-/**
- * Handle map chunk request
- * @param {number} clientId - Client ID
- * @param {Object} data - Request data
- */
-function handleChunkRequest(clientId, data) {
-  const client = clients.get(clientId);
-  if (!client) return;
-  
-  try {
-    console.log(`Client ${clientId} requesting chunk (${data.chunkX}, ${data.chunkY}) for map ${client.mapId}`);
-    const chunk = mapManager.getChunkData(client.mapId, data.chunkX, data.chunkY);
-    
-    if (!chunk) {
-      console.log(`Chunk (${data.chunkX}, ${data.chunkY}) not found for map ${client.mapId}`);
-      sendToClient(client.socket, MessageType.CHUNK_NOT_FOUND, {
-        chunkX: data.chunkX,
-        chunkY: data.chunkY
-      });
-      return;
-    }
-    
-    console.log(`Sending chunk (${data.chunkX}, ${data.chunkY}) for map ${client.mapId}`);
-    sendToClient(client.socket, MessageType.CHUNK_DATA, {
-      mapId: client.mapId,
-      x: data.chunkX,
-      y: data.chunkY,
-      data: chunk,
-      timestamp: Date.now()
-    });
-    
-    if (DEBUG.chunkRequests) {
-      console.log(`Sent chunk data to client ${clientId} for map ${client.mapId} at (${data.chunkX}, ${data.chunkY})`);
-    }
-  } catch (error) {
-    console.error('Error handling chunk request:', error);
-    sendToClient(client.socket, MessageType.ERROR, {
-      error: 'Failed to load chunk',
-      chunkX: data.chunkX,
-      chunkY: data.chunkY
-    });
-  }
-}
-
-/**
- * Handle client disconnect
- * @param {number} clientId - Client ID
- */
-function handleClientDisconnect(clientId) {
-  // Remove client
-  clients.delete(clientId);
-  
-  if (DEBUG.connections) {
-    console.log(`Client disconnected: ${clientId}`);
-  }
-  
-  // Broadcast disconnect
-  broadcastExcept(MessageType.PLAYER_LEAVE, {
-    clientId,
-    timestamp: Date.now()
-  }, clientId);
-}
-
-/**
- * Send a message to a specific client
- * @param {WebSocket} socket - Client socket
- * @param {number} type - Message type
- * @param {Object} data - Message data
- */
-function sendToClient(socket, type, data) {
-  if (socket.readyState === 1) { // WebSocket.OPEN
-    try {
-      // Encode binary packet
-      const packet = BinaryPacket.encode(type, data);
-      
-      // Send packet
-      socket.send(packet);
-    } catch (error) {
-      console.error('Error sending message to client:', error);
-    }
-  }
-}
-
-/**
- * Broadcast a message to all connected clients
- * @param {number} type - Message type
- * @param {Object} data - Message data
- */
-function broadcast(type, data) {
-  wss.clients.forEach(client => {
-    if (client.readyState === 1) { // WebSocket.OPEN
-      sendToClient(client, type, data);
-    }
-  });
-}
-
-/**
- * Broadcast a message to all clients except one
- * @param {number} type - Message type
- * @param {Object} data - Message data
- * @param {number} excludeClientId - Client ID to exclude
- */
-function broadcastExcept(type, data, excludeClientId) {
-  wss.clients.forEach(client => {
-    const clientId = getClientIdFromSocket(client);
-    if (client.readyState === 1 && clientId !== excludeClientId) {
-      sendToClient(client, type, data);
-    }
-  });
-}
-
-/**
- * Broadcast a message to only those clients whose current map matches mapId.
- * @param {number} type - Message type
- * @param {Object} data - Message data
- * @param {string} mapId - Map ID
- */
-function broadcastToMap(type, data, mapId) {
-  if (!mapId) {
-    return broadcast(type, data);
-  }
-  clients.forEach((client) => {
-    if (client.mapId === mapId && client.socket.readyState === 1) {
-      sendToClient(client.socket, type, data);
-    }
-  });
-}
-
-/**
- * Get client ID from socket
- * @param {WebSocket} socket - Client socket
- * @returns {number|null} Client ID or null if not found
- */
-function getClientIdFromSocket(socket) {
-  for (const [id, client] of clients.entries()) {
-    if (client.socket === socket) {
-      return id;
-    }
-  }
-  return null;
-}
-
-/**
- * Spawn initial enemies for the game world
- * @param {number} count - Number of enemies to spawn
- */
-function spawnInitialEnemies() {
-  if (bossManager) return; // already initialised
-  const ctx = getWorldCtx(gameState.mapId);
-  if (!ctx) return;
-
-  bossManager = new BossManager(ctx.enemyMgr);
-  bossManager.spawnBoss('hyper_demon', Math.floor(mapManager.width/2), Math.floor(mapManager.height/2), gameState.mapId);
-
-  llmBossController = new LLMBossController(bossManager, ctx.bulletMgr, mapManager, ctx.enemyMgr);
-  bossSpeechCtrl    = new BossSpeechController(bossManager, { broadcast });
-
-  // Load demo script if present (Phase-A capability test)
-  try {
-    const demoPath = path.join(__dirname, 'public', 'assets', 'scripts', 'demo.json');
-    if (fs.existsSync(demoPath)) {
-      const script = JSON.parse(fs.readFileSync(demoPath, 'utf8'));
-      llmBossController.runner.load(script);
-      console.log('[INIT] Demo script loaded into runner');
-    }
-  } catch (err) {
-    console.warn('[INIT] Failed to load demo script', err.message);
-  }
-  console.log('[INIT] Hyper boss spawned and LLM controllers ready');
-}
-
-/**
- * Handle request for player list
- * @param {number} clientId - Client ID
- */
-function handlePlayerListRequest(clientId) {
-    if (globalThis.DEBUG?.playerList) {
-      console.log(`Client ${clientId} requested player list`);
-    }
-    
-    const client = clients.get(clientId);
-    if (!client) return;
-    
-    // Get players only in the same map as requester
-    const players = {};
-    clients.forEach((otherClient, id) => {
-        if (otherClient.mapId === client.mapId) {
-            players[id] = otherClient.player;
-        }
-    });
-    
-    // Send player list directly to the client
-    if (globalThis.DEBUG?.playerList) {
-      console.log(`Sending player list to client ${clientId}: ${Object.keys(players).length} players`);
-    }
-    sendToClient(client.socket, MessageType.PLAYER_LIST, players);
-}
-
-// Helper function to create a simple tile map format (2D array of tile types)
-function createSimpleTileMap(mapManager, mapId) {
-  const mapData = mapManager.getMapMetadata(mapId);
-  const width = mapData.width;
-  const height = mapData.height;
-  const chunkSize = mapData.chunkSize;
-  
-  // Create a 2D array initialized with -1 (unknown)
-  const tileMap = Array(height).fill().map(() => Array(width).fill(-1));
-  
-  // Populate the map with actual tile types from all chunks
-  for (const [key, chunk] of mapManager.chunks.entries()) {
-    if (!key.startsWith(`${mapId}_`)) continue;
-    
-    const chunkKey = key.substring(mapId.length + 1);
-    const [chunkX, chunkY] = chunkKey.split(',').map(Number);
-    const startX = chunkX * chunkSize;
-    const startY = chunkY * chunkSize;
-    
-    // Fill in the tile types from this chunk
-    if (chunk.tiles) {
-      for (let y = 0; y < chunk.tiles.length; y++) {
-        if (!chunk.tiles[y]) continue;
-        
-        for (let x = 0; x < chunk.tiles[y].length; x++) {
-          const globalX = startX + x;
-          const globalY = startY + y;
-          
-          // Skip if outside map bounds
-          if (globalX >= width || globalY >= height) continue;
-          
-          const tile = chunk.tiles[y][x];
-          if (tile) {
-            tileMap[globalY][globalX] = tile.type;
-          }
-        }
-      }
-    }
-  }
-  
-  return tileMap;
-}
-
-/**
- * Handle a chat message from a client
- * @param {string} clientId - Client ID
- * @param {Object} data - Message data
- */
-function handleChatMessage(clientId, data) {
-  // Validate message data
-  if (!data || !data.message) {
-    console.warn(`Received invalid chat message from client ${clientId}`);
-    return;
-  }
-  
-  // Get client info
-  const client = clients.get(clientId);
-  if (!client) {
-    console.warn(`Received chat message from unknown client ${clientId}`);
-    return;
-  }
-  
-  // Get player name based on client ID
-  let playerName;
-  
-  // If client has an explicitly set player name, use it
-  if (client.player && client.player.name) {
-    playerName = client.player.name;
-  }
-  // Otherwise use a default format
-  else {
-    playerName = `Player-${clientId}`;
-    
-    // Store this name in the player object for future use
-    if (client.player) {
-      client.player.name = playerName;
-    }
-  }
-  
-  if (DEBUG.chat) {
-    console.log(`Setting chat sender name to: ${playerName} for client ${clientId}`);
-  }
-  
-  // Prepare the message for broadcasting, preserving the original ID if provided
-  const chatMessage = {
-    id: data.id || Date.now(), // Preserve the ID from the client if it exists
-    message: data.message.slice(0, 200), // Limit message length
-    sender: playerName,
-    channel: data.channel || 'All',
-    timestamp: Date.now(),
-    clientId: clientId // Always include the sender's client ID
-  };
-  
-  if (DEBUG.chat) {
-    console.log(`Chat message from ${playerName} (${clientId}): ${chatMessage.message}`);
-  }
-  
-  // Broadcast to all clients in the same map
-  broadcastChat(chatMessage, client.mapId);
-}
-
-/**
- * Broadcast a chat message to all clients in the same map
- * @param {Object} chatMessage - Message to broadcast
- * @param {string} mapId - Map ID
- */
-function broadcastChat(chatMessage, mapId) {
-  const messageClientId = chatMessage.clientId;
-  
-  // Iterate through all clients
-  for (const [clientId, client] of clients.entries()) {
-    // Check if client is on the same map
-    if (client.mapId === mapId) {
-      // Create a copy of the message for each recipient
-      const messageForClient = {...chatMessage};
-      
-      // Flag if this message is being sent to the original sender
-      if (clientId === messageClientId) {
-        messageForClient.isOwnMessage = true;
-      }
-      
-      // Send chat message to client
-      sendToClient(client.socket, MessageType.CHAT_MESSAGE, messageForClient);
-    }
-  }
-  
-  if (DEBUG.chat) {
-    console.log(`Broadcast chat message to map ${mapId}: ${chatMessage.message}`);
-  }
-}
-
-// ---------------- Map Editor Endpoints -----------------
-const mapsDir = path.join(__dirname, 'public', 'maps');
-if (!fs.existsSync(mapsDir)) fs.mkdirSync(mapsDir, { recursive: true });
-
-// List maps
-app.get('/api/map-editor/maps', (req, res) => {
-  try {
-    const files = fs.readdirSync(mapsDir).filter(f=>f.endsWith('.json'));
-    res.json({ maps: files });
-  } catch(err){
-    console.error('Error listing maps', err);
-    res.status(500).json({ error:'Failed to list maps' });
-  }
-});
-
-// Save map JSON
-app.post('/api/map-editor/save', (req, res) => {
-  const { filename, data } = req.body;
-  if(!filename || !data) return res.status(400).json({ error:'filename and data required'});
-  if(!/^[a-zA-Z0-9_-]+\.json$/.test(filename)) return res.status(400).json({ error:'Invalid filename'});
-  const full = path.join(mapsDir, filename);
-  try {
-    fs.writeFileSync(full, JSON.stringify(data, null, 2));
-    res.json({ success:true, path:`maps/${filename}`});
-  }catch(err){
-    console.error('Error saving map',err);
-    res.status(500).json({error:'Failed to save map'});
-  }
-});
-
-// ---------- ENTITY DATABASE ROUTES ----------
-const entitiesDir = path.join(__dirname, 'public', 'assets', 'entities');
-app.get('/api/entities/:group', (req, res) => {
-  const group = req.params.group;
-  const safe = ['tiles', 'objects', 'enemies', 'items'];
-  if (!safe.includes(group)) return res.status(400).json({ error: 'Invalid group' });
-  const file = path.join(entitiesDir, `${group}.json`);
-  if (!fs.existsSync(file)) return res.json([]);
-  res.sendFile(file);
-});
-app.get('/api/entities', (_req, res) => {
-  const out = {};
-  ['tiles', 'objects', 'enemies', 'items'].forEach(g => {
-    const file = path.join(entitiesDir, `${g}.json`);
-    out[g] = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
-  });
-  res.json(out);
-});
-
-app.post('/api/entities/:group', (req,res)=>{
-  const group=req.params.group;
-  const safe=['tiles','objects','enemies','items'];
-  if(!safe.includes(group)) return res.status(400).json({error:'Invalid group'});
-  const entry=req.body;
-  if(!entry||!entry.id) return res.status(400).json({error:'Entry with id required'});
-  const file=path.join(entitiesDir,`${group}.json`);
-  let arr=[];
-  if(fs.existsSync(file)) arr=JSON.parse(fs.readFileSync(file,'utf8'));
-  const idx=arr.findIndex(e=>e.id===entry.id);
-  if(idx>=0) arr[idx]=entry; else arr.push(entry);
-  fs.writeFileSync(file,JSON.stringify(arr,null,2));
-  // Reload group in memory
-  entityDatabase.loadSync();
-  res.json({success:true});
-});
-
-// ----- Static files ----- Move this BELOW asset-api so that /api/assets/* is not intercepted by serve-static
-app.use(express.static('public'));
-
-app.get('/api/sprites/groups', (req,res)=>{
-  try{
-    const out={};
-    const files=fs.readdirSync(atlasesDirBase).filter(f=>f.endsWith('.json'));
-    files.forEach(f=>{
-      const data=JSON.parse(fs.readFileSync(path.join(atlasesDirBase,f),'utf8'));
-      // groups at top-level
-      if(data.groups){
-        Object.entries(data.groups).forEach(([g,arr])=>{
-          if(!out[g]) out[g]=new Set();
-          arr.forEach(n=>out[g].add(n));
-        });
-      }
-      // per-sprite tags
-      if(Array.isArray(data.sprites)){
-        data.sprites.forEach(s=>{
-          const list=Array.isArray(s.tags)?s.tags: (Array.isArray(s.groups)?s.groups: (s.group?[s.group]:null));
-          if(list){
-            list.forEach(g=>{
-              if(!out[g]) out[g]=new Set();
-              if(s.name) out[g].add(s.name);
-            });
-          }
-        });
-      }
-    });
-    // convert sets to arrays
-    const jsonObj={};
-    Object.entries(out).forEach(([g,set])=>{jsonObj[g]=Array.from(set);});
-    res.json(jsonObj);
-  }catch(err){
-    console.error('[sprites/groups] error',err);
-    res.status(500).json({error:'Failed to aggregate'});
-  }
-});
-
-// Overridden: disable generic enemy spawns – the world now hosts only the Hyper Demon boss.
-function spawnMapEnemies(_mapId){ /* intentionally left blank */ }
-
-/**
- * Check if any players are standing on a portal tile/object and trigger map switch.
- */
-function handlePortals(){
-  // Automatic world-wide portal activation disabled.
-  // Interactions are now explicit via MessageType.PORTAL_ENTER.
-}
-
-/**
- * Simple implementation: switch the *whole* session to a new map.
- * Sends MAP_INFO to all clients so they reload chunks.
- */
-function switchEntireWorldToMap(destMapId){
-  if (!destMapId || gameState.mapId === destMapId) return;
-  const meta = mapManager.getMapMetadata(destMapId);
-  if (!meta) return;
-  console.log(`Switching world to map ${destMapId}`);
-
-  gameState.mapId = destMapId;
-
-  // Reposition players at map centre
-  const spawnX = meta.width/2;
-  const spawnY = meta.height/2;
-  clients.forEach((client,id)=>{
-    client.mapId = destMapId;
-    // Keep the per-player worldId in sync so broadcast filtering works correctly
-    if (client.player) {
-      client.player.worldId = destMapId;
-    }
-    client.player.x = spawnX;
-    client.player.y = spawnY;
-    // Send map info so client begins chunk requests
-    sendToClient(client.socket, MessageType.MAP_INFO, {
-      mapId: destMapId,
-      width: meta.width,
-      height: meta.height,
-      tileSize: meta.tileSize,
-      chunkSize: meta.chunkSize,
-      spawnX,
-      spawnY,
-      timestamp: Date.now()
-    });
-  });
-
-  spawnMapEnemies(destMapId);
-}
-
-/**
- * Handle portal interaction initiated by client
- */
-function handlePortalEnter(clientId){
-  const client = clients.get(clientId);
-  if(!client) return;
-  const mapId = client.mapId;
-  if(!mapId) return;
-  const portals = mapManager.getObjects(mapId).filter(o=>o.type==='portal' && o.destMap);
-  if(portals.length===0) return;
-
-  // Find nearest within 2 tile radius
-  const px = client.player.x;
-  const py = client.player.y;
-  const portal = portals.find(p=> Math.hypot(p.x - px, p.y - py) <= 2.0);
-  if(!portal){
-    if (DEBUG.connections) console.log(`[PORTAL] Player ${clientId} pressed E but no portal nearby`);
-  }
-  if(!portal) return; // not close enough
-
-  switchPlayerWorld(clientId, portal.destMap);
-}
-
-function switchPlayerWorld(clientId, destMapId){
-  const client = clients.get(clientId);
-  if(!client) return;
-  if(!destMapId || client.mapId === destMapId) return;
-  const meta = mapManager.getMapMetadata(destMapId);
-  if(!meta) return;
-
-  // Choose spawn – centre of map or provided spawn property
-  const spawnX = meta.spawnX !== undefined ? meta.spawnX : Math.floor(meta.width/2);
-  const spawnY = meta.spawnY !== undefined ? meta.spawnY : Math.floor(meta.height/2);
-
-  client.mapId = destMapId;
-  // Keep the per-player worldId in sync so broadcast filtering works correctly
-  if (client.player) {
-    client.player.worldId = destMapId;
-  }
-  client.player.x = spawnX;
-  client.player.y = spawnY;
-
-  // Send world switch packet only to this client
-  sendToClient(client.socket, MessageType.WORLD_SWITCH, {
-    mapId: destMapId,
-    width: meta.width,
-    height: meta.height,
-    tileSize: meta.tileSize,
-    chunkSize: meta.chunkSize,
-    spawnX,
-    spawnY,
-    timestamp: Date.now()
-  });
-
-  // Also send MAP_INFO (client expects this to init chunks)
-  sendToClient(client.socket, MessageType.MAP_INFO, {
-    mapId: destMapId,
-    width: meta.width,
-    height: meta.height,
-    tileSize: meta.tileSize,
-    chunkSize: meta.chunkSize,
-    timestamp: Date.now()
-  });
-
-  // Spawn enemies for new map if not yet done
-  spawnMapEnemies(destMapId);
-}
-
-app.use('/api/llm', llmRoutes);
-app.use(hotReloadRoutes);

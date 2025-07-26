@@ -8,7 +8,16 @@
     "actions": {
       "type": "array",
       "items": { "$ref": "#/definitions/Action" }
-    }
+    },
+    "define_component": {
+      "type": "object",
+      "properties": {
+        "manifest": { "type": "string" },
+        "impl": { "type": "string" }
+      },
+      "required": ["manifest", "impl"]
+    },
+    "self_score": { "type":"number", "minimum":0, "maximum":1 }
   },
   "required": ["intent", "actions"],
   "definitions": {

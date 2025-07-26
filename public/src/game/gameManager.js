@@ -221,6 +221,15 @@ export class GameManager {
     this.bulletManager.setBullets(bullets);
     console.log(`Set ${bullets.length} bullets from server`);
   }
+
+  /**
+   * Set initial or updated bags list
+   * @param {Array} bags - Bag DTOs from server
+   */
+  setBags(bags) {
+    this.bags = bags;
+    gameState.bags = bags;
+  }
   
   /**
    * Update world state from server data
@@ -228,7 +237,7 @@ export class GameManager {
    * @param {Array} bullets - Updated bullets data
    * @param {Object} players - Updated players data
    */
-  updateWorld(enemies, bullets, players) {
+  updateWorld(enemies, bullets, players, objects = null, bags = null) {
     // Update enemies
     if (enemies && enemies.length > 0) {
       this.enemyManager.updateEnemies(enemies);
@@ -238,7 +247,16 @@ export class GameManager {
     if (bullets && bullets.length > 0) {
       this.bulletManager.updateBullets(bullets);
     }
-    
+    // Update bags
+    if (bags) {
+      this.setBags(bags);
+    }
+
+    // Objects (optional) for portals/props
+    if (objects && this.map && typeof this.map.setObjects === 'function') {
+      this.map.setObjects(objects);
+    }
+
     // Update other players
     if (players) {
       this.players = players;

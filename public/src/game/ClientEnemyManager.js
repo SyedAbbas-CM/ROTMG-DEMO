@@ -921,7 +921,39 @@ export class ClientEnemyManager {
      * @param {Object} behaviorData - Enemy behavior state
      */
     updatePatrol(index, typeData, deltaTime, behaviorData) {
-      // Not implemented yet - for server-side behavior
+      // Simple waypoint patrol between predefined points (local-only fallback)
+      // Expected schema: typeData.patrolPoints = [ { x:number, y:number }, ... ]
+      const points = typeData.patrolPoints;
+      if (!Array.isArray(points) || points.length === 0) return;
+
+      // Initialise per-enemy patrol state
+      if (behaviorData.patrolIndex === undefined) {
+        behaviorData.patrolIndex = 0;
+      }
+
+      const targetPt = points[behaviorData.patrolIndex % points.length];
+      const x = this.x[index];
+      const y = this.y[index];
+      const dx = targetPt.x - x;
+      const dy = targetPt.y - y;
+      const distSq = dx * dx + dy * dy;
+
+      // Threshold for reaching a waypoint (in world units)
+      const REACH_DIST_SQ = 0.25; // 0.5 tiles
+
+      if (distSq <= REACH_DIST_SQ) {
+        // Advance to next waypoint
+        behaviorData.patrolIndex = (behaviorData.patrolIndex + 1) % points.length;
+        return; // Nothing to move this frame
+      }
+
+      const dist = Math.sqrt(distSq);
+      const dirX = dx / dist;
+      const dirY = dy / dist;
+      const moveSpeed = (typeData.moveSpeed || 10) * deltaTime;
+
+      this.x[index] = x + dirX * moveSpeed;
+      this.y[index] = y + dirY * moveSpeed;
     }
     
     /**

@@ -80,7 +80,7 @@ export default class LLMBossController {
           if (res?.script) {
             this.runner.load(res.script);
           } else if (res?.actions) {
-            this._ingestPlan(res);
+            await this._ingestPlan(res);
           }
 
           // Live safety check via DifficultyCritic (optional metrics)
@@ -104,7 +104,7 @@ export default class LLMBossController {
     }
   }
 
-  _ingestPlan(plan) {
+  async _ingestPlan(plan) {
     if (!plan) return;
     if (plan.explain) {
       import('./llm/llmLogger.js').then(m=>m.logLLM({type:'explain',text:plan.explain})).catch(()=>{});
@@ -125,6 +125,21 @@ export default class LLMBossController {
 
     // Persist rating for RLHF dataset
     import('./llm/llmLogger.js').then(m=>m.logLLMRating(planId, rating));
+
+    // Handle dynamic capability creation first
+    if (plan.define_component && plan.define_component.manifest && plan.define_component.impl) {
+      try {
+        const { defineComponent } = await import('./llm/defineComponent.js');
+        const res = await defineComponent(plan.define_component.manifest, plan.define_component.impl);
+        if (!res.ok) {
+          console.warn('[LLMBoss] define_component rejected', res.error);
+        } else {
+          console.log('[LLMBoss] New capability installed');
+        }
+      } catch(err) {
+        console.warn('[LLMBoss] define_component failed', err.message);
+      }
+    }
 
     // Build dynamic ability→capId map from registry for quick lookup
     const abilityMap = {};
