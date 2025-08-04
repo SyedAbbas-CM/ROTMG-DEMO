@@ -3,7 +3,7 @@
 import 'dotenv/config';
 import express from 'express';
 import http from 'http';
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -87,7 +87,17 @@ wss.on('error', (err) => {
 
 // Set up middleware
 app.use(express.json());
+app.use(express.static(path.join(__dirname,'public')));
 
+// Fallback for SPA routing – send index.html for unknown GETs under /public
+app.get('/play', (req,res)=>{
+  res.sendFile(path.join(__dirname,'public','index.html'));
+});
+
+// Direct hit to /index.html (some browsers/extensions bypass static)
+app.get('/index.html',(req,res)=>{
+  res.sendFile(path.join(__dirname,'public','index.html'));
+});
 // Root route – main menu
 app.get('/', (req,res)=>{
   res.sendFile(path.join(__dirname,'public','menu.html'));
@@ -248,6 +258,110 @@ globalThis.itemManager = itemManager;
 // Each world / map gets its own trio of managers so logic runs fully isolated.
 const worldContexts = new Map(); // mapId → { bulletMgr, enemyMgr, collisionMgr, bagMgr }
 
+// Utility: safely send a binary packet to one client
+function sendToClient(socket, type, data = {}) {
+  // Skip if socket is closed or undefined
+  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  try {
+    socket.send(BinaryPacket.encode(type, data));
+  } catch (err) {
+    console.error('[NET] Failed to send packet', type, err);
+  }
+}
+
+/**
+ * Handle client request to pick up an item from a bag
+ */
+function processPickupMessage(clientId, data){
+  const { bagId, itemId, slot } = data || {};
+  const client = clients.get(clientId);
+  if(!client || !bagId || !itemId) return;
+  const ctx = getWorldCtx(client.mapId);
+  const bagMgr = ctx.bagMgr;
+  // Validate bag visibility
+  const bags = bagMgr.getBagsData(client.mapId, clientId);
+  const bagDto = bags.find(b=>b.id===bagId);
+  if(!bagDto){
+    sendToClient(client.socket, MessageType.PICKUP_DENIED, {reason:'not_visible'});
+    return;
+  }
+  // Range check (2 tiles)
+  const dx = client.player.x - bagDto.x;
+  const dy = client.player.y - bagDto.y;
+  if((dx*dx + dy*dy) > 4) return; // too far
+  // Attempt to remove from bag
+  const emptied = bagMgr.removeItemFromBag(bagId, itemId);
+  if(!emptied && !bagDto.items.includes(itemId)){
+    // already removed
+  }
+  // Add to inventory
+  const inv = client.player.inventory || (client.player.inventory = new Array(20).fill(null));
+  let idx = (Number.isInteger(slot) && slot>=0 && slot<inv.length && inv[slot]==null) ? slot : inv.findIndex(x=>x==null);
+  if(idx===-1){
+    sendToClient(client.socket, MessageType.PICKUP_DENIED, {reason:'inventory_full'});
+    return;
+  }
+  inv[idx]=itemId;
+  // Send updated inventory back
+  sendToClient(client.socket, MessageType.INVENTORY_UPDATE, { inventory: inv });
+  // Notify all players in world if bag emptied
+  if(emptied){
+    broadcastToWorld(client.mapId, MessageType.BAG_REMOVE, { bagId });
+  }
+}
+
+/**
+ * Handle client request to reorder inventory slots
+ */
+function processMoveItem(clientId,data){
+  const {fromSlot,toSlot}=data||{};
+  const client=clients.get(clientId);
+  if(!client) return;
+  const inv=client.player.inventory;
+  if(!inv) return;
+  if(fromSlot<0||fromSlot>=inv.length||toSlot<0||toSlot>=inv.length){
+    sendToClient(client.socket,MessageType.MOVE_DENIED,{reason:'bad_slot'});
+    return;
+  }
+  const temp=inv[fromSlot];
+  inv[fromSlot]=inv[toSlot];
+  inv[toSlot]=temp;
+  sendToClient(client.socket,MessageType.INVENTORY_UPDATE,{inventory:inv});
+}
+
+// Helper to broadcast to all clients in world
+function broadcastToWorld(mapId, type, payload){
+  clients.forEach((c)=>{
+    if(c.mapId===mapId){
+      sendToClient(c.socket, type, payload);
+    }
+  });
+}
+
+// ---------------------------------------------------------------
+// Helper: Send the full starting state to a newly-connected client
+// ---------------------------------------------------------------
+function sendInitialState(socket, clientId) {
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  const mapId = client.mapId;
+
+  // Players currently in that world
+  const players = {};
+  clients.forEach((c, id) => {
+    if (c.mapId === mapId) players[id] = c.player;
+  });
+
+  const ctx = getWorldCtx(mapId);
+
+  // Send separate packets so the client can reuse existing handlers
+  sendToClient(socket, MessageType.PLAYER_LIST, players);
+  sendToClient(socket, MessageType.ENEMY_LIST,  ctx.enemyMgr.getEnemiesData(mapId));
+  sendToClient(socket, MessageType.BULLET_LIST, ctx.bulletMgr.getBulletsData(mapId));
+  sendToClient(socket, MessageType.BAG_LIST,    ctx.bagMgr.getBagsData(mapId));
+}
+
 /**
  * Lazy-create (or fetch) the manager bundle for a given mapId.
  * Always returns the same object for the same world.
@@ -345,90 +459,7 @@ app.get('/api/maps/:id/chunk/:x/:y', (req, res) => {
   }
 });
 
-// After map routes definitions
-// --- Asset listing routes for editor -----------------
-// List PNG images under public/assets/images (recursive)
-app.get('/api/assets/images', (req, res) => {
-  const imagesDir = path.join(__dirname, 'public', 'assets', 'images');
-  const images = [];
-  const walk = (dir, base='') => {
-    fs.readdirSync(dir, { withFileTypes: true }).forEach(ent => {
-      const full = path.join(dir, ent.name);
-      const rel = path.join(base, ent.name);
-      if (ent.isDirectory()) return walk(full, rel);
-      if (/\.(png|jpg|jpeg|gif)$/i.test(ent.name)) images.push("assets/images/" + rel.replace(/\\/g,'/'));
-    });
-  };
-  try {
-    walk(imagesDir);
-    res.json({ images });
-  } catch (err) {
-    console.error('Error listing images', err);
-    res.status(500).json({ error: 'Failed to list images' });
-  }
-});
-
-// List atlas JSON files
-app.get('/api/assets/atlases', (req, res) => {
-  const atlasesDir = path.join(__dirname, 'public', 'assets', 'atlases');
-  try {
-    const files = fs.readdirSync(atlasesDir).filter(f => f.endsWith('.json'));
-    res.json({ atlases: files.map(f => '/assets/atlases/' + f) });
-  } catch (err) {
-    console.error('Error listing atlases', err);
-    res.status(500).json({ error: 'Failed to list atlases' });
-  }
-});
-
-// Return directory tree of assets/images for hierarchical UI
-app.get('/api/assets/images/tree', (req, res) => {
-  const imagesDir = path.join(__dirname, 'public', 'assets', 'images');
-
-  function walkDir(dir) {
-    const result = { name: path.basename(dir), type: 'folder', children: [] };
-    fs.readdirSync(dir, { withFileTypes: true }).forEach(ent => {
-      const full = path.join(dir, ent.name);
-      if (ent.isDirectory()) {
-        result.children.push(walkDir(full));
-      } else if (/\.(png|jpg|jpeg|gif)$/i.test(ent.name)) {
-        result.children.push({
-          name: ent.name,
-          type: 'image',
-          path: 'assets/images/' + path.relative(imagesDir, full).replace(/\\/g, '/')
-        });
-      }
-    });
-    return result;
-  }
-
-  try {
-    const tree = walkDir(imagesDir);
-    res.json(tree);
-  } catch (err) {
-    console.error('Error building image tree', err);
-    res.status(500).json({ error: 'Failed to build tree' });
-  }
-});
-
-// Save an atlas JSON sent from the editor
-app.post('/api/assets/atlases/save', (req, res) => {
-  const { filename, data } = req.body;
-  if (!filename || !data) {
-    return res.status(400).json({ error: 'filename and data required' });
-  }
-  // Sanitize filename (no path traversal)
-  if (!/^[a-zA-Z0-9_-]+\.json$/.test(filename)) {
-    return res.status(400).json({ error: 'Invalid filename' });
-  }
-  const atlasPath = path.join(__dirname, 'public', 'assets', 'atlases', filename);
-  try {
-    fs.writeFileSync(atlasPath, JSON.stringify(data, null, 2));
-    res.json({ success: true, path: '/assets/atlases/' + filename });
-  } catch (err) {
-    console.error('Error saving atlas', err);
-    res.status(500).json({ error: 'Failed to save atlas' });
-  }
-});
+// Duplicate route definitions removed - already defined above
 
 // Create initial procedural map
 let defaultMapId;
@@ -573,6 +604,56 @@ console.log('[WORLD_CTX] Default world managers ready – bullets:', typeof bull
 const clients = new Map(); // clientId -> { socket, player, lastUpdate, mapId }
 let nextClientId = 1;
 
+// ---------------------------------------------------------------------------
+// Simple portal handler – teleports a player standing on a portal object
+function handlePortals() {
+  clients.forEach((client) => {
+    const { player, mapId } = client;
+    if (!player) return;
+
+    const px = Math.round(player.x);
+    const py = Math.round(player.y);
+
+    // Gather portals in the current map
+    const portals = (mapManager.getObjects(mapId) || []).filter(o => o.type === 'portal' && o.destMap);
+    const portal = portals.find(p => p.x === px && p.y === py);
+    if (!portal) return; // player not on a portal tile
+
+    const destMapId = portal.destMap;
+    const destMeta  = mapManager.getMapMetadata(destMapId);
+    if (!destMeta) {
+      console.warn('[PORTAL] Destination map metadata missing:', destMapId);
+      return;
+    }
+
+    // Choose spawn position in destination map
+    let destX = 5, destY = 5;
+    if (Array.isArray(destMeta.entryPoints) && destMeta.entryPoints.length > 0) {
+      destX = destMeta.entryPoints[0].x ?? destX;
+      destY = destMeta.entryPoints[0].y ?? destY;
+    }
+
+    // Move player server-side
+    player.x = destX;
+    player.y = destY;
+    player.worldId = destMapId;
+    client.mapId = destMapId;
+
+    // Ensure managers exist for the new world
+    getWorldCtx(destMapId);
+
+    // Notify client so it can switch worlds
+    sendToClient(client.socket, MessageType.WORLD_SWITCH, {
+      mapId: destMapId,
+      x: destX,
+      y: destY,
+      timestamp: Date.now()
+    });
+
+    console.log(`[PORTAL] Teleported player ${player.id} → ${destMapId} (${destX},${destY})`);
+  });
+}
+
 // Game state
 const gameState = {
   mapId: defaultMapId,
@@ -582,9 +663,47 @@ const gameState = {
   lastEnemySpawnTime: Date.now()
 };
 
-// Spawn initial enemies for the game world
-// spawnInitialEnemies(); // Function not defined, enemies will spawn via spawnMapEnemies
+/**
+ * Spawn enemies defined in a map's metadata
+ * @param {string} mapId - The map ID to spawn enemies for
+ */
+function spawnMapEnemies(mapId) {
+  try {
+    const mapMeta = mapManager.getMapMetadata(mapId);
+    if (!mapMeta || !mapMeta.enemies || !Array.isArray(mapMeta.enemies)) {
+      console.log(`[ENEMIES] No enemies defined for map ${mapId}`);
+      return;
+    }
 
+    const worldCtx = getWorldCtx(mapId);
+    let spawnedCount = 0;
+
+    mapMeta.enemies.forEach(enemyDef => {
+      try {
+        const { type = 0, x = 10, y = 10, id } = enemyDef;
+        
+        if (id !== undefined) {
+          // Spawn by entity ID from JSON definitions
+          worldCtx.enemyMgr.spawnEnemyById(id, x, y, mapId);
+        } else {
+          // Spawn by type index
+          worldCtx.enemyMgr.spawnEnemy(type, x, y, mapId);
+        }
+        spawnedCount++;
+      } catch (err) {
+        console.error(`[ENEMIES] Failed to spawn enemy:`, enemyDef, err);
+      }
+    });
+
+    if (spawnedCount > 0) {
+      console.log(`[ENEMIES] Spawned ${spawnedCount} enemies for map ${mapId}`);
+    }
+  } catch (err) {
+    console.error(`[ENEMIES] Error spawning enemies for map ${mapId}:`, err);
+  }
+}
+
+// Spawn initial enemies for the game world
 // also spawn any enemies defined inside the procedural map metadata (none by default)
 spawnMapEnemies(gameState.mapId);
 
@@ -628,7 +747,7 @@ wss.on('connection', (socket, req) => {
       id: clientId,
       x: spawnX,
       y: spawnY,
-      rotation: 0,
+      inventory: new Array(20).fill(null),
       health: 100,
       worldId: useMapId,
       lastUpdate: Date.now()
@@ -678,7 +797,18 @@ wss.on('connection', (socket, req) => {
   
   // Set up message handler
   socket.on('message', (message) => {
-    handleClientMessage(clientId, message);
+    try {
+      const packet = BinaryPacket.decode(message);
+      if(packet.type === MessageType.MOVE_ITEM){
+        processMoveItem(clientId, packet.data);
+      } else if(packet.type === MessageType.PICKUP_ITEM){
+        processPickupMessage(clientId, packet.data);
+      } else {
+        handleClientMessage(clientId, message);
+      }
+    } catch(err){
+      console.error('[NET] Failed to process message', err);
+    }
   });
   
   // Set up disconnect handler
@@ -741,7 +871,11 @@ function updateGame() {
   }
 
   // ---------------- PORTAL HANDLING ----------------
-  handlePortals();
+  if (typeof handlePortals === 'function') {
+    try { handlePortals(); } catch(err) {
+      console.error('[PORTAL] handlePortals error', err);
+    }
+  }
   
   // Broadcast world updates
   broadcastWorldUpdates();
@@ -924,4 +1058,23 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
+
+// ------------------------------------------------------------------
+// TEMP stubs to prevent startup crashes
+// (Replaced by full implementation above)
+// function spawnInitialEnemies (mapId = defaultMapId) {
+//   // Placeholder: initial scripted spawn now handled via metadata; nothing to do.
+// }
+
+if (typeof sendInitialState !== 'function') {
+  function sendInitialState(socket, clientId) {
+    // Fallback: send empty world data to satisfy client expectations
+    const payloadEmptyArr = [];
+    const payloadEmptyObj = {};
+    sendToClient(socket, MessageType.PLAYER_LIST, { players: payloadEmptyObj });
+    sendToClient(socket, MessageType.ENEMY_LIST,  { enemies: payloadEmptyArr });
+    sendToClient(socket, MessageType.BULLET_LIST, { bullets: payloadEmptyArr });
+    sendToClient(socket, MessageType.BAG_LIST,    { bags:    payloadEmptyArr });
+  }
+}
 

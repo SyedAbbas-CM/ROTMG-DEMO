@@ -53,6 +53,37 @@ export class LootWindow extends UIComponent {
       }
       canvas.dataset.itemId = itemId;
       canvas.draggable = true;
+      // Left-click to pick up item
+      canvas.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        // Guard: prevent spam if inventory full
+        const gm = window.gameManager;
+        if(gm && gm.inventory && gm.inventory.filter(i=>i==null).length===0){
+          showToast('Inventory full');
+          return;
+        }
+        const net = window.networkManager;
+        if(net && typeof net.sendPickupItem === 'function'){
+          net.sendPickupItem(this.bag.id, itemId);
+        }
+        // util toast
+        function showToast(msg){
+          if(window.showToast){ window.showToast(msg); return; }
+          let div = document.getElementById('toastContainer');
+          if(!div){
+            div = document.createElement('div');
+            div.id = 'toastContainer';
+            Object.assign(div.style,{position:'fixed',bottom:'20px',left:'50%',transform:'translateX(-50%)',zIndex:9999,fontFamily:'sans-serif'});
+            document.body.appendChild(div);
+          }
+          const toast = document.createElement('div');
+          toast.textContent = msg;
+          Object.assign(toast.style,{background:'rgba(0,0,0,0.8)',color:'#fff',padding:'6px 10px',marginTop:'4px',borderRadius:'4px',fontSize:'14px',opacity:'1',transition:'opacity 0.5s'});
+          div.appendChild(toast);
+          setTimeout(()=>{ toast.style.opacity='0'; setTimeout(()=>toast.remove(),500); }, 2000);
+          window.showToast=showToast;
+        }
+      });
       canvas.addEventListener('dragstart', (e)=>{
         e.dataTransfer.setData('text/plain', itemId);
       });

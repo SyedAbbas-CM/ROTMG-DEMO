@@ -6,7 +6,13 @@ import * as Behaviors from './Behaviors.js';
 import * as Transitions from './Transitions.js';
 
 const ajv = new Ajv({ allErrors: true, strict:false });
-const schema = JSON.parse(fs.readFileSync(new URL('./schema/enemySchema.json', import.meta.url), 'utf8'));
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+let schemaPath = path.join(__dirname,'schema','enemySchema.json');
+if(!fs.existsSync(schemaPath)){
+  // fallback to cwd
+  schemaPath = path.join(process.cwd(),'src','schema','enemySchema.json');
+}
+const schema = JSON.parse(fs.readFileSync(schemaPath,'utf8'));
 const validate = ajv.compile(schema);
 
 const behaviourFactory = {

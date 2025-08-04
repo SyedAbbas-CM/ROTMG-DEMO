@@ -232,6 +232,25 @@ export class GameManager {
   }
   
   /**
+   * Set inventory data
+   * @param {Object} inventory – inventory DTO
+   */
+  setInventory(inventory){
+    this.inventory = inventory;
+    if(this.inventoryManager && typeof this.inventoryManager.updateInventory==='function'){
+      this.inventoryManager.updateInventory(inventory);
+    }
+  }
+  
+  moveItem(fromSlot,toSlot){
+    if(!this.inventory) return;
+    const tmp=this.inventory.slots[fromSlot];
+    this.inventory.slots[fromSlot]=this.inventory.slots[toSlot];
+    this.inventory.slots[toSlot]=tmp;
+    if(this.inventoryManager) this.inventoryManager.updateInventory(this.inventory);
+  }
+  
+  /**
    * Update world state from server data
    * @param {Array} enemies - Updated enemies data
    * @param {Array} bullets - Updated bullets data
@@ -345,6 +364,13 @@ export class GameManager {
   handleDisconnect() {
     this.isConnected = false;
     console.log('Disconnected from server, running in offline mode');
+  }
+
+  /** Remove bag by id */
+  removeBag(bagId){
+    if(!this.bags) return;
+    this.bags = this.bags.filter(b=>b.id!==bagId);
+    gameState.bags = this.bags;
   }
 }
 

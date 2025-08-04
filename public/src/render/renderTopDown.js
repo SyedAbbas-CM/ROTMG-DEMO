@@ -82,33 +82,17 @@ function ensureSheetLoaded(sheetName) {
 // Helper to fetch sprite regardless of naming convention.
 // Supports both "tiles2_sprite_6_3" (editor) and "tiles2_6_3" (atlas) names.
 // ---------------------------------------------------------------------------
+// Simple memo for getSpriteFlexible results across frames
+const _spriteFlexCache = new Map();
+
 function getSpriteFlexible(name, tryLoadSheet=true){
-  if(!name) return null;
-  // First try the exact name
-  let obj = spriteManager.fetchSprite(name);
-  if(obj) return obj;
-
-  // Attempt to normalise: replace "_sprite_" with "_"
-  if(name.includes('_sprite_')){
-    const alt = name.replace('_sprite_','_');
-    obj = spriteManager.fetchSprite(alt);
-    if(obj) return obj;
-  }
-
-  // Attempt to strip trailing rotation or variant (rare)
-  const stripped = name.replace(/_sprite_/,'_').replace(/_rot\d+$/,'');
-  obj = spriteManager.fetchSprite(stripped);
-  if(obj) return obj;
-
-  // As last resort attempt to load the sheet and retry once (for first-frame)
-  if(tryLoadSheet){
-    const parts = name.split('_sprite_')[0].split('_');
-    const sheet = parts[0];
-    ensureSheetLoaded(sheet);
-    return getSpriteFlexible(name,false);
-  }
-
-  return null;
+  if(_spriteFlexCache.has(name)) return _spriteFlexCache.get(name);
+  if (!name) return null;
+  const parts = name.split('_sprite_');
+  if (parts.length > 1 && tryLoadSheet) ensureSheetLoaded(parts[0]);
+  const sprite = spriteManager.getSprite(name);
+  if(sprite) _spriteFlexCache.set(name, sprite);
+  return sprite;
 }
 
 export function renderTopDownView() {
@@ -366,7 +350,9 @@ export function renderTopDownView() {
    * BAG RENDERING – Loot bags dropped by enemies
    * --------------------------------------------------------- */
   try {
-    const bags = gameState.bags || [];
+    const bags = gameState.bags;
+    if(!bags || bags.length===0) { /* nothing to draw */ }
+    else {
     bags.forEach(b => {
       const bagScreen = camera.worldToScreen(
         b.x + 0.5,
@@ -375,6 +361,12 @@ export function renderTopDownView() {
         canvas2D.height,
         mapManager.tileSize || TILE_SIZE
       );
+
+      // Quick cull – if bag is completely off-canvas, skip
+      if(bagScreen.x < -TILE_SIZE || bagScreen.x > canvas2D.width + TILE_SIZE ||
+         bagScreen.y < -TILE_SIZE || bagScreen.y > canvas2D.height + TILE_SIZE){
+        return;
+      }
 
       // Attempt to load bag sprite once; default sheet "objects" with alias 'lootbag_white'
       let spriteKey = 'items_sprite_lootbag_white';
@@ -405,6 +397,7 @@ export function renderTopDownView() {
         }
       }
     });
+    }
   } catch(err){
     console.error('[BagRender] Failed:', err);
   }

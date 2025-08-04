@@ -9,7 +9,12 @@
       "rateOfFire": 1.0,
       "projectile": null,
       "bagType": 1,
-      "soulbound": false
+      "soulbound": false,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 0,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     },
     {
       "id": 1002,
@@ -21,7 +26,12 @@
       "rateOfFire": 1.0,
       "projectile": null,
       "bagType": 1,
-      "soulbound": false
+      "soulbound": false,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 16,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     },
     {
       "id": 1003,
@@ -33,7 +43,12 @@
       "rateOfFire": 1.0,
       "projectile": null,
       "bagType": 1,
-      "soulbound": false
+      "soulbound": false,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 32,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     },
     {
       "id": 1004,
@@ -45,7 +60,12 @@
       "rateOfFire": 1.0,
       "projectile": null,
       "bagType": 2,
-      "soulbound": false
+      "soulbound": false,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 48,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     },
     {
       "id": 1005,
@@ -57,7 +77,12 @@
       "rateOfFire": 1.0,
       "projectile": null,
       "bagType": 2,
-      "soulbound": false
+      "soulbound": false,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 64,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     },
     {
       "id": 1006,
@@ -69,7 +94,12 @@
       "rateOfFire": 1.0,
       "projectile": null,
       "bagType": 2,
-      "soulbound": false
+      "soulbound": false,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 80,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     },
     {
       "id": 1007,
@@ -81,7 +111,12 @@
       "rateOfFire": 1.0,
       "projectile": "Sky Bolt",
       "bagType": 3,
-      "soulbound": true
+      "soulbound": true,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 96,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     },
     {
       "id": 1008,
@@ -93,7 +128,12 @@
       "rateOfFire": 1.0,
       "projectile": "Phantom Bolt",
       "bagType": 3,
-      "soulbound": true
+      "soulbound": true,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 112,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     },
     {
       "id": 1009,
@@ -105,7 +145,12 @@
       "rateOfFire": 1.0,
       "projectile": "Frost Bolt",
       "bagType": 3,
-      "soulbound": true
+      "soulbound": true,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 128,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     },
     {
       "id": 1010,
@@ -117,7 +162,12 @@
       "rateOfFire": 1.0,
       "projectile": "Solar Bolt",
       "bagType": 5,
-      "soulbound": true
+      "soulbound": true,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 144,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     },
     {
       "id": 1011,
@@ -129,7 +179,12 @@
       "rateOfFire": 1.0,
       "projectile": "Dragon Bolt",
       "bagType": 5,
-      "soulbound": true
+      "soulbound": true,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 160,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     },
     {
       "id": 1012,
@@ -141,7 +196,12 @@
       "rateOfFire": 1.0,
       "projectile": "Majesty Bolt",
       "bagType": 6,
-      "soulbound": true
+      "soulbound": true,
+      "spriteSheet": "lofi_obj",
+      "spriteX": 176,
+      "spriteY": 0,
+      "spriteWidth": 16,
+      "spriteHeight": 16
     }
   ]
   

@@ -87,6 +87,13 @@ class BinaryPacket {
 
     // Loot bag messages
     BAG_LIST: 33,
+    // Loot interaction messages
+    PICKUP_ITEM: 34,           // client → server (request pick up one item from bag)
+    INVENTORY_UPDATE: 35,      // server → client (authoritative inventory state)
+    BAG_REMOVE: 36,            // server → all (bag vanished)
+    PICKUP_DENIED: 37,         // server → picker (item already gone / too far)
+    MOVE_ITEM: 38,            // client → server (drag reorder)
+    MOVE_DENIED: 39,          // server → client (invalid move)
     
     // World update message (full or delta state)
     WORLD_UPDATE: 60,

@@ -1,3 +1,4 @@
+// test comment
 #!/usr/bin/env node
 // @ts-nocheck
 // ci-tools/generateTypes.js

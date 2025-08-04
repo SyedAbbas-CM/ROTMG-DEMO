@@ -38,6 +38,7 @@ import { tileDatabase } from '../assets/TileDatabase.js';
 import { ClientWorld } from '../world/ClientWorld.js';
 import { entityDatabase } from '../assets/EntityDatabase.js';
 import { speechBubbleManager } from '../ui/SpeechBubbleManager.js';
+import { ClientInventoryManager } from './ClientInventoryManager.js';
 
 let renderer, scene, camera;
 let lastTime = 0;
@@ -933,6 +934,14 @@ function initializeGameState() {
     // Make collision manager available in console for debugging
     window.collisionManager = collisionManager;
     
+    // Initialize inventory UI
+    const uiMgr = getUIManager && getUIManager();
+    const inventoryManager = new ClientInventoryManager();
+    if(uiMgr) inventoryManager.init(uiMgr);
+    if (window.gameManager) window.gameManager.inventoryManager = inventoryManager;
+    // Expose for console
+    window.inventoryManager = inventoryManager;
+    
     // Update gameState with references
     gameState.character = localPlayer;
     gameState.map = mapManager;
@@ -1646,3 +1655,32 @@ function handleChatCommand(command) {
             }
     }
 }
+
+// ---------------- Pickup keybind (E) ----------------
+window.addEventListener('keydown',(ev)=>{
+    if(ev.key!=='e' && ev.key!=='E') return;
+    if(!window.gameState || !window.gameState.bags || window.gameState.bags.length===0) return;
+    const player = window.gameState.character || localPlayer;
+    if(!player) return;
+    // quick inventory full check
+    const inv = window.gameManager?.inventory || [];
+    if(inv && inv.filter(i=>i==null).length===0){
+        console.warn('Inventory full');
+        return;
+    }
+    // find nearest bag within 2 tiles
+    let nearest=null,dist2=Infinity;
+    window.gameState.bags.forEach(b=>{
+        const dx = b.x - player.x;
+        const dy = b.y - player.y;
+        const d2 = dx*dx + dy*dy;
+        if(d2 < 4 && d2 < dist2){ nearest=b; dist2=d2; }
+    });
+    if(!nearest) return;
+    const itemId = nearest.items && nearest.items[0];
+    if(!itemId) return;
+    const net = window.networkManager;
+    if(net && typeof net.sendPickupItem==='function'){
+        net.sendPickupItem(nearest.id, itemId);
+    }
+});

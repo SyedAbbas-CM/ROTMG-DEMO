@@ -31,6 +31,7 @@ export class EntityDatabase {
         console.warn(`[EntityDB] ${group}.json not found – skipping`);
         return;
       }
+      if(group==='items') { return; } // temporarily skip items until definitions cleaned
       try {
         const arr = JSON.parse(fs.readFileSync(file, 'utf8'));
         arr.forEach(def => {

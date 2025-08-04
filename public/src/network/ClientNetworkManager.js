@@ -634,6 +634,19 @@ export class ClientNetworkManager {
             }
         };
 
+        // Loot interaction
+        this.handlers[MessageType.PICKUP_ITEM] = (data) => {
+            if (this.game.pickupItem) {
+                this.game.pickupItem(data.itemId);
+            }
+        };
+
+        this.handlers[MessageType.INVENTORY_UPDATE] = (data) => {
+            if (this.game.setInventory) {
+                this.game.setInventory(data.inventory);
+            }
+        };
+
         this.handlers[MessageType.WORLD_UPDATE] = (data) => {
             // Only log occasionally to reduce spam
             throttledLog('world-update', `World update received`, null, 3000);
@@ -816,6 +829,29 @@ export class ClientNetworkManager {
                     ttl: data.ttlMs || 4000
                 });
             }
+        };
+
+        this.handlers[MessageType.BAG_REMOVE] = (data)=>{
+            const id = data?.bagId;
+            if(id && this.game && typeof this.game.removeBag==='function'){
+                this.game.removeBag(id);
+            }
+        };
+
+        this.handlers[MessageType.PICKUP_DENIED] = (data)=>{
+            const reason = data?.reason || 'denied';
+            console.warn('Pickup denied:', reason);
+            if(window.showToast) window.showToast(reason==='inventory_full'?'Inventory full':reason);
+        };
+
+        this.handlers[MessageType.MOVE_ITEM] = (data) => {
+            if (this.game.moveItem) {
+                this.game.moveItem(data.fromSlot, data.toSlot);
+            }
+        };
+
+        this.handlers[MessageType.MOVE_DENIED] = (data)=>{
+            if(window.showToast) window.showToast(data?.reason || 'Move denied');
         };
     }
     
@@ -1097,6 +1133,16 @@ export class ClientNetworkManager {
     sendCollision(collisionData) {
         return this.send(MessageType.COLLISION, collisionData);
     }
+
+    /**
+     * Request to pick up an item from a loot bag
+     * @param {string} bagId
+     * @param {number} itemId – item instance ID
+     * @param {number} slot – preferred inventory slot (optional)
+     */
+    sendPickupItem(bagId, itemId, slot=null) {
+      this.send(MessageType.PICKUP_ITEM, { bagId, itemId, slot });
+    }
     
     /**
      * Request a map chunk from the server
@@ -1222,6 +1268,13 @@ export class ClientNetworkManager {
     sendPortalEnter() {
         return this.send(MessageType.PORTAL_ENTER, { ts: Date.now() });
     }
+
+    /**
+     * Move/reorder item within inventory
+     */
+    sendMoveItem(fromSlot, toSlot){
+        this.send(MessageType.MOVE_ITEM,{fromSlot,toSlot});
+    }
 }
 
 /**
@@ -1311,6 +1364,13 @@ export const MessageType = {
 
     // Loot bags
     BAG_LIST: 33,
+    // Loot interaction
+    PICKUP_ITEM: 34,
+    INVENTORY_UPDATE: 35,
+    BAG_REMOVE: 36,
+    PICKUP_DENIED: 37,
+    MOVE_ITEM: 38,
+    MOVE_DENIED: 39,
     
     // Collision messages
     COLLISION: 40,

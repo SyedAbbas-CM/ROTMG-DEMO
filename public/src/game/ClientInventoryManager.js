@@ -244,7 +244,15 @@ class ClientInventoryManager {
      * @private
      */
     _moveItem(fromSlot, toSlot) {
-        // Send move request to server
+        // Update local copy optimistically
+        const temp = this.inventory.slots[fromSlot];
+        this.inventory.slots[fromSlot] = this.inventory.slots[toSlot];
+        this.inventory.slots[toSlot] = temp;
+        this.updateInventory(this.inventory); // re-render
+        // Emit to server
+        if(window.networkManager && typeof window.networkManager.sendMoveItem==='function'){
+          window.networkManager.sendMoveItem(fromSlot,toSlot);
+        }
         this.uiManager.emit('inventory-move', { fromSlot, toSlot });
     }
     
