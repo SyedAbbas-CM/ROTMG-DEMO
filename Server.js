@@ -8,7 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { MapManager } from './src/MapManager.js';
-import { BinaryPacket, MessageType } from './src/NetworkManager.js';
+import { BinaryPacket, MessageType } from './common/protocol.js';
 import BulletManager from './src/BulletManager.js';
 import EnemyManager from './src/EnemyManager.js';
 import CollisionManager from './src/CollisionManager.js';
@@ -17,7 +17,7 @@ import { ItemManager } from './src/ItemManager.js';
 // Import BehaviorSystem
 import BehaviorSystem from './src/BehaviorSystem.js';
 import { entityDatabase } from './src/assets/EntityDatabase.js';
-import { NETWORK_SETTINGS } from './public/src/constants/constants.js';
+import { NETWORK_SETTINGS } from './common/constants.js';
 // ---- Hyper-Boss LLM stack ----
 import BossManager from './src/BossManager.js';
 import LLMBossController from './src/LLMBossController.js';
@@ -88,6 +88,8 @@ wss.on('error', (err) => {
 // Set up middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname,'public')));
+// Expose common/ for browser consumption so client can import shared protocol/constants
+app.use('/common', express.static(path.join(__dirname,'common')));
 
 // Fallback for SPA routing – send index.html for unknown GETs under /public
 app.get('/play', (req,res)=>{
@@ -356,7 +358,8 @@ function sendInitialState(socket, clientId) {
   const ctx = getWorldCtx(mapId);
 
   // Send separate packets so the client can reuse existing handlers
-  sendToClient(socket, MessageType.PLAYER_LIST, players);
+  // Standardize shape: wrap in { players }
+  sendToClient(socket, MessageType.PLAYER_LIST, { players });
   sendToClient(socket, MessageType.ENEMY_LIST,  ctx.enemyMgr.getEnemiesData(mapId));
   sendToClient(socket, MessageType.BULLET_LIST, ctx.bulletMgr.getBulletsData(mapId));
   sendToClient(socket, MessageType.BAG_LIST,    ctx.bagMgr.getBagsData(mapId));
@@ -901,8 +904,8 @@ function broadcastWorldUpdates() {
   // Iterate per mapId and broadcast to only those clients
   clientsByMap.forEach((idSet, mapId) => {
     // Collect players in this map
-    const players = {};
-    idSet.forEach(cid => { players[cid] = clients.get(cid).player; });
+    const playersObj = {};
+    idSet.forEach(cid => { playersObj[cid] = clients.get(cid).player; });
 
     // Use per-world managers
     const ctx = getWorldCtx(mapId);
@@ -948,7 +951,7 @@ function broadcastWorldUpdates() {
       });
 
       const payload = {
-        players,
+        players: playersObj,
         enemies: visibleEnemies.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         bullets: visibleBullets.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         bags:   visibleBags,
@@ -963,10 +966,10 @@ function broadcastWorldUpdates() {
       sendToClient(c.socket, MessageType.WORLD_UPDATE, payload);
     });
 
-    // Also send player list
+    // Also send player list in standardized wrapped shape
     idSet.forEach(cid => {
       const c = clients.get(cid);
-      if (c) sendToClient(c.socket, MessageType.PLAYER_LIST, players);
+      if (c) sendToClient(c.socket, MessageType.PLAYER_LIST, { players: playersObj });
     });
 
     // Reset bullet stats counters once per frame for this world

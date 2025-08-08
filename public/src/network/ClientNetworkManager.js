@@ -453,6 +453,8 @@ console.log("Map save function available. Use window.saveMapData() in the consol
  * ClientNetworkManager
  * Handles WebSocket communication with the game server using binary packet format
  */
+import { BinaryPacket, MessageType } from '/common/protocol.js';
+
 export class ClientNetworkManager {
     /**
      * Create a client network manager
@@ -532,15 +534,8 @@ export class ClientNetworkManager {
         };
         
         this.handlers[MessageType.PLAYER_LIST] = (data) => {
-            // Check if data is directly the players object or has a nested 'players' property
-            // This handles both formats from the server
-            let playersData = data;
-            
-            // If the data has a 'players' property and it's an object, use that
-            if (data.players && typeof data.players === 'object') {
-                playersData = data.players;
-                throttledLog('player-list-format', '[NETWORK] Found nested players property in PLAYER_LIST message');
-            }
+            // Server now standardizes to { players }
+            const playersData = (data && typeof data.players === 'object') ? data.players : {};
             
             // Validate that we have an object with players
             if (!playersData || typeof playersData !== 'object') {
@@ -658,7 +653,7 @@ export class ClientNetworkManager {
 
             if (this.game.updateWorld) {
                 // Check if players is nested inside a 'players' property (from server inconsistency)
-                const players = data.players?.players || data.players;
+                const players = data.players || {};
                 this.game.updateWorld(data.enemies, data.bullets, players, data.objects, data.bags || []);
                 if (this.game.setBags && data.bags) {
                     this.game.setBags(data.bags);
@@ -1277,132 +1272,4 @@ export class ClientNetworkManager {
     }
 }
 
-/**
-* BinaryPacket - Utility for efficient binary packet encoding/decoding
-*/
-export class BinaryPacket {
-    /**
-     * Create a binary packet with a specific message type
-     * @param {number} type - Message type ID
-     * @param {Object} data - Message data
-     * @returns {ArrayBuffer} Binary packet
-     */
-    static encode(type, data) {
-        // Convert data to JSON string for flexibility
-        const jsonStr = JSON.stringify(data);
-        const jsonBytes = new TextEncoder().encode(jsonStr);
-        
-        // Create packet: [1 byte type][4 byte length][jsonBytes]
-        const packet = new ArrayBuffer(5 + jsonBytes.byteLength);
-        const view = new DataView(packet);
-        
-        // Write type and length
-        view.setUint8(0, type);
-        view.setUint32(1, jsonBytes.byteLength, true); // Little-endian
-        
-        // Write JSON data
-        new Uint8Array(packet, 5).set(jsonBytes);
-        
-        return packet;
-    }
-    
-    /**
-     * Decode a binary packet
-     * @param {ArrayBuffer} packet - Binary packet
-     * @returns {Object} Decoded packet {type, data}
-     */
-    static decode(packet) {
-        const view = new DataView(packet);
-        
-        // Read type and length
-        const type = view.getUint8(0);
-        const length = view.getUint32(1, true); // Little-endian
-        
-        // Read JSON data
-        const jsonBytes = new Uint8Array(packet, 5, length);
-        const jsonStr = new TextDecoder().decode(jsonBytes);
-        
-        // Parse JSON data
-        try {
-            const data = JSON.parse(jsonStr);
-            return { type, data };
-        } catch (error) {
-            console.error('Error parsing packet JSON:', error);
-            return { type, data: {} };
-        }
-    }
-}
-
-/**
-* Message type constants
-*/
-export const MessageType = {
-    // System messages
-    HEARTBEAT: 0,
-    
-    // Connection messages
-    HANDSHAKE: 1,
-    HANDSHAKE_ACK: 2,
-    PING: 3,
-    PONG: 4,
-    
-    // Game state messages
-    PLAYER_JOIN: 10,
-    PLAYER_LEAVE: 11,
-    PLAYER_UPDATE: 12,
-    PLAYER_LIST: 13,
-    
-    // Entity messages
-    ENEMY_LIST: 20,
-    ENEMY_UPDATE: 21,
-    ENEMY_DEATH: 22,
-    
-    // Bullet messages
-    BULLET_CREATE: 30,
-    BULLET_LIST: 31,
-    BULLET_REMOVE: 32,
-
-    // Loot bags
-    BAG_LIST: 33,
-    // Loot interaction
-    PICKUP_ITEM: 34,
-    INVENTORY_UPDATE: 35,
-    BAG_REMOVE: 36,
-    PICKUP_DENIED: 37,
-    MOVE_ITEM: 38,
-    MOVE_DENIED: 39,
-    
-    // Collision messages
-    COLLISION: 40,
-    COLLISION_RESULT: 41,
-    
-    // Map messages
-    MAP_INFO: 50,
-    CHUNK_REQUEST: 51,
-    CHUNK_DATA: 52,
-    CHUNK_NOT_FOUND: 53,
-    
-    // World update
-    WORLD_UPDATE: 60,
-    
-    // Map request
-    MAP_REQUEST: 70,
-    
-    // Player list request
-    PLAYER_LIST_REQUEST: 80,
-    
-    // Chat message
-    CHAT_MESSAGE: 90,
-
-    // Speech bubbles / taunts
-    SPEECH: 91,
-
-    // Portal interaction
-    PORTAL_ENTER: 54,      // client -> server
-    WORLD_SWITCH: 55       // server -> client
-};
-
-// Expose for late-loading UI components
-if (typeof window !== 'undefined') {
-  window.MessageType = MessageType;
-}
+// Remove in-file duplicate protocol definitions in favor of shared module

@@ -2,10 +2,10 @@
   "name": "rotmg-demo",
   "version": "1.0.0",
   "type": "module",
-  "main": "Server.js",
+  "main": "server/index.js",
   "scripts": {
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
-    "start": "node server.js",
+    "start": "node server/index.js",
     "generate:union": "node ci-tools/generateUnionSchema.js",
     "generate:types": "node ci-tools/generateTypes.js"
   },

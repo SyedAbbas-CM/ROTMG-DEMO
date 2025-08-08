@@ -1,5 +1,5 @@
 // main.js
-import { Game } from './src/game/game.js';
+import { initGame } from './src/game/game.js';
 
 // Server URL (change for production)
 const SERVER_URL = 'ws://localhost:3000';
@@ -10,15 +10,7 @@ const game = new Game(SERVER_URL);
 // Wait for DOM content to load
 window.addEventListener('DOMContentLoaded', async () => {
   try {
-    // Initialize game
-    const success = await game.init();
-    
-    if (success) {
-      console.log('Game initialized successfully');
-    } else {
-      console.error('Failed to initialize game');
-      showConnectionError();
-    }
+    await initGame();
   } catch (error) {
     console.error('Error initializing game:', error);
     showConnectionError();
@@ -50,10 +42,7 @@ function showConnectionError() {
   document.getElementById('retryButton').addEventListener('click', async () => {
     document.body.removeChild(errorMessage);
     try {
-      const success = await game.init();
-      if (!success) {
-        showConnectionError();
-      }
+      await initGame();
     } catch (error) {
       console.error('Error reconnecting:', error);
       showConnectionError();

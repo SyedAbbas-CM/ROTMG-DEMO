@@ -16,7 +16,6 @@ import { renderGame } from '../render/render.js';
 import { 
   ClientMapManager, 
   ClientNetworkManager, 
-  MessageType,
   ClientBulletManager,
   ClientEnemyManager,
   ClientCollisionManager,
@@ -24,6 +23,7 @@ import {
   initUIManager,
   getUIManager
 } from '../managers.js';
+import { MessageType } from '/common/protocol.js';
 import { Player } from '../entities/player.js';
 import { TILE_SIZE, SCALE } from '../constants/constants.js';
 import * as THREE from 'three';

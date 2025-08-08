@@ -1,5 +1,7 @@
 // File: /src/routes/mapRoutes.js
-const express = require('express');
+// NOTE: This route file was using CommonJS in an ESM project. It appears unused by the server.
+// Converting to ESM and keeping minimal functionality in case the editor or tools reference it.
+import express from 'express';
 const router = express.Router();
 
 // Example tile-based map
@@ -19,4 +21,4 @@ router.post('/change', (req, res) => {
   res.json({ success: false });
 });
 
-module.exports = router;
+export default router;

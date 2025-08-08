@@ -1,7 +1,12 @@
 /**
- * OptimizedNetworkManager.js
- * Optimized network manager with binary packet encoding for efficiency
+ * DEPRECATED: Moved to common/protocol.js for shared MessageType/BinaryPacket.
+ * Keep minimal re-exports for backward compatibility and to avoid breaking imports.
  */
+
+export { BinaryPacket, MessageType } from '../common/protocol.js';
+
+// Note: The client-side network implementation lives in public/src/network/ClientNetworkManager.js
+// Server should not import client code from public/.
 
 /**
  * BinaryPacket - Utility for efficient binary packet encoding/decoding

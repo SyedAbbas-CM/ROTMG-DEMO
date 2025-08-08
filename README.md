@@ -51,6 +51,10 @@ npm start
 
 The server starts on `http://localhost:3000` with WebSocket support for real-time gameplay.
 
+Shared protocol and constants are served under `/common` so the browser can import them directly.
+ - Server imports from `./common/*`
+ - Client imports from `/common/*`
+
 ### Testing the LLM Boss
 1. Open `http://localhost:3000` in your browser
 2. A boss will spawn automatically after 5 seconds
