@@ -19,9 +19,7 @@ import BehaviorSystem from './src/BehaviorSystem.js';
 import { entityDatabase } from './src/assets/EntityDatabase.js';
 import { NETWORK_SETTINGS } from './common/constants.js';
 // ---- Hyper-Boss LLM stack ----
-import BossManager from './src/BossManager.js';
-import LLMBossController from './src/LLMBossController.js';
-import BossSpeechController from './src/BossSpeechController.js';
+import { BossManager, LLMBossController, BossSpeechController } from './server/world/llm/index.js';
 import './src/telemetry/index.js'; // OpenTelemetry setup
 import llmRoutes from './src/routes/llmRoutes.js';
 import hotReloadRoutes from './src/routes/hotReloadRoutes.js';
@@ -72,8 +70,24 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const server = http.createServer(app);
 
-// Create WebSocket server
-const wss = new WebSocketServer({ server });
+// Create WebSocket server with compression enabled (permessage-deflate)
+const wss = new WebSocketServer({
+  server,
+  perMessageDeflate: {
+    zlibDeflateOptions: {
+      chunkSize: 1024,
+      level: 3,
+      memLevel: 7,
+    },
+    zlibInflateOptions: {
+      chunkSize: 10 * 1024,
+    },
+    // Other options settable:
+    clientNoContextTakeover: true,
+    serverNoContextTakeover: true,
+    serverMaxWindowBits: 10,
+  },
+});
 
 // Prevent unhandled 'error' events (e.g. EADDRINUSE) from crashing the process
 wss.on('error', (err) => {
@@ -792,7 +806,8 @@ wss.on('connection', (socket, req) => {
     height: mapMetadata.height,
     tileSize: mapMetadata.tileSize,
     chunkSize: mapMetadata.chunkSize,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    serverTick: gameState.lastUpdateTime
   });
   
   // Send initial state (player list, enemy list, bullet list)
@@ -889,6 +904,7 @@ function updateGame() {
  */
 function broadcastWorldUpdates() {
   const now = Date.now();
+  const serverTick = gameState.lastUpdateTime;
   const UPDATE_RADIUS = NETWORK_SETTINGS.UPDATE_RADIUS_TILES;
   const UPDATE_RADIUS_SQ = UPDATE_RADIUS * UPDATE_RADIUS;
 
@@ -956,7 +972,8 @@ function broadcastWorldUpdates() {
         bullets: visibleBullets.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         bags:   visibleBags,
         objects,
-        timestamp: now
+        timestamp: now,
+        serverTick
       };
 
       if (ctx.bulletMgr.stats) {

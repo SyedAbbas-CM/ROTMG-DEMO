@@ -736,7 +736,11 @@ export class ClientNetworkManager {
         // Handle pong messages for latency calculation
         this.handlers[MessageType.PONG] = (data) => {
             const latency = Date.now() - this.lastPingTime;
-            console.log(`Server ping: ${latency}ms`);
+                console.log(`Server ping: ${latency}ms`);
+                // Track server tick for reconciliation if present
+                if (typeof this.game?.onServerTick === 'function' && data?.serverTick) {
+                    this.game.onServerTick(data.serverTick);
+                }
         };
         
         // Add chat message handler only if socket.on is available
