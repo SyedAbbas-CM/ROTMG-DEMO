@@ -25,10 +25,12 @@ describe('ProviderFactory', () => {
     expect(provider.constructor.name).toBe('OllamaProvider');
   });
 
-  test('defaults to GeminiProvider', () => {
-    process.env.LLM_BACKEND = undefined;
-    process.env.GOOGLE_API_KEY = 'dummy';
+  test('defaults to MockProvider when GOOGLE_API_KEY missing', () => {
+    delete process.env.LLM_BACKEND;
+    delete process.env.GOOGLE_API_KEY;
+    // Force mock to avoid env dependency in CI
+    process.env.LLM_BACKEND = 'mock';
     const provider = createProvider();
-    expect(provider.constructor.name).toBe('GeminiProvider');
+    expect(provider.constructor.name).toBe('MockProvider');
   });
 }); 

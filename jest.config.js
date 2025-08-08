@@ -1,5 +1,6 @@
 export default {
   testEnvironment: 'node',
-  extensionsToTreatAsEsm: ['.js'],
+  // With package.json { type: 'module' }, .js files are ESM automatically.
+  // Remove extensionsToTreatAsEsm per Jest guidance.
   transform: {},
 }; 

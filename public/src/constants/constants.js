@@ -143,8 +143,20 @@ export const WALL_SPRITE_POSITIONS = {
 export const CHUNK_SIZE = 16; // Size of each chunk (e.g., 16x16 tiles)
 
 // Networking tuning constants – shared by client & server
-export const NETWORK_SETTINGS = {
-  UPDATE_RADIUS_TILES: 40,       // within this many tiles of the player we send entities
-  MAX_ENTITIES_PER_PACKET: 500,  // soft-cap to avoid oversized frames
-  DELTA_COMPRESSION: true        // toggle per-field delta compression on WORLD_UPDATE packets
+// Prefer shared constants via /common when running in the browser
+export let NETWORK_SETTINGS = {
+  UPDATE_RADIUS_TILES: 40,
+  MAX_ENTITIES_PER_PACKET: 500,
+  DELTA_COMPRESSION: true,
 };
+
+try {
+  // eslint-disable-next-line import/no-unresolved
+  // Dynamically import shared constants if available
+  // Note: Some build setups may not allow dynamic import from absolute path.
+  // In that case, client modules should import from '/common/constants.js' directly.
+  // This fallback keeps legacy modules working.
+  // @ts-ignore
+  const mod = await import('/common/constants.js');
+  if (mod && mod.NETWORK_SETTINGS) NETWORK_SETTINGS = mod.NETWORK_SETTINGS;
+} catch {}

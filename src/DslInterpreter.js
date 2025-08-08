@@ -34,10 +34,30 @@ export default class DslInterpreter {
   tick(dt) {
     if (!this._stack.length) return [];
 
-    let out = [];
+    const out = [];
     const span = tracer.startSpan('dsl.tick');
     try {
-      this._process(dt, out);
+      let remaining = dt;
+      while (remaining > 0) {
+        const waitBefore = this._waitTime;
+        this._process(remaining, out);
+
+        // If we were waiting, subtract the consumed wait time from remaining
+        if (waitBefore > 0) {
+          if (this._waitTime > 0) {
+            // Still waiting; no further processing this tick
+            break;
+          } else {
+            // Consumed the wait fully; advance remaining by the amount waited
+            remaining = Math.max(0, remaining - waitBefore);
+            // Continue to process the next node in the same tick
+            continue;
+          }
+        }
+
+        // Not a wait; maintain previous behavior: process one leaf per tick
+        break;
+      }
     } finally {
       span.end();
     }
