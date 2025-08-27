@@ -18,6 +18,11 @@ import { ItemManager } from './src/ItemManager.js';
 import BehaviorSystem from './src/BehaviorSystem.js';
 import { entityDatabase } from './src/assets/EntityDatabase.js';
 import { NETWORK_SETTINGS } from './public/src/constants/constants.js';
+// Import Unit Systems
+import SoldierManager from './src/units/SoldierManager.js';
+import UnitSystems from './src/units/UnitSystems.js';
+import UnitNetworkAdapter from './src/units/UnitNetworkAdaptor.js';
+import { CommandSystem } from './src/CommandSystem.js';
 // ---- Hyper-Boss LLM stack ----
 import BossManager from './src/BossManager.js';
 import LLMBossController from './src/LLMBossController.js';
@@ -372,13 +377,55 @@ function getWorldCtx(mapId) {
     const enemyMgr  = new EnemyManager(1000);
     const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager);
     const bagMgr    = new BagManager(500);
+    
+    // Initialize Unit Systems
+    const soldierMgr = new SoldierManager(2000); // Support 2000 units per world
+    const unitSystems = new UnitSystems(soldierMgr, mapManager);
+    const unitNetAdapter = new UnitNetworkAdapter(wss, soldierMgr, unitSystems);
 
     enemyMgr._bagManager = bagMgr; // inject for drops
 
-    logger.info('worldCtx',`Created managers for world ${mapId}`);
-    worldContexts.set(mapId, { bulletMgr, enemyMgr, collMgr, bagMgr });
+    // Note: Initial unit spawning will happen after gameState is initialized
+
+    logger.info('worldCtx',`Created managers for world ${mapId} including unit systems`);
+    worldContexts.set(mapId, { bulletMgr, enemyMgr, collMgr, bagMgr, soldierMgr, unitSystems, unitNetAdapter });
   }
   return worldContexts.get(mapId);
+}
+
+/**
+ * Spawn initial units for demonstration/testing
+ */
+function spawnInitialUnits(soldierMgr) {
+  // Spawn a small army formation
+  const formations = [
+    { x: 30, y: 30, type: 0, count: 8, team: 'blue' },   // Infantry
+    { x: 30, y: 40, type: 1, count: 6, team: 'blue' },   // Heavy Infantry  
+    { x: 30, y: 50, type: 4, count: 10, team: 'blue' },  // Archers
+    
+    { x: 170, y: 30, type: 2, count: 6, team: 'red' },   // Light Cavalry
+    { x: 170, y: 40, type: 3, count: 4, team: 'red' },   // Heavy Cavalry
+    { x: 170, y: 50, type: 5, count: 8, team: 'red' },   // Crossbowmen
+  ];
+  
+  formations.forEach(formation => {
+    for (let i = 0; i < formation.count; i++) {
+      const x = formation.x + (i % 4) * 3;
+      const y = formation.y + Math.floor(i / 4) * 3;
+      const unitId = soldierMgr.spawn(formation.type, x, y, { team: formation.team });
+      
+      if (unitId) {
+        const index = soldierMgr.findIndexById(unitId);
+        // Set team for combat identification
+        if (!soldierMgr.owner) {
+          soldierMgr.owner = new Array(soldierMgr.max);
+        }
+        soldierMgr.owner[index] = formation.team;
+      }
+    }
+  });
+  
+  logger.info('units', `Spawned ${formations.reduce((sum, f) => sum + f.count, 0)} initial units`);
 }
 
 // ---------------------------------------------------------------------------
@@ -663,6 +710,22 @@ const gameState = {
   lastEnemySpawnTime: Date.now()
 };
 
+// Unit spawning will be done via in-game commands
+let commandSystem = null;
+
+// Initialize command system
+function initializeCommandSystem() {
+  if (!commandSystem) {
+    commandSystem = new CommandSystem({
+      clients: clients,
+      gameState: gameState,
+      getWorldCtx: getWorldCtx
+    });
+    console.log('[SERVER] Command system initialized');
+  }
+  return commandSystem;
+}
+
 /**
  * Spawn enemies defined in a map's metadata
  * @param {string} mapId - The map ID to spawn enemies for
@@ -803,6 +866,13 @@ wss.on('connection', (socket, req) => {
         processMoveItem(clientId, packet.data);
       } else if(packet.type === MessageType.PICKUP_ITEM){
         processPickupMessage(clientId, packet.data);
+      } else if(packet.type === MessageType.PLAYER_TEXT){
+        // Initialize command system if not already done
+        const cmdSystem = initializeCommandSystem();
+        const client = clients.get(clientId);
+        if (client && packet.data && packet.data.text) {
+          cmdSystem.processMessage(clientId, packet.data.text, client.player);
+        }
       } else {
         handleClientMessage(clientId, message);
       }
@@ -854,6 +924,11 @@ function updateGame() {
     ctx.bulletMgr.update(deltaTime);
     ctx.bagMgr.update(now / 1000);
     totalActiveEnemies += ctx.enemyMgr.update(deltaTime, ctx.bulletMgr, target, mapManager);
+    
+    // Update Unit Systems (military units with tactical combat)
+    if (ctx.unitSystems) {
+      ctx.unitSystems.update(deltaTime);
+    }
 
     ctx.collMgr.checkCollisions();
     applyEnemyBulletsToPlayers(ctx.bulletMgr, players);
@@ -908,12 +983,16 @@ function broadcastWorldUpdates() {
     const ctx = getWorldCtx(mapId);
     const enemies = ctx.enemyMgr.getEnemiesData(mapId);
     const bullets = ctx.bulletMgr.getBulletsData(mapId);
+    
+    // Get unit data for this world
+    const units = ctx.soldierMgr ? ctx.soldierMgr.getSoldiersData() : [];
 
     // Optionally clamp by map bounds to avoid stray entities outside map
     const meta = mapManager.getMapMetadata(mapId) || { width: 0, height: 0 };
     const clamp = (arr) => arr.filter(o => o.x >= 0 && o.y >= 0 && o.x < meta.width && o.y < meta.height);
     const enemiesClamped = clamp(enemies);
     const bulletsClamped = clamp(bullets);
+    const unitsClamped = clamp(units);
 
     // Collect bag data & clamp to map bounds
     const bags = ctx.bagMgr.getBagsData(mapId);
@@ -947,10 +1026,17 @@ function broadcastWorldUpdates() {
         return (dx * dx + dy * dy) <= UPDATE_RADIUS_SQ;
       });
 
+      const visibleUnits = unitsClamped.filter(u => {
+        const dx = u.x - px;
+        const dy = u.y - py;
+        return (dx * dx + dy * dy) <= UPDATE_RADIUS_SQ;
+      });
+
       const payload = {
         players,
         enemies: visibleEnemies.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         bullets: visibleBullets.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
+        units: visibleUnits.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         bags:   visibleBags,
         objects,
         timestamp: now

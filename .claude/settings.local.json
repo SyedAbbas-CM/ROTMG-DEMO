@@ -4,7 +4,9 @@
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(cp:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(node:*)",
+      "Bash(open http://localhost:3000)"
     ],
     "deny": []
   }

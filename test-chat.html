@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat System Test</title>
+</head>
+<body>
+    <h1>Chat System Test</h1>
+    <div id="status">Loading...</div>
+    
+    <script type="module">
+        import { initializeChatSystem } from './public/src/ui/ChatSystem.js';
+        
+        // Mock network manager for testing
+        class MockNetworkManager {
+            constructor() {
+                this.handlers = {};
+            }
+            
+            on(messageType, handler) {
+                console.log('Mock: Registered handler for message type:', messageType);
+                this.handlers[messageType] = handler;
+            }
+            
+            send(messageType, data) {
+                console.log('Mock: Send message type:', messageType, 'data:', data);
+                // Echo back for testing
+                if (messageType === 89) { // PLAYER_TEXT
+                    setTimeout(() => {
+                        const handler = this.handlers[90]; // CHAT_MESSAGE
+                        if (handler) {
+                            handler({
+                                sender: 'Server',
+                                message: `Echo: ${data.text}`,
+                                color: '#00FF00'
+                            });
+                        }
+                    }, 100);
+                }
+            }
+        }
+        
+        try {
+            const mockNetworkManager = new MockNetworkManager();
+            const chatSystem = initializeChatSystem(mockNetworkManager);
+            
+            document.getElementById('status').textContent = 'Chat system loaded! Press Enter to test.';
+            
+            console.log('Chat system initialized successfully');
+        } catch (error) {
+            console.error('Error initializing chat system:', error);
+            document.getElementById('status').textContent = 'Error: ' + error.message;
+        }
+    </script>
+</body>
+</html>

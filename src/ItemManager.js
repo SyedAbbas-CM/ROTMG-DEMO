@@ -115,8 +115,8 @@ class ItemManager {
      * @param {Object} definition - Item definition
      */
     registerItemDefinition(definition) {
-        // Validate sprite data
-        if (!definition.spriteSheet || !definition.spriteX || !definition.spriteY) {
+        // Validate sprite data - check for existence, not truthiness (spriteX/Y can be 0)
+        if (!definition.spriteSheet || definition.spriteX === undefined || definition.spriteY === undefined) {
             console.error('Item definition missing required sprite data:', definition);
             return;
         }

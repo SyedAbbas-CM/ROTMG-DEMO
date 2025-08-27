@@ -659,7 +659,7 @@ export class ClientNetworkManager {
             if (this.game.updateWorld) {
                 // Check if players is nested inside a 'players' property (from server inconsistency)
                 const players = data.players?.players || data.players;
-                this.game.updateWorld(data.enemies, data.bullets, players, data.objects, data.bags || []);
+                this.game.updateWorld(data.enemies, data.bullets, players, data.objects, data.units || []);
                 if (this.game.setBags && data.bags) {
                     this.game.setBags(data.bags);
                 }
@@ -1391,7 +1391,8 @@ export const MessageType = {
     // Player list request
     PLAYER_LIST_REQUEST: 80,
     
-    // Chat message
+    // Chat and text messages
+    PLAYER_TEXT: 89,         // client → server (chat/command input)
     CHAT_MESSAGE: 90,
 
     // Speech bubbles / taunts

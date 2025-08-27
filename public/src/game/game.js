@@ -39,6 +39,8 @@ import { ClientWorld } from '../world/ClientWorld.js';
 import { entityDatabase } from '../assets/EntityDatabase.js';
 import { speechBubbleManager } from '../ui/SpeechBubbleManager.js';
 import { ClientInventoryManager } from './ClientInventoryManager.js';
+import ClientUnitManager from '../units/ClientUnitManager.js';
+import { initializeChatSystem } from '../ui/ChatSystem.js';
 
 let renderer, scene, camera;
 let lastTime = 0;
@@ -48,6 +50,7 @@ let networkManager;
 let mapManager;
 let bulletManager;
 let enemyManager;
+let unitManager;
 let collisionManager;
 let localPlayer;
 let gameUI;
@@ -569,6 +572,8 @@ function initializeGameState() {
     bulletManager = new ClientBulletManager(10000);
     bulletManager.bulletScale = 3.0; // Larger bullets for visibility
     enemyManager = new ClientEnemyManager(1000);
+    unitManager = new ClientUnitManager(2000); // Match server capacity
+    window.unitManager = unitManager; // Expose for debugging
     
     // Reinitialize enemy sprites after sprite database is loaded
     if (enemyManager.reinitializeSprites) {
@@ -699,10 +704,16 @@ function initializeGameState() {
             mapManager     = newWorld.mapManager;
             enemyManager   = newWorld.enemyManager;
             bulletManager  = newWorld.bulletManager;
+            
+            // Keep unit manager separate since it's not part of ClientWorld yet
+            if (!unitManager) {
+                unitManager = new ClientUnitManager(2000);
+            }
 
             gameState.map          = mapManager;
             gameState.enemyManager = enemyManager;
             gameState.bulletManager= bulletManager;
+            gameState.unitManager  = unitManager;
 
             // 4) Snap camera to new spawn location immediately
             if (gameState.camera && data.spawnX !== undefined) {
@@ -770,7 +781,7 @@ function initializeGameState() {
         },
         
         // Update world state
-        updateWorld: (enemies, bullets, players, objects=[]) => {
+        updateWorld: (enemies, bullets, players, objects=[], units=[]) => {
             // Only log world updates occasionally to reduce console spam
             if (Math.random() < 0.05) {
                 console.log(`World update: ${enemies?.length || 0} enemies, ${bullets?.length || 0} bullets, ${players ? Object.keys(players).length : 0} players`);
@@ -790,6 +801,12 @@ function initializeGameState() {
             if (bullets) {
                 const filteredBullets = currentWorld ? bullets.filter(b => b.worldId === currentWorld) : bullets;
                 bulletManager.updateBullets(filteredBullets);
+            }
+            
+            // Update units if present
+            if (units && unitManager) {
+                const filteredUnits = currentWorld ? units.filter(u => u.worldId === currentWorld) : units;
+                unitManager.spawnMany(filteredUnits);
             }
             
             // Check if we actually got player data
@@ -916,6 +933,10 @@ function initializeGameState() {
     
     // Expose globally for debug and input helpers
     window.networkManager = networkManager;
+    
+    // Initialize chat system for in-game commands
+    initializeChatSystem(networkManager);
+    console.log('Chat system initialized - press Enter to open chat, use /help for commands.');
     
     // Now that network manager is created, set it in the map manager
     mapManager.networkManager = networkManager;

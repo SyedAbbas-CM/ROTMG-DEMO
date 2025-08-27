@@ -4,7 +4,7 @@
  */
 
 import { SpriteManager } from '../sprite/SpriteManager.js';
-import { ItemType, ItemRarity } from '../../src/ItemManager.js';
+import { ItemType, ItemRarity } from '../constants/itemConstants.js';
 
 class ClientItemManager {
     constructor() {
