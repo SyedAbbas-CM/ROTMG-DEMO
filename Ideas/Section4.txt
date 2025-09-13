@@ -1,0 +1,159 @@
+Perfect — let’s dive into Section IV: Combat Systems.
+This section is critical since it’s where the bullet hell chaos, LLM attacks, and RTS unit mechanics all intersect.
+
+⸻
+
+IV. Combat Systems (Expanded)
+
+1. Core Philosophy
+
+The combat system must satisfy three competing goals:
+	1.	Bullet Hell Density: Handle thousands of projectiles and enemies without lag.
+	2.	RTS Depth: Allow complex unit interactions (morale, stamina, cohesion).
+	3.	LLM Flexibility: Expose a system where an AI can design and execute new attacks/strategies on the fly.
+
+To achieve this, the system is being designed as a modular emitter-transmitter engine, backed by a lightweight CPU/memory balancing model.
+
+⸻
+
+2. The Emitter–Transmitter Model
+
+Emitters
+	•	Definition: Modular components that generate effects (bullets, beams, AoEs, pulses, summons).
+	•	Examples:
+	•	Bullet Emitter: Fires straight projectiles.
+	•	Beam Emitter: Sustained directional energy attack.
+	•	AoE Pulse: Expanding rings.
+	•	Scatter: Multiple randomized shots.
+	•	Spawner: Creates enemy minions.
+	•	Emitters are lego bricks: they can be stacked to form complex attacks.
+
+Transmitters
+	•	Definition: The layer that injects emitter outputs into the world.
+	•	Each transmitter manages:
+	•	Position
+	•	Orientation (direction, rotation)
+	•	Timing (when to activate/deactivate)
+	•	Scaling (bullet speed, damage, radius)
+	•	Why Split Emitters & Transmitters?
+	•	Emitters = attack logic.
+	•	Transmitters = where/when that logic manifests.
+	•	This allows reusing the same attack across many contexts.
+
+⸻
+
+3. Lightweight Trade-Off System
+
+Since the game may have 1000s of bullets & enemies simultaneously, performance optimizations are essential.
+
+Balancing CPU vs Memory
+	•	If CPU-heavy (too many real-time calculations):
+→ Cache common bullet patterns in memory.
+	•	If Memory-heavy (RAM limits hit):
+→ Switch to CPU calculation of trajectories instead of storing them.
+
+Goal: The engine self-tunes, ensuring smooth performance at large scales.
+
+⸻
+
+4. Attack System as Lego Bricks
+
+The combat engine is designed for composability.
+	•	Basic Bricks: Bullet, Beam, AoE, Scatter, Bomb.
+	•	Composite Attacks: Combine emitters into advanced patterns.
+
+Example:
+	•	Bullet Emitter + AoE Pulse + Scatter: Fires bullets in a ring, then scatters them into fragments → creates a “shatter explosion.”
+
+Because attacks are bricks, both designers and LLMs can invent new combinations without hardcoding.
+
+⸻
+
+5. Unit & Enemy Combat Differences
+	•	Enemies (Lightweight)
+	•	Use predefined emitter-transmitter combos.
+	•	Low simulation overhead.
+	•	Example: “Slime enemy” = AoE pulse every 5 seconds.
+	•	Units (Complex)
+	•	Attack logic tied into morale, stamina, cohesion.
+	•	Example:
+	•	If stamina low → attack rate slows.
+	•	If cohesion broken → attack scatter increases.
+	•	If morale collapses → unit routes and no longer attacks.
+
+⸻
+
+6. Combat States
+
+Combat is layered into phases:
+	1.	Pre-Battle Setup
+	•	Units form ranks, enemies spawn.
+	•	LLM can prepare scripted or adaptive moves.
+	2.	Engagement
+	•	Bullets + unit formations collide.
+	•	Chaos + tactical maneuvers happen simultaneously.
+	3.	Critical Thresholds
+	•	When morale breaks or a boss triggers a phase-change emitter pattern.
+	4.	Resolution
+	•	Victory if enemy routed/boss defeated.
+	•	Defeat if morale collapse / player death.
+
+⸻
+
+7. Stress Handling
+	•	Combat must handle:
+	•	1000s of bullets
+	•	100s of enemies
+	•	Dozens of RTS units
+	•	Player(s)
+	•	Solutions:
+	•	Pooling system: Bullets recycled instead of destroyed/created.
+	•	Emitter caching: Store pre-generated patterns.
+	•	LOD for units: Far-away units use simplified stats (no stamina/morale tracking).
+
+⸻
+
+8. Example Boss Attack (LLM-driven)
+
+Boss decides to launch a “disruption barrage”:
+
+LLM Command (in Combat DSL):
+
+Attack {
+   type: ScatterPulse,
+   emitter: BulletEmitter,
+   transmitter: { position: boss_center, pattern: radial },
+   modifiers: { disruption: +20, staminaDrain: +5 },
+   duration: 5s
+}
+
+In-Game Effect:
+	•	Boss fires radial scatter bullets.
+	•	Each hit lowers unit cohesion by 20%.
+	•	Units lose stamina faster for 5 seconds.
+
+⸻
+
+9. Emitter vs Traditional System Research
+
+Since this emitter–transmitter idea is novel, you’ve noted:
+	•	No clear benchmarks exist yet.
+	•	Must run A/B testing:
+	•	Emitter system vs prefab projectile system.
+	•	Stress test scenarios (5k bullets on screen, 200 units moving).
+	•	Decision will determine final engine architecture.
+
+⸻
+
+✅ Section IV Summary
+	•	Combat = chaos + strategy unified by emitters and LLM DSL commands.
+	•	Performance balance is achieved by trading off CPU/memory.
+	•	Lego-brick attacks allow endless variation.
+	•	Enemies = lightweight chaos. Units = tactical simulation.
+	•	Stress testing will determine if emitter-transmitter can scale better than traditional prefab-based systems.
+
+⸻
+
+👉 Next, I can expand Section V: LLM Integration, where we’ll build the Game Representation Language (DSL), the player data pipeline, and how the LLM chooses/emerges new strategies.
+
+Do you want me to continue into LLM Integration & DSL next?

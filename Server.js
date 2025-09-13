@@ -7,26 +7,22 @@ import { WebSocketServer, WebSocket } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { MapManager } from './src/MapManager.js';
-import { BinaryPacket, MessageType } from './src/NetworkManager.js';
-import BulletManager from './src/BulletManager.js';
-import EnemyManager from './src/EnemyManager.js';
-import CollisionManager from './src/CollisionManager.js';
-import BagManager from './src/BagManager.js';
-import { ItemManager } from './src/ItemManager.js';
-// Import BehaviorSystem
-import BehaviorSystem from './src/BehaviorSystem.js';
+import { MapManager } from './src/world/MapManager.js';
+import { getWorldMeta, getSpawnPoint } from './src/world/worldRegistry.js';
+import { BinaryPacket } from './src/net/NetworkManager.js';
+import { MessageType, makeWorldSwitchPayload, makeChunkDataPayload } from './public/src/shared/messages.js';
+import { entities, game as gamePkg } from './src/index.js';
+const { BulletManager, EnemyManager, CollisionManager, BagManager, SoldierManager, UnitSystems, UnitNetworkAdapter } = entities;
+const { ItemManager } = gamePkg;
+// Import BehaviorSystem via direct path (kept to avoid circular eval in esm)
+const { default: BehaviorSystem } = await import('./src/Behaviours/BehaviorSystem.js');
 import { entityDatabase } from './src/assets/EntityDatabase.js';
 import { NETWORK_SETTINGS } from './public/src/constants/constants.js';
 // Import Unit Systems
-import SoldierManager from './src/units/SoldierManager.js';
-import UnitSystems from './src/units/UnitSystems.js';
-import UnitNetworkAdapter from './src/units/UnitNetworkAdaptor.js';
 import { CommandSystem } from './src/CommandSystem.js';
 // ---- Hyper-Boss LLM stack ----
-import BossManager from './src/BossManager.js';
-import LLMBossController from './src/LLMBossController.js';
-import BossSpeechController from './src/BossSpeechController.js';
+import { boss } from './src/index.js';
+const { BossManager, LLMBossController, BossSpeechController } = boss;
 import './src/telemetry/index.js'; // OpenTelemetry setup
 import llmRoutes from './src/routes/llmRoutes.js';
 import hotReloadRoutes from './src/routes/hotReloadRoutes.js';
@@ -196,6 +192,59 @@ app.get('/api/assets/atlas/:file', (req, res) => {
   } catch (err) {
     console.error('[ASSETS] Error reading atlas', err);
     res.status(500).json({ error: 'Failed to read atlas' });
+  }
+});
+
+// ---------------- Map Editor minimal API ----------------
+// List maps available under public/maps as simple filenames (JSON files only)
+app.get('/api/map-editor/maps', (req, res) => {
+  try {
+    const dir = path.join(__dirname, 'public', 'maps');
+    if (!fs.existsSync(dir)) {
+      return res.json({ maps: [] });
+    }
+    const all = fs.readdirSync(dir)
+      .filter(f => f.toLowerCase().endsWith('.json'));
+    // Also include already-loaded map IDs known to server
+    const loaded = Array.from(mapManager.maps?.values?.() || []).map(m => m?.id).filter(Boolean);
+    res.json({ maps: all, loaded });
+  } catch (err) {
+    console.error('[MAP-EDITOR] Failed to list maps', err);
+    res.status(500).json({ error: 'Failed to list maps' });
+  }
+});
+
+// Save a map JSON payload to public/maps
+app.post('/api/map-editor/save', (req, res) => {
+  try {
+    const { filename, data } = req.body || {};
+    if (!filename || !data) {
+      return res.status(400).json({ error: 'filename and data required' });
+    }
+    // Very simple filename validation (no path traversal)
+    if (!/^[\w.-]+\.json$/i.test(filename)) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    const dir = path.join(__dirname, 'public', 'maps');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const outPath = path.join(dir, filename);
+    fs.writeFileSync(outPath, JSON.stringify(data, null, 2));
+    try {
+      // Immediately load (or reload) the saved map into the server registry
+      (async () => {
+        try {
+          const mapId = await mapManager.loadFixedMap(outPath);
+          storedMaps.set(mapId, mapManager.getMapMetadata(mapId));
+          console.log(`[MAP-EDITOR] Hot-loaded saved map ${mapId}`);
+        } catch (e) {
+          console.warn('[MAP-EDITOR] Could not auto-load saved map:', e.message);
+        }
+      })();
+    } catch {}
+    res.json({ success: true, path: '/maps/' + filename });
+  } catch (err) {
+    console.error('[MAP-EDITOR] Save failed', err);
+    res.status(500).json({ error: 'Failed to save map' });
   }
 });
 
@@ -466,6 +515,22 @@ function applyEnemyBulletsToPlayers(bulletMgr, players) {
   }
 }
 
+// API route for entities (required by frontend EntityDatabase)
+app.get('/api/entities', (req, res) => {
+  try {
+    const entities = {
+      tiles: entityDatabase.getAll('tiles'),
+      objects: entityDatabase.getAll('objects'), 
+      enemies: entityDatabase.getAll('enemies'),
+      items: [] // Items are handled separately by ItemManager for now
+    };
+    res.json(entities);
+  } catch (error) {
+    console.error('[API] Error serving entities:', error);
+    res.status(500).json({ error: 'Failed to load entities' });
+  }
+});
+
 // Setup map routes
 app.get('/api/maps', (req, res) => {
   // Return list of available maps
@@ -515,13 +580,19 @@ try {
   // Set map storage path for the server
   mapManager.mapStoragePath = './maps';
   
-  // Create a procedural map with reduced size
-  defaultMapId = mapManager.createProceduralMap({
-    width: 64,
-    height: 64,
-    seed: 123456789,
-    name: 'Default Map'
-  });
+  // Prefer loading SampleNexus.json if present
+  const sampleNexusPath = path.join(__dirname, 'public', 'maps', 'SampleNexus.json');
+  if (fs.existsSync(sampleNexusPath)) {
+    defaultMapId = await mapManager.loadFixedMap(sampleNexusPath);
+  } else {
+    // Fallback: create a procedural map
+    defaultMapId = mapManager.createProceduralMap({
+      width: 64,
+      height: 64,
+      seed: 123456789,
+      name: 'Default Map'
+    });
+  }
   if (DEBUG.mapCreation) {
     console.log(`Created default map: ${defaultMapId} - This is the map ID that will be sent to clients`);
   }
@@ -539,72 +610,7 @@ storedMaps.set(defaultMapId, mapManager.getMapMetadata(defaultMapId));
 
 console.log(`Created default map: ${defaultMapId}`);
 
-/* ------------------------------------------------------------------
- * TEMPORARY PORTAL HOOK
- * ------------------------------------------------------------------
- * Until we finish the full multi-world system this helper will spawn a
- * single portal in the centre of the procedural map that links to a
- * handcrafted map file located at public/maps/test.json.  Remove once
- * proper portal placement / map loading pipeline is ready.
- */
-(async () => {
-  try {
-    const fixedMapPath = path.join(__dirname, 'public', 'maps', 'test.json');
-
-    // Load (or retrieve) the handcrafted map so we have its ID.
-    let handmadeId;
-    // Check if this map has already been loaded previously
-    for (const m of storedMaps.values()) {
-      if (m && m.sourcePath === fixedMapPath) {
-        handmadeId = m.id;
-        break;
-      }
-    }
-    if (!handmadeId) {
-      handmadeId = await mapManager.loadFixedMap(fixedMapPath);
-      storedMaps.set(handmadeId, mapManager.getMapMetadata(handmadeId));
-      // Spawn any static enemies that map defines
-      spawnMapEnemies(handmadeId);
-      console.log(`[TEMP-PORTAL] Loaded handcrafted map ${handmadeId} from ${fixedMapPath}`);
-
-      // --- NEW: Restore procedural map as active so new players spawn there ---
-      mapManager.activeMapId = defaultMapId;
-      const defMeta = mapManager.getMapMetadata(defaultMapId);
-      if (defMeta) {
-        mapManager.width  = defMeta.width;
-        mapManager.height = defMeta.height;
-      }
-
-      // Re-enable procedural generation for other maps
-      if (mapManager.enableProceduralGeneration) {
-        mapManager.enableProceduralGeneration();
-        // Also mark global fixed flag false so procedural chunks generate
-        mapManager.isFixedMap = false;
-      }
-    }
-
-    // Inject a portal into the default procedural map if one is not present
-    const defMeta = mapManager.getMapMetadata(defaultMapId);
-    if (!defMeta) return;
-    if (!defMeta.objects) defMeta.objects = [];
-
-    const alreadyExists = defMeta.objects.some(o => o.type === 'portal' && o.destMap === handmadeId);
-    if (!alreadyExists) {
-      const portalObj = {
-        id: `debug_portal_${handmadeId}`,
-        type: 'portal',
-        sprite: 'portal',
-        x: 5,
-        y: 5,
-        destMap: handmadeId
-      };
-      defMeta.objects.push(portalObj);
-      console.log(`[TEMP-PORTAL] Spawned portal at (${portalObj.x},${portalObj.y}) linking ${defaultMapId} → ${handmadeId}`);
-    }
-  } catch (err) {
-    console.error('[TEMP-PORTAL] Failed to set up temporary portal', err);
-  }
-})();
+// Disable old temp portal injection to allow map-defined portals
 
 // -----------------------------------------------------------
 // Load editor-exported map and register portal inside default map
@@ -689,13 +695,9 @@ function handlePortals() {
     // Ensure managers exist for the new world
     getWorldCtx(destMapId);
 
-    // Notify client so it can switch worlds
-    sendToClient(client.socket, MessageType.WORLD_SWITCH, {
-      mapId: destMapId,
-      x: destX,
-      y: destY,
-      timestamp: Date.now()
-    });
+    // Notify client so it can switch worlds – include full map metadata and spawn
+    const destMetaPayload = mapManager.getMapMetadata(destMapId) || { mapId: destMapId };
+    sendToClient(client.socket, MessageType.WORLD_SWITCH, makeWorldSwitchPayload(destMetaPayload, destX, destY));
 
     console.log(`[PORTAL] Teleported player ${player.id} → ${destMapId} (${destX},${destY})`);
   });
@@ -733,7 +735,17 @@ function initializeCommandSystem() {
 function spawnMapEnemies(mapId) {
   try {
     const mapMeta = mapManager.getMapMetadata(mapId);
-    if (!mapMeta || !mapMeta.enemies || !Array.isArray(mapMeta.enemies)) {
+    if (!mapMeta) {
+      console.log(`[ENEMIES] No metadata for map ${mapId}`);
+      return;
+    }
+
+    // Support both legacy 'enemies' and new 'enemySpawns' arrays
+    const spawnDefs = Array.isArray(mapMeta.enemies) ? mapMeta.enemies
+                     : Array.isArray(mapMeta.enemySpawns) ? mapMeta.enemySpawns
+                     : [];
+
+    if (spawnDefs.length === 0) {
       console.log(`[ENEMIES] No enemies defined for map ${mapId}`);
       return;
     }
@@ -741,12 +753,12 @@ function spawnMapEnemies(mapId) {
     const worldCtx = getWorldCtx(mapId);
     let spawnedCount = 0;
 
-    mapMeta.enemies.forEach(enemyDef => {
+    spawnDefs.forEach(enemyDef => {
       try {
         const { type = 0, x = 10, y = 10, id } = enemyDef;
-        
-        if (id !== undefined) {
-          // Spawn by entity ID from JSON definitions
+
+        // Prefer spawning by external entity ID when provided
+        if (id !== undefined && id !== null) {
           worldCtx.enemyMgr.spawnEnemyById(id, x, y, mapId);
         } else {
           // Spawn by type index
@@ -797,11 +809,18 @@ wss.on('connection', (socket, req) => {
     console.log(`Client ${clientId} connected without map request, using default map: ${defaultMapId}`);
   }
   
-  // Determine safe spawn coordinates within map bounds (avoid edges)
-  const metaForSpawn = mapManager.getMapMetadata(useMapId) || { width: 64, height: 64 };
-  const safeMargin = 2; // tiles away from the border
-  const spawnX = Math.random() * (metaForSpawn.width  - safeMargin * 2) + safeMargin;
-  const spawnY = Math.random() * (metaForSpawn.height - safeMargin * 2) + safeMargin;
+  // Determine safe spawn using world registry helper
+  const tryPoint = getSpawnPoint(mapManager, useMapId);
+  let spawnX = tryPoint.x;
+  let spawnY = tryPoint.y;
+  let attempts = 0;
+  while (attempts < 50 && mapManager.isWallOrOutOfBounds(Math.floor(spawnX), Math.floor(spawnY))) {
+    const p = getSpawnPoint(mapManager, useMapId);
+    spawnX = p.x; spawnY = p.y;
+    attempts++;
+  }
+  
+  console.log(`[SPAWN] Client ${clientId} spawning at (${spawnX.toFixed(1)}, ${spawnY.toFixed(1)}) after ${attempts} attempts`);
   
   // Store client info
   clients.set(clientId, {
@@ -1144,6 +1163,160 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
+
+// ------------------------------------------------------------------
+// Client message handlers
+// ------------------------------------------------------------------
+
+/**
+ * Handle incoming client messages
+ */
+function handleClientMessage(clientId, message) {
+  try {
+    const packet = BinaryPacket.decode(message);
+    const client = clients.get(clientId);
+    
+    if (!client) {
+      console.warn(`[NET] Message from unknown client ${clientId}`);
+      return;
+    }
+
+    switch (packet.type) {
+      case MessageType.HANDSHAKE:
+        console.log(`[NET] Handshake received from client ${clientId}`);
+        sendToClient(client.socket, MessageType.HANDSHAKE_ACK, { clientId });
+        break;
+      case MessageType.PLAYER_UPDATE:
+        handlePlayerUpdate(clientId, packet.data);
+        break;
+      case MessageType.BULLET_CREATE:
+        handleBulletCreate(clientId, packet.data);
+        break;
+      case MessageType.CHUNK_REQUEST:
+        handleChunkRequest(clientId, packet.data);
+        break;
+      case MessageType.PING:
+        sendToClient(client.socket, MessageType.PONG, { time: packet.data.time });
+        break;
+      case MessageType.PLAYER_LIST_REQUEST:
+        console.log(`[NET] Player list requested by client ${clientId}`);
+        break;
+      case MessageType.PORTAL_ENTER:
+        console.log(`[NET] Portal enter request from client ${clientId}`);
+        handlePortals();
+        break;
+      case MessageType.MAP_REQUEST:
+        console.log(`[NET] Map request received from client ${clientId}`);
+        // Send the current map info to the client
+        const mapData = mapManager.getMapMetadata(client.mapId || gameState.mapId);
+        sendToClient(client.socket, MessageType.MAP_INFO, {
+          mapId: client.mapId || gameState.mapId,
+          width: mapData.width,
+          height: mapData.height,
+          tileSize: mapData.tileSize || 12,
+          chunkSize: mapData.chunkSize || 16,
+          name: mapData.name || 'Default Map',
+          procedural: mapData.procedural || true,
+          seed: mapData.seed || Math.random(),
+          objects: mapData.objects || [],
+          enemySpawns: mapData.enemySpawns || []
+        });
+        break;
+      default:
+        console.warn(`[NET] Unknown message type: ${packet.type}`);
+    }
+  } catch (err) {
+    console.error(`[NET] Error handling client message:`, err);
+  }
+}
+
+/**
+ * Handle player position/state updates
+ */
+function handlePlayerUpdate(clientId, data) {
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  // Update player position
+  if (data.x !== undefined) client.player.x = Math.max(0, Math.min(data.x, 1000));
+  if (data.y !== undefined) client.player.y = Math.max(0, Math.min(data.y, 1000));
+  if (data.health !== undefined) client.player.health = data.health;
+  
+  client.lastUpdate = Date.now();
+}
+
+/**
+ * Handle bullet creation from client
+ */
+function handleBulletCreate(clientId, data) {
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  const ctx = getWorldCtx(client.mapId);
+  // Convert angle and speed to velocity components
+  const angle = data.angle || 0;
+  const speed = data.speed || 20;
+  const vx = Math.cos(angle) * speed;
+  const vy = Math.sin(angle) * speed;
+  
+  const bulletId = ctx.bulletMgr.addBullet({
+    x: client.player.x,
+    y: client.player.y,
+    vx: vx,
+    vy: vy,
+    worldId: client.mapId,
+    ownerId: clientId,
+    damage: 10,
+    lifetime: 3.0,
+    spriteName: 'player_bullet'
+  });
+
+  if (bulletId) {
+    // Broadcast bullet creation to other clients in the same world
+    broadcastToWorld(client.mapId, MessageType.BULLET_CREATE, {
+      id: bulletId,
+      x: client.player.x,
+      y: client.player.y,
+      angle: data.angle,
+      speed: data.speed,
+      ownerId: clientId
+    });
+  }
+}
+
+/**
+ * Handle chunk requests from client
+ */
+function handleChunkRequest(clientId, data) {
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  try {
+    const chunkData = mapManager.getChunkData(client.mapId, data.chunkX, data.chunkY);
+    sendToClient(client.socket, MessageType.CHUNK_DATA, makeChunkDataPayload(data.chunkX, data.chunkY, chunkData));
+  } catch (error) {
+    sendToClient(client.socket, MessageType.CHUNK_NOT_FOUND, {
+      chunkX: data.chunkX,
+      chunkY: data.chunkY
+    });
+  }
+}
+
+/**
+ * Handle client disconnection
+ */
+function handleClientDisconnect(clientId) {
+  const client = clients.get(clientId);
+  if (client) {
+    console.log(`[NET] Client ${clientId} disconnected`);
+    
+    // Broadcast player leave to other clients in the same world
+    broadcastToWorld(client.mapId, MessageType.PLAYER_LEAVE, { id: clientId });
+    
+    // Remove client
+    clients.delete(clientId);
+  }
+}
 
 // ------------------------------------------------------------------
 // TEMP stubs to prevent startup crashes

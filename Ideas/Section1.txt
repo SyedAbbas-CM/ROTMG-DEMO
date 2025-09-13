@@ -1,0 +1,145 @@
+Perfect — let’s build this out into a full, structured document that captures every system you’ve drafted in your notes. Since you want me to go into great detail, I’ll spread it across multiple prompts so it’s fully organized, modular, and complete. Think of this as a Game Design & Systems Architecture Document (GDD) that your devs (and your AI/LLM workflow) can use.
+
+⸻
+
+Game System Design Document (Draft 1)
+
+I. Core Vision
+
+This project aims to create a hybrid RTS + Bullet Hell + Procedural AI game.
+	•	RTS Layer: Large-scale overworld, Risk-like territory control, unit formations, morale-driven battles.
+	•	Bullet Hell Layer: Chaos combat with thousands of bullets, enemies, units, and procedural bosses.
+	•	LLM Integration: Bosses and systems that react, generate, and adapt dynamically using a game-specific language.
+	•	Performance Goals: Must handle massive scales while being light on memory and CPU cycles through modular systems like Emitter–Transmitter and lego-brick attacks.
+	•	Narrative Layer: A thematic world referencing real and symbolic struggles (e.g., Axis of Resistance), tying player actions into larger meaning.
+
+⸻
+
+II. Overworld & RTS Systems
+
+1. Overworld Map
+	•	Inspired by Risk and Total War strategy layers.
+	•	Players and factions compete for territories, resources, and strategic choke points.
+	•	Links directly into the RTS battles and dungeon/bullet-hell combat.
+
+2. Multi-Layered Views
+
+The game world is accessible through three core views:
+	1.	FPS View: Direct player combat (bullet hell immersion).
+	2.	Top-Down View: Dungeon/arena management, loot, and exploration.
+	3.	Strategic View: Macro-unit management and army-scale commands.
+
+	•	Strategic View Features:
+	•	Units represented en masse.
+	•	Scrollable, non-center-locked camera (true RTS-like).
+	•	Used only for RTS commands (attack, retreat, formations).
+	•	Views can be locked/unlocked depending on context.
+
+⸻
+
+III. Units & Enemies
+
+1. Enemies
+	•	Lightweight entities.
+	•	Minimal state: HP, attack pattern, movement logic.
+	•	Optimized for bullet-hell chaos (thousands on screen at once).
+
+2. Units (RTS Troops)
+	•	Far more complex, carrying battlefield simulation stats (beyond HP/Attack/Defense).
+
+Advanced Unit Stats
+	•	Momentum/Acceleration → Speed buildup & direction changes.
+	•	Resolve/Morale → Willingness to fight under stress.
+	•	Weight → Collision force & knockback resistance.
+	•	Recovery Rate → Stamina/morale regeneration speed.
+	•	Reliability → Performance consistency.
+	•	Trickle-back → Regrouping effectiveness.
+	•	Inertia → Resistance to directional changes.
+	•	Impact → Shock damage when charging.
+	•	Stamina → Duration of sustained combat ability.
+	•	Cohesion → Formation integrity under pressure.
+	•	Agility → Dexterity & maneuverability.
+	•	Disruption → Ability to scatter or destabilize enemies.
+	•	Charge Control → Maintaining order during an assault.
+	•	Sustain → Endurance over long battles.
+	•	Terrain Affinity → Bonuses/penalties on hills, forests, etc.
+
+This allows emergent RTS gameplay: morale breaks, routing, flank collapses, and cohesion advantages.
+
+⸻
+
+IV. Combat Systems
+
+1. Emitter–Transmitter Model
+	•	Emitters: Modular systems that fire effects (bullets, beams, AoEs).
+	•	Transmitters: Channels that pass these effects into the world.
+	•	Idea: “lego-bricks” that can be recombined to create infinite attack variations.
+	•	Unproven system: Requires a research/testing phase to validate at scale.
+
+2. Lightweight Trade-Off System
+	•	Dynamic balancing between CPU cycles & memory use:
+	•	Cache states if CPU load is heavy.
+	•	Calculate on the fly if memory is tight.
+	•	Ensures scalable performance for bullet hell + RTS hybrid.
+
+3. Attack/Effect Variety
+	•	Base bricks: bullet, bomb, AoE, beam, pulse, wave, scatter.
+	•	Can be layered into composite attacks (e.g., AoE scatter pulse bombs).
+	•	Must remain low-memory while producing rich variety.
+
+⸻
+
+V. LLM Integration
+
+1. LLM Bosses
+	•	Bosses adapt to player playstyle, reactions, and combat data.
+	•	Use a Game Representation Language (GRL) to “speak” actions (attacks, moves, unit orders).
+	•	LLMs output structured commands instead of free text.
+
+2. Combat DSL (Game Language for LLMs)
+	•	Needs to be designed as a domain-specific language (DSL).
+	•	Must cover:
+	•	Attacks (lego-brick emitters).
+	•	Unit formations.
+	•	Player interactions.
+	•	Map events.
+	•	Goal: allow LLMs to create new attacks, dungeons, and strategies seamlessly.
+
+3. Player Data Pipeline
+	•	Save player movement, aiming, and action data.
+	•	Feed into:
+	•	LLM decision-making (boss reacts to patterns).
+	•	Analytics (balancing difficulty).
+	•	Personalization (player-tailored encounters).
+
+⸻
+
+VI. Stress Testing & Performance
+	•	Client Stress Tests: Scripts to push game to extremes (thousands of bullets + units).
+	•	Scalability Testing: Ensure WASM migration can handle physics-heavy simulations.
+	•	Emitter vs. Traditional System Research: Compare overhead of lego-brick emitters vs. optimized prefabs.
+
+⸻
+
+VII. Content & Expansion
+	•	Items, Enemies, Maps: Constantly expanding content pipeline.
+	•	Dungeons: Modular mini-worlds with procedural or hand-crafted designs.
+	•	Bosses: Designed to leverage LLMs for adaptive mechanics.
+
+⸻
+
+VIII. Narrative & Symbolism
+	•	Embedding profound resistance themes.
+	•	References to real-world symbolic leaders (Axis of Resistance, e.g., Nasrallah, Soleimani, Khomeini).
+	•	Creates ideological grounding for the game’s overworld conflict.
+
+⸻
+
+✅ That’s the first master organization layer.
+
+If you want, I can now expand each Section into a dedicated prompt with:
+	•	Subsystems, mock data structures, pipeline flow diagrams, and examples.
+	•	Suggested implementation pathways (short-term vs long-term).
+	•	Possible risks & bottlenecks.
+
+Would you like me to expand Section II (Overworld & RTS) first, or start with Section IV (Combat & LLM DSL) since that’s the most technically heavy?

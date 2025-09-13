@@ -507,8 +507,10 @@ function updateVisibleTiles() {
     return;
   }
 
-  const cameraTileX = Math.floor(character.x);
-  const cameraTileY = Math.floor(character.y);
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const meta = (window.gameState?.map?.mapMetadata) || { width: 0, height: 0, chunkSize: 16 };
+  const cameraTileX = clamp(Math.floor(character.x), 0, Math.max(0, (meta.width  || 0) - 1));
+  const cameraTileY = clamp(Math.floor(character.y), 0, Math.max(0, (meta.height || 0) - 1));
 
   // Update map chunks if ClientMapManager is used
   if (mapManager.updateVisibleChunksLocally) {

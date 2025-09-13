@@ -1,6 +1,6 @@
 // server/src/units/UnitSystems.js
 import { UnitTypes } from './UnitTypes.js';
-import SpatialGrid   from '../shared/spatialGrid.js';
+import SpatialGrid   from '../../public/src/shared/spatialGrid.js';
 
 export default class UnitSystems {
   constructor(unitManager, mapManager) {

@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overworld Demo - Isolated System</title>
+    <style>
+        body {
+            margin: 0; padding: 0; background: #111; color: #fff;
+            font-family: 'Courier New', monospace; overflow: hidden;
+        }
+        
+        #gameContainer { position: relative; width: 100vw; height: 100vh; }
+        
+        #gameCanvas {
+            display: block; background: #000;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+        
+        #ui {
+            position: absolute; top: 10px; left: 10px; z-index: 100;
+            background: rgba(0, 0, 0, 0.8); padding: 15px; border-radius: 5px;
+            font-size: 14px; max-width: 300px;
+        }
+        
+        #controls {
+            position: absolute; top: 10px; right: 10px; z-index: 100;
+            background: rgba(0, 0, 0, 0.8); padding: 15px; border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .info-row { margin: 5px 0; }
+        .highlight { color: #4CAF50; font-weight: bold; }
+        
+        .terrain-plains { color: #8BC34A; }
+        .terrain-mountains { color: #9E9E9E; }
+        .terrain-water { color: #2196F3; }
+        .terrain-forest { color: #4CAF50; }
+        .terrain-desert { color: #FFC107; }
+        .terrain-wasteland { color: #F44336; }
+        
+        button {
+            background: #333; color: #fff; border: 1px solid #555;
+            padding: 5px 10px; margin: 2px; cursor: pointer;
+            font-family: inherit; border-radius: 3px;
+        }
+        button:hover { background: #555; }
+        
+        input {
+            background: #222; color: #fff; border: 1px solid #555;
+            padding: 3px 5px; margin: 2px; width: 50px;
+            font-family: inherit; border-radius: 3px;
+        }
+        
+        .error { color: #f44336; background: rgba(244, 67, 54, 0.1); 
+                border: 1px solid #f44336; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="ui">
+            <h3 style="margin-top: 0;">🌍 Overworld Demo</h3>
+            <div class="info-row"><strong>Isolated System Test</strong></div>
+            <div class="info-row">Position: <span id="position" class="highlight"></span></div>
+            <div class="info-row">Chunk: <span id="chunk" class="highlight"></span></div>
+            <div class="info-row">Terrain: <span id="terrain" class="highlight"></span></div>
+            <div class="info-row">Sprite: <span id="sprite" class="highlight"></span></div>
+            <div class="info-row">Zoom: <span id="zoomLevel" class="highlight"></span></div>
+            <div class="info-row">Loaded Chunks: <span id="loadedChunks" class="highlight"></span></div>
+            <div class="info-row">Memory: <span id="memory" class="highlight"></span></div>
+            <div class="info-row" id="regionInfo" style="display:none;">
+                <strong>Region Details:</strong><br>
+                Features: <span id="regionFeatures" class="highlight"></span><br>
+                Seed: <span id="regionSeed" class="highlight"></span><br>
+                Transitions: <span id="regionTransitions" class="highlight"></span>
+            </div>
+            <hr>
+            <div class="info-row">
+                <strong>WASD:</strong> Move<br>
+                <strong>Click:</strong> <span id="clickAction">Zoom into region</span><br>
+                <strong>ESC:</strong> <span id="escAction">Exit region view</span>
+            </div>
+            <div id="errorLog"></div>
+        </div>
+        
+        <div id="controls">
+            <h4 style="margin-top: 0;">Controls</h4>
+            <!-- Zoom buttons removed - only zoom via region entry/exit -->
+            <button onclick="demo.centerView()">Center (2500,2500)</button>
+            <button onclick="demo.exitRegionView()" id="zoomOutBtn" style="display:none">Exit Region</button><br>
+            
+            <div style="margin-top: 10px;">
+                Jump to: 
+                <input type="number" id="jumpX" placeholder="X" value="2500">
+                <input type="number" id="jumpY" placeholder="Y" value="2500">
+                <button onclick="demo.jumpToCoordinates()">Go</button>
+            </div>
+            
+            <div style="margin-top: 10px;">
+                <button onclick="demo.toggleDebug()">Toggle Debug</button>
+                <button onclick="demo.showStats()">World Stats</button>
+            </div>
+            
+            <div style="margin-top: 10px; font-size: 11px;">
+                <div><span class="terrain-plains">■</span> Plains</div>
+                <div><span class="terrain-mountains">■</span> Mountains</div>
+                <div><span class="terrain-water">■</span> Water</div>
+                <div><span class="terrain-forest">■</span> Forest</div>
+                <div><span class="terrain-desert">■</span> Desert</div>
+                <div><span class="terrain-wasteland">■</span> Wasteland</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { EfficientWorldManager } from './EfficientWorldManager.js';
+        
+        class OverworldDemo {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.ctx.imageSmoothingEnabled = false;
+                
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                
+                this.worldManager = new EfficientWorldManager({
+                    worldWidth: 5000, worldHeight: 5000, chunkSize: 100, seed: 12345
+                });
+                
+                this.cameraX = 2500; this.cameraY = 2500;
+                this.zoom = 1.0; this.minZoom = 0.1; this.maxZoom = 8.0;
+                this.tileSize = 8; this.showDebug = false; this.keys = {};
+                
+                // View modes: 'overworld', 'region'  
+                this.viewMode = 'overworld';
+                this.selectedRegion = null;
+                this.regionZoom = 1.0;
+                this.regionCameraX = 50; this.regionCameraY = 50;
+                
+                // Try to load spritesheet
+                this.spriteSheet = null; this.spriteSheetLoaded = false;
+                this.loadSpriteSheet();
+                
+                this.setupEventListeners();
+                this.gameLoop();
+                console.log('[Demo] Overworld demo initialized');
+            }
+            
+            async loadSpriteSheet() {
+                try {
+                    const img = new Image();
+                    // Fix path - remove the ../ since we're in the overworld-demo folder
+                    img.src = '/assets/images/lofiEnvironment.png';
+                    
+                    img.onload = () => {
+                        this.spriteSheet = img; this.spriteSheetLoaded = true;
+                        console.log('[Demo] Spritesheet loaded successfully');
+                    };
+                    
+                    img.onerror = () => {
+                        // Fallback: try the relative path
+                        console.log('[Demo] Trying alternative sprite path...');
+                        img.src = '../public/assets/images/lofiEnvironment.png';
+                        img.onload = () => {
+                            this.spriteSheet = img; this.spriteSheetLoaded = true;
+                            console.log('[Demo] Spritesheet loaded via fallback path');
+                        };
+                        img.onerror = () => {
+                            console.log('[Demo] Could not load spritesheet, using colored rectangles');
+                            this.spriteSheet = null; this.spriteSheetLoaded = false;
+                        };
+                    };
+                } catch (error) {
+                    console.log('[Demo] Spritesheet loading failed:', error.message);
+                    this.spriteSheet = null; this.spriteSheetLoaded = false;
+                }
+            }
+            
+            setupEventListeners() {
+                window.addEventListener('keydown', (e) => {
+                    this.keys[e.code] = true;
+                    if (e.code === 'KeyC') this.centerView();
+                });
+                
+                window.addEventListener('keyup', (e) => { this.keys[e.code] = false; });
+                
+                // Remove mouse wheel zoom - only zoom via region entry/exit
+                
+                this.canvas.addEventListener('click', (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const canvasX = e.clientX - rect.left;
+                    const canvasY = e.clientY - rect.top;
+                    
+                    if (this.viewMode === 'overworld') {
+                        // In overworld mode, clicking zooms into a region
+                        const worldX = Math.floor((canvasX - this.canvas.width / 2) / (this.tileSize * this.zoom) + this.cameraX);
+                        const worldY = Math.floor((canvasY - this.canvas.height / 2) / (this.tileSize * this.zoom) + this.cameraY);
+                        
+                        // Convert world coordinates to region coordinates  
+                        const regionX = Math.floor(worldX / 100);
+                        const regionY = Math.floor(worldY / 100);
+                        
+                        // Only zoom if we clicked on a valid region
+                        if (regionX >= 0 && regionX < 50 && regionY >= 0 && regionY < 50) {
+                            this.zoomIntoRegion(regionX, regionY);
+                        }
+                    } else if (this.viewMode === 'region') {
+                        // In region mode, clicking teleports within the region
+                        const localX = Math.floor((canvasX - this.canvas.width / 2) / (this.tileSize * this.regionZoom) + this.regionCameraX);
+                        const localY = Math.floor((canvasY - this.canvas.height / 2) / (this.tileSize * this.regionZoom) + this.regionCameraY);
+                        this.regionCameraX = Math.max(0, Math.min(99, localX));
+                        this.regionCameraY = Math.max(0, Math.min(99, localY));
+                    }
+                });
+                
+                window.addEventListener('resize', () => {
+                    this.canvas.width = window.innerWidth;
+                    this.canvas.height = window.innerHeight;
+                });
+            }
+            
+            gameLoop() {
+                this.update(); this.render(); this.updateUI();
+                requestAnimationFrame(() => this.gameLoop());
+            }
+            
+            update() {
+                if (this.viewMode === 'overworld') {
+                    // Consistent movement speed regardless of zoom
+                    const speed = this.viewMode === 'overworld' ? 8.0 : 2.0;
+                    if (this.keys['KeyW'] || this.keys['ArrowUp']) this.cameraY -= speed;
+                    if (this.keys['KeyS'] || this.keys['ArrowDown']) this.cameraY += speed;
+                    if (this.keys['KeyA'] || this.keys['ArrowLeft']) this.cameraX -= speed;
+                    if (this.keys['KeyD'] || this.keys['ArrowRight']) this.cameraX += speed;
+                    
+                    this.cameraX = Math.max(0, Math.min(4999, this.cameraX));
+                    this.cameraY = Math.max(0, Math.min(4999, this.cameraY));
+                } else if (this.viewMode === 'region') {
+                    // Consistent movement speed in region view
+                    const speed = 1.0;
+                    const oldX = this.regionCameraX;
+                    const oldY = this.regionCameraY;
+                    
+                    if (this.keys['KeyW'] || this.keys['ArrowUp']) this.regionCameraY -= speed;
+                    if (this.keys['KeyS'] || this.keys['ArrowDown']) this.regionCameraY += speed;
+                    if (this.keys['KeyA'] || this.keys['ArrowLeft']) this.regionCameraX -= speed;
+                    if (this.keys['KeyD'] || this.keys['ArrowRight']) this.regionCameraX += speed;
+                    
+                    // Check for region transitions (with 5-tile buffer zone)
+                    const transitionZone = 5;
+                    if (this.regionCameraX < transitionZone && oldX >= transitionZone) {
+                        this.transitionToAdjacentRegion(-1, 0); // West
+                    } else if (this.regionCameraX > 99 - transitionZone && oldX <= 99 - transitionZone) {
+                        this.transitionToAdjacentRegion(1, 0); // East
+                    } else if (this.regionCameraY < transitionZone && oldY >= transitionZone) {
+                        this.transitionToAdjacentRegion(0, -1); // North
+                    } else if (this.regionCameraY > 99 - transitionZone && oldY <= 99 - transitionZone) {
+                        this.transitionToAdjacentRegion(0, 1); // South
+                    }
+                    
+                    // Keep within current region bounds
+                    this.regionCameraX = Math.max(0, Math.min(99, this.regionCameraX));
+                    this.regionCameraY = Math.max(0, Math.min(99, this.regionCameraY));
+                }
+                
+                // ESC key to go back to overworld
+                if (this.keys['Escape'] && this.viewMode === 'region') {
+                    this.exitRegionView();
+                    this.keys['Escape'] = false; // Prevent rapid toggling
+                }
+            }
+            
+            render() {
+                this.ctx.fillStyle = '#000011';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                if (this.viewMode === 'overworld') {
+                    this.renderOverworld();
+                } else if (this.viewMode === 'region') {
+                    this.renderRegion();
+                }
+            }
+            
+            renderOverworld() {
+                // Render as connected sprite tiles - ensure no gaps
+                const tileRenderSize = Math.max(1, Math.ceil(this.tileSize * this.zoom));
+                
+                const tilesX = Math.ceil(this.canvas.width / tileRenderSize) + 4;
+                const tilesY = Math.ceil(this.canvas.height / tileRenderSize) + 4;
+                const startX = Math.floor(this.cameraX - tilesX / 2);
+                const startY = Math.floor(this.cameraY - tilesY / 2);
+                
+                // Render every 10th tile to show regions but keep performance good
+                const sampleRate = 10;
+                
+                for (let y = startY; y < startY + tilesY; y += sampleRate) {
+                    for (let x = startX; x < startX + tilesX; x += sampleRate) {
+                        if (x >= 0 && x < 5000 && y >= 0 && y < 5000) {
+                            this.renderOverworldTile(x, y, tileRenderSize);
+                        }
+                    }
+                }
+                
+                this.renderOverworldPlayer();
+                if (this.showDebug) this.renderRegionBoundaries();
+            }
+            
+            renderRegion() {
+                if (!this.selectedRegion) return;
+                
+                // Render detailed view of selected region (100x100 tiles)
+                const tilesX = Math.ceil(this.canvas.width / (this.tileSize * this.regionZoom)) + 4;
+                const tilesY = Math.ceil(this.canvas.height / (this.tileSize * this.regionZoom)) + 4;
+                const startX = Math.floor(this.regionCameraX - tilesX / 2);
+                const startY = Math.floor(this.regionCameraY - tilesY / 2);
+                
+                for (let y = startY; y < startY + tilesY; y++) {
+                    for (let x = startX; x < startX + tilesX; x++) {
+                        if (x >= 0 && x < 100 && y >= 0 && y < 100) {
+                            this.renderRegionTile(x, y);
+                        }
+                    }
+                }
+                
+                this.renderRegionPlayer();
+            }
+            
+            renderTile(worldX, worldY) {
+                const terrain = this.worldManager.getTerrainAt(worldX, worldY);
+                // Round to integer pixels to prevent sub-pixel rendering gaps
+                const screenX = Math.round((worldX - this.cameraX) * this.tileSize * this.zoom + this.canvas.width / 2);
+                const screenY = Math.round((worldY - this.cameraY) * this.tileSize * this.zoom + this.canvas.height / 2);
+                // Ensure integer pixel rendering to prevent gaps
+                const renderSize = Math.max(1, Math.ceil(this.tileSize * this.zoom));
+                
+                if (this.spriteSheetLoaded && this.spriteSheet) {
+                    try {
+                        const sprite = terrain.sprite;
+                        const srcX = (sprite.col - 1) * 8;
+                        const srcY = (sprite.row - 1) * 8;
+                        this.ctx.drawImage(this.spriteSheet, srcX, srcY, 8, 8, screenX, screenY, renderSize, renderSize);
+                    } catch (error) {
+                        this.renderFallbackTile(screenX, screenY, renderSize, terrain.terrainType);
+                    }
+                } else {
+                    this.renderFallbackTile(screenX, screenY, renderSize, terrain.terrainType);
+                }
+            }
+            
+            renderFallbackTile(screenX, screenY, renderSize, terrainType) {
+                const colors = {
+                    plains: '#8BC34A', mountains: '#9E9E9E', water: '#2196F3',
+                    forest: '#4CAF50', desert: '#FFC107', wasteland: '#F44336'
+                };
+                this.ctx.fillStyle = colors[terrainType] || '#666';
+                this.ctx.fillRect(screenX, screenY, renderSize, renderSize);
+            }
+            
+            renderOverworldTile(worldX, worldY, renderSize) {
+                const terrain = this.worldManager.getTerrainAt(worldX, worldY);
+                // Round to integer pixels to prevent sub-pixel rendering gaps
+                const screenX = Math.round((worldX - this.cameraX) * this.tileSize * this.zoom + this.canvas.width / 2);
+                const screenY = Math.round((worldY - this.cameraY) * this.tileSize * this.zoom + this.canvas.height / 2);
+                
+                // Render sprite with reasonable scaling
+                if (this.spriteSheetLoaded && this.spriteSheet) {
+                    try {
+                        const sprite = terrain.sprite;
+                        const srcX = (sprite.col - 1) * 8;
+                        const srcY = (sprite.row - 1) * 8;
+                        
+                        // Keep pixelated sprites - no smoothing
+                        this.ctx.imageSmoothingEnabled = false;
+                        this.ctx.drawImage(
+                            this.spriteSheet, 
+                            srcX, srcY, 8, 8, 
+                            screenX, screenY, renderSize, renderSize
+                        );
+                        
+                    } catch (error) {
+                        this.renderFallbackTile(screenX, screenY, renderSize, terrain.terrainType);
+                    }
+                } else {
+                    this.renderFallbackTile(screenX, screenY, renderSize, terrain.terrainType);
+                }
+                
+                // Add region boundary lines every 100 tiles
+                const regionX = Math.floor(worldX / 100);
+                const regionY = Math.floor(worldY / 100);
+                const localX = worldX % 100;
+                const localY = worldY % 100;
+                
+                // Draw thick region boundaries
+                if (localX === 0 || localY === 0) {
+                    this.ctx.strokeStyle = '#000000';
+                    this.ctx.lineWidth = 8; // Extra thick
+                    
+                    if (localX === 0) { // Vertical boundary
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(screenX, screenY);
+                        this.ctx.lineTo(screenX, screenY + renderSize);
+                        this.ctx.stroke();
+                    }
+                    
+                    if (localY === 0) { // Horizontal boundary
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(screenX, screenY);
+                        this.ctx.lineTo(screenX + renderSize, screenY);
+                        this.ctx.stroke();
+                    }
+                }
+                
+                // Add region labels at region corners
+                if (localX < 10 && localY < 10 && renderSize > 20) {
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                    this.ctx.fillRect(screenX + 2, screenY + 2, 50, 20);
+                    
+                    this.ctx.fillStyle = '#FFFFFF';
+                    this.ctx.font = 'bold 10px Arial';
+                    this.ctx.textAlign = 'left';
+                    this.ctx.fillText(`${regionX},${regionY}`, screenX + 4, screenY + 14);
+                }
+            }
+            
+            renderFallbackTile(screenX, screenY, renderSize, terrainType) {
+                const colors = {
+                    plains: '#8BC34A', mountains: '#9E9E9E', water: '#2196F3',
+                    forest: '#4CAF50', desert: '#FFC107', wasteland: '#F44336'
+                };
+                this.ctx.fillStyle = colors[terrainType] || '#666';
+                this.ctx.fillRect(screenX, screenY, renderSize, renderSize);
+            }
+            
+            renderOverworldPlayer() {
+                const centerX = this.canvas.width / 2; 
+                const centerY = this.canvas.height / 2;
+                const size = Math.max(6, this.tileSize * this.zoom * 2);
+                
+                // Larger player marker for overworld
+                this.ctx.fillStyle = '#FFD700';
+                this.ctx.fillRect(centerX - size/2, centerY - size/2, size, size);
+                this.ctx.strokeStyle = '#000000'; 
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(centerX - size/2, centerY - size/2, size, size);
+                
+                // Cross hair
+                this.ctx.strokeStyle = '#FFD700'; 
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(centerX - 15, centerY); this.ctx.lineTo(centerX + 15, centerY);
+                this.ctx.moveTo(centerX, centerY - 15); this.ctx.lineTo(centerX, centerY + 15);
+                this.ctx.stroke();
+            }
+            
+            renderRegionBoundaries() {
+                // Show region boundaries (every 100 tiles)
+                const regionSize = 100;
+                
+                this.ctx.strokeStyle = '#FF0000'; 
+                this.ctx.lineWidth = Math.max(4, this.zoom * 3); // Thicker debug lines
+                this.ctx.globalAlpha = 0.9;
+                
+                const tilesX = Math.ceil(this.canvas.width / (this.tileSize * this.zoom)) + 4;
+                const tilesY = Math.ceil(this.canvas.height / (this.tileSize * this.zoom)) + 4;
+                const startX = Math.floor(this.cameraX - tilesX / 2);
+                const startY = Math.floor(this.cameraY - tilesY / 2);
+                
+                // Draw vertical region boundaries
+                for (let x = Math.floor(startX / regionSize) * regionSize; x < startX + tilesX + regionSize; x += regionSize) {
+                    const screenX = (x - this.cameraX) * this.tileSize * this.zoom + this.canvas.width / 2;
+                    this.ctx.beginPath(); 
+                    this.ctx.moveTo(screenX, 0); 
+                    this.ctx.lineTo(screenX, this.canvas.height); 
+                    this.ctx.stroke();
+                }
+                
+                // Draw horizontal region boundaries
+                for (let y = Math.floor(startY / regionSize) * regionSize; y < startY + tilesY + regionSize; y += regionSize) {
+                    const screenY = (y - this.cameraY) * this.tileSize * this.zoom + this.canvas.height / 2;
+                    this.ctx.beginPath(); 
+                    this.ctx.moveTo(0, screenY); 
+                    this.ctx.lineTo(this.canvas.width, screenY); 
+                    this.ctx.stroke();
+                }
+                
+                this.ctx.globalAlpha = 1.0;
+            }
+            
+            renderChunkBoundaries() {
+                const chunkSize = 100; this.ctx.strokeStyle = '#FF4444';
+                this.ctx.lineWidth = 1; this.ctx.globalAlpha = 0.5;
+                const tilesX = Math.ceil(this.canvas.width / (this.tileSize * this.zoom)) + 4;
+                const tilesY = Math.ceil(this.canvas.height / (this.tileSize * this.zoom)) + 4;
+                const startX = Math.floor(this.cameraX - tilesX / 2);
+                const startY = Math.floor(this.cameraY - tilesY / 2);
+                
+                for (let x = Math.floor(startX / chunkSize) * chunkSize; x < startX + tilesX; x += chunkSize) {
+                    const screenX = (x - this.cameraX) * this.tileSize * this.zoom + this.canvas.width / 2;
+                    this.ctx.beginPath(); this.ctx.moveTo(screenX, 0); this.ctx.lineTo(screenX, this.canvas.height); this.ctx.stroke();
+                }
+                for (let y = Math.floor(startY / chunkSize) * chunkSize; y < startY + tilesY; y += chunkSize) {
+                    const screenY = (y - this.cameraY) * this.tileSize * this.zoom + this.canvas.height / 2;
+                    this.ctx.beginPath(); this.ctx.moveTo(0, screenY); this.ctx.lineTo(this.canvas.width, screenY); this.ctx.stroke();
+                }
+                this.ctx.globalAlpha = 1.0;
+            }
+            
+            updateUI() {
+                const stats = this.worldManager.getStats();
+                
+                if (this.viewMode === 'overworld') {
+                    const chunkCoords = this.worldManager.worldToChunk(this.cameraX, this.cameraY);
+                    const terrain = this.worldManager.getTerrainAt(Math.floor(this.cameraX), Math.floor(this.cameraY));
+                    
+                    document.getElementById('position').textContent = `(${Math.floor(this.cameraX)}, ${Math.floor(this.cameraY)})`;
+                    document.getElementById('chunk').textContent = `(${chunkCoords.chunkX}, ${chunkCoords.chunkY})`;
+                    
+                    const terrainElement = document.getElementById('terrain');
+                    terrainElement.textContent = terrain.terrainType;
+                    terrainElement.className = `highlight terrain-${terrain.terrainType}`;
+                    
+                    document.getElementById('sprite').textContent = `Col ${terrain.sprite.col}, Row ${terrain.sprite.row}`;
+                    document.getElementById('zoomLevel').textContent = `${(this.zoom * 100).toFixed(0)}%`;
+                } else if (this.viewMode === 'region') {
+                    document.getElementById('position').textContent = `Region (${Math.floor(this.regionCameraX)}, ${Math.floor(this.regionCameraY)})`;
+                    document.getElementById('chunk').textContent = `(${this.selectedRegion.chunkX}, ${this.selectedRegion.chunkY})`;
+                    
+                    const terrainElement = document.getElementById('terrain');
+                    terrainElement.textContent = this.selectedRegion.terrainType + ' (Detail)';
+                    terrainElement.className = `highlight terrain-${this.selectedRegion.terrainType}`;
+                    
+                    document.getElementById('sprite').textContent = 'Detailed View';
+                    document.getElementById('zoomLevel').textContent = `${(this.regionZoom * 100).toFixed(0)}%`;
+                }
+                
+                document.getElementById('loadedChunks').textContent = `${stats.loadedChunks}/${stats.totalChunks}`;
+                document.getElementById('memory').textContent = stats.memoryUsage;
+                
+                // Update UI instructions and controls based on mode
+                if (this.viewMode === 'overworld') {
+                    document.getElementById('clickAction').textContent = 'Zoom into region';
+                    document.getElementById('escAction').style.opacity = '0.5';
+                    document.getElementById('zoomOutBtn').style.display = 'none';
+                    document.getElementById('regionInfo').style.display = 'none';
+                } else {
+                    document.getElementById('clickAction').textContent = 'Move within region';
+                    document.getElementById('escAction').style.opacity = '1.0';
+                    document.getElementById('zoomOutBtn').style.display = 'inline-block';
+                    document.getElementById('regionInfo').style.display = 'block';
+                    
+                    // Update region-specific debug info
+                    const regionSeed = this.calculateRegionSeed(this.selectedRegion);
+                    const features = this.getRegionFeatures(this.selectedRegion);
+                    const transitions = this.getAvailableTransitions(this.selectedRegion);
+                    
+                    document.getElementById('regionSeed').textContent = regionSeed;
+                    document.getElementById('regionFeatures').textContent = features.length + ' unique features';
+                    document.getElementById('regionTransitions').textContent = transitions;
+                }
+            }
+            
+            // Remove manual zoom controls - zoom only happens via region entry/exit
+            centerView() { this.cameraX = 2500; this.cameraY = 2500; }
+            jumpTo(x, y) { 
+                this.cameraX = Math.max(0, Math.min(4999, x)); 
+                this.cameraY = Math.max(0, Math.min(4999, y)); 
+            }
+            jumpToCoordinates() {
+                const x = parseInt(document.getElementById('jumpX').value) || 2500;
+                const y = parseInt(document.getElementById('jumpY').value) || 2500;
+                this.jumpTo(x, y);
+            }
+            toggleDebug() { this.showDebug = !this.showDebug; }
+            
+            showStats() {
+                const stats = this.worldManager.getStats();
+                const explored = ((stats.loadedChunks / stats.totalChunks) * 100).toFixed(2);
+                alert(`Isolated Overworld Demo Stats:
+Size: ${stats.worldSize}
+Chunks: ${stats.chunkGrid} (${stats.totalChunks} total)
+Loaded: ${stats.loadedChunks}
+Memory: ${stats.memoryUsage}
+Explored: ${explored}%
+Spritesheet: ${this.spriteSheetLoaded ? 'Loaded' : 'Using fallback colors'}
+View Mode: ${this.viewMode}
+${this.selectedRegion ? `Region: (${this.selectedRegion.chunkX}, ${this.selectedRegion.chunkY}) - ${this.selectedRegion.terrainType}` : ''}`);
+            }
+            
+            zoomIntoRegion(regionX, regionY) {
+                // Validate region coordinates
+                if (regionX < 0 || regionX >= 50 || regionY < 0 || regionY >= 50) {
+                    console.log(`[Demo] Invalid region: (${regionX}, ${regionY})`);
+                    return;
+                }
+                
+                const chunk = this.worldManager.loadChunk(regionX, regionY);
+                
+                // Store the region we're entering
+                this.selectedRegion = { 
+                    chunkX: regionX, 
+                    chunkY: regionY, 
+                    terrainType: chunk.terrainType
+                };
+                
+                this.viewMode = 'region';
+                this.regionZoom = 4.0; // Much larger zoom for dramatic difference
+                this.regionCameraX = 50; // Center of 100x100 region
+                this.regionCameraY = 50;
+                
+                console.log(`[Demo] Zoomed into region (${regionX}, ${regionY}) - ${chunk.terrainType}`);
+            }
+            
+            exitRegionView() {
+                // Position camera over the CURRENT region (not the original entry region)
+                if (this.selectedRegion) {
+                    // Place camera in the center of the current region
+                    this.cameraX = (this.selectedRegion.chunkX * 100) + 50; // Center of region
+                    this.cameraY = (this.selectedRegion.chunkY * 100) + 50;
+                }
+                
+                this.viewMode = 'overworld';
+                this.selectedRegion = null;
+                console.log('[Demo] Returned to overworld view');
+            }
+            
+            transitionToAdjacentRegion(deltaX, deltaY) {
+                const newChunkX = this.selectedRegion.chunkX + deltaX;
+                const newChunkY = this.selectedRegion.chunkY + deltaY;
+                
+                // Check if new region is within world bounds
+                if (newChunkX < 0 || newChunkX >= 50 || newChunkY < 0 || newChunkY >= 50) {
+                    console.log('[Demo] Cannot transition - world boundary reached');
+                    return;
+                }
+                
+                // Load new region and check its biome type
+                const newChunk = this.worldManager.loadChunk(newChunkX, newChunkY);
+                const currentBiome = this.selectedRegion.terrainType;
+                const newBiome = newChunk.terrainType;
+                
+                // Allow transition regardless of biome (this is realistic - biomes have borders)
+                // But give user feedback about biome changes
+                if (currentBiome !== newBiome) {
+                    console.log(`[Demo] Biome transition: ${currentBiome} → ${newBiome}`);
+                }
+                
+                // Update region  
+                this.selectedRegion = { 
+                    chunkX: newChunkX, 
+                    chunkY: newChunkY, 
+                    terrainType: newChunk.terrainType
+                };
+                
+                // Adjust player position for seamless transition
+                if (deltaX === -1) { // Moving west, appear on east side
+                    this.regionCameraX = 95;
+                } else if (deltaX === 1) { // Moving east, appear on west side
+                    this.regionCameraX = 5;
+                } else if (deltaY === -1) { // Moving north, appear on south side
+                    this.regionCameraY = 95;
+                } else if (deltaY === 1) { // Moving south, appear on north side
+                    this.regionCameraY = 5;
+                }
+                
+                console.log(`[Demo] Transitioned to region (${newChunkX}, ${newChunkY}) - ${newBiome}`);
+            }
+            
+            renderRegionTile(localX, localY) {
+                if (!this.selectedRegion) return;
+                
+                // Generate detailed terrain for this region
+                const terrain = this.generateRegionTerrain(localX, localY, this.selectedRegion);
+                const screenX = (localX - this.regionCameraX) * this.tileSize * this.regionZoom + this.canvas.width / 2;
+                const screenY = (localY - this.regionCameraY) * this.tileSize * this.regionZoom + this.canvas.height / 2;
+                const renderSize = this.tileSize * this.regionZoom;
+                
+                // Use similar logic as main tile rendering but with region-specific colors
+                if (this.spriteSheetLoaded && this.spriteSheet) {
+                    try {
+                        const sprite = terrain.sprite;
+                        const srcX = (sprite.col - 1) * 8;
+                        const srcY = (sprite.row - 1) * 8;
+                        this.ctx.drawImage(this.spriteSheet, srcX, srcY, 8, 8, screenX, screenY, renderSize, renderSize);
+                    } catch (error) {
+                        this.renderFallbackRegionTile(screenX, screenY, renderSize, terrain.terrainType);
+                    }
+                } else {
+                    this.renderFallbackRegionTile(screenX, screenY, renderSize, terrain.terrainType);
+                }
+            }
+            
+            renderFallbackRegionTile(screenX, screenY, renderSize, terrainType) {
+                // Comprehensive colors for all terrain types
+                const colors = {
+                    // Base terrains
+                    plains: '#9ED34C', mountains: '#B0B0B0', water: '#4FC3F7',
+                    forest: '#66BB6A', desert: '#FFCC02', wasteland: '#EF5350',
+                    
+                    // Plains variations
+                    village: '#D4AC0D', flowers: '#E91E63', fence: '#8D6E63',
+                    
+                    // Forest variations
+                    tree: '#1B5E20', bush: '#388E3C', clearing: '#AED581',
+                    
+                    // Mountain variations
+                    peak: '#ECEFF1', rock: '#90A4AE', cave: '#37474F',
+                    
+                    // Desert variations
+                    dune: '#FFE082', oasis: '#00ACC1', cactus: '#689F38',
+                    
+                    // Water variations
+                    shore: '#BCAAA4', island: '#8D6E63',
+                    
+                    // Wasteland variations
+                    bones: '#F5F5F5', rubble: '#5D4037',
+                    
+                    // Special features
+                    shrine: '#9C27B0', crystal: '#00BCD4', portal: '#E91E63',
+                    tower: '#607D8B', circle: '#FF5722', treasure: '#FF9800',
+                    runes: '#3F51B5', monolith: '#795548', grove: '#4CAF50'
+                };
+                
+                this.ctx.fillStyle = colors[terrainType] || '#777';
+                this.ctx.fillRect(screenX, screenY, renderSize, renderSize);
+                
+                // Add special visual effects for features
+                if (['shrine', 'crystal', 'portal', 'circle', 'runes'].includes(terrainType)) {
+                    // Glowing effect for magical features
+                    this.ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                    this.ctx.fillRect(screenX + renderSize/4, screenY + renderSize/4, renderSize/2, renderSize/2);
+                } else if (Math.random() < 0.05) {
+                    // Subtle texture variation for natural terrain
+                    this.ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                    this.ctx.fillRect(screenX, screenY, renderSize/3, renderSize/3);
+                }
+            }
+            
+            renderRegionPlayer() {
+                const centerX = this.canvas.width / 2; 
+                const centerY = this.canvas.height / 2;
+                const size = Math.max(6, this.tileSize * this.regionZoom);
+                
+                // Different player marker for region view
+                this.ctx.fillStyle = '#00FFFF';
+                this.ctx.fillRect(centerX - size/2, centerY - size/2, size, size);
+                this.ctx.strokeStyle = '#00FFFF'; 
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, size, 0, Math.PI * 2);
+                this.ctx.stroke();
+            }
+            
+            generateRegionTerrain(x, y, region) {
+                // Generate detailed terrain with actual features and structures
+                const regionSeed = this.calculateRegionSeed(region);
+                const tileSeed = regionSeed + (x * 317 + y * 547); // Prime numbers for good distribution
+                const noise = this.simpleNoise(tileSeed);
+                const features = this.getRegionFeatures(region);
+                
+                // Check if this tile has a special feature
+                for (const feature of features) {
+                    if (Math.abs(feature.x - x) <= feature.size && Math.abs(feature.y - y) <= feature.size) {
+                        return { 
+                            terrainType: feature.type, 
+                            sprite: feature.sprite,
+                            isFeature: true,
+                            featureName: feature.name
+                        };
+                    }
+                }
+                
+                // Base terrain generation with more variety
+                let terrainType = region.terrainType;
+                let sprite = { col: 5, row: 7 }; // Default
+                
+                // Create terrain patterns based on distance from center and noise
+                const centerDist = Math.sqrt(Math.pow(x - 50, 2) + Math.pow(y - 50, 2));
+                const edgeDist = Math.min(x, y, 99-x, 99-y);
+                
+                if (region.terrainType === 'plains') {
+                    if (centerDist < 20 && noise > 0.6) {
+                        terrainType = 'village'; sprite = { col: 8, row: 7 }; // Houses/structures
+                    } else if (noise > 0.8) {
+                        terrainType = 'flowers'; sprite = { col: 7, row: 7 }; // Decorative
+                    } else if (edgeDist < 5) {
+                        terrainType = 'fence'; sprite = { col: 9, row: 7 }; // Borders
+                    } else {
+                        sprite = { col: 5 + (Math.floor(noise * 3) % 2), row: 7 }; // Grass variations
+                    }
+                } else if (region.terrainType === 'forest') {
+                    if (noise > 0.7) {
+                        terrainType = 'tree'; sprite = { col: 5, row: 10 }; // Trees
+                    } else if (noise > 0.5) {
+                        terrainType = 'bush'; sprite = { col: 6, row: 10 }; // Bushes
+                    } else if (centerDist < 15 && noise > 0.3) {
+                        terrainType = 'clearing'; sprite = { col: 7, row: 10 }; // Forest clearing
+                    } else {
+                        sprite = { col: 6, row: 7 }; // Forest floor
+                    }
+                } else if (region.terrainType === 'mountains') {
+                    if (centerDist > 30 && noise > 0.6) {
+                        terrainType = 'peak'; sprite = { col: 8, row: 8 }; // Mountain peaks
+                    } else if (noise > 0.4) {
+                        terrainType = 'rock'; sprite = { col: 7, row: 8 }; // Rocky terrain
+                    } else if (centerDist < 25 && noise < 0.3) {
+                        terrainType = 'cave'; sprite = { col: 9, row: 8 }; // Cave entrance
+                    } else {
+                        sprite = { col: 5, row: 8 }; // Mountain base
+                    }
+                } else if (region.terrainType === 'desert') {
+                    if (noise > 0.7) {
+                        terrainType = 'dune'; sprite = { col: 8, row: 9 }; // Sand dunes
+                    } else if (centerDist < 20 && noise > 0.4) {
+                        terrainType = 'oasis'; sprite = { col: 5, row: 9 }; // Water in desert
+                    } else if (noise < 0.2) {
+                        terrainType = 'cactus'; sprite = { col: 7, row: 9 }; // Desert plants
+                    } else {
+                        sprite = { col: 6, row: 8 }; // Sand
+                    }
+                } else if (region.terrainType === 'water') {
+                    if (edgeDist < 3) {
+                        terrainType = 'shore'; sprite = { col: 6, row: 7 }; // Shoreline
+                    } else if (centerDist < 15 && noise > 0.6) {
+                        terrainType = 'island'; sprite = { col: 8, row: 10 }; // Small island
+                    } else {
+                        sprite = { col: 5, row: 9 }; // Deep water
+                    }
+                } else if (region.terrainType === 'wasteland') {
+                    if (noise > 0.6) {
+                        terrainType = 'bones'; sprite = { col: 8, row: 11 }; // Skulls/bones
+                    } else if (noise > 0.3) {
+                        terrainType = 'rubble'; sprite = { col: 7, row: 11 }; // Destroyed buildings
+                    } else {
+                        sprite = { col: 6, row: 9 }; // Dead ground
+                    }
+                }
+                
+                return { terrainType, sprite };
+            }
+            
+            simpleNoise(seed) {
+                const x = Math.sin(seed) * 10000;
+                return x - Math.floor(x);
+            }
+            
+            calculateRegionSeed(region) {
+                return region.chunkX * 7919 + region.chunkY * 4733; // Large primes for good distribution
+            }
+            
+            getRegionFeatures(region) {
+                const regionSeed = this.calculateRegionSeed(region);
+                const rng = this.createSeededRNG(regionSeed);
+                const features = [];
+                
+                // Generate 3-6 unique features per region
+                const numFeatures = 3 + Math.floor(rng() * 4);
+                
+                const featureTypes = [
+                    { name: 'Ancient Shrine', type: 'shrine', sprite: { col: 10, row: 12 }, size: 2 },
+                    { name: 'Crystal Formation', type: 'crystal', sprite: { col: 11, row: 12 }, size: 1 },
+                    { name: 'Mysterious Portal', type: 'portal', sprite: { col: 12, row: 12 }, size: 1 },
+                    { name: 'Abandoned Tower', type: 'tower', sprite: { col: 13, row: 12 }, size: 2 },
+                    { name: 'Magic Circle', type: 'circle', sprite: { col: 14, row: 12 }, size: 3 },
+                    { name: 'Treasure Chest', type: 'treasure', sprite: { col: 15, row: 12 }, size: 0 },
+                    { name: 'Glowing Runes', type: 'runes', sprite: { col: 10, row: 13 }, size: 1 },
+                    { name: 'Strange Monolith', type: 'monolith', sprite: { col: 11, row: 13 }, size: 1 },
+                    { name: 'Enchanted Grove', type: 'grove', sprite: { col: 12, row: 13 }, size: 3 },
+                    { name: 'Dragon Bones', type: 'bones', sprite: { col: 13, row: 13 }, size: 2 }
+                ];
+                
+                for (let i = 0; i < numFeatures; i++) {
+                    const featureType = featureTypes[Math.floor(rng() * featureTypes.length)];
+                    const feature = {
+                        ...featureType,
+                        x: 10 + Math.floor(rng() * 80), // Keep away from edges
+                        y: 10 + Math.floor(rng() * 80),
+                        id: `${region.chunkX}_${region.chunkY}_${i}`
+                    };
+                    features.push(feature);
+                }
+                
+                return features;
+            }
+            
+            getAvailableTransitions(region) {
+                const transitions = [];
+                const maxChunkX = 49, maxChunkY = 49;
+                
+                if (region.chunkX > 0) transitions.push('West');
+                if (region.chunkX < maxChunkX) transitions.push('East');
+                if (region.chunkY > 0) transitions.push('North');
+                if (region.chunkY < maxChunkY) transitions.push('South');
+                
+                return transitions.join(', ') || 'None (Edge of world)';
+            }
+            
+            createSeededRNG(seed) {
+                let state = seed;
+                return function() {
+                    state = ((state * 9301 + 49297) % 233280) >>> 0;
+                    return state / 233280;
+                };
+            }
+        }
+        
+        window.demo = new OverworldDemo();
+    </script>
+</body>
+</html>

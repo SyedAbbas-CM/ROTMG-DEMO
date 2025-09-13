@@ -2,7 +2,7 @@
  * CommandSystem.js - In-game command system for unit management
  */
 
-import { BinaryPacket, MessageType } from './NetworkManager.js';
+import { BinaryPacket, MessageType } from './net/NetworkManager.js';
 
 export class CommandSystem {
     constructor(serverInstance) {

@@ -5,7 +5,8 @@
 
 // Re-export all managers with consistent naming
 export { ClientMapManager } from './map/ClientMapManager.js';
-export { ClientNetworkManager, MessageType } from './network/ClientNetworkManager.js';
+export { ClientNetworkManager } from './network/ClientNetworkManager.js';
+export { MessageType } from './shared/messages.js';
 export { ClientBulletManager } from './game/ClientBulletManager.js';
 export { ClientEnemyManager } from './game/ClientEnemyManager.js';
 export { ClientCollisionManager } from './collision/ClientCollisionManager.js';

@@ -1,7 +1,6 @@
-/**
- * ClientBulletManager class handles all bullet creation, updates and rendering
- */
-export class ClientBulletManager {
+// Re-export the canonical ClientBulletManager to avoid divergence between
+// implementations. Keep this file for backward-compatible imports.
+export { ClientBulletManager } from '../game/ClientBulletManager.js';
     /**
      * Create a new BulletManager
      * @param {number} capacity - Maximum number of bullets to track

@@ -1,0 +1,181 @@
+{
+  "timestamp": "2025-09-06T22:41:02.037Z",
+  "projectName": "ROTMG RTS Game",
+  "totalFiles": 258,
+  "filesByExtension": {
+    ".html": 10,
+    ".json": 43,
+    ".txt": 11,
+    ".js": 174,
+    ".md": 17,
+    "no-extension": 1,
+    ".css": 2
+  },
+  "directoryStructure": {
+    "public": {
+      "assets": {
+        "images": {
+          "AI_Enemies": {
+            "ChatGPT Image Jun 22, 2025, 06_37_21 PM.png": {}
+          }
+        },
+        "atlases": {},
+        "entities": {},
+        "database": {},
+        "scripts": {}
+      },
+      "maps": {},
+      "src": {
+        "network": {},
+        "map": {},
+        "game": {},
+        "render": {
+          "webgl": {}
+        },
+        "collision": {},
+        "entities": {},
+        "ui": {
+          "components": {}
+        },
+        "assets": {},
+        "screens": {},
+        "utils": {},
+        "constants": {},
+        "shared": {},
+        "controllers": {},
+        "world": {},
+        "sprite": {},
+        "units": {},
+        "debug": {}
+      },
+      "tools": {},
+      "styles": {},
+      "editor": {}
+    },
+    "src": {
+      "Behaviours": {},
+      "world": {},
+      "entities": {},
+      "units": {},
+      "territorial": {},
+      "net": {},
+      "registry": {},
+      "boss": {
+        "llm": {
+          "providers": {}
+        },
+        "critic": {},
+        "config": {}
+      },
+      "assets": {},
+      "sprites": {},
+      "routes": {},
+      "schema": {},
+      "capabilities": {
+        "Emitter": {
+          "ProjectileSpread": {
+            "1.0.0": {}
+          },
+          "RadialBurst": {
+            "1.0.0": {}
+          }
+        },
+        "Movement": {
+          "Dash": {
+            "1.0.0": {}
+          }
+        },
+        "Core": {
+          "Wait": {
+            "1.0.0": {}
+          }
+        }
+      },
+      "utils": {},
+      "telemetry": {},
+      "simulator": {},
+      "game": {}
+    },
+    "overworld-demo": {},
+    "docs": {},
+    "Rotmg-Core-Files": {
+      "RotMG-Dungeon-Generator": {},
+      "wServer": {
+        "obj": {
+          "Debug": {},
+          "Release": {}
+        }
+      },
+      "server": {
+        "obj": {
+          "Debug": {},
+          "Release": {}
+        }
+      }
+    },
+    "maps": {},
+    "Ideas": {},
+    "ci-tools": {},
+    "capabilities": {
+      "Emitter": {
+        "RadialBurst": {
+          "1.0.0": {}
+        }
+      },
+      "Movement": {
+        "Dash": {
+          "1.0.0": {}
+        }
+      },
+      "Core": {
+        "Wait": {
+          "1.0.0": {}
+        }
+      }
+    },
+    "tests": {},
+    "scripts": {}
+  },
+  "largestFiles": [
+    {
+      "path": "public/assets/images/AI_Enemies/ChatGPT Image Jun 22, 2025, 06_37_21 PM.png/menu.html",
+      "size": "398.3 KB"
+    },
+    {
+      "path": "public/maps/RiverBridge.json",
+      "size": "138.2 KB"
+    },
+    {
+      "path": "public/maps/SampleNexus.json",
+      "size": "132.7 KB"
+    },
+    {
+      "path": "logs.txt",
+      "size": "90.7 KB"
+    },
+    {
+      "path": "src/Behaviours/Behaviors.js",
+      "size": "64.0 KB"
+    },
+    {
+      "path": "public/src/network/ClientNetworkManager.js",
+      "size": "54.1 KB"
+    },
+    {
+      "path": "public/src/map/ClientMapManager.js",
+      "size": "50.5 KB"
+    },
+    {
+      "path": "Server.js",
+      "size": "46.7 KB"
+    },
+    {
+      "path": "overworld-demo/index.html",
+      "size": "46.5 KB"
+    },
+    {
+      "path": "public/src/game/game.js",
+      "size": "42.8 KB"
+    }
+  ]
+}

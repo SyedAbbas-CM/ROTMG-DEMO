@@ -155,43 +155,20 @@ export function initControls() {
         }
     });
 
-    // Add mouse click event for shooting
+    // Add mouse click event for shooting (first-person only – top-down is handled by handleMouseClick above)
     window.addEventListener('click', (e) => {
-        // Only handle clicks on canvas
         const targetId = e.target.id;
-        if (targetId !== 'gameCanvas' && targetId !== 'glCanvas') {
-            return;
-        }
+        if (targetId !== 'gameCanvas' && targetId !== 'glCanvas') return;
         
-        // Find and blur the chat input if it exists and is focused
+        // If we're not in first-person, let handleMouseClick() (bound earlier) handle shooting
+        if (gameState.camera.viewType !== 'first-person') return;
+        
         const chatInput = document.querySelector('.chat-input');
-        if (chatInput && document.activeElement === chatInput) {
-            chatInput.blur();
-            return; // Don't process the click further if we were in chat
-        }
+        if (chatInput && document.activeElement === chatInput) return;
         
-        logger.debug("Mouse click detected");
-        
-        // Get click position in game world
-        const rect = e.target.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const clickY = e.clientY - rect.top;
-        
-        // Convert to world coordinates based on view type
-        let worldX, worldY;
-        
-        if (gameState.camera.viewType === 'first-person') {
-            // In first-person view, shoot forward
-            const cameraDir = gameState.camera.getDirection();
-            worldX = gameState.character.x + cameraDir.x * 100;
-            worldY = gameState.character.y + cameraDir.y * 100;
-        } else {
-            // In other views, convert screen coordinates to world coordinates
-            worldX = clickX + gameState.camera.x;
-            worldY = clickY + gameState.camera.y;
-        }
-        
-        // Handle shooting
+        const cameraDir = gameState.camera.getDirection();
+        const worldX = gameState.character.x + cameraDir.x * 100;
+        const worldY = gameState.character.y + cameraDir.y * 100;
         handleShoot(worldX, worldY);
     });
 

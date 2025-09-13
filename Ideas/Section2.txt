@@ -1,0 +1,109 @@
+Alright — let’s continue. We’ll now expand each section in detail, starting with Section II: Overworld & RTS Systems.
+This way we can create a layered, detailed Game Design + Systems Architecture doc.
+
+⸻
+
+II. Overworld & RTS Systems (Expanded)
+
+1. Overworld Map
+	•	Purpose: Serves as the “grand strategy” layer where players/factions control territories, manage resources, and plan campaigns.
+	•	Inspiration: Risk, Total War’s campaign map, and RotMG-style overworld hubs.
+
+Features
+	1.	Territorial Control
+	•	World is divided into regions (nodes).
+	•	Each region can be owned, contested, or neutral.
+	•	Resources are tied to regions (gold, supply, morale boosts).
+	•	Control affects spawn rates, dungeon access, and reinforcement paths.
+	2.	RTS Integration
+	•	Each territory can host battles that play out in RTS or Bullet Hell layers.
+	•	Players can zoom from world map → strategic view → battlefield.
+	3.	Factional Conflict
+	•	AI or player factions can wage wars.
+	•	Diplomacy layer possible (alliances, truces, betrayals).
+
+⸻
+
+2. Multi-Layered Views
+
+The overworld and battles are experienced across three interlinked views:
+	1.	FPS View
+	•	First-person or close-player view.
+	•	Used for bullet-hell combat and dungeon experiences.
+	•	Focus = precision, dodging, skill expression.
+	2.	Top-Down View
+	•	Classic action-RPG / dungeon view.
+	•	Player controls unit/party in a tactical environment.
+	•	Integrates loot, exploration, small skirmishes.
+	3.	Strategic View
+	•	High-level RTS mode.
+	•	Shows units en masse.
+	•	Features:
+	•	Scrollable Camera: Not centered on player, can move across map.
+	•	Non-Centered Adjustments: Camera control like an RTS.
+	•	Mass Unit Control: Drag-to-select, hotkeys, formations.
+	•	Command Layer: Attack, retreat, hold position, regroup.
+
+⚠️ Important Rule:
+	•	Strategic View is only for RTS commands, not bullet-hell gameplay.
+	•	It should feel like Age of Empires / StarCraft while existing inside the same world as the FPS/Top-Down layers.
+
+⸻
+
+3. View Locking System
+	•	Problem: Player could abuse switching between views.
+	•	Solution:
+	•	Certain contexts lock the player into a view (e.g., bullet-hell dungeon → locked FPS/Top-Down).
+	•	Other contexts unlock transitions (strategic army battles).
+	•	Implementation:
+	•	State machine that tracks player context (combat, overworld, dungeon).
+	•	Allows graceful switching only at certain nodes/events.
+
+⸻
+
+4. Unit Representation in RTS
+
+Unlike bullet-hell enemies (who are simple), RTS units must simulate battlefield depth:
+	•	Represented as groups (cohesion factor).
+	•	Can merge/split dynamically depending on morale, formation, or losses.
+	•	Attributes (see Section III expansion) like Momentum, Morale, Cohesion, Terrain Affinity determine how units behave under pressure.
+
+⸻
+
+5. Overworld ↔ Dungeon/RTS Flow
+	•	Territory → Battle Trigger
+	•	Conflict in a region launches RTS/Bullet-Hell battle.
+	•	Dungeon Placement
+	•	Dungeons may act as special objectives on the overworld map.
+	•	Owning a dungeon territory = unlocks resource/ability boosts.
+
+Loop Example:
+	1.	Player faction seizes contested territory on overworld.
+	2.	Enters RTS view to fight off waves.
+	3.	Boss spawns as a bullet-hell dungeon, requiring FPS-level precision.
+	4.	Victory → territory secured, resources gained, overworld map updated.
+
+⸻
+
+6. Emergent Gameplay Goals
+	•	Encourage zoom in/out strategy:
+	•	Strategic decisions at overworld scale.
+	•	Tactical formations at RTS scale.
+	•	Precision skill at bullet-hell scale.
+	•	This ensures gameplay feels multi-layered and dynamic, not stuck in one genre.
+
+⸻
+
+✅ Section II Summary
+
+The overworld is the macro brain of the game:
+	•	Risk-like territory control → Strategic conflict.
+	•	Multiple views → Player seamlessly zooms from macro (RTS) to micro (Bullet Hell FPS).
+	•	RTS units = complex battlefield simulation, enemies = lightweight chaos.
+	•	System requires locking/unlocking rules to prevent abuse.
+
+⸻
+
+👉 Next, I can expand Section III: Units & Enemies in detail, where we’ll flesh out the enemy simplicity vs unit complexity, and describe exactly how those advanced stats interact with each other (e.g., how morale breaks work, how terrain affinity modifies inertia, etc.).
+
+Do you want me to continue with Units & Enemies next, or should I go into the Combat/Emitter–Transmitter system first since it ties into performance?

@@ -1,4 +1,5 @@
 // public/src/network/ClientNetworkManager.js
+import { MessageType } from '../shared/messages.js';
 
 /**
  * Utility for throttling log messages to reduce console spam
@@ -521,13 +522,19 @@ export class ClientNetworkManager {
         
         this.handlers[MessageType.MAP_INFO] = (data) => {
             console.log('Received map info:', data);
+            console.log('this.game:', this.game);
+            console.log('this.game.initMap exists:', this.game && typeof this.game.initMap === 'function');
+            
             // Store map ID only if persistence flag enabled (disabled by default)
             if (ENABLE_MAP_ID_PERSISTENCE && data.mapId) {
                 console.log(`Storing map ID in localStorage: ${data.mapId}`);
                 localStorage.setItem('currentMapId', data.mapId);
             }
-            if (this.game.initMap) {
+            if (this.game && this.game.initMap) {
+                console.log('Calling this.game.initMap with data:', data);
                 this.game.initMap(data);
+            } else {
+                console.warn('this.game.initMap is not available!');
             }
         };
         
@@ -605,6 +612,17 @@ export class ClientNetworkManager {
                 };
             }
             
+            // Snap local character to authoritative server state if present
+            try {
+                const myId = this.clientId != null ? String(this.clientId) : null;
+                if (myId && playersData && playersData[myId] && window.gameState?.character) {
+                    const me = playersData[myId];
+                    if (typeof me.x === 'number') window.gameState.character.x = me.x;
+                    if (typeof me.y === 'number') window.gameState.character.y = me.y;
+                    if (me.worldId) window.gameState.character.worldId = me.worldId;
+                }
+            } catch(_) {}
+
             // Call game's setPlayers handler with the enhanced players data
             if (this.game.setPlayers) {
                 this.game.setPlayers(enhancedPlayersData);
@@ -711,7 +729,7 @@ export class ClientNetworkManager {
         };
         
         this.handlers[MessageType.CHUNK_DATA] = (data) => {
-            console.log(`Received chunk data for (${data.x}, ${data.y})`);
+            console.log(`Received chunk data for (${data.chunkX}, ${data.chunkY})`);
             
             // Create a simple global object to store map data for debugging
             if (!window.mapDebug) {
@@ -723,11 +741,11 @@ export class ClientNetworkManager {
             }
             
             // Store chunk data in the global object
-            const chunkKey = `${data.x},${data.y}`;
+            const chunkKey = `${data.chunkX},${data.chunkY}`;
             window.mapDebug.chunks[chunkKey] = data.data;
             
             if (this.game.setChunkData) {
-                this.game.setChunkData(data.x, data.y, data.data);
+                this.game.setChunkData(data.chunkX, data.chunkY, data.data);
             }
         };
         
@@ -806,13 +824,25 @@ export class ClientNetworkManager {
             if (this.game?.onWorldSwitch) {
                 this.game.onWorldSwitch(data);
             } else {
-                // Fallback: re-init map and teleport the local character
+                // Fallback: re-init map using provided metadata and teleport the local character
                 if (this.game?.initMap) {
-                    this.game.initMap(data);
+                    const meta = {
+                        mapId: data.mapId,
+                        width: data.width,
+                        height: data.height,
+                        tileSize: data.tileSize,
+                        chunkSize: data.chunkSize,
+                        procedural: data.procedural,
+                        seed: data.seed,
+                        objects: data.objects || [],
+                        enemySpawns: data.enemySpawns || [],
+                        timestamp: data.timestamp || Date.now()
+                    };
+                    this.game.initMap(meta);
                 }
                 if (window.gameState?.character) {
-                    window.gameState.character.x = data.spawnX;
-                    window.gameState.character.y = data.spawnY;
+                    if (typeof data.spawnX === 'number') window.gameState.character.x = data.spawnX;
+                    if (typeof data.spawnY === 'number') window.gameState.character.y = data.spawnY;
                     window.gameState.character.worldId = data.mapId;
                 }
             }
@@ -1232,6 +1262,24 @@ export class ClientNetworkManager {
     }
     
     /**
+     * Request chunk data from server
+     * @param {number} chunkX - Chunk X coordinate
+     * @param {number} chunkY - Chunk Y coordinate
+     */
+    requestChunk(chunkX, chunkY) {
+        if (!this.isConnected()) {
+            console.warn("Cannot request chunk: not connected to server");
+            return;
+        }
+        
+        console.log(`Requesting chunk: (${chunkX}, ${chunkY}) - MessageType.CHUNK_REQUEST = ${MessageType.CHUNK_REQUEST}`);
+        this.send(MessageType.CHUNK_REQUEST, {
+            chunkX: chunkX,
+            chunkY: chunkY
+        });
+    }
+    
+    /**
      * Send a chat message to the server
      * @param {Object} chatData - Chat message data
      * @returns {boolean} True if sent successfully
@@ -1333,77 +1381,4 @@ export class BinaryPacket {
     }
 }
 
-/**
-* Message type constants
-*/
-export const MessageType = {
-    // System messages
-    HEARTBEAT: 0,
-    
-    // Connection messages
-    HANDSHAKE: 1,
-    HANDSHAKE_ACK: 2,
-    PING: 3,
-    PONG: 4,
-    
-    // Game state messages
-    PLAYER_JOIN: 10,
-    PLAYER_LEAVE: 11,
-    PLAYER_UPDATE: 12,
-    PLAYER_LIST: 13,
-    
-    // Entity messages
-    ENEMY_LIST: 20,
-    ENEMY_UPDATE: 21,
-    ENEMY_DEATH: 22,
-    
-    // Bullet messages
-    BULLET_CREATE: 30,
-    BULLET_LIST: 31,
-    BULLET_REMOVE: 32,
-
-    // Loot bags
-    BAG_LIST: 33,
-    // Loot interaction
-    PICKUP_ITEM: 34,
-    INVENTORY_UPDATE: 35,
-    BAG_REMOVE: 36,
-    PICKUP_DENIED: 37,
-    MOVE_ITEM: 38,
-    MOVE_DENIED: 39,
-    
-    // Collision messages
-    COLLISION: 40,
-    COLLISION_RESULT: 41,
-    
-    // Map messages
-    MAP_INFO: 50,
-    CHUNK_REQUEST: 51,
-    CHUNK_DATA: 52,
-    CHUNK_NOT_FOUND: 53,
-    
-    // World update
-    WORLD_UPDATE: 60,
-    
-    // Map request
-    MAP_REQUEST: 70,
-    
-    // Player list request
-    PLAYER_LIST_REQUEST: 80,
-    
-    // Chat and text messages
-    PLAYER_TEXT: 89,         // client → server (chat/command input)
-    CHAT_MESSAGE: 90,
-
-    // Speech bubbles / taunts
-    SPEECH: 91,
-
-    // Portal interaction
-    PORTAL_ENTER: 54,      // client -> server
-    WORLD_SWITCH: 55       // server -> client
-};
-
-// Expose for late-loading UI components
-if (typeof window !== 'undefined') {
-  window.MessageType = MessageType;
-}
+// MessageType now lives in shared/messages.js and is exposed on window there
