@@ -1,0 +1,188 @@
+Alright — now let’s go into the AI backbone of your game:
+
+V. LLM Integration & Game DSL (Expanded)
+
+This is the “thinking brain” of the system. It connects the combat engine (emitters, units, enemies) with a domain-specific language (DSL) that LLMs can use to generate new attacks, adapt boss behavior, and reason about player tactics.
+
+⸻
+
+1. Core Philosophy
+	•	Human-written content (bosses, dungeons, units) is finite.
+	•	LLM-driven content = infinite adaptability.
+	•	To prevent LLMs from “hallucinating garbage,” we restrict them to a formal DSL that describes game actions.
+
+Goal:
+	•	Players face dynamic bosses and evolving dungeons.
+	•	LLMs can design new attacks/units in real-time without breaking the engine.
+
+⸻
+
+2. Game Representation Language (GRL / DSL)
+
+A structured domain-specific language (DSL) designed for LLMs to interact with the game.
+	•	Readable by AI and engine.
+	•	Compact & modular (like JSON or YAML).
+	•	Covers all in-game actions: attacks, units, formations, events.
+
+DSL Example (Attack)
+
+Attack {
+  id: "ShatterBurst01",
+  emitter: BulletEmitter,
+  transmitter: {
+     position: boss_center,
+     pattern: "radial_scatter",
+     speed: 8,
+     count: 24
+  },
+  modifiers: {
+     cohesionBreak: +15,
+     staminaDrain: +10
+  },
+  duration: 4
+}
+
+Interpretation:
+	•	Fires 24 bullets radially outward.
+	•	Bullets reduce unit cohesion by 15% on hit.
+	•	Units hit also lose stamina faster.
+	•	Lasts 4 seconds.
+
+⸻
+
+DSL Example (Unit Formation Command)
+
+FormationCommand {
+  type: "Flank",
+  units: "Cavalry_Squad_A",
+  target: "Enemy_Infantry_01",
+  modifiers: {
+    momentumBoost: +20,
+    moraleImpact: +10
+  }
+}
+
+Interpretation:
+	•	Cavalry Squad A executes a flank on enemy infantry.
+	•	Gains momentum boost, and impact lowers enemy morale.
+
+⸻
+
+DSL Example (Dungeon Event)
+
+DungeonEvent {
+  trigger: "Player_Hits_Boss_Weakpoint",
+  action: {
+    spawn: "Minion_Wave_Alpha",
+    count: 50,
+    position: "Arena_Edges"
+  }
+}
+
+Interpretation:
+	•	When player hits boss weakpoint → spawns 50 minions at arena edges.
+
+⸻
+
+3. Player Data Pipeline
+
+The LLM must know how the player behaves to adapt effectively.
+
+Tracked Player Data
+	•	Movement patterns: dodging style, preferred directions.
+	•	Attack tendencies: melee vs ranged, skill usage.
+	•	Risk level: aggressive vs defensive playstyle.
+	•	Accuracy: how often shots land.
+	•	Survival rate: stamina under pressure.
+
+Usage
+	1.	Boss Adaptation
+	•	If player dodges left often → boss fires angled attacks to left.
+	•	If player plays defensively → boss uses stamina-draining AoE.
+	2.	Personalization
+	•	Player known for ranged attacks? Enemies spawn with shields.
+	•	Player rushes bosses? Add disruption hazards to stop melee spam.
+	3.	Difficulty Scaling
+	•	More aggressive/dodging players trigger harder boss phases.
+	•	Casual players face simpler, less adaptive patterns.
+
+⸻
+
+4. LLM Decision Framework
+
+The LLM operates like a commander, reasoning in steps:
+	1.	Observe (game state):
+	•	Player movement logs, unit morale levels, dungeon state.
+	2.	Reason (internal chain-of-thought → DSL output):
+	•	“Player dodges left often → flank right with scatter.”
+	•	“Cavalry morale is low → reinforce with infantry.”
+	3.	Output (valid DSL):
+	•	DSL command executed in-game.
+
+⸻
+
+5. Multi-Layered AI Integration
+
+The LLM drives different layers of the game:
+
+1. Boss AI (Bullet Hell)
+	•	Designs attack phases.
+	•	Uses DSL attack blocks to generate patterns.
+	•	Adapts in real time (uses player data pipeline).
+
+2. Unit/RTS AI
+	•	Controls formations and morale-based behaviors.
+	•	Issues FormationCommand DSL blocks.
+	•	Can break formations or rally units based on battlefield context.
+
+3. Dungeon/Overworld AI
+	•	Decides dungeon traps, spawns, and overworld strategy.
+	•	Uses DungeonEvent and OverworldCommand DSL blocks.
+
+⸻
+
+6. Example Adaptive Boss Flow
+	1.	Player fights boss, dodging left consistently.
+	2.	LLM observes → generates DSL:
+
+Attack {
+   id: "LeftPunish",
+   emitter: BeamEmitter,
+   transmitter: { angle: -45, width: 10 },
+   modifiers: { staminaDrain: +5 }
+}
+
+
+	3.	Boss fires wide beam at left side → forces player to adapt.
+
+⸻
+
+7. Guardrails & Safety
+	•	Whitelist of DSL commands → prevents LLM from inventing invalid mechanics.
+	•	Cost Budgeting → LLM limited by “energy” (no infinite spam).
+	•	Fallback Defaults → if LLM fails, game falls back to standard prefab boss phases.
+
+⸻
+
+8. Emergent Gameplay
+
+Because of this DSL system:
+	•	Every boss fight is unique → no two players face the same exact attacks.
+	•	RTS battles can evolve dynamically (LLM orders retreats, flanks, ambushes).
+	•	Dungeons adapt to player style (minion spawns, traps).
+
+This makes the game living, reactive, and endlessly replayable.
+
+⸻
+
+✅ Section V Summary
+	•	The Game Representation Language (DSL) is the glue between engine & LLM.
+	•	LLM outputs structured DSL for attacks, formations, and events.
+	•	Player data pipeline feeds into LLM to create adaptive encounters.
+	•	Guardrails ensure balance & validity.
+	•	Result: dynamic bosses, adaptive units, evolving dungeons.
+
+⸻
+
+👉 Next, I can expand Section VI: Stress Testing & Performance (WASM migration, pooling, caching, LOD).
+Do you want me to continue with Performance/Stress Systems, or move into Content & Narrative Layers after this?

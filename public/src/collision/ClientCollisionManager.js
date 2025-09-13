@@ -151,12 +151,9 @@ export class ClientCollisionManager {
             return;
         }
         
-        // Get tile size
-        const tileSize = mapManager.tileSize || 12;
-        
-        // Calculate tile coordinates from world coordinates
-        const tileX = Math.floor(x / tileSize);
-        const tileY = Math.floor(y / tileSize);
+        // In this game, world coordinates are already in tile units
+        const tileX = Math.floor(x);
+        const tileY = Math.floor(y);
         
         // Get tile info at this position if available
         let tileInfo = "Unknown";
@@ -210,7 +207,6 @@ export class ClientCollisionManager {
         if (!mapManager || !mapManager.isWallOrObstacle) return;
         
         console.log("Checking nearby walls...");
-        const tileSize = mapManager.tileSize || 12;
         const searchRadius = 3;
         
         // Check walls in a grid around the position
@@ -221,8 +217,8 @@ export class ClientCollisionManager {
             for (let dx = -searchRadius; dx <= searchRadius; dx++) {
                 const checkTileX = tileX + dx;
                 const checkTileY = tileY + dy;
-                const checkWorldX = checkTileX * tileSize + tileSize/2;
-                const checkWorldY = checkTileY * tileSize + tileSize/2;
+                const checkWorldX = checkTileX + 0.5;
+                const checkWorldY = checkTileY + 0.5;
                 
                 if (mapManager.isWallOrObstacle(checkWorldX, checkWorldY)) {
                     wallsFound++;
@@ -438,6 +434,19 @@ export class ClientCollisionManager {
             const tileX = Math.floor(x / tileSize);
             const tileY = Math.floor(y / tileSize);
             
+            // Skip collision if the bullet's chunk isn't loaded yet to avoid "invisible walls"
+            if (this.mapManager && this.mapManager.getChunk && this.mapManager.chunkSize) {
+                const tileSize = this.mapManager.tileSize || 12;
+                const tileX = Math.floor(x / tileSize);
+                const tileY = Math.floor(y / tileSize);
+                const chunkX = Math.floor(tileX / this.mapManager.chunkSize);
+                const chunkY = Math.floor(tileY / this.mapManager.chunkSize);
+                const chunk = this.mapManager.getChunk(chunkX, chunkY);
+                if (!chunk) {
+                    continue; // don't collide until we have real tile data for this area
+                }
+            }
+
             // Check if position is wall or out of bounds
             if (this.mapManager.isWallOrObstacle) {
                 const isWall = this.mapManager.isWallOrObstacle(x, y);

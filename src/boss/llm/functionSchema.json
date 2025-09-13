@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LLM Boss Action Plan",
+  "type": "object",
+  "properties": {
+    "intent": { "type": "string" },
+    "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+    "actions": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Action" }
+    },
+    "define_component": {
+      "type": "object",
+      "properties": {
+        "manifest": { "type": "string" },
+        "impl": { "type": "string" }
+      },
+      "required": ["manifest", "impl"]
+    },
+    "self_score": { "type":"number", "minimum":0, "maximum":1 }
+  },
+  "required": ["intent", "actions"],
+  "definitions": {
+    "Vector2": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "Action": {
+      "type": "object",
+      "properties": {
+        "ability": {
+          "type": "string",
+          "enum": ["cone_aoe","radial_burst","dash","spawn_minions","reposition","wait","taunt","spawn_formation","teleport_to_player","dynamic_movement","charge_attack","pattern_shoot","summon_orbitals","heal_self","shield_phase","effect_aura","conditional_trigger","environment_control","projectile_spread"]
+        },
+        "args": { "type": "object" }
+      },
+      "required": ["ability"]
+    }
+  }
+} 

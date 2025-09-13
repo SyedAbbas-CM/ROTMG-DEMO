@@ -1,0 +1,233 @@
+ENEMIES (BULLET-HELL MOBS)
+==========================
+
+Enemies are lightweight entities designed for chaos and performance scalability.
+They exist in large numbers, often thousands on screen, and use simple state logic.
+
+Core Properties
+---------------
+- HP: minimal health tracking.
+- Attack Pattern: handled via emitters (shared between groups of enemies).
+- Movement Logic: simple paths, pursuit, or random wandering.
+- Position: tracked for collision and bullet spawn.
+
+Enemy Behavioral States
+-----------------------
+1. Idle/Patrol
+   - Roam, stand guard, or move randomly.
+   - Transition to Aggro if player detected.
+
+2. Aggro
+   - Move toward player or strategic target.
+   - Begin firing simple attack patterns.
+
+3. Attack Cycle
+   - Spawn bullets/projectiles based on assigned emitter pattern.
+   - Examples: radial shots, beams, scatter.
+
+4. Retreat/Frenzy (Optional)
+   - Retreat: flee when HP low or commander unit dies.
+   - Frenzy: increase rate of fire or aggression when near death.
+
+Performance Considerations
+--------------------------
+- Enemies instantiated via emitters.
+- Example: "Spawn 100 bats -> all share same bullet pattern ID."
+- Only essential states tracked (HP, position, emitter ID).
+- Allows thousands of enemies without CPU overload.
+
+------------------------------------------------------------
+BALANCE: ENEMIES VS RTS UNITS
+------------------------------------------------------------
+
+Enemies
+- Purpose: overwhelm player with bullet density and chaos.
+- Behavior: predictable attack cycles, no deep morale simulation.
+- Strength: numbers, volume of fire.
+- Weakness: individually fragile, collapse easily.
+
+RTS Units
+- Purpose: add tactical depth and battlefield dynamics.
+- Behavior: morale-driven, formation-based, emergent interactions.
+- Strength: cohesion, resolve, tactical advantages (flanks, terrain).
+- Weakness: fewer in number, vulnerable if cohesion breaks.
+
+Combined Effect
+- Enemies = chaos and bullet spam (arcade pressure).
+- RTS Units = strategy and battlefield flow (simulation depth).
+- Together they create hybrid battles:
+  * Player dodges chaotic bullet patterns.
+  * Units engage in morale-driven clashes.
+  * Outcomes shaped by both tactical play and bullet-hell survival.
+
+
+
+
+
+RTS UNIT SYSTEM
+===============
+
+Units are simulated squads with physics, morale, stamina, and formation stats. 
+Battles emerge from morale collapses, cohesion loss, and recovery cycles.
+
+------------------------------------------------------------
+UNIT-LEVEL STATS
+------------------------------------------------------------
+
+Speed / Acceleration
+- How quickly a unit ramps up to speed.
+- Per tick: velocity += acceleration until max_speed.
+
+Momentum
+- Mass * current velocity.
+- Affects impact force on collision.
+- Per tick: momentum = weight * velocity.
+
+Inertia
+- Resistance to turning/repositioning.
+- Per tick: turn_rate = base_turn / inertia.
+
+Impact
+- Shock damage on first contact.
+- impact_value = momentum * impact_factor.
+- Reduces enemy cohesion and morale sharply.
+
+Weight
+- Mass/equipment burden.
+- Heavier units resist knockback but drain stamina faster.
+- fatigue_rate = weight * fatigue_modifier.
+
+Stamina
+- Endurance resource drained during movement and combat.
+- Per tick: stamina -= movement_cost + combat_cost.
+- Low stamina weakens attacks and morale.
+
+Resolve
+- Discipline and willingness to keep fighting.
+- Modifies morale thresholds for routing.
+- effective_morale += resolve_modifier.
+
+Reliability
+- Consistency under stress.
+- Low reliability adds RNG: panic, misfire, slow response.
+- Per tick: reliability_check; if fail, apply error penalty.
+
+Agility
+- Dexterity and fine movement speed.
+- Affects dodge chance and repositioning.
+- dodge_bonus = agility * scale_factor.
+
+Terrain Affinity
+- Performance bonus/penalty in different terrain.
+- Per tick: stat_modifiers *= terrain_affinity[current_terrain].
+
+------------------------------------------------------------
+FORMATION-LEVEL STATS
+------------------------------------------------------------
+
+Cohesion
+- Ability to hold formation under stress.
+- cohesion = avg(resolve + reliability) - disruption_taken.
+- If cohesion < threshold, formation scatters.
+
+Formation Integrity
+- Power multiplier for staying in shape.
+- Broken formation reduces DPS and defense.
+
+Formation Flexibility
+- Speed of switching formations.
+- flexibility = avg(agility + reliability).
+
+Recovery Rate
+- Speed of regaining morale, stamina, cohesion.
+- Per tick: morale += recovery_rate; stamina += rest_gain.
+
+Disruption
+- Ability to destabilize enemy formations.
+- On impact: enemy_cohesion -= disruption * momentum_factor.
+
+Penetration
+- Ability to push through dense lines.
+- penetration = momentum + cohesion vs enemy weight + cohesion.
+
+Charge Control
+- Discipline of charge.
+- cohesion_loss_on_charge = base_loss - charge_control.
+
+Trickleback
+- % of casualties returning post-battle.
+- After battle: survivors += casualties * trickleback.
+
+Sustain
+- Long-term battle effectiveness.
+- Derived from stamina + recovery + supply.
+
+Adaptability
+- Responsiveness to changing tactics.
+- reaction_delay = base_delay - adaptability.
+
+------------------------------------------------------------
+UNIT STATE MACHINE
+------------------------------------------------------------
+
+   [READY]
+      |
+      v
+   [ENGAGED] -- drains stamina/morale
+      |
+      v
+   [SHAKEN] -- cohesion wavering
+      | \
+      |  \__ rally if recovery_rate + resolve high
+      v
+   [BROKEN/ROUTED]
+      |
+      v
+   [RECOVERING] -- trickleback + rally check
+      |
+      v
+   [READY] or exit battlefield
+
+------------------------------------------------------------
+ASCII DIAGRAMS
+------------------------------------------------------------
+
+STAT FLOW
+---------
+(Unit stats feed formation stats, which drive battle outcomes.)
+
+   UNIT STATS
+   (speed, momentum, stamina, resolve, etc.)
+         |
+         v
+   FORMATION STATS
+   (cohesion, penetration, disruption, etc.)
+         |
+         v
+   BATTLEFLOW
+   (ready -> engaged -> shaken -> broken -> recovering)
+
+
+SOFT COUNTER EXAMPLES
+---------------------
+Light Infantry Wedge -> high penetration + disruption
+      vs
+Flat Infantry Line -> cohesion loss -> rout cascade
+
+Heavy Cavalry Charge -> high momentum + impact
+      vs
+Braced Infantry Line -> high cohesion -> charge stalled
+
+------------------------------------------------------------
+BASELINE PER-TICK CALCULATIONS
+------------------------------------------------------------
+
+velocity += acceleration (cap at max_speed)
+momentum = weight * velocity
+stamina -= movement_cost + combat_cost
+morale -= damage_taken + disruption_taken
+morale += recovery_rate (if idle)
+cohesion = cohesion - disruption_taken + recovery_rate
+impact_on_collision = momentum * impact_factor
+fatigue_rate = weight * fatigue_modifier
+if morale + resolve < threshold -> state change

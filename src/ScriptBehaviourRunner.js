@@ -3,7 +3,7 @@
 // fs/path imports no longer needed after DSL removal
 
 import { registry } from './registry/index.js';
-import DslInterpreter from './DslInterpreter.js';
+import DslInterpreter from './boss/DslInterpreter.js';
 
 // OLD DSL imports removed (Mutators, Ajv)
 

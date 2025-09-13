@@ -93,6 +93,8 @@
     <select id="modeSelect">
       <option value="tile">Tile</option>
       <option value="enemy">Enemy</option>
+      <option value="portal">Portal</option>
+      <option value="spawn">Spawn Point</option>
     </select>
 
     <label>Brush Size</label>
@@ -118,6 +120,8 @@
       <button id="copyLayer" title="Duplicate Layer">📋</button>
     </div>
 
+    <button id="reloadEnemiesBtn" title="Reload enemy list from database">Reload Enemies</button>
+
     <hr>
 
     <label>Sprite Group</label>
@@ -137,6 +141,9 @@
 
     <hr>
     
+    <label>Portal Destination Map ID</label>
+    <input id="portalDestInput" type="text" placeholder="e.g. map_2" />
+
     <button id="saveMapBtn">Save Map (Ctrl+S)</button>
     <label>Existing Maps</label>
     <select id="mapList"></select>
@@ -162,10 +169,10 @@
     <canvas id="mapCanvas" width="640" height="640"></canvas>
     <div id="statusBar">Ready</div>
 
-    <!-- Enemy Panel -->
+    <!-- Enemy/Entity Panel -->
     <div id="enemyPanel">
       <div id="enemyPanelHeader">
-        Enemy/Entity Panel
+        Entity Panel
         <span id="enemyPanelClose">✕</span>
       </div>
       <div id="enemyPanelContent">
@@ -190,6 +197,8 @@
     const enemyHeader = document.getElementById('enemyPanelHeader');
     const enemyClose = document.getElementById('enemyPanelClose');
     const enemyListDiv = document.getElementById('enemyList');
+    let lastMousePos = null;
+    const reloadEnemiesBtn = document.getElementById('reloadEnemiesBtn');
     const currentTileDisplay = document.getElementById('currentTileDisplay');
     const rotDisplay = document.getElementById('rotDisplay');
     const addLayerBtn = document.getElementById('addLayerBtn');
@@ -203,6 +212,7 @@
     const statusBar = document.getElementById('statusBar');
     const brushSizeSlider = document.getElementById('brushSize');
     const brushSizeDisplay = document.getElementById('brushSizeDisplay');
+    const portalDestInput = document.getElementById('portalDestInput');
 
     // ============= UNIFIED DATA MODEL =============
     let tileW = 16, tileH = 16;
@@ -210,9 +220,11 @@
 
     // Unified structure: layers[] + entities[]
     let layers = [];   // [{name: string, grid: cell[][], visible: bool}, ...] where cell = {sprite, rot} or null
-    let entities = []; // [{type: 'enemy', x, y, sprite, rot}, ...]
+    let entities = []; // [{type: 'enemy'|'portal'|'spawn', x, y, sprite, rot, destMap?}, ...]
 
     let currentTile = null;
+    let currentEnemyId = null;
+    let currentPortalDest = '';
     let currentRot = 0;
     let currentLayer = 0;
     let brushSize = 1;
@@ -372,31 +384,41 @@
     function buildEnemyList() {
       enemyListDiv.innerHTML = '';
       const enemyDefs = entityDatabase.getAll('enemies');
+      const minSlots = 3;
+      const total = Math.max(enemyDefs.length, minSlots);
       
-      enemyDefs.forEach(enemyDef => {
+      for (let idx = 0; idx < total; idx++) {
+        const enemyDef = enemyDefs[idx];
         const thumb = document.createElement('canvas');
         thumb.width = 36;
         thumb.height = 36;
         thumb.style.cursor = 'pointer';
         
         const thumbCtx = thumb.getContext('2d');
-        spriteDatabase.drawSprite(thumbCtx, enemyDef.sprite, 2, 2, 32, 32);
-        
-        thumb.title = enemyDef.id || enemyDef.name || enemyDef.sprite;
-        
-        thumb.onclick = () => {
-          enemyListDiv.querySelectorAll('canvas').forEach(c => c.classList.remove('selected'));
-          thumb.classList.add('selected');
-          
-          currentTile = enemyDef.sprite;
-          currentRot = 0;
-          modeSelect.value = 'enemy';
-          updateCurrentTileDisplay();
-          updateRotationDisplay();
-        };
-        
+        if (enemyDef && enemyDef.sprite && spriteDatabase.hasSprite(enemyDef.sprite)) {
+          spriteDatabase.drawSprite(thumbCtx, enemyDef.sprite, 2, 2, 32, 32);
+          thumb.title = `${enemyDef.id || '?'}: ${enemyDef.name || enemyDef.sprite || ''}`;
+          thumb.onclick = () => {
+            enemyListDiv.querySelectorAll('canvas').forEach(c => c.classList.remove('selected'));
+            thumb.classList.add('selected');
+            currentTile = enemyDef.sprite;
+            currentEnemyId = enemyDef.id || null;
+            currentRot = 0;
+            modeSelect.value = 'enemy';
+            updateCurrentTileDisplay();
+            updateRotationDisplay();
+          };
+        } else {
+          // Placeholder slot with simple sprite box
+          thumbCtx.fillStyle = '#333';
+          thumbCtx.fillRect(2, 2, 32, 32);
+          thumbCtx.fillStyle = '#666';
+          thumbCtx.fillRect(10, 10, 16, 16);
+          thumb.title = 'Empty Slot';
+        }
         enemyListDiv.appendChild(thumb);
-      });
+      }
+    }
     }
 
     function updateTilePicker() {
@@ -466,6 +488,13 @@
 
     function updateBrushSizeDisplay() {
       brushSizeDisplay.textContent = `${brushSize}x${brushSize}`;
+    }
+
+    // Keep current portal destination in sync with input
+    if (portalDestInput) {
+      portalDestInput.addEventListener('input', () => {
+        currentPortalDest = portalDestInput.value.trim();
+      });
     }
 
     function updateStatus(message) {
@@ -696,7 +725,35 @@
                 x: paintX,
                 y: paintY,
                 sprite: currentTile,
+                id: currentEnemyId,
                 rot: currentRot
+              });
+            }
+          } else if (mode === 'portal') {
+            // Remove any existing portal at this position
+            entities = entities.filter(entity => !(entity.x === paintX && entity.y === paintY && entity.type === 'portal'));
+            // Add portal if not erasing
+            if (!isErase) {
+              const dest = (portalDestInput?.value || currentPortalDest || '').trim();
+              entities.push({
+                type: 'portal',
+                x: paintX,
+                y: paintY,
+                sprite: 'portal',
+                rot: 0,
+                destMap: dest
+              });
+            }
+          } else if (mode === 'spawn') {
+            // Ensure only one spawn exists; clear previous
+            entities = entities.filter(entity => entity.type !== 'spawn');
+            if (!isErase) {
+              entities.push({
+                type: 'spawn',
+                x: paintX,
+                y: paintY,
+                sprite: 'spawn_point',
+                rot: 0
               });
             }
           }
@@ -739,8 +796,29 @@
                 x: x,
                 y: y,
                 sprite: currentTile,
+                id: currentEnemyId,
                 rot: currentRot
               });
+            }
+          } else if (mode === 'portal') {
+            entities = entities.filter(entity => !(entity.x === x && entity.y === y && entity.type === 'portal'));
+            if (!isErase) {
+              const dest = (portalDestInput?.value || currentPortalDest || '').trim();
+              entities.push({
+                type: 'portal',
+                x: x,
+                y: y,
+                sprite: 'portal',
+                rot: 0,
+                destMap: dest
+              });
+            }
+          } else if (mode === 'spawn') {
+            // Rectangle paint for spawn acts like single set: pick top-left
+            // Clear previous and set one at minX/minY done later; for simplicity, set at current x,y
+            entities = entities.filter(entity => entity.type !== 'spawn');
+            if (!isErase) {
+              entities.push({ type:'spawn', x:x, y:y, sprite: 'spawn_point', rot:0 });
             }
           }
         }
@@ -769,6 +847,13 @@
           updateCurrentTileDisplay();
           updateRotationDisplay();
           updateStatus(`Picked up: ${entity.sprite}`);
+        }
+      } else if (mode === 'portal') {
+        const entity = entities.find(e => e.type === 'portal' && e.x === x && e.y === y);
+        if (entity) {
+          currentPortalDest = entity.destMap || '';
+          if (portalDestInput) portalDestInput.value = currentPortalDest;
+          updateStatus(`Picked up portal → ${currentPortalDest || '(unset)'}`);
         }
       }
     }
@@ -869,6 +954,16 @@
       
       document.getElementById('clearLayer').onclick = clearCurrentLayer;
       document.getElementById('copyLayer').onclick = copyCurrentLayer;
+
+      // Reload enemies from server database
+      const reloadBtn = document.getElementById('reloadEnemiesBtn');
+      if (reloadBtn) {
+        reloadBtn.onclick = async () => {
+          await entityDatabase.load();
+          buildEnemyList();
+          updateStatus('Reloaded enemy definitions');
+        };
+      }
 
       // Enemy panel controls
       enemyClose.onclick = () => {
@@ -1084,14 +1179,59 @@
         ctx.save();
         ctx.translate(entity.x * tileW + tileW / 2, entity.y * tileH + tileH / 2);
         ctx.rotate((entity.rot || 0) * Math.PI / 2);
-        spriteDatabase.drawSprite(ctx, entity.sprite, -tileW / 2, -tileH / 2, tileW, tileH);
+        if (entity.type === 'spawn') {
+          // Draw a simple green diamond as spawn marker
+          ctx.fillStyle = '#00ff88';
+          ctx.beginPath();
+          ctx.moveTo(0, -tileH/2 + 4);
+          ctx.lineTo(tileW/2 - 4, 0);
+          ctx.lineTo(0, tileH/2 - 4);
+          ctx.lineTo(-tileW/2 + 4, 0);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          spriteDatabase.drawSprite(ctx, entity.sprite, -tileW / 2, -tileH / 2, tileW, tileH);
+        }
         ctx.restore();
         
-        // Draw red outline for enemies
+        // Hover label near mouse for entity name/type
+        if (lastMousePos) {
+          const mx = Math.floor(lastMousePos.x / tileW);
+          const my = Math.floor(lastMousePos.y / tileH);
+          if (mx === entity.x && my === entity.y) {
+            ctx.save();
+            const label = (entity.type === 'enemy') ? (entity.id || entity.sprite || 'Enemy')
+                         : (entity.type === 'portal') ? 'Portal'
+                         : (entity.type === 'spawn') ? 'Spawn'
+                         : (entity.type || 'Entity');
+            ctx.font = '12px Arial';
+            const tw = ctx.measureText(label).width + 6;
+            const bx = entity.x * tileW + 2;
+            const by = entity.y * tileH - 6;
+            ctx.fillStyle = 'rgba(0,0,0,0.75)';
+            ctx.fillRect(bx, by-12, tw, 14);
+            ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(bx, by-12, tw, 14);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(label, bx+3, by);
+            ctx.restore();
+          }
+        }
+        
+        // Draw outlines
         if (entity.type === 'enemy') {
           ctx.strokeStyle = 'red';
           ctx.lineWidth = 1;
           ctx.strokeRect(entity.x * tileW, entity.y * tileH, tileW, tileH);
+        } else if (entity.type === 'portal') {
+          ctx.strokeStyle = 'cyan';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(entity.x * tileW + 2, entity.y * tileH + 2, tileW - 4, tileH - 4);
+        } else if (entity.type === 'spawn') {
+          ctx.strokeStyle = '#00ff88';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(entity.x * tileW + 4, entity.y * tileH + 4, tileW - 8, tileH - 8);
         }
       });
       

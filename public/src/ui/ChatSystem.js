@@ -2,7 +2,7 @@
  * ChatSystem.js - Client-side chat interface for sending commands and messages
  */
 
-import { MessageType } from '../constants/constants.js';
+import { MessageType } from '../shared/messages.js';
 
 export class ChatSystem {
     constructor(networkManager) {

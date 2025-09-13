@@ -152,33 +152,42 @@ export function renderTopDownView() {
         }
       }
       
-      if (!tile) continue;
+      if (!tile) {
+        // If tile isn't loaded yet, skip drawing to avoid defaulting to base floor
+        // and poll for more chunks next interval.
+        continue;
+      }
       
       // Determine sprite – per-tile override takes priority
       let spritePos;
       let spriteSheetName = 'tile_sprites';
+      let resolvedSprite = null;
       if (tile.properties && tile.properties.sprite) {
         const rawName = tile.properties.sprite;
         const parts = rawName.split('_sprite_');
-        if(parts.length>1){ ensureSheetLoaded(parts[0]); }
-        const spriteObj = getSpriteFlexible(rawName);
-        if (spriteObj) {
-          spriteSheetName = spriteObj.sheetName;
-          spritePos = { x: spriteObj.x, y: spriteObj.y };
+        if (parts.length > 1) { ensureSheetLoaded(parts[0]); }
+        // Use alias-aware lookup to match strategic renderer behavior
+        resolvedSprite = spriteManager.fetchSprite(rawName);
+        if (resolvedSprite) {
+          spriteSheetName = resolvedSprite.sheetName;
+          spritePos = { x: resolvedSprite.x, y: resolvedSprite.y };
         }
       }
       if (!spritePos && tile.spriteName) {
-        const rawName=tile.spriteName;
-        const parts=rawName.split('_sprite_');
-        if(parts.length>1){ ensureSheetLoaded(parts[0]); }
-        const spriteObj = getSpriteFlexible(rawName);
-        if (spriteObj) {
-          spriteSheetName = spriteObj.sheetName;
-          spritePos = { x: spriteObj.x, y: spriteObj.y };
+        const rawName = tile.spriteName;
+        const parts = rawName.split('_sprite_');
+        if (parts.length > 1) { ensureSheetLoaded(parts[0]); }
+        resolvedSprite = spriteManager.fetchSprite(rawName);
+        if (resolvedSprite) {
+          spriteSheetName = resolvedSprite.sheetName;
+          spritePos = { x: resolvedSprite.x, y: resolvedSprite.y };
         }
       }
       if (!spritePos) {
-        spritePos = TILE_SPRITES[tile.type];
+        // If we still don't have a sprite and the tile specifies a type, use mapping;
+        // otherwise skip drawing to avoid showing the wrong default tile.
+        spritePos = tile.type !== undefined ? TILE_SPRITES[tile.type] : null;
+        if (!spritePos) continue;
       }
       
       // Convert tile grid position to world position
@@ -201,15 +210,9 @@ export function renderTopDownView() {
       if(!sheetObj) continue; // wait until loaded next frame
       const sCfg = sheetObj.config;
 
-      // spriteMeta may be defined when we used fetchSprite; otherwise null.
-      let spriteW, spriteH;
-      if (typeof spriteObj !== 'undefined' && spriteObj) {
-        spriteW = spriteObj.width || sCfg.defaultSpriteWidth  || TILE_SIZE;
-        spriteH = spriteObj.height|| sCfg.defaultSpriteHeight || TILE_SIZE;
-      } else {
-        spriteW = sCfg.defaultSpriteWidth  || TILE_SIZE;
-        spriteH = sCfg.defaultSpriteHeight || TILE_SIZE;
-      }
+      // Use resolved sprite dimensions when available; fall back to sheet defaults
+      const spriteW = (resolvedSprite && resolvedSprite.width)  || sCfg.defaultSpriteWidth  || TILE_SIZE;
+      const spriteH = (resolvedSprite && resolvedSprite.height) || sCfg.defaultSpriteHeight || TILE_SIZE;
 
       // FINAL NORMALISATION: Always draw at mapManager.tileSize so 8×8 / 10×10
       // frames get up-scaled to the full logical tile and no transparent rim

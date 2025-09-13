@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import Ajv from 'ajv';
-import { BehaviorState } from './BehaviorState.js';
-import * as Behaviors from './Behaviors.js';
-import * as Transitions from './Transitions.js';
+import { BehaviorState } from './Behaviours/BehaviorState.js';
+import * as Behaviors from './Behaviours/Behaviors.js';
+import * as Transitions from './Behaviours/Transitions.js';
 
 const ajv = new Ajv({ allErrors: true, strict:false });
 const __dirname = path.dirname(new URL(import.meta.url).pathname);

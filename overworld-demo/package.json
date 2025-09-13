@@ -1,0 +1,16 @@
+{
+  "name": "overworld-demo",
+  "version": "1.0.0",
+  "description": "Isolated 5k x 5k procedural overworld system with chunk loading",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["overworld", "procedural", "chunks", "canvas", "demo"],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=12.0.0"
+  }
+}

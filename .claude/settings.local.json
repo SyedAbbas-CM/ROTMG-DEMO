@@ -6,7 +6,11 @@
       "Bash(cp:*)",
       "Bash(find:*)",
       "Bash(node:*)",
-      "Bash(open http://localhost:3000)"
+      "Bash(open http://localhost:3000)",
+      "Bash(mv:*)",
+      "Bash(npm start)",
+      "Bash(curl:*)",
+      "Bash(chmod:*)"
     ],
     "deny": []
   }
