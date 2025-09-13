@@ -4,7 +4,7 @@
  */
 
 import { UIManager } from '../ui/UIManager.js';
-import { ItemType, ItemRarity } from '../../src/ItemManager.js';
+import { ItemType, ItemRarity } from '../constants/itemConstants.js';
 
 class ClientInventoryManager {
     constructor() {

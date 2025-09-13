@@ -1,4 +1,5 @@
-/**
+
+o/**
  *  unitTypes.js  – authoritative per‑unit templates
  *  Add or tweak values here and the sim will adapt automatically.
  *

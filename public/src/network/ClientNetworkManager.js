@@ -653,8 +653,8 @@ export class ClientNetworkManager {
 
             if (this.game.updateWorld) {
                 // Check if players is nested inside a 'players' property (from server inconsistency)
-                const players = data.players || {};
-                this.game.updateWorld(data.enemies, data.bullets, players, data.objects, data.bags || []);
+                const players = data.players?.players || data.players;
+                this.game.updateWorld(data.enemies, data.bullets, players, data.objects, data.units || []);
                 if (this.game.setBags && data.bags) {
                     this.game.setBags(data.bags);
                 }

@@ -3,6 +3,7 @@
 import { gameState } from '../game/gamestate.js';
 import { TILE_SIZE, SCALE } from '../constants/constants.js';
 import { spriteManager } from '../assets/spriteManager.js';
+import { unitRenderer } from '../entities/ClientUnitRenderer.js';
 // Import view renderers - comment these out if they cause circular references
 // They should be available on the window object anyway
 // import { renderTopDownView } from './renderTopDown.js';
@@ -345,6 +346,77 @@ export function renderEnemies() {
 /**
  * Render all bullets
  */
+/**
+ * Render military units
+ */
+export function renderUnits() {
+  // Get units from unitManager
+  if (!gameState.unitManager && !window.unitManager) {
+    return; // No unit manager available
+  }
+  
+  const unitManager = gameState.unitManager || window.unitManager;
+  if (!unitManager) {
+    return;
+  }
+  
+  // Get units for rendering
+  let units = [];
+  try {
+    // Use different methods based on what's available
+    if (unitManager.getUnitsForRender) {
+      units = unitManager.getUnitsForRender();
+    } else if (unitManager.count > 0) {
+      // Generate units array from SoA data
+      units = [];
+      for (let i = 0; i < unitManager.count; i++) {
+        units.push({
+          id: unitManager.id[i],
+          type: unitManager.typeIdx ? unitManager.typeIdx[i] : unitManager.type[i],
+          typeName: `Unit${unitManager.typeIdx ? unitManager.typeIdx[i] : unitManager.type[i]}`,
+          displayName: `Unit ${unitManager.typeIdx ? unitManager.typeIdx[i] : unitManager.type[i]}`,
+          category: 'military',
+          x: unitManager.x[i],
+          y: unitManager.y[i],
+          health: unitManager.hp ? unitManager.hp[i] : unitManager.health[i],
+          maxHealth: 100, // Default
+          morale: unitManager.morale ? unitManager.morale[i] : 50,
+          state: unitManager.state ? unitManager.state[i] : 0,
+          team: unitManager.owner ? unitManager.owner[i] : 'neutral',
+          sprite: {
+            sheet: 'Mixed_Units',
+            name: `Mixed_Units_0_${Math.min(5, unitManager.typeIdx ? unitManager.typeIdx[i] : unitManager.type[i])}`,
+            scale: 0.5
+          }
+        });
+      }
+    }
+  } catch (error) {
+    console.warn('[renderUnits] Error getting units for render:', error);
+    return;
+  }
+  
+  // If no units, nothing to render
+  if (!units || !Array.isArray(units) || units.length === 0) {
+    return;
+  }
+  
+  // Get view type for proper scaling
+  const viewType = gameState.camera?.viewType || 'top-down';
+  
+  // Render units using the unit renderer
+  try {
+    unitRenderer.renderUnits(ctx, units, gameState.camera.position, viewType);
+    
+    // Debug info occasionally
+    if (Math.random() < 0.001) { // Very occasionally
+      console.log(`[renderUnits] Rendered ${units.length} units in ${viewType} view`);
+    }
+  } catch (error) {
+    console.error('[renderUnits] Error rendering units:', error);
+  }
+}
+
 export function renderBullets() {
   const bm = gameState.bulletManager;
   if (!bm) {
@@ -491,6 +563,7 @@ export function renderGame() {
   // Draw entities
   renderBullets();
   renderEnemies();
+  renderUnits();
   renderPlayers();
   renderCharacter();
   

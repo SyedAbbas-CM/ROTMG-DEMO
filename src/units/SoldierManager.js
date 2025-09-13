@@ -5,13 +5,16 @@
 /**
  * SoldierManager
  * -------------------------------------------------
- *  • Maintains every *individual* combatant (aka “unit” / “soldier”).
+ *  • Maintains every *individual* combatant (aka "unit" / "soldier").
  *  • No aggregation logic here – groups / cohorts will be handled by
  *    a separate GroupManager that operates on soldier indices.
+ *  • Uses comprehensive UnitDefinitions with sprites and full stats.
  *
  *  Data‑layout: Structure‑of‑Arrays (SoA) for cache efficiency and
  *  effortless transfer to WASM / web worker later.
  */
+
+// Enhanced unit definitions will be loaded inline
 
 export default class SoldierManager {
     /**
@@ -54,23 +57,35 @@ export default class SoldierManager {
       /* ---------- soldier type catalogue ---------- */
   
       this.SOLDIER_TYPES = {
-        0: { name: 'Infantry',       health: 100, armor:  5, speed: 20, damage: 15, range:  2,
-             mass: 80,  stability: 50 },
+        0: { name: 'Light Infantry',   displayName: 'Light Infantry',   category: 'infantry',
+             health: 85,  armor: 3,  speed: 65,  damage: 12, range: 25, mass: 75, stability: 50,
+             sprite: { sheet: 'Mixed_Units', name: 'Mixed_Units_0_0', scale: 0.5 },
+             tactical: { role: 'frontline', chargeBonus: 0.05, momentum: 1.0 } },
   
-        1: { name: 'HeavyInfantry',  health: 140, armor: 15, speed: 15, damage: 18, range:  2,
-             mass: 90,  stability: 70 },
+        1: { name: 'Heavy Infantry',   displayName: 'Heavy Infantry',   category: 'infantry',
+             health: 140, armor: 12, speed: 45,  damage: 18, range: 28, mass: 95, stability: 75,
+             sprite: { sheet: 'Mixed_Units', name: 'Mixed_Units_0_1', scale: 0.5 },
+             tactical: { role: 'tank', chargeBonus: 0.08, momentum: 1.4 } },
   
-        2: { name: 'LightCavalry',   health: 110, armor:  5, speed: 35, damage: 20, range:  2,
-             mass: 300, stability: 40 },
+        2: { name: 'Light Cavalry',   displayName: 'Light Cavalry',    category: 'cavalry',
+             health: 95,  armor: 6,  speed: 95,  damage: 15, range: 30, mass: 220, stability: 45,
+             sprite: { sheet: 'Mixed_Units', name: 'Mixed_Units_0_2', scale: 0.6 },
+             tactical: { role: 'flanker', chargeBonus: 0.25, momentum: 2.0 } },
   
-        3: { name: 'HeavyCavalry',   health: 160, armor: 20, speed: 28, damage: 26, range:  2,
-             mass: 450, stability: 60 },
+        3: { name: 'Heavy Cavalry',   displayName: 'Heavy Cavalry',    category: 'cavalry',
+             health: 160, armor: 15, speed: 75,  damage: 24, range: 32, mass: 350, stability: 65,
+             sprite: { sheet: 'Mixed_Units', name: 'Mixed_Units_0_3', scale: 0.7 },
+             tactical: { role: 'charger', chargeBonus: 0.45, momentum: 3.0 } },
   
-        4: { name: 'Archer',         health:  80, armor:  2, speed: 22, damage: 12, range: 60,
-             mass: 70,  stability: 30 },
+        4: { name: 'Archer',          displayName: 'Archer',           category: 'ranged',
+             health: 65,  armor: 2,  speed: 55,  damage: 10, range: 180, mass: 70, stability: 35,
+             sprite: { sheet: 'Mixed_Units', name: 'Mixed_Units_0_4', scale: 0.5 },
+             tactical: { role: 'ranged', chargeBonus: 0.0, momentum: 0.6 }, projectileSpeed: 150 },
   
-        5: { name: 'Crossbow',       health:  85, armor:  4, speed: 20, damage: 18, range: 55,
-             mass: 75,  stability: 30 },
+        5: { name: 'Crossbowman',     displayName: 'Crossbowman',      category: 'ranged',
+             health: 75,  armor: 4,  speed: 50,  damage: 16, range: 200, mass: 75, stability: 45,
+             sprite: { sheet: 'Mixed_Units', name: 'Mixed_Units_0_5', scale: 0.5 },
+             tactical: { role: 'ranged', chargeBonus: 0.0, momentum: 0.7 }, projectileSpeed: 180 },
       };
     }
   

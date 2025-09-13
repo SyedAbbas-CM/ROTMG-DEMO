@@ -118,10 +118,17 @@ class BinaryPacket {
     PLAYER_LIST_REQUEST: 80,
     
     // Chat messages
+    PLAYER_TEXT: 89,         // client → server (chat/command input)
     CHAT_MESSAGE: 90,
     
     // Speech bubbles / taunts
     SPEECH: 91,
+    
+    // Unit command messages
+    UNIT_COMMAND: 95,        // client → server (unit control commands)
+    UNIT_SPAWN: 96,          // server response to spawn commands
+    UNIT_UPDATE: 97,         // server → clients (unit state updates)
+    UNIT_REMOVE: 98,         // server → clients (unit death/removal)
     
     // Portal interaction
     PORTAL_ENTER: 54,      // client -> server (player pressed E near portal)
