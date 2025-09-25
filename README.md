@@ -159,6 +159,37 @@ Test files:
 
 ---
 
+## 🗺️ Map Editing & Live Mode
+
+### Map Editor
+- Open `public/tools/map-editor.html` in the browser.
+- Paint Tiles, Enemies, Portals, and Spawn points on a grid.
+- Use the sidebar “Live Mode” to apply changes to the running server.
+
+### Live Mode Workflow
+1. Set an admin token:
+   - In the editor, click “Editor Settings” and enter `ADMIN_TOKEN` (or run `localStorage.setItem('ADMIN_TOKEN','your-secret')`).
+2. Set the current `mapId` in settings (defaults to `default`).
+3. Toggle “Live Mode”.
+4. Paint:
+   - Portals → POST `/api/portals/add` (right‑click to remove).
+   - Enemies → POST `/api/enemies/spawn` (right‑click to remove at tile).
+   - Spawn → POST `/api/maps/entrypoints/set`.
+5. Save persistent changes:
+   - Click “Save Active” (or Shift+Ctrl+S) → POST `/api/maps/save-active` to `maps/<mapId>.json`.
+
+### Admin & Security
+- Set `ADMIN_TOKEN` in environment for the server to require `x-admin-token` on write routes.
+- Basic rate limits are applied to write endpoints.
+
+### Routes Reference
+- Portals: `GET /api/portals/list`, `POST /api/portals/add`, `POST /api/portals/remove`, `POST /api/portals/link-both`
+- Enemies: `GET /api/enemies/list?mapId=...`, `POST /api/enemies/spawn`, `POST /api/enemies/remove`, `POST /api/enemies/remove-at`
+- Maps: `GET /api/maps/:id/meta`, `POST /api/maps/entrypoints/set`, `POST /api/maps/reload`, `POST /api/maps/save-active`
+- Status: `GET /api/status`
+
+---
+
 ## 📊 Monitoring & Telemetry
 
 ### OpenTelemetry Integration

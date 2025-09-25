@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Server Status</title>
+  <style>
+    body{font-family:Arial, sans-serif;margin:20px;color:#eee;background:#222}
+    h1{margin:0 0 12px 0}
+    .card{background:#111;border:1px solid #333;border-radius:6px;padding:12px;margin-bottom:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid #333;padding:6px 8px;text-align:left}
+    th{background:#333}
+    .muted{color:#aaa;font-size:12px}
+  </style>
+  <script>
+    async function fetchStatus(){
+      try{
+        const res = await fetch('/api/status');
+        const js = await res.json();
+        render(js);
+      }catch(e){
+        document.getElementById('root').innerHTML = '<div class="card">Failed to load status</div>';
+      }
+    }
+    function render(data){
+      const root = document.getElementById('root');
+      const worlds = data.worlds || [];
+      let rows = worlds.map(w=>`<tr><td>${w.mapId}</td><td>${w.enemies}</td><td>${w.bullets}</td><td>${w.units}</td></tr>`).join('');
+      if(!rows) rows = '<tr><td colspan="4" class="muted">No worlds</td></tr>';
+      root.innerHTML = `
+        <div class="card">
+          <div>Clients: <strong>${data.clientCount||0}</strong></div>
+          <div class="muted">Updated: ${new Date(data.time||Date.now()).toLocaleTimeString()}</div>
+        </div>
+        <div class="card">
+          <table>
+            <thead><tr><th>Map ID</th><th>Enemies</th><th>Bullets</th><th>Units</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+    function init(){
+      fetchStatus();
+      setInterval(fetchStatus, 2000);
+    }
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</head>
+<body>
+  <h1>Server Status</h1>
+  <div id="root"></div>
+</body>
+</html>
+
+
+

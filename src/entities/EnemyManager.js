@@ -17,10 +17,13 @@ export default class EnemyManager {
    * Creates an enemy manager
    * @param {number} maxEnemies - Maximum number of enemies to allow
    */
-  constructor(maxEnemies = 1000) {
+  constructor(maxEnemies = 1000, itemManager = null) {
     this.maxEnemies = maxEnemies;
     this.enemyCount = 0;
     this.nextEnemyId = 1; // For assigning unique IDs
+
+    // Injected dependencies (avoids global state)
+    this.itemManager = itemManager;
 
     // SoA data layout for position and basic properties
     this.id = new Array(maxEnemies);         // Unique enemy IDs
@@ -545,14 +548,14 @@ export default class EnemyManager {
    * @param {string} killedBy - ID of player who killed the enemy
    */
   onDeath(index, killedBy) {
-    if (!this._bagManager || !globalThis.itemManager) return;
+    if (!this._bagManager || !this.itemManager) return;
     const enemyType = this.type[index];
     const template = this.enemyTypes[enemyType] || {};
     const dropTable = template.dropTable || [];
     const {items, bagType} = rollDropTable(dropTable);
     if(items.length===0) return;
     const itemInstanceIds = items.map(defId=>{
-      const inst = globalThis.itemManager.createItem(defId,{x:this.x[index],y:this.y[index]});
+      const inst = this.itemManager.createItem(defId,{x:this.x[index],y:this.y[index]});
       return inst?.id;
     }).filter(Boolean);
     if(itemInstanceIds.length===0) return;

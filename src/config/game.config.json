@@ -1,0 +1,15 @@
+{
+  "maps": [
+    { "name": "default", "width": 64, "height": 64, "seed": 123456789 },
+    { "name": "nexus", "file": "public/maps/SampleNexus.json" }
+  ],
+  "portals": [
+    { "from": "default", "to": "nexus", "x": 5, "y": 5, "sprite": "portal" }
+  ],
+  "spawns": [
+    { "map": "default" },
+    { "map": "nexus" }
+  ]
+}
+
+
