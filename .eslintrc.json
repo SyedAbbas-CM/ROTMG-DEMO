@@ -1,0 +1,13 @@
+{
+  "env": { "es2022": true, "node": true, "browser": true, "jest": true },
+  "extends": ["eslint:recommended"],
+  "parserOptions": { "ecmaVersion": 2022, "sourceType": "module" },
+  "rules": {
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "no-console": "off",
+    "no-constant-condition": ["error", { "checkLoops": false }]
+  },
+  "ignorePatterns": ["node_modules/", "public/assets/", "Rotmg-Core-Files/"]
+}
+
+

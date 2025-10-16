@@ -97,6 +97,11 @@
       <option value="spawn">Spawn Point</option>
     </select>
 
+    <div class="layer-controls" style="margin-top:6px">
+      <label style="margin:0;flex:unset">Live Mode</label>
+      <input id="liveMode" type="checkbox" title="Apply changes live to server (admin protected)"/>
+    </div>
+
     <label>Brush Size</label>
     <div class="brush-controls">
       <input id="brushSize" type="range" min="1" max="5" value="1" class="brush-size"/>
@@ -145,9 +150,13 @@
     <input id="portalDestInput" type="text" placeholder="e.g. map_2" />
 
     <button id="saveMapBtn">Save Map (Ctrl+S)</button>
+    <button id="saveActiveBtn" title="Persist live changes to server maps folder (Shift+Ctrl+S)">Save Active</button>
     <label>Existing Maps</label>
     <select id="mapList"></select>
     <button id="loadMapBtn">Load Selected Map</button>
+    
+    <hr>
+    <button id="openSettingsBtn">Editor Settings</button>
     
     <hr>
     <div style="font-size:12px;color:#999">
@@ -179,6 +188,24 @@
         <div id="enemyList"></div>
       </div>
     </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#111;border:1px solid #444;border-radius:4px;box-shadow:0 0 10px #000;width:360px;z-index:1000">
+      <div style="padding:10px;border-bottom:1px solid #333;font-weight:bold">Editor Settings</div>
+      <div style="padding:10px;display:flex;flex-direction:column;gap:6px">
+        <label>Admin Token</label>
+        <input id="adminTokenInput" type="password" placeholder="x-admin-token"/>
+        <label>Current Map ID</label>
+        <input id="currentMapIdInput" type="text" placeholder="default"/>
+        <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px">
+          <button id="settingsCancelBtn">Cancel</button>
+          <button id="settingsSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unsaved Live Changes Banner -->
+    <div id="unsavedBanner" style="position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(255,165,0,0.9);color:#111;padding:6px 10px;border-radius:4px;display:none;z-index:999">Live changes pending save</div>
   </div>
 
   <script type="module">
@@ -213,6 +240,79 @@
     const brushSizeSlider = document.getElementById('brushSize');
     const brushSizeDisplay = document.getElementById('brushSizeDisplay');
     const portalDestInput = document.getElementById('portalDestInput');
+    const liveModeCheckbox = document.getElementById('liveMode');
+    const openSettingsBtn = document.getElementById('openSettingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const adminTokenInput = document.getElementById('adminTokenInput');
+    const currentMapIdInput = document.getElementById('currentMapIdInput');
+    const settingsSaveBtn = document.getElementById('settingsSaveBtn');
+    const settingsCancelBtn = document.getElementById('settingsCancelBtn');
+    const unsavedBanner = document.getElementById('unsavedBanner');
+
+    // Settings state
+    let currentLoadedMapId = localStorage.getItem('CURRENT_MAP_ID') || 'default';
+    const ADMIN_TOKEN = localStorage.getItem('ADMIN_TOKEN') || '';
+
+    // Populate modal with stored values
+    function openSettings(){
+      adminTokenInput.value = localStorage.getItem('ADMIN_TOKEN') || '';
+      currentMapIdInput.value = localStorage.getItem('CURRENT_MAP_ID') || currentLoadedMapId || 'default';
+      settingsModal.style.display = 'block';
+    }
+    function closeSettings(){ settingsModal.style.display = 'none'; }
+
+    openSettingsBtn.onclick = openSettings;
+    settingsCancelBtn.onclick = closeSettings;
+    settingsSaveBtn.onclick = ()=>{
+      localStorage.setItem('ADMIN_TOKEN', adminTokenInput.value || '');
+      currentLoadedMapId = (currentMapIdInput.value || 'default').trim();
+      localStorage.setItem('CURRENT_MAP_ID', currentLoadedMapId);
+      closeSettings();
+      updateStatus('Settings saved');
+    };
+
+    // Track unsaved live changes when live mode is on
+    let liveDirty = false;
+    function markLiveDirty(){ if (liveModeCheckbox?.checked) { liveDirty = true; unsavedBanner.style.display = 'block'; } }
+    async function saveActive(){
+      try {
+        const resp = await fetch('/api/maps/save-active', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-token': (localStorage.getItem('ADMIN_TOKEN')||'') },
+          body: JSON.stringify({ mapId: currentLoadedMapId })
+        });
+        const js = await resp.json();
+        if (js.ok) {
+          liveDirty = false;
+          unsavedBanner.style.display = 'none';
+          updateStatus(`Saved active map to ${js.file}`);
+        } else {
+          updateStatus('Save active failed');
+        }
+      } catch { updateStatus('Save active failed'); }
+    }
+
+    // Attach save active via shift+Ctrl+S
+    document.addEventListener('keydown', (e)=>{
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase()==='s'){
+        e.preventDefault();
+        saveActive();
+      }
+    });
+
+    // When we do live operations, mark dirty
+    // Hook into existing live calls by wrapping fetch
+    const _fetch = window.fetch.bind(window);
+    window.fetch = async (...args)=>{
+      const res = await _fetch(...args);
+      try {
+        const url = String(args[0]||'');
+        if (url.includes('/api/portals/') || url.includes('/api/enemies/') || url.includes('/api/maps/entrypoints')){
+          markLiveDirty();
+        }
+      } catch {}
+      return res;
+    };
 
     // ============= UNIFIED DATA MODEL =============
     let tileW = 16, tileH = 16;
@@ -271,6 +371,19 @@
         setupEventListeners();
         enableEnemyPanelDrag();
         
+        // Restore editor session
+        try {
+          const savedGroup = localStorage.getItem('EDITOR_GROUP');
+          if (savedGroup && Array.from(groupSelect.options).some(o=>o.value===savedGroup)) groupSelect.value = savedGroup;
+          const savedLayer = +localStorage.getItem('EDITOR_LAYER_INDEX');
+          if (!Number.isNaN(savedLayer) && savedLayer>=0) currentLayer = savedLayer;
+          const savedZoomIndex = +localStorage.getItem('EDITOR_ZOOM_INDEX');
+          if (!Number.isNaN(savedZoomIndex) && savedZoomIndex>=0 && savedZoomIndex<zoomLevels.length) { zoomIndex = savedZoomIndex; camera.zoom = zoomLevels[zoomIndex]; }
+          const savedBrush = +localStorage.getItem('EDITOR_BRUSH');
+          if (!Number.isNaN(savedBrush) && savedBrush>=1 && savedBrush<=5) { brushSize = savedBrush; brushSizeSlider.value = brushSize; }
+          if (liveModeCheckbox) liveModeCheckbox.checked = localStorage.getItem('EDITOR_LIVE')==='1';
+        } catch {}
+
         // Set initial displays
         updateCurrentTileDisplay();
         updateRotationDisplay();
@@ -345,7 +458,11 @@
         groupSelect.appendChild(new Option(groupName, groupName));
       });
       
-      groupSelect.onchange = updateTilePicker;
+      groupSelect.onchange = (e)=>{ updateTilePicker(); localStorage.setItem('EDITOR_GROUP', e.target.value||'all'); };
+      const savedGroup = localStorage.getItem('EDITOR_GROUP');
+      if (savedGroup && Array.from(groupSelect.options).some(o=>o.value===savedGroup)) {
+        groupSelect.value = savedGroup;
+      }
     }
 
     function buildLayerSelect() {
@@ -355,6 +472,8 @@
         layerSelect.appendChild(option);
       });
       layerSelect.value = currentLayer;
+      const savedLayer = +localStorage.getItem('EDITOR_LAYER_INDEX');
+      if (!Number.isNaN(savedLayer) && savedLayer >=0 && savedLayer < layers.length){ currentLayer = savedLayer; layerSelect.value = currentLayer; }
     }
 
     function buildLayerVisibility() {
@@ -484,6 +603,10 @@
 
     function updateZoomDisplay() {
       zoomDisplay.textContent = Math.round(camera.zoom * 100) + '%';
+    }
+
+    function persistCamera(){
+      localStorage.setItem('EDITOR_ZOOM_INDEX', String(zoomIndex));
     }
 
     function updateBrushSizeDisplay() {
@@ -743,6 +866,13 @@
                 rot: 0,
                 destMap: dest
               });
+              if (liveModeCheckbox?.checked && dest) {
+                fetch('/api/portals/add', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN },
+                  body: JSON.stringify({ mapId: currentLoadedMapId || 'default', x: paintX, y: paintY, destMap: dest })
+                }).catch(()=>{});
+              }
             }
           } else if (mode === 'spawn') {
             // Ensure only one spawn exists; clear previous
@@ -755,6 +885,13 @@
                 sprite: 'spawn_point',
                 rot: 0
               });
+              if (liveModeCheckbox?.checked) {
+                fetch('/api/maps/entrypoints/set', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN },
+                  body: JSON.stringify({ mapId: currentLoadedMapId || 'default', points: [{ x: paintX, y: paintY }] })
+                }).catch(()=>{});
+              }
             }
           }
         }
@@ -799,6 +936,14 @@
                 id: currentEnemyId,
                 rot: currentRot
               });
+              if (liveModeCheckbox?.checked) {
+                const payload = currentEnemyId != null ? { mapId: currentLoadedMapId || 'default', id: currentEnemyId, x, y } : { mapId: currentLoadedMapId || 'default', type: 0, x, y };
+                fetch('/api/enemies/spawn', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN },
+                  body: JSON.stringify(payload)
+                }).catch(()=>{});
+              }
             }
           } else if (mode === 'portal') {
             entities = entities.filter(entity => !(entity.x === x && entity.y === y && entity.type === 'portal'));
@@ -812,6 +957,13 @@
                 rot: 0,
                 destMap: dest
               });
+              if (liveModeCheckbox?.checked && dest) {
+                fetch('/api/portals/add', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN },
+                  body: JSON.stringify({ mapId: currentLoadedMapId || 'default', x, y, destMap: dest })
+                }).catch(()=>{});
+              }
             }
           } else if (mode === 'spawn') {
             // Rectangle paint for spawn acts like single set: pick top-left
@@ -819,6 +971,13 @@
             entities = entities.filter(entity => entity.type !== 'spawn');
             if (!isErase) {
               entities.push({ type:'spawn', x:x, y:y, sprite: 'spawn_point', rot:0 });
+              if (liveModeCheckbox?.checked) {
+                fetch('/api/maps/entrypoints/set', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN },
+                  body: JSON.stringify({ mapId: currentLoadedMapId || 'default', points: [{ x, y }] })
+                }).catch(()=>{});
+              }
             }
           }
         }
@@ -907,9 +1066,11 @@
       document.getElementById('newMapBtn').onclick = newMap;
       document.getElementById('saveMapBtn').onclick = saveMap;
       document.getElementById('loadMapBtn').onclick = loadMap;
+      document.getElementById('saveActiveBtn').onclick = (e)=>{ e.preventDefault(); saveActive(); };
       
       layerSelect.onchange = e => {
         currentLayer = +e.target.value;
+        localStorage.setItem('EDITOR_LAYER_INDEX', String(currentLayer));
         updateStatus(`Switched to layer ${currentLayer}`);
       };
       
@@ -929,14 +1090,15 @@
       };
 
       // Zoom controls
-      zoomInBtn.onclick = zoomIn;
-      zoomOutBtn.onclick = zoomOut;
-      resetViewBtn.onclick = resetView;
+      zoomInBtn.onclick = ()=>{ zoomIn(); persistCamera(); };
+      zoomOutBtn.onclick = ()=>{ zoomOut(); persistCamera(); };
+      resetViewBtn.onclick = ()=>{ resetView(); persistCamera(); };
 
       // Brush size
       brushSizeSlider.oninput = e => {
         brushSize = +e.target.value;
         updateBrushSizeDisplay();
+        localStorage.setItem('EDITOR_BRUSH', String(brushSize));
       };
 
       // Quick tools
@@ -954,6 +1116,27 @@
       
       document.getElementById('clearLayer').onclick = clearCurrentLayer;
       document.getElementById('copyLayer').onclick = copyCurrentLayer;
+
+      // Right-click remove live (enemy/portal)
+      canvas.addEventListener('contextmenu', async (e) => {
+        if (!liveModeCheckbox?.checked) return;
+        const pos = eventToTile(e);
+        if (!pos) return;
+        if (modeSelect.value === 'enemy') {
+          fetch('/api/enemies/remove-at', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN },
+            body: JSON.stringify({ mapId: currentLoadedMapId || 'default', x: pos.x, y: pos.y })
+          }).catch(()=>{});
+        } else if (modeSelect.value === 'portal') {
+          const dest = (portalDestInput?.value || currentPortalDest || '').trim();
+          fetch('/api/portals/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN },
+            body: JSON.stringify({ mapId: currentLoadedMapId || 'default', x: pos.x, y: pos.y, destMap: dest || undefined })
+          }).catch(()=>{});
+        }
+      });
 
       // Reload enemies from server database
       const reloadBtn = document.getElementById('reloadEnemiesBtn');
@@ -1133,15 +1316,9 @@
       }
       
       // Quick zoom shortcuts
-      if (event.key === '=' || event.key === '+') {
-        zoomIn();
-      }
-      if (event.key === '-') {
-        zoomOut();
-      }
-      if (event.key === '0') {
-        resetView();
-      }
+      if (event.key === '=' || event.key === '+') { zoomIn(); persistCamera(); }
+      if (event.key === '-') { zoomOut(); persistCamera(); }
+      if (event.key === '0') { resetView(); persistCamera(); }
     }
 
     // ============= DRAWING =============
