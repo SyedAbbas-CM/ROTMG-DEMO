@@ -1,6 +1,7 @@
 // server/src/units/UnitSystems.js
 import { UnitTypes } from './UnitTypes.js';
 import SpatialGrid   from '../../public/src/shared/spatialGrid.js';
+import { TILE_PROPERTIES } from '../../public/src/constants/constants.js';
 
 export default class UnitSystems {
   constructor(unitManager, mapManager) {
@@ -44,9 +45,19 @@ export default class UnitSystems {
       /* command → acceleration */
       this.processCommand(i, dt, def);
 
-      /* integrate */
-      u.x[i] += u.vx[i]*dt;
-      u.y[i] += u.vy[i]*dt;
+      /* integrate with tile-based movement cost (water slow, etc.) */
+      let movementMultiplier = 1.0;
+      const tileX = Math.floor(u.x[i]);
+      const tileY = Math.floor(u.y[i]);
+      const tile = this.map.getTile(tileX, tileY);
+
+      if (tile && TILE_PROPERTIES[tile.type]) {
+        const movementCost = TILE_PROPERTIES[tile.type].movementCost || 1.0;
+        movementMultiplier = 1.0 / movementCost; // Higher cost = slower (0.5x for water)
+      }
+
+      u.x[i] += u.vx[i] * dt * movementMultiplier;
+      u.y[i] += u.vy[i] * dt * movementMultiplier;
 
       /* clamp velocity */
       const s = Math.hypot(u.vx[i],u.vy[i]);

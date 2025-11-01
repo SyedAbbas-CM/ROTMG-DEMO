@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Behavior Designer - ROTMG</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      overflow: hidden;
+      background: #111;
+      color: white;
+    }
+
+    #behavior-designer-root {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    #loading h2 {
+      margin-bottom: 20px;
+    }
+
+    .spinner {
+      border: 4px solid #333;
+      border-top: 4px solid #4CAF50;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #error {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #f44336;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <h2>Loading Behavior Designer...</h2>
+    <div class="spinner"></div>
+    <p style="margin-top: 20px; color: #888;">Transpiling React components...</p>
+    <p style="margin-top: 10px; color: #666; font-size: 12px;">Check console (F12) for errors if this takes too long</p>
+  </div>
+
+  <div id="error">
+    <h2>Error Loading Designer</h2>
+    <p id="error-message"></p>
+    <p style="margin-top: 10px; font-size: 12px;">Check the browser console for details</p>
+  </div>
+
+  <div id="behavior-designer-root"></div>
+
+  <script>
+    console.log('[BehaviorDesigner] Page loaded, starting script loading...');
+
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      console.error('[BehaviorDesigner] Global error:', msg, 'at', url, lineNo, columnNo);
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error-message').textContent = msg;
+      return false;
+    };
+  </script>
+
+  <!-- React -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js" onload="console.log('[BehaviorDesigner] React loaded')"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" onload="console.log('[BehaviorDesigner] ReactDOM loaded')"></script>
+
+  <!-- Babel for JSX (development only) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" onload="console.log('[BehaviorDesigner] Babel loaded, starting transpilation...')"></script>
+
+  <!-- Behavior Test Arena -->
+  <script type="text/babel" src="/editor/BehaviorTestArena.js"></script>
+
+  <!-- Visual State Machine -->
+  <script type="text/babel" src="/editor/VisualStateMachine.js"></script>
+
+  <!-- Behavior Designer -->
+  <script type="text/babel" src="/editor/BehaviorDesigner.js"></script>
+
+  <script>
+    // Hide loading indicator after a short delay (Babel transpilation happens async)
+    setTimeout(() => {
+      if (document.getElementById('behavior-designer-root').children.length > 0 || window.BehaviorDesigner) {
+        console.log('[BehaviorDesigner] Components loaded successfully');
+        document.getElementById('loading').style.display = 'none';
+      } else {
+        console.warn('[BehaviorDesigner] Components not loaded after 5s, but continuing...');
+      }
+    }, 5000);
+
+    // Also try hiding after React renders
+    const checkInterval = setInterval(() => {
+      if (document.getElementById('behavior-designer-root').children.length > 0) {
+        console.log('[BehaviorDesigner] React rendered, hiding loading screen');
+        document.getElementById('loading').style.display = 'none';
+        clearInterval(checkInterval);
+      }
+    }, 100);
+
+    // Stop checking after 10 seconds
+    setTimeout(() => clearInterval(checkInterval), 10000);
+  </script>
+</body>
+</html>

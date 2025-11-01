@@ -46,6 +46,25 @@ export class PlayerManager {
     }
     
     /**
+     * Remove a player from the manager
+     * @param {string} playerId - Player ID to remove
+     */
+    removePlayer(playerId) {
+        if (this.players.has(playerId)) {
+            this.players.delete(playerId);
+
+            // Also clean up the animator
+            if (this.playerAnimators.has(playerId)) {
+                this.playerAnimators.delete(playerId);
+            }
+
+            console.log(`[PlayerManager] Removed player: ${playerId}`);
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Update players based on server data
      * @param {Object} playersData - Player data from server
      */
@@ -369,27 +388,57 @@ export class PlayerManager {
                 
                 // Get player animator
                 const animator = this.playerAnimators.get(player.id);
-                
+
+                // ===================================================================
+                // SPRITE SUBMERSION EFFECT - Clip sprites when in water/lava
+                // ===================================================================
+                // Check if player is on water/lava for submersion effect
+                const tileX = Math.floor(player.x);
+                const tileY = Math.floor(player.y);
+                const tile = gameState.mapManager?.getTile(tileX, tileY);
+
+                // Check if water/lava tile by sprite name or type ID
+                let isOnWater = false;
+                if (tile && tile.spriteName) {
+                    const spriteName = tile.spriteName.toLowerCase();
+                    isOnWater = spriteName.includes('water') || spriteName.includes('deep') || spriteName.includes('lava');
+                } else if (tile && (tile.type === 3 || tile.type === 6)) { // TILE_IDS.WATER or TILE_IDS.LAVA
+                    isOnWater = true;
+                }
+
+                // Water submersion: Show only top 50% of sprite when on water
+                const submersionRatio = isOnWater ? 0.5 : 1.0;
+                const submersionYOffset = isOnWater ? (height * 0.25) : 0;
+                // ===================================================================
+
                 if (animator) {
                     // Get animation source rect
                     const sourceRect = animator.getSourceRect();
-                    
-                    // Draw player sprite with animation
+
+                    // Calculate clipped source rect for submersion
+                    const spriteSourceHeight = sourceRect.height * submersionRatio;
+                    const renderHeight = height * submersionRatio;
+
+                    // Draw player sprite with animation (with submersion clipping)
                     ctx.drawImage(
                         characterSpriteSheet,
                         sourceRect.x, sourceRect.y,
-                        sourceRect.width, sourceRect.height,
-                        -width/2, -height/2,
-                        width, height
+                        sourceRect.width, spriteSourceHeight,
+                        -width/2, -renderHeight/2 + submersionYOffset,
+                        width, renderHeight
                     );
                 } else {
-                    // Fallback to old rendering without animation
+                    // Calculate clipped source rect for submersion
+                    const spriteSourceHeight = TILE_SIZE * submersionRatio;
+                    const renderHeight = height * submersionRatio;
+
+                    // Fallback to old rendering without animation (with submersion clipping)
                     ctx.drawImage(
                         characterSpriteSheet,
-                        player.spriteX || 0, player.spriteY || 0, 
-                        TILE_SIZE, TILE_SIZE,
-                        -width/2, -height/2,
-                        width, height
+                        player.spriteX || 0, player.spriteY || 0,
+                        TILE_SIZE, spriteSourceHeight,
+                        -width/2, -renderHeight/2 + submersionYOffset,
+                        width, renderHeight
                     );
                 }
 
@@ -517,10 +566,33 @@ export class PlayerManager {
                     }
                     ctx.rotate(player._lastSnapRot || snapped);
                 }
-                
-                // Draw simple colored rectangle
+
+                // ===================================================================
+                // SPRITE SUBMERSION EFFECT - Clip sprites when in water/lava
+                // ===================================================================
+                // Check if player is on water/lava for submersion effect
+                const tileX = Math.floor(player.x);
+                const tileY = Math.floor(player.y);
+                const tile = gameState.mapManager?.getTile(tileX, tileY);
+
+                // Check if water/lava tile by sprite name or type ID
+                let isOnWater = false;
+                if (tile && tile.spriteName) {
+                    const spriteName = tile.spriteName.toLowerCase();
+                    isOnWater = spriteName.includes('water') || spriteName.includes('deep') || spriteName.includes('lava');
+                } else if (tile && (tile.type === 3 || tile.type === 6)) { // TILE_IDS.WATER or TILE_IDS.LAVA
+                    isOnWater = true;
+                }
+
+                // Water submersion: Show only top 50% when on water
+                const submersionRatio = isOnWater ? 0.5 : 1.0;
+                const renderHeight = height * submersionRatio;
+                const submersionYOffset = isOnWater ? (height * 0.25) : 0;
+                // ===================================================================
+
+                // Draw simple colored rectangle (with submersion clipping)
                 ctx.fillStyle = 'blue';
-                ctx.fillRect(-width/2, -height/2, width, height);
+                ctx.fillRect(-width/2, -renderHeight/2 + submersionYOffset, width, renderHeight);
                 
                 // Draw simple direction indicator
                 ctx.fillStyle = 'white';

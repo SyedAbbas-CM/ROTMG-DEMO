@@ -1,0 +1,76 @@
+{
+  "name": "ChargingShooter",
+  "description": "Charges at player while shooting, then wanders briefly before charging again",
+  "dsl": "STATE charge {\n  ON_ENTER: SetSpeed(value=2.0)\n  TICK: MoveToward(target=\"ToPlayer\", speed=2.0)\n  TICK: Shoot(angle=\"GetAngle()\", speed=25, bulletType=\"arrow\")\n  DURATION: 2000ms\n  NEXT: wander\n}\n\nSTATE wander {\n  ON_ENTER: SetSpeed(value=0.5)\n  TICK: Wander(changeInterval=200)\n  DURATION: 1500ms\n  NEXT: charge\n}\n",
+  "states": [
+    {
+      "id": "state_charge",
+      "name": "charge",
+      "x": 200,
+      "y": 150,
+      "onEnter": [
+        {
+          "id": "SetSpeed",
+          "name": "Set Speed",
+          "params": {
+            "value": 2.0
+          },
+          "color": "#2196F3"
+        }
+      ],
+      "onTick": [
+        {
+          "id": "MoveToward",
+          "name": "Move Toward",
+          "params": {
+            "target": "ToPlayer",
+            "speed": 2.0
+          },
+          "color": "#4CAF50"
+        },
+        {
+          "id": "Shoot",
+          "name": "Shoot",
+          "params": {
+            "angle": "GetAngle()",
+            "speed": 25,
+            "bulletType": "arrow"
+          },
+          "color": "#F44336"
+        }
+      ],
+      "onExit": [],
+      "duration": 2000,
+      "next": "wander"
+    },
+    {
+      "id": "state_wander",
+      "name": "wander",
+      "x": 450,
+      "y": 150,
+      "onEnter": [
+        {
+          "id": "SetSpeed",
+          "name": "Set Speed",
+          "params": {
+            "value": 0.5
+          },
+          "color": "#2196F3"
+        }
+      ],
+      "onTick": [
+        {
+          "id": "Wander",
+          "name": "Wander",
+          "params": {
+            "changeInterval": 200
+          },
+          "color": "#4CAF50"
+        }
+      ],
+      "onExit": [],
+      "duration": 1500,
+      "next": "charge"
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import { gameState } from './gamestate.js';
 import { TILE_IDS } from '../constants/constants.js';
 import { createLogger, LOG_LEVELS } from '../utils/logger.js';
 import * as THREE from 'three'; // Added for THREE.Vector3 and THREE.Quaternion
+import { getTileSpeedMultiplier } from '../utils/tileEffects.js';
 
 // Create a logger for this module
 const logger = createLogger('movement');
@@ -46,7 +47,19 @@ export function updateCharacter(delta) {
   }
   
   // Use character's own speed instead of global MOVE_SPEED
-  const speed = character.speed || 6.0; // units = tiles / second
+  let speed = character.speed || 6.0; // units = tiles / second
+
+  // Apply tile-based speed multiplier (water/lava slowdown, etc.)
+  const tileSpeedMultiplier = getTileSpeedMultiplier(character);
+  speed *= tileSpeedMultiplier;
+
+  // Debug log when speed is modified by tiles
+  if (tileSpeedMultiplier !== 1.0 && Math.random() < 0.1) {
+    const tileX = Math.floor(character.x);
+    const tileY = Math.floor(character.y);
+    console.log(`[TILE SLOWDOWN] Speed multiplier ${tileSpeedMultiplier.toFixed(2)}x at (${tileX}, ${tileY}), effective speed: ${speed.toFixed(2)}`);
+  }
+
   const keysPressed = getKeysPressed();
 
   /* ---------------- Vertical movement (jump) ---------------- */
@@ -160,13 +173,12 @@ export function updateCharacter(delta) {
     const distance = speed * delta;
 
     // ------------------------------------------------------------------
-    // NEW: Sub-step movement to avoid tunnelling through thin obstacles.
-    // We break the full movement vector into ≤0.25-tile chunks and test
-    // collision after each micro-step.  This guarantees we cannot skip
-    // an obstacle even if the character moves several tiles in one frame.
+    // OPTIMIZED: Reduced sub-stepping since we're using spatial hash
+    // Only sub-step for very fast movement (>1 tile per frame)
+    // For normal speeds (6 tiles/sec), this is just 1-2 steps max
     // ------------------------------------------------------------------
 
-    const MAX_STEP = 0.25;          // tile-units per micro-step
+    const MAX_STEP = 0.5;          // tile-units per micro-step (increased from 0.25)
     const steps = Math.max(1, Math.ceil(distance / MAX_STEP));
     const stepX = (moveX * distance) / steps;
     const stepY = (moveY * distance) / steps;
@@ -507,7 +519,7 @@ function isPointColliding(x, y) {
 
   // ENHANCED: Log coordinate details on every 50th check (approximately)
   const shouldLogDetails = Math.random() < 0.02;
-  
+
   if (shouldLogDetails) {
     console.log(`COLLISION CHECK:
 - World Position: (${x.toFixed(4)}, ${y.toFixed(4)})
@@ -516,6 +528,30 @@ function isPointColliding(x, y) {
 - Tile Percent: (${((x % tileSize) / tileSize).toFixed(4)}, ${((y % tileSize) / tileSize).toFixed(4)})`);
   }
 
+  // ============================================================================
+  // OBJECT COLLISION CHECK (trees, boulders, etc.)
+  // ============================================================================
+  // Check if there's a non-walkable object at this position using spatial hash
+  if (gameState.map && gameState.map.objectSpatialHash) {
+    const hashKey = `${tileX},${tileY}`;
+    const objectsAtTile = gameState.map.objectSpatialHash.get(hashKey);
+
+    if (objectsAtTile && objectsAtTile.length > 0) {
+      // Check if any object at this tile is non-walkable
+      const blockingObject = objectsAtTile.find(obj => obj.walkable === false);
+
+      if (blockingObject) {
+        if (shouldLogDetails) {
+          console.log(`OBJECT COLLISION: Blocked by "${blockingObject.sprite}" at tile (${tileX}, ${tileY})`);
+        }
+        return true; // Object blocks movement
+      }
+    }
+  }
+
+  // ============================================================================
+  // TILE COLLISION CHECK (walls, obstacles, mountains)
+  // ============================================================================
   // Check if position is a wall or obstacle using the map manager's method
   // This is the correct way - let the map manager handle the conversion
   if (gameState.map.isWallOrObstacle) {
@@ -621,11 +657,11 @@ function isPointColliding(x, y) {
   }
   
   // Check if it's a wall, obstacle, or mountain
+  // NOTE: Water is NOT included here - player should be able to walk through water (with slowdown later)
   const collides = (
-    tile.type === TILE_IDS.WALL || 
-    tile.type === TILE_IDS.OBSTACLE || 
-    tile.type === TILE_IDS.MOUNTAIN ||
-    tile.type === TILE_IDS.WATER
+    tile.type === TILE_IDS.WALL ||
+    tile.type === TILE_IDS.OBSTACLE ||
+    tile.type === TILE_IDS.MOUNTAIN
   );
   
   // Add logging for collisions

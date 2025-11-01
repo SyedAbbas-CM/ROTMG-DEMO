@@ -70,22 +70,49 @@ export default class GeminiProvider extends BaseProvider {
         clearTimeout(timer);
       }
 
+      // Debug: Log response structure
+      if (process.env.DEBUG_GEMINI) {
+        console.log('[Gemini Debug] Response:', JSON.stringify(res?.response, null, 2));
+      }
+
+      // Try function call first (preferred)
       const call = res
         ?.response
         ?.candidates?.[0]
         ?.content?.parts?.[0]
         ?.functionCall;
-      if (!call) {
-        throw new Error('Gemini: missing functionCall');
-      }
-      if (call.name !== 'issue_actions') {
-        throw new Error(`Gemini: unexpected function '${call.name}'`);
-      }
 
-      // --- Directly use the parsed Struct args (no JSON.parse) ---
-      const payload = call.args;
-      if (typeof payload !== 'object' || payload === null) {
-        throw new Error('Gemini: functionCall.args is not an object');
+      let payload;
+
+      if (call) {
+        // Function call mode (structured response)
+        if (call.name !== 'issue_actions') {
+          throw new Error(`Gemini: unexpected function '${call.name}'`);
+        }
+        payload = call.args;
+        if (typeof payload !== 'object' || payload === null) {
+          throw new Error('Gemini: functionCall.args is not an object');
+        }
+      } else {
+        // Fallback: parse text response as JSON
+        const textPart = res?.response?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!textPart) {
+          throw new Error('Gemini: no function call or text response');
+        }
+
+        // Extract JSON from potential markdown code blocks
+        let jsonText = textPart.trim();
+        const jsonMatch = jsonText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+        if (jsonMatch) {
+          jsonText = jsonMatch[1].trim();
+        }
+
+        try {
+          payload = JSON.parse(jsonText);
+        } catch (err) {
+          console.error('[Gemini] Failed to parse JSON response:', jsonText.substring(0, 200));
+          throw new Error(`Gemini: invalid JSON response - ${err.message}`);
+        }
       }
 
       const delta = Date.now() - t0;

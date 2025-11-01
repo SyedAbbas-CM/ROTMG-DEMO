@@ -347,6 +347,120 @@
     let redoStack = [];
     const maxUndoSteps = 50;
 
+    // ============= LOCAL STORAGE PERSISTENCE =============
+    const STORAGE_PREFIX = 'mapEditor_';
+    const CURRENT_MAP_KEY = 'mapEditor_currentMap';
+    let currentMapName = 'untitled';
+    let autoSaveTimer = null;
+
+    // Save current map to localStorage
+    function saveToLocalStorage() {
+      const mapData = {
+        name: currentMapName,
+        width: mapW,
+        height: mapH,
+        tileW: tileW,
+        tileH: tileH,
+        layers: layers,
+        entities: entities,
+        lastModified: Date.now()
+      };
+
+      try {
+        localStorage.setItem(STORAGE_PREFIX + currentMapName, JSON.stringify(mapData));
+        localStorage.setItem(CURRENT_MAP_KEY, currentMapName);
+        updateStatus(`Auto-saved to localStorage: ${currentMapName}`);
+      } catch (e) {
+        console.error('localStorage save failed:', e);
+        updateStatus('Warning: localStorage full - maps not saved locally');
+      }
+    }
+
+    // Debounced auto-save (saves 1 second after last edit)
+    function scheduleAutoSave() {
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => {
+        saveToLocalStorage();
+      }, 1000);
+    }
+
+    // Load map from localStorage
+    function loadFromLocalStorage(mapName) {
+      try {
+        const data = localStorage.getItem(STORAGE_PREFIX + mapName);
+        if (!data) {
+          updateStatus(`Map "${mapName}" not found in localStorage`);
+          return false;
+        }
+
+        const mapData = JSON.parse(data);
+
+        // Apply map data
+        currentMapName = mapData.name || mapName;
+        mapW = mapData.width || 32;
+        mapH = mapData.height || 32;
+        tileW = mapData.tileW || 16;
+        tileH = mapData.tileH || 16;
+        layers = mapData.layers || [{ name: 'ground', grid: createEmptyGrid(), visible: true }];
+        entities = mapData.entities || [];
+
+        canvas.width = mapW * tileW;
+        canvas.height = mapH * tileH;
+        updateCanvasSize();
+        drawMap();
+
+        updateStatus(`Loaded from localStorage: ${currentMapName}`);
+        return true;
+      } catch (e) {
+        console.error('localStorage load failed:', e);
+        updateStatus('Failed to load from localStorage');
+        return false;
+      }
+    }
+
+    // List all maps in localStorage
+    function listLocalMaps() {
+      const maps = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(STORAGE_PREFIX) && key !== CURRENT_MAP_KEY) {
+          const mapName = key.substring(STORAGE_PREFIX.length);
+          try {
+            const data = JSON.parse(localStorage.getItem(key));
+            maps.push({
+              name: mapName,
+              lastModified: data.lastModified || 0,
+              source: 'local'
+            });
+          } catch (e) {
+            console.error('Error parsing map:', key, e);
+          }
+        }
+      }
+      return maps.sort((a, b) => b.lastModified - a.lastModified);
+    }
+
+    // Delete map from localStorage
+    function deleteFromLocalStorage(mapName) {
+      try {
+        localStorage.removeItem(STORAGE_PREFIX + mapName);
+        updateStatus(`Deleted from localStorage: ${mapName}`);
+        return true;
+      } catch (e) {
+        console.error('localStorage delete failed:', e);
+        return false;
+      }
+    }
+
+    // Load last edited map on startup
+    function loadLastMap() {
+      const lastMap = localStorage.getItem(CURRENT_MAP_KEY);
+      if (lastMap) {
+        return loadFromLocalStorage(lastMap);
+      }
+      return false;
+    }
+
     // ============= INITIALIZATION =============
     async function init() {
       try {
@@ -368,6 +482,13 @@
         updateTilePicker();
         await refreshMapList();
         newMap();
+
+        // Try to load last edited map from localStorage
+        const loaded = loadLastMap();
+        if (loaded) {
+          updateStatus('Restored last edited map from localStorage');
+        }
+
         setupEventListeners();
         enableEnemyPanelDrag();
         
@@ -693,6 +814,7 @@
         currentLayer = layers.length - 1;
         layerSelect.value = currentLayer;
         updateStatus(`Added layer: ${layerName}`);
+        scheduleAutoSave();
       }
     }
 
@@ -713,6 +835,7 @@
         buildLayerVisibility();
         drawMap();
         updateStatus(`Deleted layer: ${layerName}`);
+        scheduleAutoSave();
       }
     }
 
@@ -722,6 +845,7 @@
         layers[currentLayer].grid = createEmptyGrid();
         drawMap();
         updateStatus('Layer cleared');
+        scheduleAutoSave();
       }
     }
 
@@ -740,6 +864,7 @@
         currentLayer = layers.length - 1;
         layerSelect.value = currentLayer;
         updateStatus(`Copied layer: ${layerName}`);
+        scheduleAutoSave();
       }
     }
 
@@ -896,6 +1021,9 @@
           }
         }
       }
+
+      // Auto-save after paint operation
+      scheduleAutoSave();
     }
 
     function paintRectangle(startX, startY, endX, endY, isErase = false) {
@@ -982,6 +1110,9 @@
           }
         }
       }
+
+      // Auto-save after rectangle paint operation
+      scheduleAutoSave();
     }
 
     function eyedrop(x, y) {
@@ -1482,8 +1613,8 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            filename: filename,
-            data: mapData
+            mapName: filename,
+            mapData: mapData
           })
         });
         

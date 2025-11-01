@@ -9,6 +9,8 @@ import xxhash32 from 'xxhash-wasm';
 import { trace } from '@opentelemetry/api';
 import { evaluate } from './critic/DifficultyCritic.js';
 import llmConfig from './config/llmConfig.js';
+import { getAdaptiveCooldown } from './addons/AdaptiveFrequency.js';
+import { StrategicLearningAddon } from './addons/StrategicLearningAddon.js';
 
 const HASH_SEED = 0xABCD1234;
 const PLAN_PERIOD = llmConfig.planPeriodSec;
@@ -20,7 +22,7 @@ const tracer = trace.getTracer('game');
 
 
 export default class LLMBossController {
-  constructor(bossMgr, bulletMgr, mapMgr, enemyMgr) {
+  constructor(bossMgr, bulletMgr, mapMgr, enemyMgr, config = {}) {
     this.bossMgr   = bossMgr;
     this.bulletMgr = bulletMgr;
     this.mapMgr    = mapMgr;
@@ -32,6 +34,25 @@ export default class LLMBossController {
     this.tickCount = 0;
     this.pendingLLM = false; // guard to avoid overlapping provider calls
     this.feedback = [];
+
+    // NEW: Optional configuration for enhancements
+    this.config = {
+      adaptiveFrequency: config.adaptiveFrequency !== false, // Default: enabled
+      tacticalMinInterval: config.tacticalMinInterval || 10,
+      tacticalMaxInterval: config.tacticalMaxInterval || 30,
+      strategicEnabled: config.strategicEnabled || false,    // Default: disabled (opt-in)
+      strategicModel: config.strategicModel,
+      strategicInterval: config.strategicInterval || 300,
+      tacticalModel: config.tacticalModel
+    };
+
+    // NEW: Initialize strategic learning addon if enabled
+    if (this.config.strategicEnabled) {
+      this.strategic = new StrategicLearningAddon(this, this.config);
+      console.log('[LLMBoss] Strategic learning addon enabled');
+    } else {
+      this.strategic = null;
+    }
   }
 
   /**
@@ -44,6 +65,11 @@ export default class LLMBossController {
 
     // 1b. tick script runner (adds to queue)
     this.runner.tick(dt);
+
+    // 1c. NEW: Tick strategic learning addon if enabled
+    if (this.strategic) {
+      await this.strategic.tick(dt, players);
+    }
 
     // 2. Call LLM provider if cooldown elapsed and snapshot changed
     this.cooldown -= dt;
@@ -59,9 +85,27 @@ export default class LLMBossController {
       const newHash = hapi.h32(JSON.stringify(snap), HASH_SEED);
       if (newHash !== this.lastHash) {
         this.lastHash = newHash;
-        this.cooldown = PLAN_PERIOD;
+
+        // NEW: Use adaptive cooldown if enabled, otherwise use fixed period
+        if (this.config.adaptiveFrequency) {
+          this.cooldown = getAdaptiveCooldown(snap, this.config);
+        } else {
+          this.cooldown = PLAN_PERIOD;
+        }
         try {
-          if (!provider) provider = createProvider();
+          // NEW: Support tactical model override
+          if (!provider) {
+            if (this.config.tacticalModel) {
+              provider = createProvider({
+                backend: 'gemini',
+                model: this.config.tacticalModel,
+                temperature: 0.7,
+                maxTokens: 1024
+              });
+            } else {
+              provider = createProvider();
+            }
+          }
 
           this.pendingLLM = true;
           const span = tracer.startSpan('boss.plan');

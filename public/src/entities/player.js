@@ -5,11 +5,15 @@
 import { generateUUID } from '../utils/uuid.js';
 import { EntityAnimator } from './EntityAnimator.js';
 import { spriteManager } from '../assets/spriteManager.js';
-import { SCALE, TILE_SIZE } from '../constants/constants.js';
+import { SCALE, TILE_SIZE, TILE_PROPERTIES } from '../constants/constants.js';
 import { createLogger, LOG_LEVELS } from '../utils/logger.js';
 
 // Create a logger for this module
 const logger = createLogger('player');
+
+// CRITICAL DEBUG: This log proves player.js is being loaded
+console.log('====== player.js FILE LOADED! TIMESTAMP:', new Date().toISOString(), '======');
+console.log('[player.js] Module loaded, Player class will be exported');
 
 // ROTMG-like speed calculation constants
 const BASE_SPEED = 3; // Base speed stat (extremely slow)
@@ -204,15 +208,34 @@ export class Player {
           }
         }
         
-        // Apply movement
-        const distance = this.speed * deltaTime;
-        
+        // Apply movement with tile-based speed modifier
+        let distance = this.speed * deltaTime;
+
+        // Check tile at player position and apply movement cost (water slow, etc.)
+        if (window.gameState?.map) {
+          const tileX = Math.floor(this.x);
+          const tileY = Math.floor(this.y);
+          const tile = window.gameState.map.getTile(tileX, tileY);
+
+          if (tile && TILE_PROPERTIES[tile.type]) {
+            const movementCost = TILE_PROPERTIES[tile.type].movementCost || 1.0;
+            // Higher cost = slower movement (divide speed by cost)
+            distance = distance / movementCost;
+
+            // Log when moving through non-normal tiles
+            if (movementCost !== 1.0) {
+              logger.occasional(0.05, LOG_LEVELS.DEBUG,
+                `Moving through tile type ${tile.type} with cost ${movementCost.toFixed(1)}x (${movementCost === 2.0 ? 'WATER' : movementCost === 1.5 ? 'SAND' : 'OTHER'})`);
+            }
+          }
+        }
+
         // Debug log movement occasionally
-        logger.occasional(0.01, LOG_LEVELS.DEBUG, 
+        logger.occasional(0.01, LOG_LEVELS.DEBUG,
           `Speed: ${this.speed.toFixed(2)}, DeltaTime: ${deltaTime.toFixed(4)}, Distance this frame: ${distance.toFixed(4)}`);
-        logger.occasional(0.01, LOG_LEVELS.VERBOSE, 
+        logger.occasional(0.01, LOG_LEVELS.VERBOSE,
           `Actual move: dx=${dx.toFixed(2)}, dy=${dy.toFixed(2)}, resulting in +${(dx * distance).toFixed(4)}, +${(dy * distance).toFixed(4)}`);
-        
+
         this.x += dx * distance;
         this.y += dy * distance;
       }
@@ -332,6 +355,7 @@ export class Player {
      * @param {Object} cameraPosition - Camera position {x, y}
      */
     draw(ctx, cameraPosition) {
+      console.log('[DEBUG player.draw()] CALLED! ctx=', !!ctx, 'cameraPosition=', cameraPosition);
       if (!ctx) return;
       
       // Get sprite sheet
@@ -384,14 +408,77 @@ export class Player {
       
       // Get animation source rect
       const sourceRect = this.animator.getSourceRect();
-      
-      // Draw player sprite
+
+      // Check if player is on water for submersion effect
+      const tileX = Math.floor(this.x);
+      const tileY = Math.floor(this.y);
+      const tile = window.gameState?.map?.getTile(tileX, tileY) || window.gameState?.mapManager?.getTile(tileX, tileY);
+
+      // DEBUG: Log submersion check ALWAYS initially
+      if (!window._submersionLogged) {
+        window._submersionLogged = true;
+        console.log('[PLAYER SUBMERSION] INITIAL CHECK:', {
+          pos: `(${tileX}, ${tileY})`,
+          hasTile: !!tile,
+          spriteName: tile?.spriteName,
+          tileType: tile?.type,
+          hasMap: !!window.gameState?.map,
+          hasMapManager: !!window.gameState?.mapManager,
+          tile: tile
+        });
+      }
+
+      // Check if water tile by sprite name or type ID
+      let isOnWater = false;
+      if (tile && tile.spriteName) {
+        const spriteName = tile.spriteName.toLowerCase();
+        isOnWater = spriteName.includes('water') || spriteName.includes('deep') || spriteName.includes('lava');
+        if (isOnWater) {
+          console.log('[PLAYER SUBMERSION] ✓ Detected water/lava tile:', spriteName);
+        }
+      } else if (tile && (tile.type === 3 || tile.type === 6)) { // TILE_IDS.WATER or LAVA
+        isOnWater = true;
+        console.log('[PLAYER SUBMERSION] ✓ Detected water/lava by type:', tile.type);
+      }
+
+      // Log if we're applying submersion
+      if (isOnWater && !window._submersionDetected) {
+        window._submersionDetected = true;
+        console.log('[PLAYER SUBMERSION] 🌊 APPLYING SUBMERSION EFFECT!');
+      }
+
+      // Water submersion: Show only top 50% of sprite when on water
+      const submersionRatio = isOnWater ? 0.5 : 1.0;
+      const spriteSourceHeight = sourceRect.height * submersionRatio;
+      const renderHeight = height * submersionRatio;
+      const submersionYOffset = isOnWater ? (height * 0.25) : 0;
+
+      // Draw black outline for visibility (8-directional shadow)
+      const outlineSize = 1.5;
+      ctx.shadowColor = 'black';
+      ctx.shadowBlur = 0;
+      for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+        ctx.shadowOffsetX = Math.cos(angle) * outlineSize;
+        ctx.shadowOffsetY = Math.sin(angle) * outlineSize;
+        ctx.drawImage(
+          spriteSheet,
+          sourceRect.x, sourceRect.y,
+          sourceRect.width, spriteSourceHeight,
+          -width/2, -renderHeight/2 + submersionYOffset,
+          width, renderHeight
+        );
+      }
+
+      // Reset shadow and draw main sprite
+      ctx.shadowColor = 'transparent';
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
       ctx.drawImage(
         spriteSheet,
         sourceRect.x, sourceRect.y,
-        sourceRect.width, sourceRect.height,
-        -width/2, -height/2,
-        width, height
+        sourceRect.width, spriteSourceHeight,
+        -width/2, -renderHeight/2 + submersionYOffset,
+        width, renderHeight
       );
       
       // Draw player name

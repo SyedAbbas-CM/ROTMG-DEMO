@@ -549,6 +549,7 @@ export class DebugOverlay {
         // Get detailed position info
         const worldX = character.x;
         const worldY = character.y;
+        const worldZ = character.z || 0; // Height/jump coordinate
         const tileSize = map.tileSize || 12;
         
         // Calculate tile coordinates using different methods
@@ -589,8 +590,8 @@ export class DebugOverlay {
         }
         
         // Format coordinate and tile data
-        this.coordinatesSection.content.innerHTML = 
-            `World: (${worldX.toFixed(3)}, ${worldY.toFixed(3)})<br>` +
+        this.coordinatesSection.content.innerHTML =
+            `World: (${worldX.toFixed(3)}, ${worldY.toFixed(3)}, ${worldZ.toFixed(3)})<br>` +
             `Tile [floor]: (${floorTileX}, ${floorTileY})<br>` +
             `Tile [round]: (${roundTileX}, ${roundTileY})<br>` +
             `Tile Percent: ${(distToLeft / tileSize).toFixed(3)}x, ${(distToTop / tileSize).toFixed(3)}y<br>` +

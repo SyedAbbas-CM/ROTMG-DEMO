@@ -17,6 +17,16 @@ export class BinaryPacket {
     const view = new DataView(packet);
     const type = view.getUint8(0);
     const length = view.getUint32(1, true);
+
+    // Validate length to prevent huge allocations from corrupted data
+    const maxLength = packet.byteLength - 5;
+    if (length > maxLength || length < 0) {
+      console.error(`[Protocol] Invalid packet length: ${length}, max: ${maxLength}`);
+      console.error(`[Protocol] Packet size: ${packet.byteLength}, Type: ${type}`);
+      console.error(`[Protocol] First 20 bytes:`, new Uint8Array(packet.slice(0, Math.min(20, packet.byteLength))));
+      return { type, data: {} };
+    }
+
     const jsonBytes = new Uint8Array(packet, 5, length);
     const jsonStr = new TextDecoder().decode(jsonBytes);
     try {
@@ -82,7 +92,12 @@ export const MessageType = {
 
   // Chat / speech
   CHAT_MESSAGE: 90,
-  SPEECH: 91
+  SPEECH: 91,
+  PLAYER_TEXT: 92,
+
+  // Units
+  UNIT_COMMAND: 100,
+  UNIT_UPDATE: 101
 };
 
 

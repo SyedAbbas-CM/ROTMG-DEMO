@@ -1,5 +1,5 @@
 // tests/dsl-interpreter.spec.js
-import DslInterpreter from '../src/DslInterpreter.js';
+import DslInterpreter from '../src/boss/DslInterpreter.js';
 import { registry } from '../src/registry/index.js';
 
 describe('DslInterpreter smoke test', () => {

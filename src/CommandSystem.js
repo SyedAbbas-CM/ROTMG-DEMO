@@ -2,7 +2,7 @@
  * CommandSystem.js - In-game command system for unit management
  */
 
-import { BinaryPacket, MessageType } from './net/NetworkManager.js';
+import { BinaryPacket, MessageType } from '../common/protocol.js';
 
 export class CommandSystem {
     constructor(serverInstance) {
@@ -115,13 +115,17 @@ export class CommandSystem {
      */
     sendMessageToClient(clientId, message) {
         const client = this.server.clients?.get(clientId);
-        if (client && client.socket) {
-            const packet = BinaryPacket.encode(MessageType.CHAT_MESSAGE, {
-                sender: 'Server',
-                message: message,
-                color: '#FF6B6B'
-            });
-            client.socket.send(packet);
+        if (client && client.socket && client.socket.readyState === 1) { // 1 = OPEN
+            try {
+                const packet = BinaryPacket.encode(MessageType.CHAT_MESSAGE, {
+                    sender: 'Server',
+                    message: message,
+                    color: '#FF6B6B'
+                });
+                client.socket.send(packet);
+            } catch (err) {
+                console.error(`[CommandSystem] Failed to send message to client ${clientId}:`, err);
+            }
         }
     }
     
@@ -134,11 +138,15 @@ export class CommandSystem {
             message: message,
             color: '#FFFFFF'
         });
-        
+
         if (this.server.clients) {
             this.server.clients.forEach(client => {
                 if (client.socket && client.socket.readyState === 1) {
-                    client.socket.send(packet);
+                    try {
+                        client.socket.send(packet);
+                    } catch (err) {
+                        console.error('[CommandSystem] Failed to broadcast message:', err);
+                    }
                 }
             });
         }
@@ -380,12 +388,12 @@ export class CommandSystem {
             stats.byTeam[team] = (stats.byTeam[team] || 0) + 1;
         }
         
-        let statusMsg = `Unit Status - Total: ${stats.total}\\n`;
-        
+        let statusMsg = `Unit Status - Total: ${stats.total}\n`;
+
         if (Object.keys(stats.byType).length > 0) {
             statusMsg += 'By Type: ' + Object.entries(stats.byType)
                 .map(([type, count]) => `${type}: ${count}`)
-                .join(', ') + '\\n';
+                .join(', ') + '\n';
         }
         
         if (Object.keys(stats.byTeam).length > 0) {
@@ -400,9 +408,9 @@ export class CommandSystem {
     handleHelpCommand(clientId, args, playerData) {
         const commandList = Array.from(this.commands.entries())
             .map(([name, cmd]) => `/${name} - ${cmd.description}`)
-            .join('\\n');
-        
-        this.sendMessageToClient(clientId, 'Available Commands:\\n' + commandList);
+            .join('\n');
+
+        this.sendMessageToClient(clientId, 'Available Commands:\n' + commandList);
     }
     
     handleUnitsCommand(clientId, args, playerData) {
@@ -413,8 +421,8 @@ export class CommandSystem {
             '3: Heavy Cavalry - Heavily armored knights',
             '4: Archer - Skilled bowmen with long range',
             '5: Crossbowman - Elite marksmen with high accuracy'
-        ].join('\\n');
-        
-        this.sendMessageToClient(clientId, 'Available Unit Types:\\n' + unitInfo);
+        ].join('\n');
+
+        this.sendMessageToClient(clientId, 'Available Unit Types:\n' + unitInfo);
     }
 }

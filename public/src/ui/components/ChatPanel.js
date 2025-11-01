@@ -2,7 +2,7 @@
  * Chat panel component for displaying and sending messages
  */
 import { UIComponent } from '../UIManager.js';
-import { MessageType as MT } from '../../network/ClientNetworkManager.js';
+import { MessageType as MT } from '/common/protocol.js';
 
 export class ChatPanel extends UIComponent {
   /**

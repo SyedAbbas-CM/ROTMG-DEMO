@@ -1,0 +1,239 @@
+{
+  "comment": "Biome definitions for procedural map generation",
+  "biomes": {
+    "grassland": {
+      "name": "Grasslands",
+      "description": "Rolling green hills with occasional flowers",
+      "heightRange": [-0.1, 0.3],
+      "temperatureRange": [-0.2, 0.4],
+      "moistureRange": [0.0, 0.6],
+      "tiles": {
+        "primary_floor": ["grass", "dirt"],
+        "variant_floor": ["grass_flowers"],
+        "wall": ["rock_wall"],
+        "water": ["water_shallow"]
+      },
+      "tileWeights": {
+        "grass": 0.7,
+        "dirt": 0.2,
+        "grass_flowers": 0.1
+      },
+      "color": "#90EE90",
+      "enemies": ["slime", "snake"],
+      "dungeons": ["forest_maze"]
+    },
+    "desert": {
+      "name": "Desert",
+      "description": "Hot, dry wasteland with sand dunes",
+      "heightRange": [-0.1, 0.4],
+      "temperatureRange": [0.4, 1.0],
+      "moistureRange": [-1.0, -0.3],
+      "tiles": {
+        "primary_floor": ["sand", "sand_dark"],
+        "variant_floor": [],
+        "wall": ["rock_wall"],
+        "water": []
+      },
+      "tileWeights": {
+        "sand": 0.8,
+        "sand_dark": 0.2
+      },
+      "color": "#EDC9AF",
+      "enemies": ["scorpion", "mummy"],
+      "dungeons": ["pyramid", "oasis"]
+    },
+    "ocean": {
+      "name": "Ocean",
+      "description": "Deep waters",
+      "heightRange": [-1.0, -0.4],
+      "temperatureRange": [-1.0, 1.0],
+      "moistureRange": [-1.0, 1.0],
+      "tiles": {
+        "primary_floor": ["water_deep"],
+        "variant_floor": [],
+        "wall": [],
+        "water": ["water_deep", "water_shallow"]
+      },
+      "tileWeights": {
+        "water_deep": 0.9,
+        "water_shallow": 0.1
+      },
+      "color": "#000080",
+      "enemies": ["sea_serpent"],
+      "dungeons": ["shipwreck", "underwater_cave"]
+    },
+    "beach": {
+      "name": "Beach",
+      "description": "Sandy coastline",
+      "heightRange": [-0.4, -0.2],
+      "temperatureRange": [-0.2, 0.6],
+      "moistureRange": [-0.2, 0.4],
+      "tiles": {
+        "primary_floor": ["sand"],
+        "variant_floor": [],
+        "wall": [],
+        "water": ["water_shallow"]
+      },
+      "tileWeights": {
+        "sand": 1.0
+      },
+      "color": "#F4A460",
+      "enemies": ["crab"],
+      "dungeons": []
+    },
+    "mountain": {
+      "name": "Mountains",
+      "description": "Rocky peaks and cliffs",
+      "heightRange": [0.5, 1.0],
+      "temperatureRange": [-0.4, 0.2],
+      "moistureRange": [-0.2, 0.3],
+      "tiles": {
+        "primary_floor": ["stone_floor"],
+        "variant_floor": ["stone_cracked"],
+        "wall": ["rock_wall"],
+        "water": []
+      },
+      "tileWeights": {
+        "stone_floor": 0.7,
+        "stone_cracked": 0.2,
+        "rock_wall": 0.1
+      },
+      "color": "#808080",
+      "enemies": ["golem", "giant"],
+      "dungeons": ["mountain_cave", "dragon_lair"]
+    },
+    "tundra": {
+      "name": "Tundra",
+      "description": "Cold, barren landscape",
+      "heightRange": [-0.1, 0.3],
+      "temperatureRange": [-1.0, -0.4],
+      "moistureRange": [-0.3, 0.3],
+      "tiles": {
+        "primary_floor": ["snow"],
+        "variant_floor": [],
+        "wall": ["rock_wall"],
+        "water": []
+      },
+      "tileWeights": {
+        "snow": 1.0
+      },
+      "color": "#FFFAFA",
+      "enemies": ["frost_wolf", "yeti"],
+      "dungeons": ["ice_cave"]
+    },
+    "ice_plains": {
+      "name": "Ice Plains",
+      "description": "Frozen wasteland with slippery ice",
+      "heightRange": [-0.1, 0.2],
+      "temperatureRange": [-1.0, -0.5],
+      "moistureRange": [-1.0, -0.4],
+      "tiles": {
+        "primary_floor": ["ice", "snow"],
+        "variant_floor": [],
+        "wall": ["rock_wall"],
+        "water": []
+      },
+      "tileWeights": {
+        "ice": 0.7,
+        "snow": 0.3
+      },
+      "color": "#E0FFFF",
+      "enemies": ["ice_elemental"],
+      "dungeons": []
+    },
+    "swamp": {
+      "name": "Swamp",
+      "description": "Murky wetlands",
+      "heightRange": [-0.2, 0.1],
+      "temperatureRange": [0.0, 0.4],
+      "moistureRange": [0.6, 1.0],
+      "tiles": {
+        "primary_floor": ["dirt"],
+        "variant_floor": [],
+        "wall": [],
+        "water": ["swamp_water"]
+      },
+      "tileWeights": {
+        "dirt": 0.5,
+        "swamp_water": 0.5
+      },
+      "color": "#556B2F",
+      "enemies": ["swamp_thing", "leech"],
+      "dungeons": ["witch_hut"]
+    },
+    "jungle": {
+      "name": "Jungle",
+      "description": "Dense tropical forest",
+      "heightRange": [-0.1, 0.3],
+      "temperatureRange": [0.3, 1.0],
+      "moistureRange": [0.5, 1.0],
+      "tiles": {
+        "primary_floor": ["jungle_floor"],
+        "variant_floor": [],
+        "wall": [],
+        "water": ["water_shallow"]
+      },
+      "tileWeights": {
+        "jungle_floor": 1.0
+      },
+      "color": "#228B22",
+      "enemies": ["jaguar", "spider"],
+      "dungeons": ["temple_ruins"]
+    },
+    "dungeon_stone": {
+      "name": "Stone Dungeon",
+      "description": "Crafted stone corridors",
+      "heightRange": [0.0, 0.0],
+      "temperatureRange": [0.0, 0.0],
+      "moistureRange": [0.0, 0.0],
+      "tiles": {
+        "primary_floor": ["stone_floor"],
+        "variant_floor": ["stone_cracked"],
+        "wall": ["rock_wall"],
+        "water": []
+      },
+      "tileWeights": {
+        "stone_floor": 0.8,
+        "stone_cracked": 0.2
+      },
+      "color": "#404040",
+      "enemies": ["skeleton", "ghost"],
+      "dungeons": [],
+      "is_dungeon": true
+    },
+    "volcanic": {
+      "name": "Volcanic",
+      "description": "Molten landscape with lava flows",
+      "heightRange": [0.2, 0.6],
+      "temperatureRange": [0.7, 1.0],
+      "moistureRange": [-1.0, -0.5],
+      "tiles": {
+        "primary_floor": ["stone_floor"],
+        "variant_floor": ["stone_cracked"],
+        "wall": ["rock_wall"],
+        "water": ["lava"]
+      },
+      "tileWeights": {
+        "stone_floor": 0.6,
+        "stone_cracked": 0.3,
+        "lava": 0.1
+      },
+      "color": "#FF4500",
+      "enemies": ["fire_elemental", "demon"],
+      "dungeons": ["magma_chamber"],
+      "hazards": ["lava"]
+    }
+  },
+  "transition_rules": {
+    "comment": "Defines how biomes blend at boundaries",
+    "blend_distance": 2,
+    "blend_tiles": {
+      "grassland_to_desert": ["sand", "dirt", "grass"],
+      "grassland_to_beach": ["sand", "grass"],
+      "ocean_to_beach": ["water_shallow", "sand"],
+      "grassland_to_mountain": ["stone_floor", "dirt", "grass"],
+      "tundra_to_ice_plains": ["snow", "ice"],
+      "jungle_to_swamp": ["jungle_floor", "swamp_water"]
+    }
+  }
+}

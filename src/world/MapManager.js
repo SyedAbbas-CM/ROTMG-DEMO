@@ -5,6 +5,8 @@ import { tileDatabase } from '../assets/TileDatabase.js';
 import { PerlinNoise } from './PerlinNoise.js';
 import { Tile } from './tile.js';
 import { EnhancedPerlinNoise } from './AdvancedPerlinNoise.js';
+import { selectTileForGeneration, tileToLegacyId, tileRegistry } from '../assets/initTileSystem.js';
+import { LavaRiverGenerator } from './LavaRiverGenerator.js';
 /**
  * MapManager handles the game world, tiles, and chunks.
  * This is a unified implementation that consolidates functionality
@@ -22,6 +24,7 @@ export class MapManager {
     
     // For procedural generation
     this.perlin = new EnhancedPerlinNoise(options.seed || Math.random());
+    this.lavaRiverGen = new LavaRiverGenerator(options.seed || Math.random());
     this.proceduralEnabled = true;
     this.isFixedMap = false;
     
@@ -65,7 +68,8 @@ export class MapManager {
       procedural: this.proceduralEnabled,
       seed: this.perlin.seed,
       objects: [],
-      enemySpawns: []
+      enemySpawns: [],
+      overworldConfig: options.overworldConfig || null  // Store overworld config for region-aware generation
     };
     this.maps.set(mapId, meta);
 
@@ -104,10 +108,8 @@ export class MapManager {
     // If no map explicitly supplied, fall back to the currently active one
     if (!mapId) mapId = this.activeMapId;
 
-    // Detailed chunk-send logging is controlled by DEBUG.chunkRequests
-    if (globalThis.DEBUG?.chunkRequests) {
-      console.log('[SRV] send', mapId, chunkX, chunkY);
-    }
+    // Detailed chunk-send logging disabled to reduce spam
+    // Re-enable by uncommenting: if (globalThis.DEBUG?.chunkRequests) { console.log('[SRV] send', mapId, chunkX, chunkY); }
     
     const key = `${mapId || 'default'}_${chunkX},${chunkY}`;
     
@@ -158,7 +160,29 @@ export class MapManager {
    */
   generateChunkData(chunkRow, chunkCol) {
     const tiles = [];
-    
+
+    // ============================================================================
+    // REGION-AWARE GENERATION (OVERWORLD SYSTEM)
+    // ============================================================================
+    // Determine which region this chunk belongs to (4x4 region grid)
+    // Apply region-specific biome weights to influence tile/object generation
+    // ============================================================================
+    const meta = this.maps.get(this.activeMapId);
+    let regionConfig = null;
+    let biomeWeights = null;
+
+    if (meta && meta.overworldConfig) {
+      const { regionX, regionY } = meta.overworldConfig.chunkToRegion(chunkCol, chunkRow);
+      regionConfig = meta.overworldConfig.getRegion(regionX, regionY);
+      biomeWeights = meta.overworldConfig.getBiomeWeights(regionConfig.type);
+
+      // DEBUG: Log region info for first chunk in each region
+      const chunksPerRegion = meta.overworldConfig.regionSize / meta.overworldConfig.chunkSize; // 128/16 = 8
+      if (chunkCol % chunksPerRegion === 0 && chunkRow % chunksPerRegion === 0) {
+        console.log(`[REGION] Chunk (${chunkCol},${chunkRow}) → Region (${regionX},${regionY}) [${regionConfig.name}] type: ${regionConfig.type}`);
+      }
+    }
+
     // Tuned parameters for richer terrain
     const OCTAVES = 5;          // one extra octave for fine detail
     const PERSISTENCE = 0.55;   // slightly more high-frequency influence
@@ -205,23 +229,66 @@ export class MapManager {
         
         // Normalize to -1 to 1 range
         height /= maxValue;
-        
-        // Apply a curve to create more interesting terrain
-        // Emphasize extremes (more mountains and water, less flat land)
-        height = Math.pow(height, 3);
-        
+
+        // Apply a gentler curve to create more interesting terrain
+        // Use 1.5 power instead of 3 to allow more extreme values (better water/lava biome generation)
+        height = Math.pow(height, 1.5);
+
         // For coasts: add a high-frequency noise to create more jagged coastlines
         if (height > -0.4 && height < -0.2) {
           const coastDetail = this.perlin.get(globalX / 10, globalY / 10) * 0.1;
           height += coastDetail;
         }
-        
-        // Determine tile type based on height and position
-        const tileType = this.determineTileType(height, globalX, globalY);
 
-        // Attempt to fetch extended definition from TileDatabase (if loaded)
-        const def = tileDatabase?.getByNumeric(tileType) || {};
-        
+        // Generate temperature and moisture noise for biome selection
+        // Use MUCH larger scale for cohesive biome regions (100-200 tiles wide)
+        const BIOME_SCALE = 500;  // Large regions for biome clustering (increased from 300 for bigger biomes)
+        const DETAIL_SCALE = 60;   // Small-scale variation within biomes
+
+        // Layer 1: Biome-scale (creates large regions)
+        // Use 3.0 multiplier to ensure we reach extreme values needed for volcanic/ice biomes
+        const biomeTemp = this.perlin.get(globalX / BIOME_SCALE, globalY / BIOME_SCALE) * 3.0;
+        const biomeMoisture = this.perlin.get((globalX + 5000) / BIOME_SCALE, (globalY + 5000) / BIOME_SCALE) * 3.0;
+
+        // Layer 2: Detail noise (adds variation within biomes)
+        const detailTemp = this.perlin.get(globalX / DETAIL_SCALE, globalY / DETAIL_SCALE) * 0.3;
+        const detailMoisture = this.perlin.get((globalX + 5000) / DETAIL_SCALE, (globalY + 5000) / DETAIL_SCALE) * 0.3;
+
+        // Combine: 90% biome-scale, 10% detail for smooth transitions
+        const temperature = biomeTemp * 0.9 + detailTemp * 0.1;
+        const moisture = biomeMoisture * 0.9 + detailMoisture * 0.1;
+
+        // Use TileRegistry for biome-based tile selection
+        let tileSelection = selectTileForGeneration(height, temperature, moisture, globalX, globalY);
+        let tileType = tileToLegacyId(tileSelection.tile, tileSelection.type);
+
+        // Override with lava rivers in volcanic biomes
+        if (tileSelection.biome === 'volcanic' && this.lavaRiverGen.isLavaTile(globalX, globalY)) {
+          // Get lava tile from registry
+          const lavaTile = tileRegistry.getWeightedRandomTile({ 'lava_1': 50, 'lava_2': 50 });
+          if (lavaTile) {
+            tileSelection = {
+              tile: lavaTile,
+              type: 'floor',
+              biome: 'volcanic'
+            };
+            tileType = tileToLegacyId(lavaTile, 'floor');
+          }
+        }
+
+        // Store sprite metadata in tile definition for client rendering
+        const def = {
+          spriteName: tileSelection.tile.name,
+          atlas: tileSelection.tile.atlas,
+          spriteRow: tileSelection.tile.row,
+          spriteCol: tileSelection.tile.col,
+          spriteX: tileSelection.tile.spriteX,
+          spriteY: tileSelection.tile.spriteY,
+          biome: tileSelection.biome,
+          // Merge with TileDatabase if available
+          ...(tileDatabase?.getByNumeric(tileType) || {})
+        };
+
         row.push(new Tile(tileType, height, def));
       }
       tiles.push(row);
@@ -261,11 +328,197 @@ export class MapManager {
         }
       }
     }
-    
+
+    // ---------- PROCEDURAL ENVIRONMENTAL OBJECT GENERATION ----------
+    // Generate decorative objects (trees, rocks, flowers) based on biome
+    const objects = [];
+
+    for (let y = 0; y < CHUNK_SIZE; y++) {
+      for (let x = 0; x < CHUNK_SIZE; x++) {
+        const tile = tiles[y][x];
+        if (!tile) continue; // Skip null tiles (out of bounds)
+
+        const globalX = chunkCol * CHUNK_SIZE + x;
+        const globalY = chunkRow * CHUNK_SIZE + y;
+
+        // Skip water and wall tiles - no objects on these
+        if (tile.type === TILE_IDS.WATER || tile.type === TILE_IDS.WALL) {
+          continue;
+        }
+
+        // Use deterministic random based on position for consistent generation
+        const posHash = (globalX * 73856093) ^ (globalY * 19349663);
+        const pseudoRandom = Math.abs(Math.sin(posHash)) % 1;
+
+        // Get biome info from tile
+        const biome = tile.biome || 'grass';
+
+        // CRITICAL FIX: Skip object generation for incompatible biomes
+        // These biomes should NOT have trees or standard objects
+        const incompatibleBiomes = ['ocean', 'coast', 'beach', 'volcanic', 'mountain', 'mountain_peak', 'snow_mountain'];
+        if (incompatibleBiomes.includes(biome.toLowerCase())) {
+          continue; // No trees in water, lava, or mountains!
+        }
+
+        // ============================================================================
+        // OBJECT GENERATION SYSTEM
+        // ============================================================================
+        // NOTE: This system generates OBJECTS (billboards/sprites above ground)
+        // NOT tiles. Objects are entities that render on top of floor tiles.
+        //
+        // IMPORTANT: rocks_1, rocks_2, rocks_3 should be TILES (floor/obstacle),
+        // NOT objects. Use 'boulder' for object-based rocks.
+        //
+        // Object Types & Collision:
+        // - Trees (tree, tree_yellow, tree_2, tree_3, tree_4, tree_dead, tree_burnt)
+        //   → walkable: false (blocks movement)
+        // - Boulders (boulder)
+        //   → walkable: false (blocks movement)
+        // - Flowers (flowers_1, flowers_2)
+        //   → walkable: true (decorative only)
+        // ============================================================================
+
+        let objectSprite = null;
+        let objectWalkable = true; // Default: walkable (flowers, decor)
+
+        // ============================================================================
+        // REGION-AWARE OBJECT GENERATION
+        // ============================================================================
+        // Use region-specific biome weights if available, otherwise fall back to
+        // legacy biome-based generation
+        // ============================================================================
+
+        if (biomeWeights && biomeWeights.objectDensity) {
+          // USE REGION-SPECIFIC WEIGHTS from OverworldConfig
+          const densities = biomeWeights.objectDensity;
+
+          // Check each object type in order of probability
+          let cumulativeProbability = 0;
+
+          // Trees (most common in most biomes)
+          if (densities.tree > 0) {
+            cumulativeProbability += densities.tree;
+            if (pseudoRandom < cumulativeProbability) {
+              const treeVariants = ['tree', 'tree_yellow', 'tree_2', 'tree_3', 'tree_4'];
+              objectSprite = treeVariants[Math.floor(pseudoRandom * 20) % treeVariants.length];
+              objectWalkable = false;
+            }
+          }
+
+          // Boulders
+          if (!objectSprite && densities.boulder > 0) {
+            cumulativeProbability += densities.boulder;
+            if (pseudoRandom < cumulativeProbability) {
+              objectSprite = 'boulder';
+              objectWalkable = false;
+            }
+          }
+
+          // Flowers
+          if (!objectSprite && densities.flowers > 0) {
+            cumulativeProbability += densities.flowers;
+            if (pseudoRandom < cumulativeProbability) {
+              const flowerVariants = ['flowers_1', 'flowers_2'];
+              objectSprite = flowerVariants[Math.floor(pseudoRandom * 50) % flowerVariants.length];
+              objectWalkable = true;
+            }
+          }
+
+          // Dead trees (for desert regions)
+          if (!objectSprite && densities.tree_dead > 0) {
+            cumulativeProbability += densities.tree_dead;
+            if (pseudoRandom < cumulativeProbability) {
+              objectSprite = 'tree_dead';
+              objectWalkable = false;
+            }
+          }
+
+        } else {
+          // USE BIOME DEFINITIONS: Respect BiomeDefinitions.js rules
+          // Get biome config from TileRegistry to use proper obstacle/decor rules
+          const biomeConfig = tileRegistry.biomes.get(biome.toLowerCase());
+
+          if (biomeConfig) {
+            // Try to place obstacles first (trees, rocks, boulders)
+            if (biomeConfig.obstacleDensity > 0 && pseudoRandom < biomeConfig.obstacleDensity) {
+              // Use weighted random selection from biome's obstacle tiles
+              const obstacleTiles = biomeConfig.obstacleTiles || [];
+              const obstacleWeights = biomeConfig.obstacleWeights || {};
+
+              if (obstacleTiles.length > 0) {
+                // Calculate total weight
+                let totalWeight = 0;
+                for (const tileName of obstacleTiles) {
+                  totalWeight += obstacleWeights[tileName] || 1;
+                }
+
+                // Select weighted random obstacle
+                let roll = Math.random() * totalWeight;
+                for (const tileName of obstacleTiles) {
+                  const weight = obstacleWeights[tileName] || 1;
+                  roll -= weight;
+                  if (roll <= 0) {
+                    objectSprite = tileName;
+                    objectWalkable = false;
+                    break;
+                  }
+                }
+              }
+            }
+            // Try to place decorations (flowers, etc.) if no obstacle placed
+            else if (!objectSprite && biomeConfig.decorDensity > 0 && pseudoRandom < (biomeConfig.obstacleDensity + biomeConfig.decorDensity)) {
+              const decorTiles = biomeConfig.decorTiles || [];
+              const decorWeights = biomeConfig.decorWeights || {};
+
+              if (decorTiles.length > 0) {
+                // Calculate total weight
+                let totalWeight = 0;
+                for (const tileName of decorTiles) {
+                  totalWeight += decorWeights[tileName] || 1;
+                }
+
+                // Select weighted random decoration
+                let roll = Math.random() * totalWeight;
+                for (const tileName of decorTiles) {
+                  const weight = decorWeights[tileName] || 1;
+                  roll -= weight;
+                  if (roll <= 0) {
+                    objectSprite = tileName;
+                    objectWalkable = true; // Decorations are walkable
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Create object if one was selected
+        if (objectSprite) {
+          objects.push({
+            id: `obj_${globalX}_${globalY}_decor`,
+            type: 'decor',
+            sprite: objectSprite, // Using simple name, will be resolved by client
+            x: globalX,
+            y: globalY,
+            z: 1, // Layer 1 (above ground)
+            walkable: objectWalkable // Collision property
+          });
+        }
+      }
+    }
+
+
+    // DEBUG: Log when objects are generated
+    if (objects.length > 0) {
+      console.log(`[CHUNK] Generated chunk (${chunkCol},${chunkRow}) with ${objects.length} objects`);
+    }
+
     return {
       x: chunkCol,
       y: chunkRow,
-      tiles: tiles
+      tiles: tiles,
+      objects: objects // Include generated objects
     };
   }
   
@@ -352,6 +605,15 @@ export class MapManager {
     
     // Mountains (high elevation)
     if (heightValue < 0.7) {
+      // ============================================================================
+      // VOLCANIC/LAVA REGIONS
+      // ============================================================================
+      // High elevation + high temperature = volcanic activity/lava
+      if (temperatureNoise > 0.6 && heightValue > 0.5) {
+        // Lava regions (hot, high elevation)
+        return TILE_IDS.LAVA;
+      }
+
       // Very dense obstacles in mountains
       if (Math.random() < 0.3) {
         return TILE_IDS.OBSTACLE;
@@ -362,9 +624,15 @@ export class MapManager {
       }
       return TILE_IDS.MOUNTAIN;
     }
-    
+
     // Peaks (highest elevation)
     // Almost impassable
+    // Check for volcanic peaks
+    if (temperatureNoise > 0.7) {
+      // Volcanic mountain peaks with lava
+      return TILE_IDS.LAVA;
+    }
+
     if (Math.random() < 0.7) {
       return TILE_IDS.WALL;
     }
@@ -415,20 +683,47 @@ export class MapManager {
     // Do NOT divide by tileSize or we will create mismatches between server and client.
     const tileX = Math.floor(x);
     const tileY = Math.floor(y);
-    
+
     // Debug coordinate conversion occasionally
     if (global.DEBUG?.wallChecks) {
         console.log(`[SERVER] Wall check: World (${x.toFixed(2)}, ${y.toFixed(2)}) -> Tile (${tileX}, ${tileY}) [tileSize=${this.tileSize}]`);
     }
-    
-    // Check if out of bounds
+
+    // CRITICAL FIX: Add tolerance for bullet sub-stepping near boundaries
+    // Bullets can go slightly negative (e.g., -0.1) during interpolation.
+    // Allow a 0.5-tile buffer before treating as truly out of bounds.
+    const BOUNDARY_TOLERANCE = 0.5;
+    if (x < -BOUNDARY_TOLERANCE || y < -BOUNDARY_TOLERANCE ||
+        x >= this.width + BOUNDARY_TOLERANCE || y >= this.height + BOUNDARY_TOLERANCE) {
+      return true; // Truly out of bounds
+    }
+
+    // If within tolerance but outside map (e.g., x=-0.1), treat as passable (not a wall)
+    // This prevents false collisions at map edges
     if (tileX < 0 || tileY < 0 || tileX >= this.width || tileY >= this.height) {
-      return true;
+      return false; // Within tolerance buffer - let it pass
     }
     
-    // Prefer property-based walkability if available
+    // Get tile and its type
     const tile = this.getTile(tileX, tileY);
+    const tileType = tile ? tile.type : this.getTileType(tileX, tileY);
 
+    // PRIORITY 1: Check tile type first (most reliable)
+    // Water (type 3) is now walkable (slower movement via movementCost)
+    // Only WALL, OBSTACLE, MOUNTAIN, and LAVA block movement
+    const isBlockedByType = tileType === TILE_IDS.WALL ||
+                           tileType === TILE_IDS.OBSTACLE ||
+                           tileType === TILE_IDS.MOUNTAIN ||
+                           tileType === TILE_IDS.LAVA;
+
+    // PRIORITY 2: If type says it's walkable (not blocked), trust that over properties
+    // This fixes water tiles that have walkable:false in properties but type:3 (WATER)
+    if (!isBlockedByType) {
+      // Type says it's walkable, so it's walkable regardless of properties
+      return false;
+    }
+
+    // PRIORITY 3: Type says it's blocked, double-check with properties if available
     if (tile) {
       if (typeof tile.isWalkable === 'function') {
         const blocked = !tile.isWalkable();
@@ -442,18 +737,11 @@ export class MapManager {
       }
     }
 
-    // Fallback to basic numeric type check
-    const tileType = tile ? tile.type : this.getTileType(tileX, tileY);
-
-    const isBlocked = tileType === TILE_IDS.WALL || 
-                     tileType === TILE_IDS.OBSTACLE ||
-                     tileType === TILE_IDS.MOUNTAIN || 
-                     tileType === TILE_IDS.WATER;
-
-    if (isBlocked && Math.random() < 0.0001) {
+    // Fallback: trust the type-based check
+    if (isBlockedByType && Math.random() < 0.0001) {
       console.log(`[SERVER] Collision at tile (${tileX}, ${tileY}), type: ${tileType}`);
     }
-    return isBlocked;
+    return isBlockedByType;
   }
   
   /**
@@ -1144,7 +1432,26 @@ export class MapManager {
   }
   
   getObjects(mapId){
-    const meta=this.getMapMetadata(mapId); return meta&&Array.isArray(meta.objects)?meta.objects:[];
+    const meta = this.getMapMetadata(mapId);
+    const fixedObjects = (meta && Array.isArray(meta.objects)) ? meta.objects : [];
+
+    // If this is a procedural map, also include objects from loaded chunks
+    if (meta && meta.procedural) {
+      const chunkObjects = [];
+      const prefix = `${mapId}_`;
+
+      // Iterate through all cached chunks for this map
+      for (const [key, chunk] of this.chunks.entries()) {
+        if (key.startsWith(prefix) && chunk.objects && Array.isArray(chunk.objects)) {
+          chunkObjects.push(...chunk.objects);
+        }
+      }
+
+      // Combine fixed objects (from map metadata) with procedurally generated chunk objects
+      return [...fixedObjects, ...chunkObjects];
+    }
+
+    return fixedObjects;
   }
   getEnemySpawns(mapId){
     const meta=this.getMapMetadata(mapId); return meta&&Array.isArray(meta.enemySpawns)?meta.enemySpawns:[];

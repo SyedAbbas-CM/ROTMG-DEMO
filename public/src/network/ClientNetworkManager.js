@@ -645,10 +645,50 @@ export class ClientNetworkManager {
         this.handlers[MessageType.WORLD_UPDATE] = (data) => {
             // Only log occasionally to reduce spam
             throttledLog('world-update', `World update received`, null, 3000);
-            
-            // Expose latest world objects globally for renderers (e.g. portals)
+
+            // ============================================================================
+            // MERGE WORLD OBJECTS WITH CHUNK OBJECTS
+            // ============================================================================
+            // CRITICAL FIX: Don't overwrite window.currentObjects!
+            // - ClientMapManager.setChunkData() adds chunk objects (trees, boulders, flowers)
+            // - WORLD_UPDATE contains map-level objects (portals, NPCs)
+            // - We need to MERGE both arrays, not replace
+            // ============================================================================
             if (typeof window !== 'undefined') {
-              window.currentObjects = Array.isArray(data.objects) ? data.objects : [];
+              // Get existing objects (from chunks and previous updates)
+              const existingObjects = window.currentObjects || [];
+              const worldObjects = Array.isArray(data.objects) ? data.objects : [];
+
+              // Separate chunk objects from map objects
+              // Chunk objects have IDs like "obj_X_Y_decor"
+              // Map objects have IDs like "portal_to_map_2"
+              const chunkObjects = existingObjects.filter(obj => obj.id && obj.id.startsWith('obj_'));
+
+              // CRITICAL FIX: Deduplicate chunk objects by ID to prevent accumulation
+              const uniqueChunkObjects = new Map();
+              chunkObjects.forEach(obj => {
+                if (obj.id) {
+                  uniqueChunkObjects.set(obj.id, obj);
+                }
+              });
+
+              // Convert back to array
+              const deduplicatedChunkObjects = Array.from(uniqueChunkObjects.values());
+
+              // Combine: deduplicated chunk objects (from MapManager) + world objects (from server)
+              window.currentObjects = [...deduplicatedChunkObjects, ...worldObjects];
+
+              // DEBUG: Log object counts and warn if duplication was found
+              // COMMENTED OUT: Lag issues have been fixed, no need for performance logs
+              // if (chunkObjects.length !== deduplicatedChunkObjects.length) {
+              //   console.warn(`[PERF] Deduplicated ${chunkObjects.length - deduplicatedChunkObjects.length} duplicate chunk objects!`);
+              // }
+
+              // if (window.currentObjects.length > 0) {
+              //   throttledLog('objects-merged',
+              //     `[CLIENT] Merged objects: ${deduplicatedChunkObjects.length} chunk + ${worldObjects.length} world = ${window.currentObjects.length} total`,
+              //     null, 5000);
+              // }
             }
 
             if (this.game.updateWorld) {
@@ -669,9 +709,11 @@ export class ClientNetworkManager {
         };
         
         this.handlers[MessageType.PLAYER_LEAVE] = (data) => {
-            console.log(`Player left: ${data.clientId}`);
+            // FIX: Server sends 'playerId', not 'clientId'
+            const playerId = data.playerId || data.clientId;
+            console.log(`Player left: ${playerId}`);
             if (this.game.removePlayer) {
-                this.game.removePlayer(data.clientId);
+                this.game.removePlayer(playerId);
             }
         };
         
@@ -706,21 +748,6 @@ export class ClientNetworkManager {
         };
         
         this.handlers[MessageType.CHUNK_DATA] = (data) => {
-            console.log(`Received chunk data for (${data.x}, ${data.y})`);
-            
-            // Create a simple global object to store map data for debugging
-            if (!window.mapDebug) {
-                window.mapDebug = {
-                    mapId: localStorage.getItem('currentMapId') || 'unknown',
-                    chunks: {}
-                };
-                console.log("Map debug object created. Access it via window.mapDebug in the console");
-            }
-            
-            // Store chunk data in the global object
-            const chunkKey = `${data.x},${data.y}`;
-            window.mapDebug.chunks[chunkKey] = data.data;
-            
             if (this.game.setChunkData) {
                 this.game.setChunkData(data.x, data.y, data.data);
             }
@@ -1008,11 +1035,13 @@ export class ClientNetworkManager {
      * Send queued messages after connection is established
      */
     drainMessageQueue() {
+        console.log(`[NetworkManager] Draining message queue, ${this.messageQueue.length} messages queued`);
         while (this.messageQueue.length > 0) {
             const message = this.messageQueue.shift();
             if (message.resolve) {
                 message.resolve();
             } else {
+                console.log(`[NetworkManager] Sending queued message type ${message.type}`);
                 this.send(message.type, message.data);
             }
         }

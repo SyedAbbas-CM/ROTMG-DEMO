@@ -20,15 +20,17 @@ export class ClientMapManager {
         this.activeMapId = null;
         this.mapMetadata = null;
         this.chunks = new Map(); // Chunk cache: "x,y" -> chunk data
+        this.chunkObjects = new Map(); // Chunk objects cache: "x,y" -> objects array
+        this.objectSpatialHash = new Map(); // Spatial hash: "tileX,tileY" -> [objects] for O(1) collision
         this.tileSize = 12; // Default tile size
         this.chunkSize = 16; // Default chunk size
         this.width = 0;
         this.height = 0;
         this.visibleChunks = []; // Currently visible chunks
         this.pendingChunks = new Set(); // Chunks we're currently requesting
-        this.maxCachedChunks = 512; // FIXED: Increased from 100 to handle larger maps (64x64 needs 256 chunks)
+        this.maxCachedChunks = 400; // Moderate cache size for performance (reduced from 1024)
         this.chunkLoadDistance = 4; // Load farther ahead so movement never outruns chunks
-        
+
         /**
          * Throttle duplicate chunk requests so the client won't hammer the
          * server while waiting for the same chunk to arrive (or be parsed).
@@ -38,6 +40,11 @@ export class ClientMapManager {
          */
         this.requestThrottleMs = 1500; // 1.5 s between identical requests
         this.lastChunkRequestTime = new Map(); // key -> timestamp
+
+        // Periodic cleanup timer for strategic view performance
+        this.cleanupIntervalMs = 15000; // 15 seconds
+        this.lastCleanupTime = Date.now();
+        this.setupPeriodicCleanup();
         
         // CRITICAL: Default to false to use server's map data
         this.proceduralEnabled = false;
@@ -55,10 +62,40 @@ export class ClientMapManager {
         
         // Event listeners
         this.eventListeners = {};
-        
-        console.log("ClientMapManager initialized, procedural generation disabled");
     }
-    
+
+    /**
+     * Setup periodic cleanup for strategic view performance
+     * Runs cleanup every 15 seconds to prevent object accumulation
+     */
+    setupPeriodicCleanup() {
+        // Check periodically if cleanup is needed
+        const cleanupCheck = () => {
+            const now = Date.now();
+            if (now - this.lastCleanupTime >= this.cleanupIntervalMs) {
+                this.lastCleanupTime = now;
+                const chunksBeforeCleanup = this.chunks.size;
+                this.trimChunkCache(true); // Force cleanup
+                if (chunksBeforeCleanup > this.chunks.size) {
+                    console.log(`[ClientMapManager] Periodic cleanup: removed ${chunksBeforeCleanup - this.chunks.size} chunks`);
+                }
+            }
+        };
+
+        // Run cleanup check periodically (more frequent checks, but actual cleanup every 15s)
+        this.cleanupIntervalId = setInterval(cleanupCheck, 5000); // Check every 5s
+    }
+
+    /**
+     * Cleanup timers when destroying the map manager
+     */
+    destroy() {
+        if (this.cleanupIntervalId) {
+            clearInterval(this.cleanupIntervalId);
+            this.cleanupIntervalId = null;
+        }
+    }
+
     /**
      * Initialize the map with metadata from server
      * @param {Object} data - Map metadata
@@ -70,18 +107,15 @@ export class ClientMapManager {
         this.chunkSize = data.chunkSize || this.chunkSize;
         this.width = data.width || 0;
         this.height = data.height || 0;
-        
-        console.log(`Map initialized: ${this.activeMapId} (${this.width}x${this.height})`);
-        console.log(`Map properties: tileSize=${this.tileSize}, chunkSize=${this.chunkSize}`);
-        
+
         // Clear existing chunks
         this.chunks.clear();
         this.chunkLastAccessed.clear();
         this.pendingChunks.clear();
-        
+
         // CRITICAL: Always disable procedural generation
         this.proceduralEnabled = false;
-        
+
         // Immediately request chunks around player position
         if (gameState && gameState.character) {
             this.updateVisibleChunks(gameState.character.x, gameState.character.y);
@@ -99,29 +133,88 @@ export class ClientMapManager {
      */
     setChunkData(chunkX, chunkY, chunkData) {
         console.log('[CLI] store', chunkX, chunkY); // PROBE: Track client chunk receives
-        
+
         const key = `${chunkX},${chunkY}`;
-        
+
         // Track time for performance measurement
         const startTime = performance.now();
-        
+
+        // ============================================================================
+        // EXTRACT AND STORE CHUNK OBJECTS FOR COLLISION DETECTION
+        // ============================================================================
+        // The server sends objects array in chunk data (trees, boulders, flowers, etc.)
+        // We need to extract and store these objects so collision detection can work
+        // ============================================================================
+        if (chunkData && Array.isArray(chunkData.objects)) {
+            this.chunkObjects.set(key, chunkData.objects);
+
+            // Merge chunk objects into global window.currentObjects for collision detection
+            // This is used by isWall() function to check object collision
+            if (typeof window !== 'undefined') {
+                // Get existing objects from other chunks and WORLD_UPDATE messages
+                const existingObjects = window.currentObjects || [];
+
+                // Remove old objects from this chunk (in case of re-generation)
+                const otherChunkObjects = existingObjects.filter(obj => {
+                    const objChunkX = Math.floor(obj.x / this.chunkSize);
+                    const objChunkY = Math.floor(obj.y / this.chunkSize);
+                    return objChunkX !== chunkX || objChunkY !== chunkY;
+                });
+
+                // Add new objects from this chunk
+                window.currentObjects = [...otherChunkObjects, ...chunkData.objects];
+
+                // ============================================================================
+                // POPULATE SPATIAL HASH FOR FAST COLLISION LOOKUPS
+                // ============================================================================
+                // Remove old hash entries for this chunk's tiles
+                const minTileX = chunkX * this.chunkSize;
+                const minTileY = chunkY * this.chunkSize;
+                const maxTileX = minTileX + this.chunkSize;
+                const maxTileY = minTileY + this.chunkSize;
+
+                for (let tx = minTileX; tx < maxTileX; tx++) {
+                    for (let ty = minTileY; ty < maxTileY; ty++) {
+                        const hashKey = `${tx},${ty}`;
+                        this.objectSpatialHash.delete(hashKey);
+                    }
+                }
+
+                // Add new hash entries for new objects
+                chunkData.objects.forEach(obj => {
+                    const tileX = Math.floor(obj.x);
+                    const tileY = Math.floor(obj.y);
+                    const hashKey = `${tileX},${tileY}`;
+
+                    if (!this.objectSpatialHash.has(hashKey)) {
+                        this.objectSpatialHash.set(hashKey, []);
+                    }
+                    this.objectSpatialHash.get(hashKey).push(obj);
+                });
+
+                if (chunkData.objects.length > 0) {
+                    console.log(`[MapManager] Chunk (${chunkX},${chunkY}) added ${chunkData.objects.length} objects to collision system + spatial hash`);
+                }
+            }
+        }
+
         // Process chunk data to match our format
         const processedChunk = this.processChunkData(chunkData);
-        
+
         // Store chunk
         this.chunks.set(key, processedChunk);
         this.chunkLastAccessed.set(key, Date.now());
-        
+
         // Remove from pending
         this.pendingChunks.delete(key);
-        
+
         // Calculate processing time
         const processingTime = (performance.now() - startTime).toFixed(2);
-        
+
         // Log more detailed chunk info but keep it infrequent to avoid spam
         if (Math.random() < 0.2) { // Only log 20% of chunks
             console.log(`[MapManager] Received chunk at (${chunkX}, ${chunkY}): ${processedChunk.length} rows x ${processedChunk[0]?.length || 0} cols (processed in ${processingTime}ms)`);
-            
+
             // Count tile types for debugging
             const tileCounts = {};
             if (processedChunk && Array.isArray(processedChunk)) {
@@ -135,10 +228,10 @@ export class ClientMapManager {
                 console.log(`[MapManager] Chunk ${key} tile distribution:`, tileCounts);
             }
         }
-        
+
         // Trim cache if needed
         this.trimChunkCache();
-        
+
         // Dispatch event
         this.dispatchEvent('chunkloaded', { chunkX, chunkY });
     }
@@ -216,6 +309,13 @@ export class ClientMapManager {
         
         // Process tiles array if it exists
         if (tilesArray && Array.isArray(tilesArray)) {
+            // DEBUG: Log sample tile data received from server
+            if (chunkData.x === 0 && chunkData.y === 0 && tilesArray[0] && tilesArray[0][0]) {
+                console.log('[CLIENT] Raw tile data received:', tilesArray[0][0]);
+                console.log('[CLIENT] Has spriteX?', 'spriteX' in tilesArray[0][0], tilesArray[0][0].spriteX);
+                console.log('[CLIENT] Has spriteY?', 'spriteY' in tilesArray[0][0], tilesArray[0][0].spriteY);
+            }
+
             for (let y = 0; y < tilesArray.length; y++) {
                 const row = [];
                 for (let x = 0; x < tilesArray[y].length; x++) {
@@ -244,40 +344,42 @@ export class ClientMapManager {
                         tileHeight = 0;
                     }
                     
-                    // Create tile instance WITH spriteName for renderer
-                    const t = new Tile(tileType, tileHeight);
+                    // Create tile instance passing tileData as properties for biome metadata
+                    const t = new Tile(tileType, tileHeight, tileData && typeof tileData === 'object' ? tileData : {});
 
-                    // ----------------------------------------------------------------
-                    // NEW: If the original tileData was a plain string alias, assign it
-                    // now so renderers (and the alias-registration block below) can use
-                    // it.  We defer the assignment until after the Tile object exists
-                    // so we don't need to duplicate alias-parsing logic above.
-                    // ----------------------------------------------------------------
-                    if (typeof tileData === 'string') {
+                    // Backup: Also set properties manually in case constructor didn't handle them
+                    if (tileData && typeof tileData === 'object') {
+                        // Copy biome system properties directly to tile
+                        if (tileData.spriteName && !t.spriteName) t.spriteName = tileData.spriteName;
+                        if ((tileData.spriteX !== undefined && tileData.spriteX !== null) && !t.spriteX) t.spriteX = tileData.spriteX;
+                        if ((tileData.spriteY !== undefined && tileData.spriteY !== null) && !t.spriteY) t.spriteY = tileData.spriteY;
+                        if (tileData.spriteRow !== undefined && !t.spriteRow) t.spriteRow = tileData.spriteRow;
+                        if (tileData.spriteCol !== undefined && !t.spriteCol) t.spriteCol = tileData.spriteCol;
+                        if (tileData.atlas && !t.atlas) t.atlas = tileData.atlas;
+                        if (tileData.biome && !t.biome) t.biome = tileData.biome;
+
+                        // Fallback sprite name checks (for non-biome tiles)
+                        if (!t.spriteName) {
+                            if (tileData.sprite) {
+                                t.spriteName = (tileData.sprite + '').trim();
+                            } else if (tileData.properties && tileData.properties.sprite) {
+                                t.spriteName = (tileData.properties.sprite + '').trim();
+                            } else if ('s' in tileData) {
+                                t.spriteName = (tileData.s + '').trim();
+                            }
+                        }
+                    } else if (typeof tileData === 'string') {
                         t.spriteName = tileData.trim();
                     }
 
-                    // Server-supplied sprite name (preferred)
-                    if (tileData && typeof tileData === 'object') {
-                        if (tileData.sprite) {
-                            t.spriteName = (tileData.sprite + '').trim();
-                        } else if (tileData.properties && tileData.properties.sprite) {
-                            t.spriteName = (tileData.properties.sprite + '').trim();
-                        } else if ('s' in tileData) {
-                            t.spriteName = (tileData.s + '').trim();
-                        }
-                    } else {
-                        // Local fallback mapping by tile type.  Only apply if
-                        // spriteName has not already been set (e.g. by the
-                        // plain-string path handled above).
-                        if (!t.spriteName) {
-                            switch (tileType) {
-                                case TILE_IDS.WALL:      t.spriteName = 'wall';      break;
-                                case TILE_IDS.OBSTACLE:  t.spriteName = 'obstacle';  break;
-                                case TILE_IDS.WATER:     t.spriteName = 'water';     break;
-                                case TILE_IDS.MOUNTAIN:  t.spriteName = 'mountain';  break;
-                                default:                 t.spriteName = 'floor';     break;
-                            }
+                    // Fallback sprite name if still not set
+                    if (!t.spriteName) {
+                        switch (tileType) {
+                            case TILE_IDS.WALL:      t.spriteName = 'wall';      break;
+                            case TILE_IDS.OBSTACLE:  t.spriteName = 'obstacle';  break;
+                            case TILE_IDS.WATER:     t.spriteName = 'water';     break;
+                            case TILE_IDS.MOUNTAIN:  t.spriteName = 'mountain';  break;
+                            default:                 t.spriteName = 'floor';     break;
                         }
                     }
 
@@ -596,27 +698,71 @@ export class ClientMapManager {
     
     /**
      * Trim the chunk cache to stay under the maximum limit
+     * @param {boolean} forceCleanup - If true, remove chunks even if under limit (for periodic cleanup)
      */
-    trimChunkCache() {
-        if (this.chunks.size <= this.maxCachedChunks) {
+    trimChunkCache(forceCleanup = false) {
+        // Normal cleanup: only remove if over limit
+        if (!forceCleanup && this.chunks.size <= this.maxCachedChunks) {
             return;
         }
-        
+
         // Get chunks sorted by last accessed time (oldest first)
         const sortedChunks = Array.from(this.chunkLastAccessed.entries())
             .sort((a, b) => a[1] - b[1]);
-        
+
         // Calculate how many to remove
-        const removeCount = this.chunks.size - this.maxCachedChunks;
-        
+        let removeCount;
+        if (forceCleanup) {
+            // Force cleanup: remove 10% of oldest chunks or get to 80% of max, whichever is less aggressive
+            const targetSize = Math.floor(this.maxCachedChunks * 0.8);
+            removeCount = Math.max(0, this.chunks.size - targetSize);
+        } else {
+            // Normal cleanup: just remove excess over limit
+            removeCount = this.chunks.size - this.maxCachedChunks;
+        }
+
         // Remove oldest chunks
+        const removedChunkKeys = [];
         for (let i = 0; i < removeCount; i++) {
             const [key] = sortedChunks[i];
             this.chunks.delete(key);
             this.chunkLastAccessed.delete(key);
+            this.chunkObjects.delete(key); // Also remove from chunk objects map
+            removedChunkKeys.push(key);
         }
-        
+
+        // MEMORY LEAK FIX: Remove objects from unloaded chunks
+        if (typeof window !== 'undefined' && window.currentObjects) {
+            const chunksToKeep = new Set(this.chunks.keys());
+
+            window.currentObjects = window.currentObjects.filter(obj => {
+                const objChunkX = Math.floor(obj.x / this.chunkSize);
+                const objChunkY = Math.floor(obj.y / this.chunkSize);
+                const objChunkKey = `${objChunkX},${objChunkY}`;
+                return chunksToKeep.has(objChunkKey);
+            });
+
+            // Also cleanup spatial hash for removed chunks
+            removedChunkKeys.forEach(key => {
+                const [chunkXStr, chunkYStr] = key.split(',');
+                const chunkX = parseInt(chunkXStr);
+                const chunkY = parseInt(chunkYStr);
+                const minTileX = chunkX * this.chunkSize;
+                const minTileY = chunkY * this.chunkSize;
+                const maxTileX = minTileX + this.chunkSize;
+                const maxTileY = minTileY + this.chunkSize;
+
+                for (let tx = minTileX; tx < maxTileX; tx++) {
+                    for (let ty = minTileY; ty < maxTileY; ty++) {
+                        this.objectSpatialHash.delete(`${tx},${ty}`);
+                    }
+                }
+            });
+
+            console.log(`[PERF] Trimmed ${removeCount} chunks from cache and cleaned up ${removedChunkKeys.length} chunk objects`);
+        } else {
             console.log(`Trimmed ${removeCount} chunks from cache`);
+        }
     }
     
     /**
@@ -828,17 +974,50 @@ export class ClientMapManager {
             return result;
         }
         
-        // Fallback: Check tile type as before for backward compatibility
-        const result = tile.type === TILE_IDS.WALL || 
-               tile.type === TILE_IDS.OBSTACLE || 
-               tile.type === TILE_IDS.MOUNTAIN ||
-               tile.type === TILE_IDS.WATER || 
-               (tile.type === TILE_IDS.LAVA && TILE_IDS.LAVA !== undefined);
-               
+        // ============================================================================
+        // OBJECT COLLISION CHECK - USING SPATIAL HASH FOR O(1) LOOKUP
+        // ============================================================================
+        // Check if there's a non-walkable object at this tile position
+        // Use spatial hash for fast lookup instead of linear search
+        const hashKey = `${tileX},${tileY}`;
+        const objectsAtTile = this.objectSpatialHash.get(hashKey);
+
+        if (objectsAtTile && objectsAtTile.length > 0) {
+            // Check if any object at this tile is non-walkable
+            const blockingObject = objectsAtTile.find(obj => obj.walkable === false);
+
+            if (blockingObject) {
+                if (isProblematicCoord) {
+                    console.log(`WALL CHECK RESULT: TRUE (blocked by object "${blockingObject.sprite}") - tile (${tileX}, ${tileY})`);
+                }
+
+                // Track object collision
+                if (window.COLLISION_STATS) {
+                    window.COLLISION_STATS.wallCollisions++;
+                    window.COLLISION_STATS.lastWallCollision = Date.now();
+                }
+
+                return true; // Object blocks movement
+            }
+        }
+
+        // ============================================================================
+        // TILE WALKABILITY CHECK
+        // ============================================================================
+        // Only check for solid blocking tiles (walls, obstacles, mountains)
+        // Water/deep_water/lava are PASSABLE but have special mechanics:
+        // - water_1, water_2: Slow movement speed
+        // - deep_water, deep_water_2: Slow movement + damage over time
+        // - lava_1, lava_2: Instant damage
+        // ============================================================================
+        const result = tile.type === TILE_IDS.WALL ||
+               tile.type === TILE_IDS.OBSTACLE ||
+               tile.type === TILE_IDS.MOUNTAIN;
+
         if (isProblematicCoord) {
             console.log(`WALL CHECK RESULT: ${result} (using tile type check) - tile (${tileX}, ${tileY}) type ${tile.type}`);
         }
-        
+
         // Track wall collision in global stats if collision detected
         if (result && window.COLLISION_STATS) {
             window.COLLISION_STATS.wallCollisions++;

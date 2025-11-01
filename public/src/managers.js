@@ -6,7 +6,8 @@
 // Re-export all managers with consistent naming
 export { ClientMapManager } from './map/ClientMapManager.js';
 export { ClientNetworkManager } from './network/ClientNetworkManager.js';
-export { MessageType } from './shared/messages.js';
+// MessageType should be imported from /common/protocol.js directly, not from here
+// export { MessageType } from './shared/messages.js'; // REMOVED - use /common/protocol.js instead
 export { ClientBulletManager } from './game/ClientBulletManager.js';
 export { ClientEnemyManager } from './game/ClientEnemyManager.js';
 export { ClientCollisionManager } from './collision/ClientCollisionManager.js';

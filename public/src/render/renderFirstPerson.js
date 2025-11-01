@@ -101,7 +101,7 @@ const enemySpriteMap = new Map(); // enemyId -> sprite
 const bulletSpritePool = []; // reusable pool
 let bulletPoolIndex = 0;
 
-const VIEW_RADIUS = 16; // Reduced radius for performance - how many tiles to render around player
+const VIEW_RADIUS = 64; // How many tiles to render around player in first-person view
 const SCALING_3D = 12.8; // Scale factor for 3D objects
 const MAX_INSTANCES = 4096; // Maximum number of instances for instanced meshes
 const CAMERA_HEIGHT = 1.5; // Default eye height in 3D world
@@ -196,18 +196,120 @@ function getInstancedMesh(tileType, spriteKey) {
   return mesh;
 }
 
+/**
+ * Gets or creates an InstancedMesh for biome tiles (using spriteX/spriteY coordinates).
+ * Similar to getInstancedMesh but uses createBiomeTileMaterial instead of createTileMaterial.
+ *
+ * @param {number} tileType - The tile type ID
+ * @param {number} spriteX - Pixel X coordinate in lofi_environment
+ * @param {number} spriteY - Pixel Y coordinate in lofi_environment
+ * @returns {THREE.InstancedMesh} The instanced mesh for this biome sprite
+ */
+function getInstancedMeshForBiome(tileType, spriteX, spriteY) {
+  let cache;
+  let baseGeometry;
+  switch (tileType) {
+    case TILE_IDS.FLOOR:    cache = meshesByType.floor;    baseGeometry = floorGeometryTemplate; break;
+    case TILE_IDS.WALL:     cache = meshesByType.wall;     baseGeometry = wallGeometryTemplate;  break;
+    case TILE_IDS.OBSTACLE: cache = meshesByType.obstacle; baseGeometry = wallGeometryTemplate;  break;
+    case TILE_IDS.WATER:    cache = meshesByType.water;    baseGeometry = floorGeometryTemplate; break;
+    case TILE_IDS.MOUNTAIN: cache = meshesByType.mountain; baseGeometry = wallGeometryTemplate;  break;
+    default: return null;
+  }
+
+  // Create unique key from biome coordinates
+  const spriteKey = `biome_${spriteX}_${spriteY}`;
+
+  if (cache.has(spriteKey)) return cache.get(spriteKey);
+
+  // Create material using biome sprite coordinates
+  const mat = createBiomeTileMaterial(spriteX, spriteY, tileType);
+
+  // FIX #3: If material creation failed (returned null), return null immediately
+  // This prevents caching broken meshes in meshesByType Maps
+  if (!mat) {
+    if (Math.random() < 0.01) {
+      console.warn(`[FirstPerson] Cannot create mesh for biome (${spriteX},${spriteY}) - material is null`);
+    }
+    return null;  // Don't create or cache mesh with null material
+  }
+
+  const mesh = new THREE.InstancedMesh(baseGeometry.clone(), mat, MAX_INSTANCES);
+  mesh.frustumCulled = false;
+  mesh.name = `${TILE_IDS[tileType] || tileType}_${spriteKey}`;
+
+  cache.set(spriteKey, mesh);
+  if (sceneGlobalRef) sceneGlobalRef.add(mesh);
+
+  return mesh;
+}
+
 // We capture the scene reference so getInstancedMesh() can insert meshes later
 let sceneGlobalRef = null;
+
+/**
+ * FIX #4: Clears all cached biome meshes and disposes their resources.
+ * This should be called after sprite sheets load to force recreation of materials.
+ */
+function clearBiomeMeshCache() {
+  let disposedCount = 0;
+
+  Object.values(meshesByType).forEach(cache => {
+    cache.forEach((mesh, key) => {
+      // Only clear biome meshes (those with "biome_" prefix)
+      if (key.startsWith('biome_')) {
+        // Remove from scene
+        if (sceneGlobalRef && mesh.parent) {
+          sceneGlobalRef.remove(mesh);
+        }
+
+        // Dispose resources
+        if (mesh.geometry) mesh.geometry.dispose();
+        if (mesh.material) {
+          if (mesh.material.map) mesh.material.map.dispose();
+          mesh.material.dispose();
+        }
+
+        // Remove from cache
+        cache.delete(key);
+        disposedCount++;
+      }
+    });
+  });
+
+  if (disposedCount > 0) {
+    console.log(`[FirstPerson] Cleared ${disposedCount} cached biome meshes after sheet load`);
+  }
+}
 
 /**
  * Initializes and adds first-person elements to the scene.
  * @param {THREE.Scene} scene - The Three.js scene to add elements to.
  * @param {Function} callback - Function to call once elements are added.
  */
-export function addFirstPersonElements(scene, callback) {
+export async function addFirstPersonElements(scene, callback) {
   // Keep global reference so dynamically created InstancedMeshes can attach
   sceneGlobalRef = scene;
   console.log('[FirstPerson] Adding first-person elements to the scene.');
+
+  // CRITICAL: Wait for lofi_environment sprite sheet to load for biome tiles
+  try {
+    await ensureSheetLoadedFP('lofi_environment');
+    const sheetObj = spriteManager.getSpriteSheet('lofi_environment');
+    console.log('[FirstPerson] ✅ lofi_environment sprite sheet loaded:', {
+      exists: !!sheetObj,
+      hasImage: !!sheetObj?.image,
+      imageWidth: sheetObj?.image?.width,
+      imageHeight: sheetObj?.image?.height,
+      imageSrc: sheetObj?.image?.src
+    });
+
+    // FIX #4: Clear any biome meshes that may have been created with null materials
+    // before the sheet finished loading (handles race condition edge case)
+    clearBiomeMeshCache();
+  } catch (err) {
+    console.warn('[FirstPerson] ⚠️ Failed to preload lofi_environment:', err);
+  }
 
   // Create a THREE.Texture from the loaded Image
   const tileSheetObj = spriteManager.getSpriteSheet('tile_sprites');
@@ -421,6 +523,62 @@ function createTileMaterial(texture, tileType, spriteOverride = null) {
 }
 
 /**
+ * Creates a Three.js material from biome system sprite coordinates (pixel coords in lofi_environment).
+ * This is used for tiles that have spriteX/spriteY properties from the biome system.
+ *
+ * @param {number} spriteX - Pixel X coordinate in lofi_environment.png
+ * @param {number} spriteY - Pixel Y coordinate in lofi_environment.png
+ * @param {number} tileType - The tile type ID (for fallback color)
+ * @returns {THREE.Material} The created material
+ */
+function createBiomeTileMaterial(spriteX, spriteY, tileType) {
+  // Check if sheet loaded SYNCHRONOUSLY (don't await - sheet should be pre-loaded at init)
+  const sheetObj = spriteManager.getSpriteSheet('lofi_environment');
+
+  if (!sheetObj || !sheetObj.image) {
+    // Sheet not ready - return null to allow Priority 2/3 fallback
+    if (Math.random() < 0.01) {
+      console.warn(`[FirstPerson] lofi_environment not ready for (${spriteX}, ${spriteY}), returning null to allow fallback`);
+    }
+    return null;  // KEY CHANGE: return null instead of grey material
+  }
+
+  try {
+    // lofi_environment uses 8x8 sprites
+    const spriteW = 8;
+    const spriteH = 8;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = spriteW;
+    canvas.height = spriteH;
+    const ctx = canvas.getContext('2d');
+
+    // Draw the sprite from the lofi_environment sheet
+    ctx.drawImage(sheetObj.image, spriteX, spriteY, spriteW, spriteH, 0, 0, spriteW, spriteH);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+
+    // DEBUG: Log successful material creation (increased frequency)
+    if (Math.random() < 0.1) {
+      console.log(`[FirstPerson] ✅ Created biome material from lofi_environment: pixels (${spriteX}, ${spriteY})`);
+    }
+
+    return new THREE.MeshStandardMaterial({
+      map: texture,
+      transparent: true,
+      side: THREE.DoubleSide,
+      emissive: new THREE.Color(0x000000),
+      emissiveIntensity: 0
+    });
+  } catch (error) {
+    console.error(`[FirstPerson] Error creating biome material for coords (${spriteX}, ${spriteY}):`, error);
+    return null;  // Return null on error to allow fallback
+  }
+}
+
+/**
  * Fallback function to create and add basic colored materials if texture loading fails.
  * @param {THREE.Scene} scene - The Three.js scene to add fallback meshes to.
  */
@@ -573,30 +731,79 @@ function updateVisibleTiles() {
         let matrix;
         const quatIdentity = new THREE.Quaternion();
 
-        // Map-specific sprite override detection ---------------------------
-        let spriteOverride = null;
-        if (tile.spriteName) {
-          spriteOverride = tile.spriteName;
-        } else if (tile.properties?.sprite) {
-          spriteOverride = tile.properties.sprite;
-        }
-
-        // Pick the correct material cache & instanced mesh for this tile
-        let matCache = null;
+        // Priority 1: Check for biome system sprite coordinates ---------------------------
         let instMesh  = null;
-        switch (tile.type) {
-          case TILE_IDS.FLOOR:     matCache = floorMaterialCache;     instMesh = floorInstancedMesh;     break;
-          case TILE_IDS.WALL:      matCache = wallMaterialCache;      instMesh = wallInstancedMesh;      break;
-          case TILE_IDS.OBSTACLE:  matCache = obstacleMaterialCache;  instMesh = obstacleInstancedMesh;  break;
-          case TILE_IDS.WATER:     matCache = waterMaterialCache;     instMesh = waterInstancedMesh;     break;
-          case TILE_IDS.MOUNTAIN:  matCache = mountainMaterialCache;  instMesh = mountainInstancedMesh;  break;
+
+        // DEBUG: Log tiles that DON'T have biome data
+        if ((tile.spriteX === null || tile.spriteX === undefined ||
+             tile.spriteY === null || tile.spriteY === undefined) &&
+            Math.random() < 0.01) {
+          console.log(`[FirstPerson] ❌ Tile at (${tileX},${tileY}) MISSING biome data: spriteX=${tile.spriteX}, spriteY=${tile.spriteY}, type=${tile.type}`);
         }
 
-        // If we have a per-tile sprite override, pick / create a dedicated
-        // InstancedMesh for it so we never change the material of other
-        // tiles already rendered.
-        if (spriteOverride) {
-          instMesh = getInstancedMesh(tile.type, spriteOverride);
+        if (tile.spriteX !== null && tile.spriteY !== null &&
+            tile.spriteX !== undefined && tile.spriteY !== undefined) {
+
+          // CRITICAL FIX: Convert row/col indices to pixel coordinates
+          // Server sends row/col (0-15 range), but createBiomeTileMaterial needs pixels (0-120 range)
+          let pixelX = tile.spriteX;
+          let pixelY = tile.spriteY;
+
+          // If values are small (< 20), assume they're row/col indices and convert to pixels
+          // lofi_environment uses 8x8 pixel sprites
+          if (tile.spriteX < 20 && tile.spriteY < 20) {
+            pixelX = tile.spriteX * 8;  // Convert col to pixel X
+            pixelY = tile.spriteY * 8;  // Convert row to pixel Y
+
+            if (Math.random() < 0.01) {
+              console.log(`[FirstPerson] Converted row/col (${tile.spriteX},${tile.spriteY}) to pixels (${pixelX},${pixelY})`);
+            }
+          }
+
+          // DEBUG: Log biome tile detection (increased frequency for debugging)
+          if (Math.random() < 0.05) {
+            console.log(`[FirstPerson] 🎨 Biome tile at (${tileX},${tileY}): spriteX=${tile.spriteX}, spriteY=${tile.spriteY}, pixelX=${pixelX}, pixelY=${pixelY}, type=${tile.type}`);
+          }
+
+          // Use biome-specific InstancedMesh with PIXEL coordinates
+          instMesh = getInstancedMeshForBiome(tile.type, pixelX, pixelY);
+
+          // FIX #2: Validate material has valid texture - if not, force fallback to Priority 2/3
+          if (instMesh && (!instMesh.material || !instMesh.material.map)) {
+            if (Math.random() < 0.01) {
+              console.warn(`[FirstPerson] Biome mesh for pixels (${pixelX},${pixelY}) has invalid material, forcing fallback`);
+            }
+            instMesh = null;  // Force fallback to Priority 2/3
+          }
+        }
+
+        // Priority 2: Map-specific sprite override detection ---------------------------
+        if (!instMesh) {
+          let spriteOverride = null;
+          if (tile.spriteName) {
+            spriteOverride = tile.spriteName;
+          } else if (tile.properties?.sprite) {
+            spriteOverride = tile.properties.sprite;
+          }
+
+          // If we have a per-tile sprite override, pick / create a dedicated
+          // InstancedMesh for it so we never change the material of other
+          // tiles already rendered.
+          if (spriteOverride) {
+            instMesh = getInstancedMesh(tile.type, spriteOverride);
+          }
+        }
+
+        // Priority 3: Default material cache & instanced mesh for this tile type
+        if (!instMesh) {
+          let matCache = null;
+          switch (tile.type) {
+            case TILE_IDS.FLOOR:     matCache = floorMaterialCache;     instMesh = floorInstancedMesh;     break;
+            case TILE_IDS.WALL:      matCache = wallMaterialCache;      instMesh = wallInstancedMesh;      break;
+            case TILE_IDS.OBSTACLE:  matCache = obstacleMaterialCache;  instMesh = obstacleInstancedMesh;  break;
+            case TILE_IDS.WATER:     matCache = waterMaterialCache;     instMesh = waterInstancedMesh;     break;
+            case TILE_IDS.MOUNTAIN:  matCache = mountainMaterialCache;  instMesh = mountainInstancedMesh;  break;
+          }
         }
 
         // ------------------------------------------------------------------
@@ -919,8 +1126,9 @@ export function disposeFirstPersonView() {
   console.log('[FirstPerson] Disposed first-person view resources');
 }
 
-// Expose for consumers like game.js world-switch handler
+// Expose for consumers like game.js world-switch handler and render.js
 if (typeof window !== 'undefined') {
+  window.updateFirstPerson = updateFirstPerson; // Expose update function for render.js
   window.disposeFirstPersonView = disposeFirstPersonView;
   // Ensure resources are freed when the tab is closed or reloaded
   window.addEventListener('beforeunload', () => {

@@ -101,10 +101,20 @@ export function renderStrategicView() {
       }
       
       if (!tile) continue;
-      
+
       let spritePos;
       let spriteSheetName = 'tile_sprites';
-      if (tile.properties && tile.properties.sprite) {
+
+      // Priority 1: Use biome system sprite coordinates (pixel coords from lofi_environment)
+      if (tile.spriteX !== null && tile.spriteY !== null &&
+          tile.spriteX !== undefined && tile.spriteY !== undefined) {
+        spritePos = { x: tile.spriteX, y: tile.spriteY };
+        spriteSheetName = 'lofi_environment';
+        ensureSheetLoaded('lofi_environment');
+      }
+
+      // Priority 2: Use properties.sprite
+      if (!spritePos && tile.properties && tile.properties.sprite) {
         const raw=tile.properties.sprite;
         const parts=raw.split('_sprite_');
         if(parts.length>1){ ensureSheetLoaded(parts[0]); }
@@ -114,6 +124,8 @@ export function renderStrategicView() {
           spritePos = { x: spr.x, y: spr.y };
         }
       }
+
+      // Priority 3: Use spriteName
       if (!spritePos && tile.spriteName){
         const raw=tile.spriteName;
         const parts=raw.split('_sprite_');
@@ -124,6 +136,8 @@ export function renderStrategicView() {
           spritePos = { x: spr.x, y: spr.y };
         }
       }
+
+      // Priority 4: Fallback to TILE_SPRITES[tile.type]
       if (!spritePos) {
         spritePos = TILE_SPRITES[tile.type];
       }

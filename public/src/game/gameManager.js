@@ -297,7 +297,13 @@ export class GameManager {
    */
   removePlayer(playerId) {
     delete this.players[playerId];
-    console.log(`Player removed: ${playerId}`);
+
+    // Also remove from PlayerManager (used for rendering)
+    if (window.gameState?.playerManager?.removePlayer) {
+      window.gameState.playerManager.removePlayer(playerId);
+    }
+
+    console.log(`[GameManager] Player removed: ${playerId}`);
   }
   
   /**

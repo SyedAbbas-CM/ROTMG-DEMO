@@ -1,1656 +1,1002 @@
- Map save function available. Use window.saveMapData() in the console to download map data.
- TopDown view render function registered: Success
- Strategic view render system initialized. Function available: true
- Coordinate utilities initialized
- Starting game initialization...
- Logger system initialized
- Logger system initialized
- Log level for default set to NONE
- Log level for player set to ERROR
- Log level for input set to ERROR
- Log level for camera set to ERROR
- Log level for render set to ERROR
- Log level for movement set to ERROR
- Log level for network set to ERROR
- Log level for collision set to ERROR
- Log level for coordinate set to ERROR
- === Current Log Level Settings ===
- Global override: Not set
- 
+[Log] Map save function available. Use window.saveMapData() in the console to download map data. (ClientNetworkManager.js, line 450)
+[Log] Strategic view render system initialized. Function available: – true (renderStrategic.js, line 234)
+[Log] [game.html] Module script is running (game.html, line 45)
+[Log] [game.html] initGame imported successfully (game.html, line 47)
+[Log] [game.html] DOM already loaded, starting game immediately... (game.html, line 98)
+[Log] [game.html] Starting game initialization (game.html, line 73)
+[Log] [game.html] About to call initGame()... (game.html, line 80)
+[Log] Starting game initialization... (game.js, line 126)
+[Log] Logger system initialized (logger.js, line 156)
+[Log] Logger system initialized (game.js, line 130)
+[Log] Log level for default set to NONE (logger.js, line 39)
+[Log] Log level for player set to ERROR (logger.js, line 39)
+[Log] Log level for input set to ERROR (logger.js, line 39)
+[Log] Log level for camera set to ERROR (logger.js, line 39)
+[Log] Log level for render set to ERROR (logger.js, line 39)
+[Log] Log level for movement set to ERROR (logger.js, line 39)
+[Log] Log level for network set to ERROR (logger.js, line 39)
+[Log] Log level for collision set to ERROR (logger.js, line 39)
+[Log] Log level for coordinate set to ERROR (logger.js, line 39)
+[Log] === Current Log Level Settings === (logger.js, line 139)
+[Log] Global override: Not set (logger.js, line 141)
+[Log]  (logger.js, line 143)
 Module settings:
- - default: NONE (0)
- - player: ERROR (1)
- - camera: ERROR (1)
- - input: ERROR (1)
- - render: ERROR (1)
- - movement: ERROR (1)
- - network: ERROR (1)
- - collision: ERROR (1)
- - coordinate: ERROR (1)
- 
+[Log] - default: NONE (0) (logger.js, line 145)
+[Log] - player: ERROR (1) (logger.js, line 145)
+[Log] - camera: ERROR (1) (logger.js, line 145)
+[Log] - input: ERROR (1) (logger.js, line 145)
+[Log] - render: ERROR (1) (logger.js, line 145)
+[Log] - movement: ERROR (1) (logger.js, line 145)
+[Log] - network: ERROR (1) (logger.js, line 145)
+[Log] - collision: ERROR (1) (logger.js, line 145)
+[Log] - coordinate: ERROR (1) (logger.js, line 145)
+[Log]  (logger.js, line 148)
 Use window.gameLogger.setLogLevel(module, level) to change a specific module
- Use window.gameLogger.setGlobalLogLevel(level) to override all modules
- Use window.gameLogger.displayLogLevels() to show this information again
- ===============================
- Initializing sprite database...
- 🎨 Initializing sprite database system...
- [SpriteDB] Attempting to load 11 sprite atlases...
- Registered atlas "chars" with 255 sprites
- Registered atlas "chars2" with 256 sprites
- Registered atlas "8-Bit_Remaster_World" with 253 sprites
- Registered atlas "Mixed_Units" with 156 sprites
- Registered atlas "chars" with 255 sprites
- Registered atlas "chars2" with 256 sprites
- Registered atlas "lofi_environment" with 256 sprites
- Registered atlas "lofi_obj" with 256 sprites
- Registered atlas "lofi_obj_packB" with 72 sprites
- Registered atlas "tiles" with 256 sprites
- Registered atlas "tiles2" with 256 sprites
- [SpriteDB] ✅ Finished loading. Atlases: 11, Sprites: 2527. (110.00ms)
- [EntityDB] Loaded – tiles:1 objects:1 enemies:4
- [TileDB] merged 1 external tile defs (total 1)
- [SpriteDB] Loaded 6 entities
- ✅ Sprite database ready. Stats: Object
- ✅ Entity database ready – enemy count: 4
- [EntityDB] Loaded – tiles:1 objects:1 enemies:4
- [TileDB] loaded 10 tiles from assets/database/tiles.json
- Loading sprite sheets...
- Loaded sprite sheet "character_sprites" with 1056 sprites
- Character sprites loaded successfully: Object
- Loaded sprite sheet "enemy_sprites" with 130 sprites
- Loaded sprite sheet "tile_sprites" with 112 sprites
- Loaded sprite sheet "bullet_sprites" with 161 sprites
- All sprite sheets loaded.
- Coordinate utilities initialized
- Coordinate utilities initialized.
- Created local player: Player
- ClientBulletManager initialized with capacity for 10000 bullets
- Enemy type Goblin assigned grid sprite (0, 0) from chars2 atlas
- Enemy type Orc assigned grid sprite (32, 0) from chars2 atlas
- Enemy type Skeleton mapped to sprite (96, 0)
- Enemy type Troll assigned grid sprite (96, 0) from chars2 atlas
- Enemy type Wizard assigned grid sprite (128, 0) from chars2 atlas
- Enemy type enemy_5 assigned grid sprite (160, 0) from chars2 atlas
- Enemy type Red Demon mapped to sprite (32, 64)
- ClientEnemyManager sprite mapping: Goblin(0,0), Orc(32,0), Skeleton(96,0), Troll(96,0), Wizard(128,0), enemy_5(160,0), Red Demon(32,64)
- ClientMapManager initialized, procedural generation disabled
- ClientNetworkManager initialized with server URL: ws://127.0.0.1:3000
- NetworkManager successfully initialized in CollisionManager
- Created collision manager with networkManager: ClientCollisionManager
- Game state initialized with all managers
- Sprite editor container already exists in HTML
- Three.js Renderer initialized.
- Three.js Scene created.
- Three.js Camera created and positioned.
- Controls initialized.
- Hemisphere Light added to the scene.
- Ambient Light added to the scene.
- Directional Light added to the scene.
- [FirstPerson] Adding first-person elements to the scene.
- [FirstPerson] Creating InstancedMeshes with maxInstances: 4096
- [FirstPerson] Added floorInstancedMesh to the scene
- [FirstPerson] Added wallInstancedMesh to the scene
- [FirstPerson] Added obstacleInstancedMesh to the scene
- [FirstPerson] Added waterInstancedMesh to the scene
- [FirstPerson] Added mountainInstancedMesh to the scene
- [FirstPerson] Added rampInstancedMesh to the scene
- [FirstPerson] Added bulletInstancedMesh to the scene
- [MapManager] Updating visible chunks LOCALLY around (5.0, 5.0)
- [MapManager] Local update center chunk: (0, 0), distance: 4
- [MapManager] 81 chunks in view distance not loaded: (-4,-4), (-3,-4), (-2,-4), (-1,-4), (0,-4), (1,-4), (2,-4), (3,-4), (4,-4), (-4,-3), (-3,-3), (-2,-3), (-1,-3), (0,-3), (1,-3), (2,-3), (3,-3), (4,-3), (-4,-2), (-3,-2), (-2,-2), (-1,-2), (0,-2), (1,-2), (2,-2), (3,-2), (4,-2), (-4,-1), (-3,-1), (-2,-1), (-1,-1), (0,-1), (1,-1), (2,-1), (3,-1), (4,-1), (-4,0), (-3,0), (-2,0), (-1,0), (0,0), (1,0), (2,0), (3,0), (4,0), (-4,1), (-3,1), (-2,1), (-1,1), (0,1), (1,1), (2,1), (3,1), (4,1), (-4,2), (-3,2), (-2,2), (-1,2), (0,2), (1,2), (2,2), (3,2), (4,2), (-4,3), (-3,3), (-2,3), (-1,3), (0,3), (1,3), (2,3), (3,3), (4,3), (-4,4), (-3,4), (-2,4), (-1,4), (0,4), (1,4), (2,4), (3,4), (4,4)
- Queued message type 51 for later sending
- Requested chunk (0, 0) on-demand
- Queued message type 51 for later sending
- Requested chunk (1, 0) on-demand
- Queued message type 51 for later sending
- Requested chunk (0, 1) on-demand
- Queued message type 51 for later sending
- Requested chunk (1, 1) on-demand
- [FirstPerson] Initial tiles rendered around the character.
- First-person elements added. Connecting to server...
- Initializing Game UI...
- Attempting to connect to server at ws://127.0.0.1:3000
- Connecting to server: ws://127.0.0.1:3000
- Window resize event listener added.
- DebugTools ready. Try `DebugTools.listSprites()`
- Connected to server
- Chat message handler registered for type: 90
- Connection to server successful
- Connected to server. Starting the game loop.
- Received client ID: 2
- [setClientId] Received client ID from server: 2
- [setClientId] Updated gameState.character.id to 2
- [setClientId] Local player ID set to: 2
- [setClientId] Current players in playerManager: 
- Received map info: Object
- Received map data from server: Object
- Map initialized: map_3 (32x32)
- Map properties: tileSize=16, chunkSize=16
- [NETWORK] Received player list: 1 players (IDs: 2)
- Player sample: null
- Sample player data for 2: Object
- Received enemies list: 1 enemies
- Enemy sample: ID=enemy_1, Pos=(1.00, 31.00), Health=350
- Received enemies list: 1 enemies null
- Added enemy enemy_1 of type Red Demon at (1, 31)
- Received bullets list: 0 bullets
- Received bullets list: 0 bullets null
- Set 0 bullets from server, total bullets: 0
- World update: 1 enemies, 0 bullets, 1 players
- World update received null
-game.js:1297 EMERGENCY FIX: Character detected in wall at position (5, 5)
-checkAndFixStuckCharacter @ game.js:1297
-game.js:1301 CRITICAL: Found character at the known problematic position (5,5). Applying emergency fix...
-checkAndFixStuckCharacter @ game.js:1301
-game.js:1332 EMERGENCY FIX: Used extreme fallback position (20, 20)
-checkAndFixStuckCharacter @ game.js:1332
- Enemy sprite sheet loaded: 512x512 Object
- Received chunk data for (0, 0)
- Map debug object created. Access it via window.mapDebug in the console
- Received chunk data for (0, 0) Object
- [CLI] store 0 0
- Received chunk data for (1, 0)
- Received chunk data for (1, 0) Object
- [CLI] store 1 0
- Received chunk data for (0, 1)
- Received chunk data for (0, 1) Object
- [CLI] store 0 1
- Received chunk data for (1, 1)
- Received chunk data for (1, 1) Object
- [CLI] store 1 1
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "tiles2" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- 🔄 Reinitializing enemy sprite coordinates...
- Enemy type Goblin assigned grid sprite (0, 0) from chars2 atlas
- Enemy type Orc assigned grid sprite (32, 0) from chars2 atlas
- Enemy type Skeleton mapped to sprite (96, 0)
- Enemy type Troll assigned grid sprite (96, 0) from chars2 atlas
- Enemy type Wizard assigned grid sprite (128, 0) from chars2 atlas
- Enemy type enemy_5 assigned grid sprite (160, 0) from chars2 atlas
- Enemy type Red Demon mapped to sprite (32, 64)
- Enemy type red_demon_bullet assigned grid sprite (224, 0) from chars2 atlas
- ClientEnemyManager sprite mapping: Goblin(0,0), Orc(32,0), Skeleton(96,0), Troll(96,0), Wizard(128,0), enemy_5(160,0), Red Demon(32,64), red_demon_bullet(224,0)
- ✅ Enemy sprite coordinates updated
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Map boundaries: width=32, height=32
- Player position in tiles: (20, 20)
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "8-Bit_Remaster_World" with 253 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Remaining players after filtering: 
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] No other players to update after filtering
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Remaining players after filtering: 
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Enemy sprite sheet loaded: Object
- All enemy sprite mappings verified successfully
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 5 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Renderer and camera updated on window resize.
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] No other players to update after filtering
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- [NETWORK] Received player list: 1 players (IDs: 2)
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Component minimap initialized
- Component characterPanel initialized
- Component chatPanel initialized
- Component unitBar initialized
- Component controlBar initialized
- All UI components initialized successfully
- Game UI loaded successfully
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- Loaded sprite sheet "lofi_environment" with 256 sprites
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Player IDs in update: 2
- [updateWorld] Local player ID: 2
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Player IDs in update: 2
- [updateWorld] Local player ID: 2
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Filtered out local player (2) from update
- World update: 1 enemies, 5 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] No other players to update after filtering
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- Ping handler registered for DebugOverlay
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Filtered out local player (2) from update
- World update: 1 enemies, 5 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- Chat network listeners initialized for message type: 90
- World update: 1 enemies, 0 bullets, 1 players
- [NETWORK] Received player list: 1 players (IDs: 2)
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Player IDs in update: 2
- [updateWorld] Local player ID: 2
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- Map boundaries: width=32, height=32
- Player position in tiles: (20, 20)
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- Map boundaries: width=32, height=32
- Player position in tiles: (20, 20)
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Filtered out local player (2) from update
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 5 bullets, 1 players
- [updateWorld] Filtered out local player (2) from update
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Filtered out local player (2) from update
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- Map boundaries: width=32, height=32
- Player position in tiles: (20, 20)
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Player IDs in update: 2
- [updateWorld] Local player ID: 2
- World update: 1 enemies, 0 bullets, 1 players
- World update received null
- [NETWORK] Received player list: 1 players (IDs: 2)
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Player IDs in update: 2
- [updateWorld] Local player ID: 2
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Player IDs in update: 2
- [updateWorld] Local player ID: 2
- [updateWorld] Remaining players after filtering: 
- World update: 1 enemies, 0 bullets, 1 players
- [updateWorld] Filtered out local player (2) from update
- World update: 1 enemies, 0 bullets, 1 players
- World update: 1 enemies, 5 bullets, 1 players
- WALL COLLISION DETECTED:
-- Bullet world position: (-0.14, 30.64)
-- Bullet tile position: (-1, 1) [using tileSize=16]
-- Bullet ID: bullet_88
-- Bullet owner: enemy_1
- - Tile at collision: null
-ClientCollisionManager.js:489 Detected 1 bullet-wall collisions this frame
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:826 [updateWorld] Remaining players after filtering: 
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:834 [updateWorld] No other players to update after filtering
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:746 World update: 1 enemies, 0 bullets, 1 players
-game.js:750 [updateWorld] Player IDs in update: 2
-game.js:751 [updateWorld] Local player ID: 2
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:834 [updateWorld] No other players to update after filtering
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:826 [updateWorld] Remaining players after filtering: 
-ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:14 [NETWORK] Received player list: 1 players (IDs: 2)
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:746 World update: 1 enemies, 0 bullets, 1 players
-game.js:750 [updateWorld] Player IDs in update: 2
-game.js:751 [updateWorld] Local player ID: 2
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:834 [updateWorld] No other players to update after filtering
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:818 [updateWorld] Filtered out local player (2) from update
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:834 [updateWorld] No other players to update after filtering
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:826 [updateWorld] Remaining players after filtering: 
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:826 [updateWorld] Remaining players after filtering: 
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:746 World update: 1 enemies, 0 bullets, 1 players
-game.js:750 [updateWorld] Player IDs in update: 2
-game.js:751 [updateWorld] Local player ID: 2
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:818 [updateWorld] Filtered out local player (2) from update
-ClientNetworkManager.js:12 Player sample: null
-ClientNetworkManager.js:560 Sample player data for 2: {id: 2, x: 7.906667220511153, y: 9.218772735929376, rotation: 0, health: 100, …}
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:14 [NETWORK] Received player list: 1 players (IDs: 2)
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:746 World update: 1 enemies, 0 bullets, 1 players
-game.js:750 [updateWorld] Player IDs in update: 2
-game.js:751 [updateWorld] Local player ID: 2
-ClientMapManager.js:434 Map boundaries: width=32, height=32
-ClientMapManager.js:435 Player position in tiles: (20, 20)
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:746 World update: 1 enemies, 0 bullets, 1 players
-game.js:750 [updateWorld] Player IDs in update: 2
-game.js:751 [updateWorld] Local player ID: 2
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:834 [updateWorld] No other players to update after filtering
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:12 World update received null
-game.js:746 World update: 1 enemies, 0 bullets, 1 players
-game.js:750 [updateWorld] Player IDs in update: 2
-game.js:751 [updateWorld] Local player ID: 2
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:14 [NETWORK] Received player list: 1 players (IDs: 2)
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:818 [updateWorld] Filtered out local player (2) from update
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:834 [updateWorld] No other players to update after filtering
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:746 World update: 1 enemies, 0 bullets, 1 players
-game.js:750 [updateWorld] Player IDs in update: 2
-game.js:751 [updateWorld] Local player ID: 2
-game.js:834 [updateWorld] No other players to update after filtering
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:834 [updateWorld] No other players to update after filtering
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:818 [updateWorld] Filtered out local player (2) from update
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:746 World update: 1 enemies, 0 bullets, 1 players
-game.js:750 [updateWorld] Player IDs in update: 2
-game.js:751 [updateWorld] Local player ID: 2
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:818 [updateWorld] Filtered out local player (2) from update
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:746 World update: 1 enemies, 0 bullets, 1 players
-game.js:750 [updateWorld] Player IDs in update: 2
-game.js:751 [updateWorld] Local player ID: 2
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:826 [updateWorld] Remaining players after filtering: 
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:818 [updateWorld] Filtered out local player (2) from update
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-game.js:746 World update: 1 enemies, 0 bullets, 1 players
-game.js:750 [updateWorld] Player IDs in update: 2
-game.js:751 [updateWorld] Local player ID: 2
-ClientNetworkManager.js:14 [NETWORK] Received player list: 1 players (IDs: 2)
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 5 bullets, 1 players
-game.js:834 [updateWorld] No other players to update after filtering
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 1 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
-ClientEnemyManager.js:340 Added enemy enemy_2 of type Red Demon at (1, 16.9495849609375)
-ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 2 enemies, 5 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
-ClientNetworkManager.js:1010 World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] Player IDs in update: 2
- [updateWorld] Local player ID: 2
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 5 bullets, 1 players
- WALL COLLISION DETECTED:
-- Bullet world position: (-0.15, 30.63)
-- Bullet tile position: (-1, 1) [using tileSize=16]
-- Bullet ID: bullet_128
-- Bullet owner: enemy_1
- - Tile at collision: null
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] Remaining players after filtering: 
- [NETWORK] Received player list: 1 players (IDs: 2)
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] No other players to update after filtering
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 5 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] Remaining players after filtering: 
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 5 bullets, 1 players
- WALL COLLISION DETECTED:
-- Bullet world position: (-0.15, 30.64)
-- Bullet tile position: (-1, 1) [using tileSize=16]
-- Bullet ID: bullet_138
-- Bullet owner: enemy_1
- - Tile at collision: null
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] Player IDs in update: 2
- [updateWorld] Local player ID: 2
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- Map boundaries: width=32, height=32
- Player position in tiles: (20, 20)
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] Remaining players after filtering: 
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] Filtered out local player (2) from update
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- Map boundaries: width=32, height=32
- Player position in tiles: (20, 20)
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 5 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] Filtered out local player (2) from update
- World update: 2 enemies, 0 bullets, 1 players
- World update received null
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [NETWORK] Received player list: 1 players (IDs: 2)
- World update: 2 enemies, 5 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] Remaining players after filtering: 
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] Player IDs in update: 2
- [updateWorld] Local player ID: 2
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] No other players to update after filtering
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] Player IDs in update: 2
- [updateWorld] Local player ID: 2
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 5 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
- [updateWorld] No other players to update after filtering
- World update: 2 enemies, 0 bullets, 1 players
- World update: 2 enemies, 0 bullets, 1 players
+[Log] Use window.gameLogger.setGlobalLogLevel(level) to override all modules (logger.js, line 149)
+[Log] Use window.gameLogger.displayLogLevels() to show this information again (logger.js, line 150)
+[Log] =============================== (logger.js, line 151)
+[Log] Initializing sprite database... (game.js, line 147)
+[Log] 🎨 Initializing sprite database system... (game.js, line 10)
+[Log] [SpriteDB] Attempting to load 11 sprite atlases... (SpriteDatabase.js, line 40)
+[Log] Registered atlas "chars" with 255 sprites (SpriteDatabase.js, line 145)
+[Log] Registered atlas "chars2" with 256 sprites (SpriteDatabase.js, line 145)
+[Log] Registered atlas "8-Bit_Remaster_World" with 253 sprites (SpriteDatabase.js, line 145)
+[Log] Registered atlas "Mixed_Units" with 156 sprites (SpriteDatabase.js, line 145)
+[Log] Registered atlas "chars" with 255 sprites (SpriteDatabase.js, line 145)
+[Log] Registered atlas "chars2" with 256 sprites (SpriteDatabase.js, line 145)
+[Log] Registered atlas "lofi_environment" with 256 sprites (SpriteDatabase.js, line 145)
+[Log] Registered atlas "lofi_obj" with 256 sprites (SpriteDatabase.js, line 145)
+[Log] Registered atlas "lofi_obj_packB" with 72 sprites (SpriteDatabase.js, line 145)
+[Log] Registered atlas "tiles" with 256 sprites (SpriteDatabase.js, line 145)
+[Log] Registered atlas "tiles2" with 256 sprites (SpriteDatabase.js, line 145)
+[Log] [SpriteDB] ✅ Finished loading. Atlases: 11, Sprites: 2527. (24.00ms) (SpriteDatabase.js, line 102)
+[Log] ✅ Sprite database ready. Stats: – {atlasesLoaded: 11, spritesRegistered: 2527, cacheHits: 0, …} (game.js, line 53)
+{atlasesLoaded: 11, spritesRegistered: 2527, cacheHits: 0, cacheMisses: 0, cacheSize: 0, …}Object
+[Log] [TileDB] loaded 9 tiles from assets/database/tiles.json (TileDatabase.js, line 24)
+[Log] Loading sprite sheets... (game.js, line 158)
+[Log] Loaded sprite sheet "character_sprites" with 1056 sprites (spriteManager.js, line 67)
+[Log] Character sprites loaded successfully: – {defaultSpriteWidth: 10, defaultSpriteHeight: 10, autoDetect: true, …} (game.js, line 190)
+{defaultSpriteWidth: 10, defaultSpriteHeight: 10, autoDetect: true, name: "character_sprites", path: "assets/images/Oryx/8-Bit_Remaster_Character.png", …}Object
+[Log] Loaded sprite sheet "enemy_sprites" with 130 sprites (spriteManager.js, line 67)
+[Log] Loaded sprite sheet "chars" with 82 sprites (spriteManager.js, line 67)
+[Log] Loaded sprite sheet "tile_sprites" with 112 sprites (spriteManager.js, line 67)
+[Log] Loaded sprite sheet "bullet_sprites" with 161 sprites (spriteManager.js, line 67)
+[Warning] registerAlias: sprite chars_red_demon not found (spriteManager.js, line 469)
+[Warning] registerAlias: sprite chars_dark_lord not found (spriteManager.js, line 469)
+[Log] All sprite sheets loaded. (game.js, line 275)
+[Log] Coordinate utilities initialized. (game.js, line 279)
+[Log] [DEBUG] About to call initializeGameState... (game.js, line 281)
+[Log] [initializeGameState] Starting game state initialization... (game.js, line 559)
+[Log] [initializeGameState] Creating local player... (game.js, line 561)
+[Log] Created local player: – Player {id: "c26d6d3a-4948-4f99-a5e3-7fa7e4fde9de", name: "Player", x: 2, …} (game.js, line 576)
+Player {id: "c26d6d3a-4948-4f99-a5e3-7fa7e4fde9de", name: "Player", x: 2, y: 35, collisionWidth: 1, …}Player
+[Log] ClientBulletManager initialized with capacity for – 10000 – "bullets" (ClientBulletManager.js, line 42)
+[Log] Enemy type Goblin assigned grid sprite (0, 0) from chars2 atlas (ClientEnemyManager.js, line 187)
+[Log] Enemy type Orc assigned grid sprite (32, 0) from chars2 atlas (ClientEnemyManager.js, line 187)
+[Log] Enemy type Skeleton mapped to sprite (96, 0) (ClientEnemyManager.js, line 180)
+[Log] Enemy type Troll assigned grid sprite (96, 0) from chars2 atlas (ClientEnemyManager.js, line 187)
+[Log] Enemy type Wizard assigned grid sprite (128, 0) from chars2 atlas (ClientEnemyManager.js, line 187)
+[Log] ClientEnemyManager sprite mapping: – "Goblin(0,0), Orc(32,0), Skeleton(96,0), Troll(96,0), Wizard(128,0)" (ClientEnemyManager.js, line 200)
+[Log] ClientNetworkManager initialized with server URL: – "ws://127.0.0.1:3000" (ClientNetworkManager.js, line 496)
+[Log] [INIT] Set networkManager in mapManager: – true (game.js, line 802)
+[Log] [CollisionManager] NetworkManager successfully initialized (ClientCollisionManager.js, line 69)
+[Log] [CollisionManager] Initialized with SpatialGrid spatial partitioning (ClientCollisionManager.js, line 72)
+[Log] Created collision manager with networkManager: – ClientCollisionManager {bulletManager: ClientBulletManager, enemyManager: ClientEnemyManager, mapManager: ClientMapManager, …} (game.js, line 813)
+ClientCollisionManager {bulletManager: ClientBulletManager, enemyManager: ClientEnemyManager, mapManager: ClientMapManager, networkManager: ClientNetworkManager, localPlayerId: "c26d6d3a-4948-4f99-a5e3-7fa7e4fde9de", …}ClientCollisionManager
+[Log] Game state initialized with all managers (game.js, line 839)
+[Log] [DEBUG] initializeGameState completed. (game.js, line 284)
+[Log] Sprite editor container already exists in HTML (game.js, line 287)
+[Log] Three.js Renderer initialized. (game.js, line 296)
+[Log] Three.js Scene created. (game.js, line 301)
+[Log] Three.js Camera created and positioned. (game.js, line 308)
+[Log] Controls initialized. (game.js, line 312)
+[Log] Hemisphere Light added to the scene. (game.js, line 317)
+[Log] Ambient Light added to the scene. (game.js, line 322)
+[Log] Directional Light added to the scene. (game.js, line 329)
+[Log] [FirstPerson] Adding first-person elements to the scene. (renderFirstPerson.js, line 293)
+[Log] Loaded sprite sheet "lofi_environment" with 256 sprites (spriteManager.js, line 67)
+[Log] [FirstPerson] ✅ lofi_environment sprite sheet loaded: – {exists: true, hasImage: true, imageWidth: 128, …} (renderFirstPerson.js, line 299)
+{exists: true, hasImage: true, imageWidth: 128, imageHeight: 128, imageSrc: "http://127.0.0.1:3000/assets/images/Oryx/lofi_environment.png"}Object
+[Log] [FirstPerson] Creating InstancedMeshes with maxInstances: 4096 (renderFirstPerson.js, line 346)
+[Log] [FirstPerson] Added floorInstancedMesh to the scene (renderFirstPerson.js, line 355)
+[Log] [FirstPerson] Added wallInstancedMesh to the scene (renderFirstPerson.js, line 363)
+[Log] [FirstPerson] Added obstacleInstancedMesh to the scene (renderFirstPerson.js, line 371)
+[Log] [FirstPerson] Added waterInstancedMesh to the scene (renderFirstPerson.js, line 378)
+[Log] [FirstPerson] Added mountainInstancedMesh to the scene (renderFirstPerson.js, line 386)
+[Log] [FirstPerson] Added rampInstancedMesh to the scene (renderFirstPerson.js, line 397)
+[Log] [FirstPerson] Added bulletInstancedMesh to the scene (renderFirstPerson.js, line 405)
+[Log] [FirstPerson] Added billboardSpriteGroup to the scene (renderFirstPerson.js, line 421)
+[Log] [MapManager] Updating visible chunks LOCALLY around (0.0, 0.0) (ClientMapManager.js, line 625)
+[Log] [MapManager] Local update center chunk: (0, 0), distance: 4 (ClientMapManager.js, line 639)
+[Log] [MapManager] 81 chunks in view distance not loaded: (-4,-4), (-3,-4), (-2,-4), (-1,-4), (0,-4), (1,-4), (2,-4), (3,-4), (4,-4), (-4,-3), (-3,-3), (-2,-3), (-1,-3), (0,-3), (1,-3), (2,-3), (3,-3), (4,-3), (-4,-2), (-3,-2), (-2,-2), (-1,-2), (0,-2), (1,-2), (2,-2), (3,-2), (4,-2), (-4,-1), (-3,-1), (-2,-1), (-1,-1), (0,-1), (1,-1), (2,-1), (3,-1), (4,-1), (-4,0), (-3,0), (-2,0), (-1,0), (0,0), (1,0), (2,0), (3,0), (4,0), (-4,1), (-3,1), (-2,1), (-1,1), (0,1), (1,1), (2,1), (3,1), (4,1), (-4,2), (-3,2), (-2,2), (-1,2), (0,2), (1,2), (2,2), (3,2), (4,2), (-4,3), (-3,3), (-2,3), (-1,3), (0,3), (1,3), (2,3), (3,3), (4,3), (-4,4), (-3,4), (-2,4), (-1,4), (0,4), (1,4), (2,4), (3,4), (4,4) (ClientMapManager.js, line 681)
+[Log] [FirstPerson] ❌ Tile at (-57,-63) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (14,-63) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (64,-63) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-64,-62) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (32,-62) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (21,-61) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-51,-59) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (32,-59) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (52,-59) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-60,-58) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-10,-58) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (14,-58) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-3,-57) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-34,-55) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-3,-55) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-18,-54) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (52,-54) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-44,-52) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-9,-52) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-43,-51) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (33,-51) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (39,-50) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (30,-49) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-50,-48) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (24,-48) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-51,-46) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-6,-44) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-4,-44) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-20,-43) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-18,-42) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-59,-40) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-23,-40) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-17,-40) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (54,-39) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-51,-38) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (28,-38) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (39,-36) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (33,-35) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (54,-34) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-64,-32) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-1,-30) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-37,-29) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (8,-29) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-48,-28) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (46,-28) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (0,-27) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (34,-27) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-54,-25) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-38,-22) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (19,-22) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-48,-21) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (31,-21) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (29,-20) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-14,-19) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (39,-17) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (24,-16) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (46,-15) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-2,-14) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (54,-13) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (9,-12) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (22,-11) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (39,-10) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-22,-9) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-6,-9) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-24,-8) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-17,-8) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (4,-8) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (27,-8) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-54,-7) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (45,-6) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (49,-6) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (23,-5) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (57,-1) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (0, 0) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (1, 0) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (2, 0) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (3, 0) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (4, 0) on-demand (ClientMapManager.js, line 793)
+[Log] [FirstPerson] ❌ Tile at (16,1) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (52,1) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-41,4) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-34,6) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-10,6) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (31,7) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (58,7) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-40,8) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-35,9) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (29,9) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-15,10) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-2,10) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-52,11) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-22,11) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (34,11) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-45,13) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-12,13) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-3,13) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (44,13) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (42,14) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-10,15) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (59,15) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (0, 1) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (1, 1) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (2, 1) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (3, 1) on-demand (ClientMapManager.js, line 793)
+[Log] [FirstPerson] ❌ Tile at (51,16) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (4, 1) on-demand (ClientMapManager.js, line 793)
+[Log] [FirstPerson] ❌ Tile at (-16,18) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (4,18) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-27,20) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-19,20) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-14,20) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (27,20) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (60,20) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-7,22) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-41,23) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (33,24) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (2,25) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (20,25) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (43,25) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-37,26) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-7,26) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-51,28) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-14,28) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-62,29) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (23,29) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-60,30) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-30,30) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (0, 2) on-demand (ClientMapManager.js, line 793)
+[Log] [FirstPerson] ❌ Tile at (12,32) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (1, 2) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (2, 2) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (3, 2) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (4, 2) on-demand (ClientMapManager.js, line 793)
+[Log] [FirstPerson] ❌ Tile at (-10,33) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-7,33) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (2,33) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (5,34) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-9,35) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (32,35) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (46,35) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-60,36) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-49,36) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (64,37) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-36,39) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-7,39) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-51,40) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (1,40) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (51,40) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (63,40) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-23,44) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-12,46) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-29,47) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-18,47) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (56,47) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (0, 3) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (1, 3) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (2, 3) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (3, 3) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (4, 3) on-demand (ClientMapManager.js, line 793)
+[Log] [FirstPerson] ❌ Tile at (-43,49) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (29,49) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (52,49) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-59,50) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (38,50) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (39,50) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-50,51) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-13,51) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (53,51) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-11,52) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (25,52) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-30,53) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-22,53) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (20,53) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (24,53) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (50,53) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (25,54) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-30,55) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (31,55) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-45,56) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (13,57) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-28,59) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-42,60) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-7,60) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (38,60) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-39,62) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] [FirstPerson] ❌ Tile at (-55,63) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (0, 4) on-demand (ClientMapManager.js, line 793)
+[Log] [FirstPerson] ❌ Tile at (11,64) MISSING biome data: spriteX=undefined, spriteY=undefined, type=0 (renderFirstPerson.js, line 741)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (1, 4) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (2, 4) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (3, 4) on-demand (ClientMapManager.js, line 793)
+[Log] Queued message type 51 for later sending (ClientNetworkManager.js, line 1120)
+[Log] Requested chunk (4, 4) on-demand (ClientMapManager.js, line 793)
+[Log] [FirstPerson] Initial tiles rendered around the character. (renderFirstPerson.js, line 431)
+[Log] First-person elements added. Connecting to server... (game.js, line 333)
+[Log] Initializing Game UI... (game.js, line 336)
+[Log] Attempting to connect to server at ws://127.0.0.1:3000 (game.js, line 1095)
+[Log] Connecting to server: ws://127.0.0.1:3000 (ClientNetworkManager.js, line 915)
+[Log] Connected to server (ClientNetworkManager.js, line 922)
+[Log] Chat message handler registered for type: – 90 (ClientNetworkManager.js, line 796)
+[Log] [NetworkManager] Draining message queue, 25 messages queued (ClientNetworkManager.js, line 1038)
+[Log] [NetworkManager] Sending queued message type 51 (ClientNetworkManager.js, line 1044, x25)
+[Log] Successfully connected to server (game.js, line 1100)
+[Log] Connected to server. Starting the game loop. (game.js, line 342)
+[Log] Window resize event listener added. (game.js, line 385)
+[Log] DebugTools ready. Try `DebugTools.listSprites()` (debugTools.js, line 83)
+[Log] [game.html] initGame() completed successfully (game.html, line 82)
+[Log] Received client ID: 2 (ClientNetworkManager.js, line 518)
+[Log] [setClientId] Received client ID from server: 2 (game.js, line 619)
+[Log] [setClientId] Updated gameState.character.id to 2 (game.js, line 631)
+[Log] [setClientId] Local player ID set to: 2 (game.js, line 635)
+[Log] [setClientId] Current players in playerManager:  (game.js, line 638)
+[Log] 🔄 Reinitializing enemy sprite coordinates... (ClientEnemyManager.js, line 208)
+[Log] Enemy type Goblin assigned grid sprite (0, 0) from chars2 atlas (ClientEnemyManager.js, line 187)
+[Log] Enemy type Orc assigned grid sprite (32, 0) from chars2 atlas (ClientEnemyManager.js, line 187)
+[Log] Enemy type Skeleton mapped to sprite (96, 0) (ClientEnemyManager.js, line 180)
+[Log] Enemy type Troll assigned grid sprite (96, 0) from chars2 atlas (ClientEnemyManager.js, line 187)
+[Log] Enemy type Wizard assigned grid sprite (128, 0) from chars2 atlas (ClientEnemyManager.js, line 187)
+[Log] ClientEnemyManager sprite mapping: – "Goblin(0,0), Orc(32,0), Skeleton(96,0), Troll(96,0), Wizard(128,0)" (ClientEnemyManager.js, line 200)
+[Log] ✅ Enemy sprite coordinates updated (ClientEnemyManager.js, line 220)
+[Log] Received map info: – {mapId: "map_1", width: 512, height: 512, …} (ClientNetworkManager.js, line 525)
+{mapId: "map_1", width: 512, height: 512, tileSize: 12, chunkSize: 16, …}Object
+[Log] Received map data from server: – {mapId: "map_1", width: 512, height: 512, …} (game.js, line 615)
+{mapId: "map_1", width: 512, height: 512, tileSize: 12, chunkSize: 16, …}Object
+[Log] [MapManager] Requested 10 new chunks: (0,5), (1,5), (2,5), (3,5), (4,5), (0,6), (1,6), (2,6), (3,6), (4,6) (ClientMapManager.js, line 609)
+[Log] [NETWORK] Received player list: 1 players (IDs: 2) (ClientNetworkManager.js, line 14)
+[Log] Player sample: – null (ClientNetworkManager.js, line 12)
+[Log] Sample player data for 2: – {id: 2, x: 168.53123900153653, y: 461.0935811441954, …} (ClientNetworkManager.js, line 555)
+{id: 2, x: 168.53123900153653, y: 461.0935811441954, inventory: Array, health: 100, …}Object
+[Log] Received enemies list: 0 enemies (ClientNetworkManager.js, line 1091)
+[Log] Received enemies list: 0 enemies – null (ClientNetworkManager.js, line 12)
+[Log] Received bullets list: 0 bullets (ClientNetworkManager.js, line 1088)
+[Log] Received bullets list: 0 bullets – null (ClientNetworkManager.js, line 12)
+[Log] [CLI] store – 0 – 0 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (0,0) added 13 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLIENT] Raw tile data received: – {type: 8, height: 0, properties: Object, …} (ClientMapManager.js, line 314)
+{type: 8, height: 0, properties: Object, walkable: true, spriteName: "grass", …}Object
+[Log] [CLIENT] Has spriteX? – true – 48 (ClientMapManager.js, line 315)
+[Log] [CLIENT] Has spriteY? – true – 32 (ClientMapManager.js, line 316)
+[Log] [CLI] store – 1 – 0 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (1,0) added 11 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 2 – 0 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (2,0) added 14 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 3 – 0 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (3,0) added 15 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [MapManager] Received chunk at (3, 0): 16 rows x 16 cols (processed in 0.00ms) (ClientMapManager.js, line 216)
+[Log] [MapManager] Chunk 3,0 tile distribution: – {3: 64, 8: 105, 11: 87} (ClientMapManager.js, line 228)
+[Log] World update received – null (ClientNetworkManager.js, line 12)
+[Log] [CLI] store – 4 – 0 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (4,0) added 19 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [MapManager] Received chunk at (4, 0): 16 rows x 16 cols (processed in 1.00ms) (ClientMapManager.js, line 216)
+[Log] [MapManager] Chunk 4,0 tile distribution: – {3: 20, 8: 43, 11: 193} (ClientMapManager.js, line 228)
+[Log] [CLI] store – 0 – 1 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (0,1) added 13 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [MapManager] Received chunk at (0, 1): 16 rows x 16 cols (processed in 1.00ms) (ClientMapManager.js, line 216)
+[Log] [MapManager] Chunk 0,1 tile distribution: – {11: 256} (ClientMapManager.js, line 228)
+[Log] [CLI] store – 1 – 1 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (1,1) added 8 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 2 – 1 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (2,1) added 7 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 3 – 1 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (3,1) added 10 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 4 – 1 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (4,1) added 8 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 0 – 2 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (0,2) added 16 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 1 – 2 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (1,2) added 15 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 2 – 2 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (2,2) added 13 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 3 – 2 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (3,2) added 14 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 4 – 2 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (4,2) added 10 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 0 – 3 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (0,3) added 21 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 1 – 3 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (1,3) added 14 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 2 – 3 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (2,3) added 12 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 3 – 3 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (3,3) added 13 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 4 – 3 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (4,3) added 21 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 0 – 4 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (0,4) added 18 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 1 – 4 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (1,4) added 13 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 2 – 4 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (2,4) added 17 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 3 – 4 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (3,4) added 15 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 4 – 4 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (4,4) added 14 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [MapManager] Received chunk at (4, 4): 16 rows x 16 cols (processed in 0.00ms) (ClientMapManager.js, line 216)
+[Log] [MapManager] Chunk 4,4 tile distribution: – {8: 88, 11: 168} (ClientMapManager.js, line 228)
+[Log] [CLI] store – 0 – 5 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (0,5) added 7 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 1 – 5 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (1,5) added 11 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [MapManager] Received chunk at (1, 5): 16 rows x 16 cols (processed in 0.00ms) (ClientMapManager.js, line 216)
+[Log] [MapManager] Chunk 1,5 tile distribution: – {8: 106, 11: 150} (ClientMapManager.js, line 228)
+[Log] [CLI] store – 2 – 5 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (2,5) added 10 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [MapManager] Received chunk at (2, 5): 16 rows x 16 cols (processed in 0.00ms) (ClientMapManager.js, line 216)
+[Log] [MapManager] Chunk 2,5 tile distribution: – {8: 4, 11: 252} (ClientMapManager.js, line 228)
+[Log] [CLI] store – 3 – 5 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (3,5) added 15 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 4 – 5 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (4,5) added 17 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 0 – 6 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (0,6) added 20 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 1 – 6 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (1,6) added 13 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [MapManager] Received chunk at (1, 6): 16 rows x 16 cols (processed in 0.00ms) (ClientMapManager.js, line 216)
+[Log] [MapManager] Chunk 1,6 tile distribution: – {8: 211, 11: 45} (ClientMapManager.js, line 228)
+[Log] [CLI] store – 2 – 6 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (2,6) added 18 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [CLI] store – 3 – 6 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (3,6) added 14 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] [MapManager] Received chunk at (3, 6): 16 rows x 16 cols (processed in 0.00ms) (ClientMapManager.js, line 216)
+[Log] [MapManager] Chunk 3,6 tile distribution: – {8: 39, 11: 217} (ClientMapManager.js, line 228)
+[Log] [CLI] store – 4 – 6 (ClientMapManager.js, line 135)
+[Log] [MapManager] Chunk (4,6) added 18 objects to collision system + spatial hash (ClientMapManager.js, line 196)
+[Log] Enemy sprite sheet loaded: – {defaultSpriteWidth: 8, defaultSpriteHeight: 8, autoDetect: true, …} (ClientEnemyManager.js, line 685)
+{defaultSpriteWidth: 8, defaultSpriteHeight: 8, autoDetect: true, name: "enemy_sprites", path: "assets/images/chars2.png", …}Object
+[Log] All enemy sprite mappings verified successfully (ClientEnemyManager.js, line 703)
+[Log] [PERF] Frame 0 | FPS: 41 | Memory: N/A MB | Objects: 1141 | Sprite Cache: 0/100 | Tile Cache: 198 | Transparency Calls: 0 | Hit Rate: 0% (renderTopDown.js, line 871)
+[Log] [NETWORK] Received player list: 1 players (IDs: 2) (ClientNetworkManager.js, line 14)
+[Log] Component minimap initialized (UIManager.js, line 205)
+[Log] Component characterPanel initialized (UIManager.js, line 205)
+[Log] Component chatPanel initialized (UIManager.js, line 205)
+[Log] Component unitBar initialized (UIManager.js, line 205)
+[Log] Component controlBar initialized (UIManager.js, line 205)
+[Log] Component lootWindow initialized (UIManager.js, line 205)
+[Log] All UI components initialized successfully (UIManager.js, line 168)
+[Log] Game UI loaded successfully (game.js, line 356)
+[Log] [PERF] Frame 60 | FPS: 41 | Memory: N/A MB | Objects: 1141 | Sprite Cache: 0/100 | Tile Cache: 198 | Transparency Calls: 0 | Hit Rate: 0% (renderTopDown.js, line 871)
+[Log] Chat network listeners initialized for message type: 90 (ChatPanel.js, line 368)
+[Log] [NETWORK] Received player list: 1 players (IDs: 2) (ClientNetworkManager.js, line 14)
+[Log] World update: 0 enemies, 0 bullets, 1 players (game.js, line 683)
+[Log] [PERF] Frame 59 | FPS: 60 | Memory: N/A MB | Objects: 1141 | Sprite Cache: 0/100 | Tile Cache: 198 | Transparency Calls: 0 | Hit Rate: 0% (renderTopDown.js, line 871)
+[Log] World update: 0 enemies, 0 bullets, 1 players (game.js, line 683, x2)
+[Log] World update received – null (ClientNetworkManager.js, line 12)
+[Log] [NETWORK] Received player list: 1 players (IDs: 2) (ClientNetworkManager.js, line 14)
+[Log] [PERF] Frame 58 | FPS: 60 | Memory: N/A MB | Objects: 1141 | Sprite Cache: 0/100 | Tile Cache: 198 | Transparency Calls: 0 | Hit Rate: 0% (renderTopDown.js, line 871)
+[Log] Sending shoot event: pos=(2.00, 35.00), angle=0.15, speed=10.000000000000002 (ClientNetworkManager.js, line 1153)
+[Log] [NETWORK] Received player list: 1 players (IDs: 2) (ClientNetworkManager.js, line 14)
+[Warning] Warning: mapManager.isWallOrObstacle() method not available for bullet-wall collision detection (ClientCollisionManager.js, line 744)
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (2.2020, 35.0000)
+- Tile Position: (2, 35)
+- TileSize: 12
+- Tile Percent: (0.1835, 0.9167)
+[Log] No collision at world (2.20, 35.00), tile (2, 35): (updateCharacter.js, line 627)
+- Exact tile coords: (2.2020, 35.0000)
+- Distance from tile center: 0.58
+- Closest edge: north (0.00 units)
+- Tile edges: W:2 E:3 N:35 S:36
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 8
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":8,"height":0.000773356886683483,"properties":{"spriteName":"grass_dark","atlas":"lofi_environment","spriteRow":4,"spriteCol":8,"spriteX":64,"spriteY":32,"biome":"Tundra"},"walkable":true,"spriteName":"grass_dark","atlas":"lofi_environment","spriteRow":4,"spriteCol":8,"spriteX":64,"spriteY":32,"biome":"Tundra"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (2.5020, 35.0000)
+- Tile Position: (2, 35)
+- TileSize: 12
+- Tile Percent: (0.2085, 0.9167)
+[Log] No collision at world (2.50, 35.00), tile (2, 35): (updateCharacter.js, line 627)
+- Exact tile coords: (2.5020, 35.0000)
+- Distance from tile center: 0.50
+- Closest edge: north (0.00 units)
+- Tile edges: W:2 E:3 N:35 S:36
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 8
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":8,"height":0.000773356886683483,"properties":{"spriteName":"grass_dark","atlas":"lofi_environment","spriteRow":4,"spriteCol":8,"spriteX":64,"spriteY":32,"biome":"Tundra"},"walkable":true,"spriteName":"grass_dark","atlas":"lofi_environment","spriteRow":4,"spriteCol":8,"spriteX":64,"spriteY":32,"biome":"Tundra"}
+[Warning] Warning: mapManager.isWallOrObstacle() method not available for bullet-wall collision detection (ClientCollisionManager.js, line 744)
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (4.4020, 35.0000)
+- Tile Position: (4, 35)
+- TileSize: 12
+- Tile Percent: (0.3668, 0.9167)
+[Log] No collision at world (4.40, 35.00), tile (4, 35): (updateCharacter.js, line 627)
+- Exact tile coords: (4.4020, 35.0000)
+- Distance from tile center: 0.51
+- Closest edge: north (0.00 units)
+- Tile edges: W:4 E:5 N:35 S:36
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (4.6040, 35.2000)
+- Tile Position: (4, 35)
+- TileSize: 12
+- Tile Percent: (0.3837, 0.9333)
+[Log] No collision at world (4.60, 35.20), tile (4, 35): (updateCharacter.js, line 627)
+- Exact tile coords: (4.6040, 35.2000)
+- Distance from tile center: 0.32
+- Closest edge: north (0.20 units)
+- Tile edges: W:4 E:5 N:35 S:36
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (5.0741, 34.9279)
+- Tile Position: (5, 34)
+- TileSize: 12
+- Tile Percent: (0.4228, 0.9107)
+[Log] No collision at world (5.07, 34.93), tile (5, 34): (updateCharacter.js, line 627)
+- Exact tile coords: (5.0741, 34.9279)
+- Distance from tile center: 0.60
+- Closest edge: south (0.07 units)
+- Tile edges: W:5 E:6 N:34 S:35
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (5.0263, 34.5757)
+- Tile Position: (5, 34)
+- TileSize: 12
+- Tile Percent: (0.4189, 0.8813)
+[Log] No collision at world (5.03, 34.58), tile (5, 34): (updateCharacter.js, line 627)
+- Exact tile coords: (5.0263, 34.5757)
+- Distance from tile center: 0.48
+- Closest edge: west (0.03 units)
+- Tile edges: W:5 E:6 N:34 S:35
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] [PERF] Frame 59 | FPS: 60 | Memory: N/A MB | Objects: 1141 | Sprite Cache: 0/100 | Tile Cache: 251 | Transparency Calls: 0 | Hit Rate: 0% (renderTopDown.js, line 871)
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (5.9227, 34.1515)
+- Tile Position: (5, 34)
+- TileSize: 12
+- Tile Percent: (0.4936, 0.8460)
+[Log] No collision at world (5.92, 34.15), tile (5, 34): (updateCharacter.js, line 627)
+- Exact tile coords: (5.9227, 34.1515)
+- Distance from tile center: 0.55
+- Closest edge: east (0.08 units)
+- Tile edges: W:5 E:6 N:34 S:35
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (6.3308, 33.6672)
+- Tile Position: (6, 33)
+- TileSize: 12
+- Tile Percent: (0.5276, 0.8056)
+[Log] No collision at world (6.33, 33.67), tile (6, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (6.3308, 33.6672)
+- Distance from tile center: 0.24
+- Closest edge: west (0.33 units)
+- Tile edges: W:6 E:7 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] World update: 0 enemies, 0 bullets, 1 players (game.js, line 683, x2)
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (6.9328, 33.8672)
+- Tile Position: (6, 33)
+- TileSize: 12
+- Tile Percent: (0.5777, 0.8223)
+[Log] No collision at world (6.93, 33.87), tile (6, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (6.9328, 33.8672)
+- Distance from tile center: 0.57
+- Closest edge: east (0.07 units)
+- Tile edges: W:6 E:7 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (6.6348, 33.8672)
+- Tile Position: (6, 33)
+- TileSize: 12
+- Tile Percent: (0.5529, 0.8223)
+[Log] No collision at world (6.63, 33.87), tile (6, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (6.6348, 33.8672)
+- Distance from tile center: 0.39
+- Closest edge: south (0.13 units)
+- Tile edges: W:6 E:7 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] Player sample: – null (ClientNetworkManager.js, line 12)
+[Log] Sample player data for 2: – {id: 2, x: 6.9307850634608545, y: 33.867214936539135, …} (ClientNetworkManager.js, line 555)
+{id: 2, x: 6.9307850634608545, y: 33.867214936539135, inventory: Array, health: 100, …}Object
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (6.9987, 33.9272)
+- Tile Position: (6, 33)
+- TileSize: 12
+- Tile Percent: (0.5832, 0.8273)
+[Log] No collision at world (7.00, 33.93), tile (6, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (6.9987, 33.9272)
+- Distance from tile center: 0.66
+- Closest edge: east (0.00 units)
+- Tile edges: W:6 E:7 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (7.1429, 33.7830)
+- Tile Position: (7, 33)
+- TileSize: 12
+- Tile Percent: (0.5952, 0.8152)
+[Log] No collision at world (7.14, 33.78), tile (7, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (7.1429, 33.7830)
+- Distance from tile center: 0.46
+- Closest edge: west (0.14 units)
+- Tile edges: W:7 E:8 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] [NETWORK] Received player list: 1 players (IDs: 2) (ClientNetworkManager.js, line 14)
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (7.5550, 33.4430)
+- Tile Position: (7, 33)
+- TileSize: 12
+- Tile Percent: (0.6296, 0.7869)
+[Log] No collision at world (7.56, 33.44), tile (7, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (7.5550, 33.4430)
+- Distance from tile center: 0.08
+- Closest edge: north (0.44 units)
+- Tile edges: W:7 E:8 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (7.4951, 33.4308)
+- Tile Position: (7, 33)
+- TileSize: 12
+- Tile Percent: (0.6246, 0.7859)
+[Log] No collision at world (7.50, 33.43), tile (7, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (7.4951, 33.4308)
+- Distance from tile center: 0.07
+- Closest edge: north (0.43 units)
+- Tile edges: W:7 E:8 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] World update: 0 enemies, 0 bullets, 1 players (game.js, line 683)
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (7.8931, 33.2308)
+- Tile Position: (7, 33)
+- TileSize: 12
+- Tile Percent: (0.6578, 0.7692)
+[Log] No collision at world (7.89, 33.23), tile (7, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (7.8931, 33.2308)
+- Distance from tile center: 0.48
+- Closest edge: east (0.11 units)
+- Tile edges: W:7 E:8 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (7.9971, 33.2308)
+- Tile Position: (7, 33)
+- TileSize: 12
+- Tile Percent: (0.6664, 0.7692)
+[Log] No collision at world (8.00, 33.23), tile (7, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (7.9971, 33.2308)
+- Distance from tile center: 0.57
+- Closest edge: east (0.00 units)
+- Tile edges: W:7 E:8 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (8.6951, 33.4308)
+- Tile Position: (8, 33)
+- TileSize: 12
+- Tile Percent: (0.7246, 0.7859)
+[Log] No collision at world (8.70, 33.43), tile (8, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (8.6951, 33.4308)
+- Distance from tile center: 0.21
+- Closest edge: east (0.30 units)
+- Tile edges: W:8 E:9 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] World update: 0 enemies, 0 bullets, 1 players (game.js, line 683)
+[Log] [PERF] Frame 59 | FPS: 60 | Memory: N/A MB | Objects: 1141 | Sprite Cache: 0/100 | Tile Cache: 300 | Transparency Calls: 0 | Hit Rate: 0% (renderTopDown.js, line 871)
+[Warning] [PERF] WARNING: Tile cache at maximum size - LRU eviction active (renderTopDown.js, line 881)
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (10.1951, 33.0308)
+- Tile Position: (10, 33)
+- TileSize: 12
+- Tile Percent: (0.8496, 0.7526)
+[Log] No collision at world (10.20, 33.03), tile (10, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (10.1951, 33.0308)
+- Distance from tile center: 0.56
+- Closest edge: north (0.03 units)
+- Tile edges: W:10 E:11 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (10.1951, 33.4308)
+- Tile Position: (10, 33)
+- TileSize: 12
+- Tile Percent: (0.8496, 0.7859)
+[Log] No collision at world (10.20, 33.43), tile (10, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (10.1951, 33.4308)
+- Distance from tile center: 0.31
+- Closest edge: west (0.20 units)
+- Tile edges: W:10 E:11 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] World update received – null (ClientNetworkManager.js, line 12)
+[Log] World update: 0 enemies, 0 bullets, 1 players (game.js, line 683)
+[Log] [NETWORK] Received player list: 1 players (IDs: 2) (ClientNetworkManager.js, line 14)
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (11.1911, 33.4308)
+- Tile Position: (11, 33)
+- TileSize: 12
+- Tile Percent: (0.9326, 0.7859)
+[Log] No collision at world (11.19, 33.43), tile (11, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (11.1911, 33.4308)
+- Distance from tile center: 0.32
+- Closest edge: west (0.19 units)
+- Tile edges: W:11 E:12 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (11.2931, 33.4308)
+- Tile Position: (11, 33)
+- TileSize: 12
+- Tile Percent: (0.9411, 0.7859)
+[Log] No collision at world (11.29, 33.43), tile (11, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (11.2931, 33.4308)
+- Distance from tile center: 0.22
+- Closest edge: west (0.29 units)
+- Tile edges: W:11 E:12 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (11.3951, 33.4308)
+- Tile Position: (11, 33)
+- TileSize: 12
+- Tile Percent: (0.9496, 0.7859)
+[Log] No collision at world (11.40, 33.43), tile (11, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (11.3951, 33.4308)
+- Distance from tile center: 0.13
+- Closest edge: west (0.40 units)
+- Tile edges: W:11 E:12 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (11.5931, 33.2308)
+- Tile Position: (11, 33)
+- TileSize: 12
+- Tile Percent: (0.9661, 0.7692)
+[Log] No collision at world (11.59, 33.23), tile (11, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (11.5931, 33.2308)
+- Distance from tile center: 0.28
+- Closest edge: north (0.23 units)
+- Tile edges: W:11 E:12 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (12.0911, 33.4308)
+- Tile Position: (12, 33)
+- TileSize: 12
+- Tile Percent: (0.0076, 0.7859)
+[Log] No collision at world (12.09, 33.43), tile (12, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (12.0911, 33.4308)
+- Distance from tile center: 0.41
+- Closest edge: west (0.09 units)
+- Tile edges: W:12 E:13 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] World update: 0 enemies, 0 bullets, 1 players (game.js, line 683)
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (13.3931, 33.2308)
+- Tile Position: (13, 33)
+- TileSize: 12
+- Tile Percent: (0.1161, 0.7692)
+[Log] No collision at world (13.39, 33.23), tile (13, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (13.3931, 33.2308)
+- Distance from tile center: 0.29
+- Closest edge: north (0.23 units)
+- Tile edges: W:13 E:14 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] [PERF] Frame 59 | FPS: 60 | Memory: N/A MB | Objects: 1141 | Sprite Cache: 0/100 | Tile Cache: 300 | Transparency Calls: 0 | Hit Rate: 0% (renderTopDown.js, line 871)
+[Warning] [PERF] WARNING: Tile cache at maximum size - LRU eviction active (renderTopDown.js, line 881)
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (13.8971, 33.0308)
+- Tile Position: (13, 33)
+- TileSize: 12
+- Tile Percent: (0.1581, 0.7526)
+[Log] No collision at world (13.90, 33.03), tile (13, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (13.8971, 33.0308)
+- Distance from tile center: 0.61
+- Closest edge: north (0.03 units)
+- Tile edges: W:13 E:14 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (13.9931, 33.0308)
+- Tile Position: (13, 33)
+- TileSize: 12
+- Tile Percent: (0.1661, 0.7526)
+[Log] No collision at world (13.99, 33.03), tile (13, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (13.9931, 33.0308)
+- Distance from tile center: 0.68
+- Closest edge: east (0.01 units)
+- Tile edges: W:13 E:14 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (15.7931, 33.4308)
+- Tile Position: (15, 33)
+- TileSize: 12
+- Tile Percent: (0.3161, 0.7859)
+[Log] No collision at world (15.79, 33.43), tile (15, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (15.7931, 33.4308)
+- Distance from tile center: 0.30
+- Closest edge: east (0.21 units)
+- Tile edges: W:15 E:16 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (16.1951, 33.2308)
+- Tile Position: (16, 33)
+- TileSize: 12
+- Tile Percent: (0.3496, 0.7692)
+[Log] No collision at world (16.20, 33.23), tile (16, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (16.1951, 33.2308)
+- Distance from tile center: 0.41
+- Closest edge: west (0.20 units)
+- Tile edges: W:16 E:17 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] [NETWORK] Received player list: 1 players (IDs: 2) (ClientNetworkManager.js, line 14)
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (16.4951, 33.2308)
+- Tile Position: (16, 33)
+- TileSize: 12
+- Tile Percent: (0.3746, 0.7692)
+[Log] No collision at world (16.50, 33.23), tile (16, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (16.4951, 33.2308)
+- Distance from tile center: 0.27
+- Closest edge: north (0.23 units)
+- Tile edges: W:16 E:17 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (16.7971, 33.2308)
+- Tile Position: (16, 33)
+- TileSize: 12
+- Tile Percent: (0.3998, 0.7692)
+[Log] No collision at world (16.80, 33.23), tile (16, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (16.7971, 33.2308)
+- Distance from tile center: 0.40
+- Closest edge: east (0.20 units)
+- Tile edges: W:16 E:17 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (16.6931, 33.2308)
+- Tile Position: (16, 33)
+- TileSize: 12
+- Tile Percent: (0.3911, 0.7692)
+[Log] No collision at world (16.69, 33.23), tile (16, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (16.6931, 33.2308)
+- Distance from tile center: 0.33
+- Closest edge: north (0.23 units)
+- Tile edges: W:16 E:17 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (16.7951, 33.4308)
+- Tile Position: (16, 33)
+- TileSize: 12
+- Tile Percent: (0.3996, 0.7859)
+[Log] No collision at world (16.80, 33.43), tile (16, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (16.7951, 33.4308)
+- Distance from tile center: 0.30
+- Closest edge: east (0.20 units)
+- Tile edges: W:16 E:17 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (16.8951, 33.2308)
+- Tile Position: (16, 33)
+- TileSize: 12
+- Tile Percent: (0.4079, 0.7692)
+[Log] No collision at world (16.90, 33.23), tile (16, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (16.8951, 33.2308)
+- Distance from tile center: 0.48
+- Closest edge: east (0.10 units)
+- Tile edges: W:16 E:17 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (17.1672, 33.2308)
+- Tile Position: (17, 33)
+- TileSize: 12
+- Tile Percent: (0.4306, 0.7692)
+[Log] No collision at world (17.17, 33.23), tile (17, 33): (updateCharacter.js, line 627)
+- Exact tile coords: (17.1672, 33.2308)
+- Distance from tile center: 0.43
+- Closest edge: west (0.17 units)
+- Tile edges: W:17 E:18 N:33 S:34
+[Log] Tile details:  (updateCharacter.js, line 637)
+- Type: 11
+- Name: Unknown
+- Properties: {"isWalkable":true,"isTransparent":true,"variation":0,"type":11,"height":null,"properties":{"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"},"walkable":true,"spriteName":"cobblestone","atlas":"lofi_environment","spriteRow":6,"spriteCol":11,"spriteX":88,"spriteY":48,"biome":"Mountain Peak"}
+[Log] COLLISION CHECK: (updateCharacter.js, line 547)
+- World Position: (17.7193, 32.8787)
+- Tile Position: (17, 32)
+- TileSize: 12
+- Tile Percent: (0.4766, 0.7399)
+[Log] No collision at world (17.72, 32.88), tile (17, 32): (updateCharacter.js, line 627)
+- Exact tile coords: (17.7193, 32.8787)
+- Distance from tile center: 0.44
+- Closest edge: south (0.12 units)
+- Tile edges: W:17 E:18 N:32 S:33

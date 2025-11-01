@@ -1,0 +1,152 @@
+{
+  "comment": "Tile naming database - maps sprite coordinates to semantic tile names",
+  "atlases": {
+    "lofi_environment": {
+      "image": "assets/images/Oryx/lofi_environment.png",
+      "tileSize": 8,
+      "tiles": {
+        "grass": {
+          "name": "Grass",
+          "sprite": "lofi_environment_sprite_0_0",
+          "row": 0,
+          "col": 0,
+          "biomes": ["grassland", "plains"],
+          "walkable": true,
+          "category": "floor"
+        },
+        "grass_flowers": {
+          "name": "Grass with Flowers",
+          "sprite": "lofi_environment_sprite_0_1",
+          "row": 0,
+          "col": 1,
+          "biomes": ["grassland"],
+          "walkable": true,
+          "category": "floor",
+          "variant_of": "grass"
+        },
+        "dirt": {
+          "name": "Dirt",
+          "sprite": "lofi_environment_sprite_0_2",
+          "row": 0,
+          "col": 2,
+          "biomes": ["grassland", "plains", "forest"],
+          "walkable": true,
+          "category": "floor"
+        },
+        "sand": {
+          "name": "Sand",
+          "sprite": "lofi_environment_sprite_1_0",
+          "row": 1,
+          "col": 0,
+          "biomes": ["desert", "beach"],
+          "walkable": true,
+          "category": "floor"
+        },
+        "sand_dark": {
+          "name": "Dark Sand",
+          "sprite": "lofi_environment_sprite_1_1",
+          "row": 1,
+          "col": 1,
+          "biomes": ["desert"],
+          "walkable": true,
+          "category": "floor",
+          "variant_of": "sand"
+        },
+        "water_shallow": {
+          "name": "Shallow Water",
+          "sprite": "lofi_environment_sprite_2_0",
+          "row": 2,
+          "col": 0,
+          "biomes": ["ocean", "lake", "river"],
+          "walkable": false,
+          "category": "water"
+        },
+        "water_deep": {
+          "name": "Deep Water",
+          "sprite": "lofi_environment_sprite_2_1",
+          "row": 2,
+          "col": 1,
+          "biomes": ["ocean"],
+          "walkable": false,
+          "category": "water"
+        },
+        "stone_floor": {
+          "name": "Stone Floor",
+          "sprite": "lofi_environment_sprite_3_0",
+          "row": 3,
+          "col": 0,
+          "biomes": ["dungeon_stone", "ruins", "mountain"],
+          "walkable": true,
+          "category": "floor"
+        },
+        "stone_cracked": {
+          "name": "Cracked Stone",
+          "sprite": "lofi_environment_sprite_3_1",
+          "row": 3,
+          "col": 1,
+          "biomes": ["dungeon_stone", "ruins"],
+          "walkable": true,
+          "category": "floor",
+          "variant_of": "stone_floor"
+        },
+        "rock_wall": {
+          "name": "Rock Wall",
+          "sprite": "lofi_environment_sprite_4_0",
+          "row": 4,
+          "col": 0,
+          "biomes": ["grassland", "mountain", "dungeon_stone"],
+          "walkable": false,
+          "category": "wall"
+        },
+        "snow": {
+          "name": "Snow",
+          "sprite": "lofi_environment_sprite_5_0",
+          "row": 5,
+          "col": 0,
+          "biomes": ["tundra", "snowy_mountain", "ice_plains"],
+          "walkable": true,
+          "category": "floor"
+        },
+        "ice": {
+          "name": "Ice",
+          "sprite": "lofi_environment_sprite_5_1",
+          "row": 5,
+          "col": 1,
+          "biomes": ["ice_plains", "frozen_lake"],
+          "walkable": true,
+          "category": "floor",
+          "slippery": true
+        },
+        "lava": {
+          "name": "Lava",
+          "sprite": "lofi_environment_sprite_6_0",
+          "row": 6,
+          "col": 0,
+          "biomes": ["volcanic", "hell"],
+          "walkable": false,
+          "category": "hazard",
+          "damage": 10
+        },
+        "swamp_water": {
+          "name": "Swamp Water",
+          "sprite": "lofi_environment_sprite_7_0",
+          "row": 7,
+          "col": 0,
+          "biomes": ["swamp"],
+          "walkable": false,
+          "category": "water"
+        },
+        "jungle_floor": {
+          "name": "Jungle Floor",
+          "sprite": "lofi_environment_sprite_8_0",
+          "row": 8,
+          "col": 0,
+          "biomes": ["jungle"],
+          "walkable": true,
+          "category": "floor"
+        }
+      }
+    }
+  },
+  "comment_usage": "Use this database to map biome names to appropriate tiles. The tile labeling tool at /tools/sprite-labeler.html can help you add more tiles."
+}

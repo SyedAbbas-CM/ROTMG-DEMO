@@ -6,8 +6,12 @@ import { spriteManager } from '../assets/spriteManager.js';
 import { unitRenderer } from '../entities/ClientUnitRenderer.js';
 // Import view renderers - comment these out if they cause circular references
 // They should be available on the window object anyway
-// import { renderTopDownView } from './renderTopDown.js';
+// import { renderTopDownView} from './renderTopDown.js';
 // import { renderStrategicView } from './renderStrategic.js';
+
+// CRITICAL DEBUG: This log proves render.js is being loaded
+console.log('====== render.js FILE LOADED! TIMESTAMP:', new Date().toISOString(), '======');
+console.log('[render.js] Module loaded and executing');
 
 // Get 2D Canvas Context
 const canvas2D = document.getElementById('gameCanvas');
@@ -27,7 +31,11 @@ const DEBUG_ENEMY_SPRITES = false; // Set to false to disable sprite debugging v
  * Render the character
  */
 export function renderCharacter() {
+  console.log('[DEBUG renderCharacter] Called');
   const character = gameState.character;
+  console.log('[DEBUG renderCharacter] character =', character);
+  console.log('[DEBUG renderCharacter] character.draw =', character?.draw);
+  console.log('[DEBUG renderCharacter] typeof character.draw =', typeof character?.draw);
   if (!character) {
     console.error("Cannot render character: character not defined in gameState");
     return;
@@ -92,41 +100,103 @@ export function renderCharacter() {
   const screenX = screenWidth / 2;
   const screenY = screenHeight / 2;
   
+  // EFFICIENT: Cache water status - only check when tile changes
+  const tileX = Math.floor(character.x);
+  const tileY = Math.floor(character.y);
+
+  if (!character._lastTileX || character._lastTileX !== tileX || character._lastTileY !== tileY) {
+    character._lastTileX = tileX;
+    character._lastTileY = tileY;
+    const tile = gameState.mapManager?.getTile(tileX, tileY);
+
+    // AGGRESSIVE DEBUG: Always log tile data when position changes
+    if (Math.random() < 0.1) { // 10% of position changes
+      console.log('[WATER DEBUG] Tile check at', tileX, tileY);
+      console.log('[WATER DEBUG] tile =', tile);
+      console.log('[WATER DEBUG] tile.spriteName =', tile?.spriteName);
+      console.log('[WATER DEBUG] tile.type =', tile?.type);
+      console.log('[WATER DEBUG] tile.biome =', tile?.biome);
+      console.log('[WATER DEBUG] All tile properties:', tile ? Object.keys(tile) : 'tile is null');
+    }
+
+    // Check sprite name for water/lava - tile.spriteName is at top level, NOT tile.def.spriteName
+    let isWater = false;
+    if (tile && tile.spriteName) {
+      const spriteName = tile.spriteName.toLowerCase();
+      isWater = spriteName.includes('water') || spriteName.includes('deep') || spriteName.includes('lava');
+      if (isWater) {
+        console.log(`[WATER DETECTED] Found water by spriteName: "${tile.spriteName}" at (${tileX}, ${tileY})`);
+      }
+    }
+    // Fallback: check by type ID (TILE_IDS.WATER = 3)
+    else if (tile && tile.type === 3) {
+      isWater = true;
+      console.log(`[WATER DETECTED] Found water by type ID=3 at (${tileX}, ${tileY})`);
+    }
+
+    character._isOnWater = isWater;
+  }
+
+  const isOnWater = character._isOnWater || false;
+
+  // Water submersion: Show only top 50% of sprite when on water
+  const submersionRatio = isOnWater ? 0.5 : 1.0;
+  const spriteSourceHeight = TILE_SIZE * submersionRatio;
+  const renderHeight = character.height * character.renderScale * effectiveScale * submersionRatio;
+  // Calculate vertical offset to shift sprite downward when submerged
+  const submersionYOffset = isOnWater ? (character.height * character.renderScale * effectiveScale * 0.25) : 0;
+
   // Save the canvas state
   ctx.save();
-  
+
+  // Get sprite coordinates
+  const spriteX = character.spriteX !== undefined ? character.spriteX : 0;
+  const spriteY = character.spriteY !== undefined ? character.spriteY : 0;
+
+  const charWidth = character.width * character.renderScale * effectiveScale;
+  const charX = screenX - charWidth / 2;
+  const charY = screenY - renderHeight / 2 + submersionYOffset;
+
+  // Helper function to draw sprite with black outline using shadow
+  const drawWithOutline = (x, y, width, height) => {
+    // Draw black outline using shadow (drawn 4 times for thick outline)
+    ctx.shadowColor = 'black';
+    ctx.shadowBlur = 0;
+
+    // Draw shadow in 8 directions for outline effect
+    const outlineSize = 1.5;
+    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+      ctx.shadowOffsetX = Math.cos(angle) * outlineSize;
+      ctx.shadowOffsetY = Math.sin(angle) * outlineSize;
+      ctx.drawImage(
+        characterSpriteSheet,
+        spriteX, spriteY,
+        TILE_SIZE, spriteSourceHeight,
+        x, y,
+        width, height
+      );
+    }
+
+    // Reset shadow and draw main sprite
+    ctx.shadowColor = 'transparent';
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.drawImage(
+      characterSpriteSheet,
+      spriteX, spriteY,
+      TILE_SIZE, spriteSourceHeight,
+      x, y,
+      width, height
+    );
+  };
+
   // If character has a rotation, rotate around character center
   if (typeof character.rotation === 'number') {
     ctx.translate(screenX, screenY);
     ctx.rotate(character.rotation);
-    
-    // Get sprite coordinates
-    const spriteX = character.spriteX !== undefined ? character.spriteX : 0;
-    const spriteY = character.spriteY !== undefined ? character.spriteY : 0;
-    
-    // Draw character centered at (0,0) after translation with view-dependent scaling
-    ctx.drawImage(
-      characterSpriteSheet,
-      spriteX, spriteY,
-      TILE_SIZE, TILE_SIZE,
-      -character.width * character.renderScale * effectiveScale / 2, -character.height * character.renderScale * effectiveScale / 2,
-      character.width * character.renderScale * effectiveScale, character.height * character.renderScale * effectiveScale
-    );
+    drawWithOutline(-charWidth / 2, -renderHeight / 2 + submersionYOffset, charWidth, renderHeight);
   } else {
-    // Get sprite coordinates
-    const spriteX = character.spriteX !== undefined ? character.spriteX : 0;
-    const spriteY = character.spriteY !== undefined ? character.spriteY : 0;
-    
-    // Draw character without rotation with view-dependent scaling
-    ctx.drawImage(
-      characterSpriteSheet,
-      spriteX, spriteY,
-      TILE_SIZE, TILE_SIZE,
-      screenX - character.width * character.renderScale * effectiveScale / 2,
-      screenY - character.height * character.renderScale * effectiveScale / 2,
-      character.width * character.renderScale * effectiveScale,
-      character.height * character.renderScale * effectiveScale
-    );
+    drawWithOutline(charX, charY, charWidth, renderHeight);
   }
   
   // Restore canvas state
@@ -206,15 +276,54 @@ export function renderEnemies() {
       
       // Skip if off screen (with buffer)
       const buffer = width;
-      if (screenX < -buffer || screenX > screenWidth + buffer || 
+      if (screenX < -buffer || screenX > screenWidth + buffer ||
           screenY < -buffer || screenY > screenHeight + buffer) {
         return;
       }
 
+      // ===================================================================
+      // SPRITE SUBMERSION EFFECT - Calculate before rendering paths
+      // ===================================================================
+      // Check if enemy is standing on water/lava for submersion effect
+      const enemyTileX = Math.floor(enemy.x);
+      const enemyTileY = Math.floor(enemy.y);
+      const enemyTile = gameState.mapManager?.getTile(enemyTileX, enemyTileY);
+
+      // Check if water/lava tile by sprite name or type ID
+      let enemyOnWater = false;
+      if (enemyTile && enemyTile.spriteName) {
+        const spriteName = enemyTile.spriteName.toLowerCase();
+        enemyOnWater = spriteName.includes('water') || spriteName.includes('deep') || spriteName.includes('lava');
+      } else if (enemyTile && (enemyTile.type === 3 || enemyTile.type === 6)) { // TILE_IDS.WATER or TILE_IDS.LAVA
+        enemyOnWater = true;
+      }
+
+      // Water submersion: Show only top 50% of sprite when on water/lava
+      const enemySubmersionRatio = enemyOnWater ? 0.5 : 1.0;
+      const enemySpriteSourceHeight = 8 * enemySubmersionRatio;
+      const enemyRenderHeight = height * enemySubmersionRatio;
+      // Calculate vertical offset to shift sprite downward when submerged
+      const enemySubmersionYOffset = enemyOnWater ? (height * 0.25) : 0;
+      // ===================================================================
+
       const spriteDB = window.spriteDatabase;
 
-      // If we have spriteName and sprite database, draw using it and skip legacy sheet path
+      // If we have spriteName and sprite database, draw using it with submersion
       if (enemy.spriteName && spriteDB && spriteDB.hasSprite(enemy.spriteName)) {
+        // For spriteDB rendering, we need to use canvas clipping for submersion
+        if (enemyOnWater) {
+          ctx.save();
+          // Create clipping region for top 50% of sprite
+          ctx.beginPath();
+          ctx.rect(
+            screenX - width/2,
+            screenY - height/2 + enemySubmersionYOffset,
+            width,
+            enemyRenderHeight
+          );
+          ctx.clip();
+        }
+
         spriteDB.drawSprite(
           ctx,
           enemy.spriteName,
@@ -224,30 +333,35 @@ export function renderEnemies() {
           height
         );
 
-        // Draw health bar if needed
+        if (enemyOnWater) {
+          ctx.restore();
+        }
+
+        // Draw health bar if needed (adjusted for submersion)
         if (enemy.health !== undefined && enemy.maxHealth !== undefined) {
           const hpPct = enemy.health / enemy.maxHealth;
           const bw = width;
           const bh = 4;
+          const healthBarY = screenY - enemyRenderHeight/2 + enemySubmersionYOffset - bh - 2;
           ctx.fillStyle = 'rgba(0,0,0,0.5)';
-          ctx.fillRect(screenX - bw/2, screenY - height/2 - bh - 2, bw, bh);
+          ctx.fillRect(screenX - bw/2, healthBarY, bw, bh);
           ctx.fillStyle = hpPct>0.6?'green':hpPct>0.3?'yellow':'red';
-          ctx.fillRect(screenX - bw/2, screenY - height/2 - bh -2, bw*hpPct, bh);
+          ctx.fillRect(screenX - bw/2, healthBarY, bw*hpPct, bh);
         }
         return; // skip legacy drawing
       }
 
       // Save context for rotation
       ctx.save();
-      
+
       // Apply enemy flashing effect if it's been hit
       if (enemy.isFlashing) {
         ctx.globalAlpha = 0.7;
         ctx.fillStyle = 'red';
-        ctx.fillRect(screenX - width/2, screenY - height/2, width, height);
+        ctx.fillRect(screenX - width/2, screenY - height/2, width, enemyRenderHeight);
         ctx.globalAlpha = 1.0;
       }
-      
+
       if (enemySpriteSheet) {
         // If enemy has a rotation, use it
         if (typeof enemy.rotation === 'number') {
@@ -256,16 +370,16 @@ export function renderEnemies() {
           ctx.drawImage(
             enemySpriteSheet,
             enemy.spriteX || 0, enemy.spriteY || 0,
-            8, 8,
-            -width/2, -height/2, width, height
+            8, enemySpriteSourceHeight,  // Clipped source height if on water
+            -width/2, -enemyRenderHeight/2 + enemySubmersionYOffset, width, enemyRenderHeight  // Shift downward when submerged
           );
         } else {
           // Draw without rotation - centered
           ctx.drawImage(
             enemySpriteSheet,
             enemy.spriteX || 0, enemy.spriteY || 0,
-            8, 8,
-            screenX - width/2, screenY - height/2, width, height
+            8, enemySpriteSourceHeight,  // Clipped source height if on water
+            screenX - width/2, screenY - enemyRenderHeight/2 + enemySubmersionYOffset, width, enemyRenderHeight  // Shift downward when submerged
           );
         }
       } else {
@@ -450,10 +564,14 @@ export function renderBullets() {
       sy = (bm.y[i] - gameState.camera.position.y) * TILE_SIZE * viewScale + H/2;
     }
 
-    // Ensure bullet is always at least a couple of pixels so it's visible
+    // VISUAL SIZE: Make bullets appear 50% larger than their collision size
+    // Collision is 0.6 tiles, but visual is 0.6 * 1.5 = 0.9 tiles for better visibility
+    const BULLET_VISUAL_SCALE = viewType === 'strategic' ? 0.5 : 1.5; // Smaller in strategic view, larger in normal view
     const minPx = 3;
-    const drawW = Math.max(bm.width[i] || 8, minPx);
-    const drawH = Math.max(bm.height[i] || 8, minPx);
+    const baseW = bm.width[i] || 8; // Get collision width in tile units
+    const baseH = bm.height[i] || 8; // Get collision height in tile units
+    const drawW = Math.max(baseW * TILE_SIZE * BULLET_VISUAL_SCALE, minPx); // Scale up visual size
+    const drawH = Math.max(baseH * TILE_SIZE * BULLET_VISUAL_SCALE, minPx); // Scale up visual size
 
     // cull
     if (sx < -100 || sx > W+100 || sy < -100 || sy > H+100) continue;
@@ -515,32 +633,27 @@ export function renderGame() {
     canvas2D.width = window.innerWidth;
     canvas2D.height = window.innerHeight;
   }
-  
+
   // Clear the canvas - first with clearRect for best performance
   ctx.clearRect(0, 0, canvas2D.width, canvas2D.height);
-  
+
   // Then fill with a solid background color to ensure ALL old pixels are gone
   // This is especially important in strategic view to prevent ghost artifacts
-  if (gameState.camera.viewType === 'strategic') {
+  if (gameState.camera && gameState.camera.viewType === 'strategic') {
     // Use fully opaque black background in strategic view to prevent ghosting
-    ctx.fillStyle = 'rgb(0, 0, 0)';  
+    ctx.fillStyle = 'rgb(0, 0, 0)';
   } else {
     // Use standard black in other views
     ctx.fillStyle = 'rgb(0, 0, 0)';
   }
   ctx.fillRect(0, 0, canvas2D.width, canvas2D.height);
-  
+
   // Draw level (different based on view type)
   // Note: We don't import these functions directly to avoid circular references
   // Instead, we get them from the global scope
-  const viewType = gameState.camera.viewType;
-  
+  const viewType = gameState.camera ? gameState.camera.viewType : 'top-down';
+
   try {
-    // Log the availability of render functions (only occasionally to avoid console spam)
-    if (Math.random() < 0.01) {
-      //console.log(`Render functions available: topdown=${typeof window.renderTopDownView === 'function'}, strategic=${typeof window.renderStrategicView === 'function'}`);
-    }
-    
     if (viewType === 'top-down') {
       if (typeof window.renderTopDownView === 'function') {
         window.renderTopDownView();
@@ -552,6 +665,17 @@ export function renderGame() {
         window.renderStrategicView();
       } else {
         console.error("Strategic view render function not available - make sure renderStrategic.js is loaded and window.renderStrategicView is set");
+      }
+    } else if (viewType === 'first-person') {
+      // FIRST-PERSON VIEW: Update and render 3D scene
+      if (typeof window.updateFirstPerson === 'function' && window.renderer && window.scene && window.camera) {
+        // Update the 3D scene based on character position and game state
+        window.updateFirstPerson(window.camera);
+
+        // Render the Three.js scene
+        window.renderer.render(window.scene, window.camera);
+      } else {
+        console.error("First-person view not available - missing updateFirstPerson, renderer, scene, or camera");
       }
     } else {
       console.error(`Unknown view type ${viewType}`);
@@ -588,7 +712,9 @@ export function renderGame() {
  * Render UI elements
  */
 function renderUI() {
+  // REMOVED: Placeholder health bar (now using Character Panel UI component)
   // Draw player health bar
+  /*
   if (gameState.character && gameState.character.health !== undefined) {
     if (gameState.character.health <= 0) {
       // Big centred message
@@ -603,29 +729,30 @@ function renderUI() {
     const health = gameState.character.health;
     const maxHealth = gameState.character.maxHealth || 100;
     const healthPercent = health / maxHealth;
-    
+
     const barWidth = 200;
     const barHeight = 20;
     const barX = 20;
     const barY = canvas2D.height - barHeight - 20;
-    
+
     // Background
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.fillRect(barX, barY, barWidth, barHeight);
-    
+
     // Health
     ctx.fillStyle = healthPercent > 0.6 ? 'green' : healthPercent > 0.3 ? 'yellow' : 'red';
     ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
-    
+
     // Border
     ctx.strokeStyle = 'white';
     ctx.strokeRect(barX, barY, barWidth, barHeight);
-    
+
     // Text
     ctx.fillStyle = 'white';
     ctx.font = '14px Arial';
     ctx.fillText(`Health: ${Math.round(health)}/${maxHealth}`, barX + 10, barY + 15);
   }
+  */
   
   // Draw network status
   if (gameState.networkManager) {

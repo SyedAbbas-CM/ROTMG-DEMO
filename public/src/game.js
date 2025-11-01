@@ -44,13 +44,14 @@ async function initializeSpriteManager() {
     await spriteDatabase.loadAtlases(atlasPaths);
 
     // Load entities
-    await entityDatabase.load();
-    tileDatabase.merge(entityDatabase.getAll('tiles'));
-    await spriteDatabase.loadEntities();
+    // TODO: Disabled until /api/entities endpoint is created
+    // await entityDatabase.load();
+    // tileDatabase.merge(entityDatabase.getAll('tiles'));
+    // await spriteDatabase.loadEntities();
 
     // Developer diagnostics
     console.log('✅ Sprite database ready. Stats:', spriteDatabase.getStats());
-    console.log('✅ Entity database ready – enemy count:', entityDatabase.getAll('enemies').length);
+    // console.log('✅ Entity database ready – enemy count:', entityDatabase.getAll('enemies').length);
 
     // Expose globally for console experimentation
     window.spriteDatabase = spriteDatabase;

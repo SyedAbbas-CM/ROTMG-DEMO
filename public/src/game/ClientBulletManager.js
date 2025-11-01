@@ -63,8 +63,10 @@ export class ClientBulletManager {
     this.vx[index] = bulletData.vx;
     this.vy[index] = bulletData.vy;
     this.life[index] = bulletData.lifetime || 3.0; // Default 3 seconds
-    this.width[index] = bulletData.width || 5;
-    this.height[index] = bulletData.height || 5;
+    // CRITICAL FIX: Match server bullet size (0.6 tiles, not 5 pixels)
+    // Server uses 0.6 tiles (60% of tile), client must match for consistent hitboxes
+    this.width[index] = bulletData.width || 0.6;
+    this.height[index] = bulletData.height || 0.6;
     this.ownerId[index] = bulletData.ownerId || null;
     this.damage[index] = bulletData.damage || 10;
     this.worldId[index] = bulletData.worldId;

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Import Map</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js"
+        }
+    }
+    </script>
+</head>
+<body>
+    <h1>Testing Import Map</h1>
+    <div id="result">Loading...</div>
+    <script type="module">
+        try {
+            console.log('Attempting to import three...');
+            const THREE = await import('three');
+            console.log('Three.js loaded successfully!', THREE);
+            document.getElementById('result').innerHTML = 'Three.js loaded successfully! Version: ' + THREE.REVISION;
+            document.getElementById('result').style.color = 'green';
+        } catch (error) {
+            console.error('Failed to load Three.js:', error);
+            document.getElementById('result').innerHTML = 'Failed to load Three.js: ' + error.message;
+            document.getElementById('result').style.color = 'red';
+        }
+    </script>
+</body>
+</html>

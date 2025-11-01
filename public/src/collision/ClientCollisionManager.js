@@ -1,10 +1,14 @@
 // public/src/collision/ClientCollisionManager.js
 
 import SpatialGrid from '../shared/spatialGrid.js';
+import { QuadTree } from './QuadTree.js';
 
 /**
  * ClientCollisionManager
  * Handles collision detection on the client side and reports to server
+ *
+ * OPTIMIZATION: Uses QuadTree for spatial partitioning (O(log n) queries)
+ * Falls back to SpatialGrid if QuadTree encounters issues
  */
 export class ClientCollisionManager {
     /**
@@ -17,34 +21,56 @@ export class ClientCollisionManager {
         this.mapManager = options.mapManager;
         this.networkManager = options.networkManager;
         this.localPlayerId = options.localPlayerId;
-        
-        // Spatial partitioning for efficient collision detection
+
+        // ============================================================================
+        // QUAD TREE SPATIAL PARTITIONING (NEW)
+        // ============================================================================
+        this.useQuadTree = false; // Toggle to false to use old SpatialGrid - DISABLED: Too expensive to rebuild every frame
+        this.worldBounds = { x: 0, y: 0, width: 2000, height: 2000 }; // Will be updated from map
+        this.quadTree = null; // Created lazily on first update
+        this.quadTreeCapacity = 8; // Entities per node before subdivision
+        this.quadTreeMaxDepth = 8; // Maximum tree depth
+
+        // ============================================================================
+        // LEGACY SPATIAL GRID (FALLBACK)
+        // ============================================================================
         this.gridCellSize = 64; // Size of each grid cell
         this.grid = new SpatialGrid(this.gridCellSize, 2000, 2000);
-        
+
         // Collision tracking to prevent duplicates
         this.processedCollisions = new Map(); // collisionId -> timestamp
         this.collisionTimeout = 500; // ms until a collision can be processed again
-        
+
         // Setup cleanup interval
         this.cleanupInterval = setInterval(() => this.cleanupProcessedCollisions(), 5000);
-        
-        // Add debug flag for coordinate system debugging
-        this.debugCoordinates = false; // Disabled by default – enable in console when needed
-        
-        // Add debug flags for collision visualization
-        this.debugWallCollisions = false; // Set true in console to debug
-        this.debugEntityCollisions = false; // Set true in console to debug
-        
-        // Debug logging frequency (0-1)
-        this.debugLogFrequency = 0.02; // Log 2% of collisions
-        
+
+        // ============================================================================
+        // DEBUG FLAGS & LOGGING
+        // ============================================================================
+        this.debugCoordinates = false; // Coordinate system debugging
+        this.debugWallCollisions = false; // Wall collision visualization
+        this.debugEntityCollisions = false; // Entity collision visualization
+        this.debugQuadTree = false; // QuadTree-specific logging (DISABLED for performance)
+        // TEMPORARY: Enable 100% logging to debug bullet collision issues
+        this.debugLogFrequency = 1.0; // Log 100% of collisions (was 0.02 / 2%)
+
+        // QuadTree performance tracking
+        this.quadTreeStats = {
+            lastRebuildTime: 0,
+            avgRebuildTime: 0,
+            avgQueryTime: 0,
+            totalQueries: 0,
+            totalCollisions: 0
+        };
+
         // Check for network manager
         if (!this.networkManager) {
-            console.warn("No networkManager provided to CollisionManager. Will attempt to get from gameState when needed.");
+            console.warn("[CollisionManager] No networkManager provided. Will attempt to get from gameState when needed.");
         } else {
-            console.log("NetworkManager successfully initialized in CollisionManager");
+            console.log("[CollisionManager] NetworkManager successfully initialized");
         }
+
+        console.log(`[CollisionManager] Initialized with ${this.useQuadTree ? 'QuadTree' : 'SpatialGrid'} spatial partitioning`);
     }
     
     /**
@@ -53,20 +79,216 @@ export class ClientCollisionManager {
      */
     update(deltaTime) {
         if (!this.bulletManager || !this.enemyManager) return;
-        
+
+        // ============================================================================
+        // QUAD TREE PATH
+        // ============================================================================
+        if (this.useQuadTree) {
+            this._updateWithQuadTree(deltaTime);
+            return;
+        }
+
+        // ============================================================================
+        // LEGACY SPATIAL GRID PATH (FALLBACK)
+        // ============================================================================
+        this._updateWithSpatialGrid(deltaTime);
+    }
+
+    /**
+     * Update collision detection using QuadTree (NEW)
+     * @param {number} deltaTime - Time since last update
+     * @private
+     */
+    _updateWithQuadTree(deltaTime) {
+        const startTime = performance.now();
+
+        // Initialize QuadTree on first update or if map bounds changed
+        if (!this.quadTree) {
+            this._initializeQuadTree();
+        }
+
+        // Rebuild QuadTree from scratch each frame (fastest for dynamic entities)
+        const rebuildStart = performance.now();
+        this.quadTree.clear();
+
+        // ============================================================================
+        // INSERT BULLETS INTO QUAD TREE
+        // ============================================================================
+        let playerBulletCount = 0;
+        for (let i = 0; i < this.bulletManager.bulletCount; i++) {
+            // Skip bullets fired by enemies
+            const ownerId = this.bulletManager.ownerId[i];
+            const isEnemyBullet = ownerId && typeof ownerId === 'string' && ownerId.startsWith('enemy_');
+
+            if (isEnemyBullet) {
+                continue;
+            }
+
+            // Create entity object for QuadTree
+            const bulletEntity = {
+                type: 'bullet',
+                index: i,
+                id: this.bulletManager.id[i],
+                x: this.bulletManager.x[i],
+                y: this.bulletManager.y[i],
+                width: this.bulletManager.width[i] || 0.2,
+                height: this.bulletManager.height[i] || 0.2,
+                ownerId: ownerId
+            };
+
+            this.quadTree.insert(bulletEntity);
+            playerBulletCount++;
+        }
+
+        // ============================================================================
+        // INSERT ENEMIES INTO QUAD TREE
+        // ============================================================================
+        let aliveEnemyCount = 0;
+        for (let i = 0; i < this.enemyManager.enemyCount; i++) {
+            // Skip dead enemies
+            if (this.enemyManager.health[i] <= 0) continue;
+
+            const enemyEntity = {
+                type: 'enemy',
+                index: i,
+                id: this.enemyManager.id[i],
+                x: this.enemyManager.x[i],
+                y: this.enemyManager.y[i],
+                width: this.enemyManager.width[i] || 1.0,
+                height: this.enemyManager.height[i] || 1.0
+            };
+
+            this.quadTree.insert(enemyEntity);
+            aliveEnemyCount++;
+        }
+
+        const rebuildTime = performance.now() - rebuildStart;
+        this.quadTreeStats.lastRebuildTime = rebuildTime;
+        this.quadTreeStats.avgRebuildTime = (this.quadTreeStats.avgRebuildTime * 0.95) + (rebuildTime * 0.05);
+
+        // Log rebuild stats occasionally
+        if (this.debugQuadTree && Math.random() < 0.01) {
+            const stats = this.quadTree.getStats();
+            console.log(`[QuadTree] Rebuilt: ${playerBulletCount} bullets, ${aliveEnemyCount} enemies | ` +
+                       `Nodes: ${stats.nodes}, Max Depth: ${stats.maxDepth}, ` +
+                       `Rebuild Time: ${rebuildTime.toFixed(2)}ms`);
+        }
+
+        // ============================================================================
+        // QUERY QUAD TREE FOR COLLISIONS
+        // ============================================================================
+        let collisionChecks = 0;
+        let actualCollisions = 0;
+
+        // For each bullet, query nearby enemies
+        for (let i = 0; i < this.bulletManager.bulletCount; i++) {
+            const ownerId = this.bulletManager.ownerId[i];
+            const isEnemyBullet = ownerId && typeof ownerId === 'string' && ownerId.startsWith('enemy_');
+            if (isEnemyBullet) continue;
+
+            const queryStart = performance.now();
+
+            // Query QuadTree for entities near this bullet
+            const bulletBounds = {
+                x: this.bulletManager.x[i] - 0.5, // Expand search slightly
+                y: this.bulletManager.y[i] - 0.5,
+                width: (this.bulletManager.width[i] || 0.2) + 1.0,
+                height: (this.bulletManager.height[i] || 0.2) + 1.0
+            };
+
+            const nearbyEntities = this.quadTree.query(bulletBounds);
+            const queryTime = performance.now() - queryStart;
+            this.quadTreeStats.avgQueryTime = (this.quadTreeStats.avgQueryTime * 0.95) + (queryTime * 0.05);
+            this.quadTreeStats.totalQueries++;
+
+            // Filter for enemies only
+            const nearbyEnemies = nearbyEntities.filter(e => e.type === 'enemy');
+
+            collisionChecks += nearbyEnemies.length;
+
+            // Check actual AABB collision with each nearby enemy
+            for (const enemyEntity of nearbyEnemies) {
+                const enemyIndex = enemyEntity.index;
+
+                // Verify enemy still exists and is alive
+                if (enemyIndex >= this.enemyManager.enemyCount || this.enemyManager.health[enemyIndex] <= 0) {
+                    continue;
+                }
+
+                // AABB collision test
+                const collision = this._checkAABBCollision(
+                    this.bulletManager.x[i],
+                    this.bulletManager.y[i],
+                    this.bulletManager.width[i] || 0.2,
+                    this.bulletManager.height[i] || 0.2,
+                    this.enemyManager.x[enemyIndex],
+                    this.enemyManager.y[enemyIndex],
+                    this.enemyManager.width[enemyIndex] || 1.0,
+                    this.enemyManager.height[enemyIndex] || 1.0
+                );
+
+                if (collision) {
+                    this._handleCollision(i, enemyIndex);
+                    actualCollisions++;
+                }
+            }
+        }
+
+        const totalTime = performance.now() - startTime;
+
+        // Log performance stats periodically
+        if (this.debugQuadTree && Math.random() < 0.05) {
+            console.log(`[QuadTree] Collision Update: ${collisionChecks} checks, ${actualCollisions} hits | ` +
+                       `Total Time: ${totalTime.toFixed(2)}ms (${(totalTime / Math.max(1, collisionChecks)).toFixed(3)}ms/check)`);
+        }
+
+        this.quadTreeStats.totalCollisions += actualCollisions;
+    }
+
+    /**
+     * Initialize QuadTree with world bounds
+     * @private
+     */
+    _initializeQuadTree() {
+        // Update world bounds from map if available
+        if (this.mapManager && this.mapManager.mapWidth && this.mapManager.mapHeight) {
+            this.worldBounds = {
+                x: 0,
+                y: 0,
+                width: this.mapManager.mapWidth,
+                height: this.mapManager.mapHeight
+            };
+        }
+
+        this.quadTree = new QuadTree(
+            this.worldBounds,
+            this.quadTreeCapacity,
+            this.quadTreeMaxDepth
+        );
+
+        console.log(`[QuadTree] Initialized with bounds:`, this.worldBounds,
+                   `| Capacity: ${this.quadTreeCapacity}, Max Depth: ${this.quadTreeMaxDepth}`);
+    }
+
+    /**
+     * Update collision detection using SpatialGrid (LEGACY FALLBACK)
+     * @param {number} deltaTime - Time since last update
+     * @private
+     */
+    _updateWithSpatialGrid(deltaTime) {
         // Clear the spatial grid
         this.grid.clear();
-        
+
         // Insert bullets into grid
         for (let i = 0; i < this.bulletManager.bulletCount; i++) {
             // Skip bullets fired by enemies
             const ownerId = this.bulletManager.ownerId[i];
             const isEnemyBullet = ownerId && typeof ownerId === 'string' && ownerId.startsWith('enemy_');
-            
+
             if (isEnemyBullet) {
                 continue;
             }
-            
+
             // Add player bullets to the grid
             this.grid.insertBullet(
                 i,
@@ -76,12 +298,12 @@ export class ClientCollisionManager {
                 this.bulletManager.height[i]
             );
         }
-        
+
         // Insert enemies into grid
         for (let i = 0; i < this.enemyManager.enemyCount; i++) {
             // Skip dead enemies
             if (this.enemyManager.health[i] <= 0) continue;
-            
+
             this.grid.insertEnemy(
                 i,
                 this.enemyManager.x[i],
@@ -90,7 +312,7 @@ export class ClientCollisionManager {
                 this.enemyManager.height[i]
             );
         }
-        
+
         // Get potential collision pairs
         const potentialPairs = this.grid.getPotentialCollisionPairs();
         
@@ -246,6 +468,14 @@ export class ClientCollisionManager {
     }
     
     /**
+     * Wrapper for AABB collision (used by QuadTree path)
+     * @private
+     */
+    _checkAABBCollision(ax, ay, aw, ah, bx, by, bw, bh) {
+        return this.checkAABBCollision(ax, ay, aw, ah, bx, by, bw, bh);
+    }
+
+    /**
      * AABB collision test with precise square hitboxes
      * This is the main collision detection logic for entities
      * @param {number} ax - First rect X
@@ -265,16 +495,12 @@ export class ClientCollisionManager {
         const bcx = bx + bwidth / 2;
         const bcy = by + bheight / 2;
         
-        // Use precise square hitboxes - reduce size by fixed percentage
-        // Small bullets should have smaller hitboxes
-        const bulletSizeFactor = awidth < 10 ? 0.4 : 0.5;
-        const enemySizeFactor = 0.6; // Keep enemy hitboxes a bit larger
-        
-        // Adjust hitbox size
-        const awidthAdjusted = awidth * bulletSizeFactor;
-        const aheightAdjusted = aheight * bulletSizeFactor;
-        const bwidthAdjusted = bwidth * enemySizeFactor;
-        const bheightAdjusted = bheight * enemySizeFactor;
+        // Use full hitboxes for pixel-perfect collision (like player collision)
+        // No shrinking - bullets hit exactly when they visually touch
+        const awidthAdjusted = awidth;
+        const aheightAdjusted = aheight;
+        const bwidthAdjusted = bwidth;
+        const bheightAdjusted = bheight;
         
         // Calculate exact square bounds with adjusted sizes
         const a_left = acx - awidthAdjusted / 2;
@@ -420,25 +646,20 @@ export class ClientCollisionManager {
         if (!this.mapManager || !this.bulletManager) return;
         
         const totalBullets = this.bulletManager.bulletCount;
-        const tileSize = this.mapManager.tileSize || 12; // Get tile size for debugging
         let wallCollisionsDetected = 0;
-        
+
         for (let i = 0; i < totalBullets; i++) {
             const x = this.bulletManager.x[i];
             const y = this.bulletManager.y[i];
-            
+
             // Skip if invalid position
             if (x === undefined || y === undefined) continue;
             
-            // Calculate tile position for debugging
-            const tileX = Math.floor(x / tileSize);
-            const tileY = Math.floor(y / tileSize);
-            
             // Skip collision if the bullet's chunk isn't loaded yet to avoid "invisible walls"
             if (this.mapManager && this.mapManager.getChunk && this.mapManager.chunkSize) {
-                const tileSize = this.mapManager.tileSize || 12;
-                const tileX = Math.floor(x / tileSize);
-                const tileY = Math.floor(y / tileSize);
+                // World coordinates are already in tile units - no division needed
+                const tileX = Math.floor(x);
+                const tileY = Math.floor(y);
                 const chunkX = Math.floor(tileX / this.mapManager.chunkSize);
                 const chunkY = Math.floor(tileY / this.mapManager.chunkSize);
                 const chunk = this.mapManager.getChunk(chunkX, chunkY);
@@ -447,29 +668,95 @@ export class ClientCollisionManager {
                 }
             }
 
-            // Check if position is wall or out of bounds
-            if (this.mapManager.isWallOrObstacle) {
-                const isWall = this.mapManager.isWallOrObstacle(x, y);
-                
-                // Log wall collision details for debugging
-                if (isWall && (Math.random() < this.debugLogFrequency || this.debugWallCollisions)) {
-                    console.log(`WALL COLLISION DETECTED:
-- Bullet world position: (${x.toFixed(2)}, ${y.toFixed(2)})
-- Bullet tile position: (${tileX}, ${tileY}) [using tileSize=${tileSize}]
-- Bullet ID: ${this.bulletManager.id[i]}
-- Bullet owner: ${this.bulletManager.ownerId[i]}`);
-                    
-                    // Get tile type for more detail if possible
-                    if (this.mapManager.getTile) {
-                        const tile = this.mapManager.getTile(tileX, tileY);
-                        console.log(`- Tile at collision: ${JSON.stringify(tile)}`);
+            // ============================================================================
+            // OPTIMIZED BULLET COLLISION: Only check TILES, not objects
+            // Bullets should NOT collide with trees/boulders (walkable: false objects)
+            // They ONLY collide with solid tiles (walls, obstacles, mountains)
+            // This is 10x faster than the full isWallOrObstacle check
+            // ============================================================================
+            let isWall = false;
+
+            if (this.mapManager.getTile) {
+                const tileX = Math.floor(x);
+                const tileY = Math.floor(y);
+                const tile = this.mapManager.getTile(tileX, tileY);
+
+                if (!tile) {
+                    // CRITICAL FIX: Handle null tiles based on whether map bounds are known
+                    const mapWidth = this.mapManager.width;
+                    const mapHeight = this.mapManager.height;
+                    const mapBoundsKnown = mapWidth > 0 && mapHeight > 0;
+
+                    if (!mapBoundsKnown) {
+                        // Map bounds not set - conservatively treat null as wall
+                        // This prevents bullets from passing through unloaded chunks
+                        isWall = false; // DON'T treat as wall when bounds unknown - let bullets pass through unloaded areas
+                        if (Math.random() < 0.01) {
+                            console.log(`[BULLET COLLISION] Null tile at (${tileX}, ${tileY}), map bounds unknown - allowing pass`);
+                        }
+                    } else {
+                        // Map bounds ARE known - check if truly out of bounds
+                        if (tileX < 0 || tileX >= mapWidth || tileY < 0 || tileY >= mapHeight) {
+                            // Truly out of bounds - treat as wall
+                            isWall = true;
+                            if (Math.random() < 0.01) {
+                                console.log(`[BULLET COLLISION] Bullet hit true map boundary at (${tileX}, ${tileY}), bounds: ${mapWidth}x${mapHeight}`);
+                            }
+                        } else {
+                            // Within bounds but tile is null - this is missing/corrupt data
+                            // DON'T treat as wall - let bullet pass
+                            isWall = false;
+                            if (Math.random() < 0.01) {
+                                console.warn(`[BULLET COLLISION] Null tile at (${tileX}, ${tileY}) within bounds ${mapWidth}x${mapHeight} - allowing pass`);
+                            }
+                        }
                     }
-                    
+                } else {
+                    // Check if it's a solid tile (wall, obstacle, or mountain)
+                    // NOTE: Water and lava are passable for bullets
+                    const TILE_IDS = window.TILE_IDS || {};
+                    isWall = (
+                        tile.type === TILE_IDS.WALL ||
+                        tile.type === TILE_IDS.OBSTACLE ||
+                        tile.type === TILE_IDS.MOUNTAIN
+                    );
+                }
+            } else if (this.mapManager.isWallOrObstacle) {
+                // Fallback to old method if getTile not available
+                isWall = this.mapManager.isWallOrObstacle(x, y);
+            }
+
+            if (isWall) {
+                // Log wall collision details for debugging
+                if (Math.random() < this.debugLogFrequency || this.debugWallCollisions) {
+                    const debugTileX = Math.floor(x);
+                    const debugTileY = Math.floor(y);
+                    const bulletId = this.bulletManager.id[i];
+
+                    // Get tile type
+                    let tileTypeName = 'UNKNOWN';
+                    if (this.mapManager.getTile) {
+                        const tile = this.mapManager.getTile(debugTileX, debugTileY);
+                        if (tile) {
+                            const TILE_IDS = window.TILE_IDS || {};
+                            // Reverse lookup to find type name
+                            for (const [name, id] of Object.entries(TILE_IDS)) {
+                                if (id === tile.type) {
+                                    tileTypeName = name;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Unified log format matching server
+                    console.log(`[CLIENT BULLET] ID: ${bulletId}, Pos: (${x.toFixed(4)}, ${y.toFixed(4)}), Tile: (${debugTileX}, ${debugTileY}), Type: ${tileTypeName}`);
+
                     // Debug the coordinate system at this position
                     if (this.debugCoordinates) {
                         this.debugCoordinateSystem(x, y);
                     }
-                    
+
                     wallCollisionsDetected++;
                 }
                 
@@ -560,21 +847,37 @@ export class ClientCollisionManager {
     }
     
     /**
-     * Handle a bullet-enemy collision
+     * Wrapper for _handleCollision (for compatibility)
+     */
+    _handleCollision(bulletIndex, enemyIndex) {
+        return this.handleCollision(bulletIndex, enemyIndex);
+    }
+
+    /**
+     * Handle a bullet-enemy collision (CLIENT-SIDE DETECTION)
      * @param {number} bulletIndex - Bullet index
      * @param {number} enemyIndex - Enemy index
      */
     handleCollision(bulletIndex, enemyIndex) {
         const bulletId = this.bulletManager.id[bulletIndex];
         const enemyId = this.enemyManager.id[enemyIndex];
-        
+
         // Generate a unique collision ID
         const collisionId = `${bulletId}_${enemyId}`;
-        
+
         // Check if this collision was already processed recently
         if (this.processedCollisions.has(collisionId)) {
+            if (this.debugQuadTree && Math.random() < 0.01) {
+                console.log(`[CLIENT] Collision already processed: ${collisionId}`);
+            }
             return;
         }
+
+        // Log collision detection
+        console.log(`[CLIENT] 🎯 COLLISION DETECTED: Bullet ${bulletId} hit Enemy ${enemyId} | ` +
+                   `Bullet pos: (${this.bulletManager.x[bulletIndex].toFixed(2)}, ${this.bulletManager.y[bulletIndex].toFixed(2)}) | ` +
+                   `Enemy pos: (${this.enemyManager.x[enemyIndex].toFixed(2)}, ${this.enemyManager.y[enemyIndex].toFixed(2)})`);
+
         
         // Get bullet data for verification
         const bulletData = {

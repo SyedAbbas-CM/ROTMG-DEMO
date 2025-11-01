@@ -62,6 +62,25 @@ export default class CollisionManager {
 
           if (this.mapManager.isWallOrOutOfBounds(bxStep, byStep)) {
             collided = true;
+
+            // Enhanced debug logging for bullet collision with coordinates
+            const tile = this.mapManager.getTile ? this.mapManager.getTile(Math.floor(bxStep), Math.floor(byStep)) : null;
+            const tileType = tile ? tile.type : 'UNKNOWN';
+            const isOutOfBounds = bxStep < 0 || byStep < 0 ||
+                                  (this.mapManager.width && bxStep >= this.mapManager.width) ||
+                                  (this.mapManager.height && byStep >= this.mapManager.height);
+            const reason = isOutOfBounds ? 'OUT_OF_BOUNDS' : (tile ? 'WALL' : 'MISSING_CHUNK');
+
+            const tileX = Math.floor(bxStep);
+            const tileY = Math.floor(byStep);
+
+            console.log(`[SERVER BULLET] ID: ${bulletId}, Pos: (${bxStep.toFixed(4)}, ${byStep.toFixed(4)}), Tile: (${tileX}, ${tileY}), Reason: ${reason}`);
+            console.log(`  Start Pos: (${bulletX.toFixed(4)}, ${bulletY.toFixed(4)})`);
+            console.log(`  Velocity: (${vx.toFixed(4)}, ${vy.toFixed(4)})`);
+            console.log(`  Map Bounds: (0, 0) to (${this.mapManager.width}, ${this.mapManager.height})`);
+            console.log(`  Tile Type: ${tileType}`);
+            console.log(`  Out of bounds: bxStep < 0: ${bxStep < 0}, byStep < 0: ${byStep < 0}, bxStep >= width: ${bxStep >= this.mapManager.width}, byStep >= height: ${byStep >= this.mapManager.height}`);
+
             break;
           }
         }
@@ -74,7 +93,56 @@ export default class CollisionManager {
           continue; // Skip enemy checks for this bullet
         }
       }
-      
+
+      /* ------- Object collision (trees, boulders, etc.) ------- */
+      if (this.mapManager && this.mapManager.getObjects) {
+        const worldId = this.bulletManager.worldId[bi];
+        const worldObjects = this.mapManager.getObjects(worldId) || [];
+
+        let objectCollision = false;
+        for (const obj of worldObjects) {
+          // Only check non-walkable objects (trees, boulders, etc.)
+          // walkable: false means it blocks movement/bullets
+          if (obj.walkable !== false) continue;
+
+          // Check AABB collision between bullet and object
+          // FIX: Default to 0.4 tile size (40%) to match typical sprite sizes
+          // Objects don't have width/height defined, so we need accurate defaults
+          const objX = obj.x || 0;
+          const objY = obj.y || 0;
+          const objWidth = obj.width || 0.4;   // 40% of tile (0.4 tiles) - matches sprite size
+          const objHeight = obj.height || 0.4;  // 40% of tile (0.4 tiles) - matches sprite size
+
+          // CRITICAL: checkAABBCollision expects CENTER coordinates
+          // Objects are positioned at tile coordinates (top-left), so add 0.5 to get tile center
+          const objCenterX = objX + 0.5;  // Tile center X
+          const objCenterY = objY + 0.5;  // Tile center Y
+
+          if (this.checkAABBCollision(
+            bulletX, bulletY, bulletWidth, bulletHeight,
+            objCenterX, objCenterY, objWidth, objHeight
+          )) {
+            // DEBUG: Log object collision details
+            console.log(`[SERVER] 🎯 BULLET-OBJECT COLLISION:
+  Bullet: pos=(${bulletX.toFixed(2)}, ${bulletY.toFixed(2)}), size=${bulletWidth.toFixed(2)}x${bulletHeight.toFixed(2)}
+  Object: tile=(${objX}, ${objY}), center=(${objCenterX.toFixed(2)}, ${objCenterY.toFixed(2)}), size=${objWidth.toFixed(2)}x${objHeight.toFixed(2)}
+  Object sprite: ${obj.sprite || 'none'}
+  Distance: ${Math.sqrt(Math.pow(bulletX - objCenterX, 2) + Math.pow(bulletY - objCenterY, 2)).toFixed(2)} tiles`);
+
+            objectCollision = true;
+            break;
+          }
+        }
+
+        if (objectCollision) {
+          this.bulletManager.markForRemoval(bi);
+          if (this.bulletManager.registerRemoval) {
+            this.bulletManager.registerRemoval('objectHit');
+          }
+          continue; // Skip enemy checks for this bullet
+        }
+      }
+
       // Check for enemy collisions
       for (let ei = 0; ei < this.enemyManager.enemyCount; ei++) {
         // Skip enemies from a different world
@@ -126,15 +194,18 @@ export default class CollisionManager {
    */
   validateCollision(data) {
     const { bulletId, enemyId, timestamp, clientId } = data;
-    
+
+    console.log(`[SERVER] 📨 COLLISION REPORT received from client ${clientId}: Bullet ${bulletId} vs Enemy ${enemyId}`);
+
     // Find bullet and enemy indices using IDs
     const bulletIndex = this.findBulletIndex(bulletId);
     const enemyIndex = this.findEnemyIndex(enemyId);
-    
+
     // Check if both entities exist
     if (bulletIndex === -1 || enemyIndex === -1) {
-      return { 
-        valid: false, 
+      console.log(`[SERVER] ❌ VALIDATION FAILED: Entity not found | Bullet index: ${bulletIndex}, Enemy index: ${enemyIndex}`);
+      return {
+        valid: false,
         reason: 'Entity not found',
         bulletId,
         enemyId
@@ -143,6 +214,7 @@ export default class CollisionManager {
     
     // Ensure bullet and enemy are in the same world to prevent cross-realm hits
     if (this.bulletManager.worldId[bulletIndex] !== this.enemyManager.worldId[enemyIndex]) {
+      console.log(`[SERVER] ❌ VALIDATION FAILED: Different world | Bullet world: ${this.bulletManager.worldId[bulletIndex]}, Enemy world: ${this.enemyManager.worldId[enemyIndex]}`);
       return {
         valid: false,
         reason: 'Different world',
@@ -150,26 +222,28 @@ export default class CollisionManager {
         enemyId
       };
     }
-    
+
     // Check if this collision was already processed recently
     const collisionId = `${bulletId}_${enemyId}`;
     if (this.processedCollisions.has(collisionId)) {
-      return { 
-        valid: false, 
+      console.log(`[SERVER] ❌ VALIDATION FAILED: Already processed | CollisionId: ${collisionId}`);
+      return {
+        valid: false,
         reason: 'Already processed',
         bulletId,
         enemyId
       };
     }
-    
+
     // Check if timestamp is reasonable (within 500ms from now)
     const now = Date.now();
     if (Math.abs(now - timestamp) > 500) {
-      return { 
-        valid: false, 
+      console.log(`[SERVER] ❌ VALIDATION FAILED: Timestamp too old | Age: ${Math.abs(now - timestamp)}ms`);
+      return {
+        valid: false,
         reason: 'Timestamp too old',
         bulletId,
-        enemyId 
+        enemyId
       };
     }
     
@@ -181,40 +255,55 @@ export default class CollisionManager {
         this.enemyManager.x[enemyIndex],
         this.enemyManager.y[enemyIndex]
       )) {
-        return { 
-          valid: false, 
+        console.log(`[SERVER] ❌ VALIDATION FAILED: No line of sight`);
+        return {
+          valid: false,
           reason: 'No line of sight',
           bulletId,
-          enemyId 
+          enemyId
         };
       }
     }
-    
+
     // Check for actual collision (AABB)
+    const bulletPos = {
+      x: this.bulletManager.x[bulletIndex],
+      y: this.bulletManager.y[bulletIndex]
+    };
+    const enemyPos = {
+      x: this.enemyManager.x[enemyIndex],
+      y: this.enemyManager.y[enemyIndex]
+    };
+
     if (!this.checkAABBCollision(
-      this.bulletManager.x[bulletIndex],
-      this.bulletManager.y[bulletIndex],
+      bulletPos.x,
+      bulletPos.y,
       this.bulletManager.width[bulletIndex],
       this.bulletManager.height[bulletIndex],
-      this.enemyManager.x[enemyIndex],
-      this.enemyManager.y[enemyIndex],
+      enemyPos.x,
+      enemyPos.y,
       this.enemyManager.width[enemyIndex],
       this.enemyManager.height[enemyIndex]
     )) {
-      return { 
-        valid: false, 
+      console.log(`[SERVER] ❌ VALIDATION FAILED: No collision detected | ` +
+                 `Bullet pos: (${bulletPos.x.toFixed(2)}, ${bulletPos.y.toFixed(2)}), ` +
+                 `Enemy pos: (${enemyPos.x.toFixed(2)}, ${enemyPos.y.toFixed(2)})`);
+      return {
+        valid: false,
         reason: 'No collision detected',
         bulletId,
-        enemyId 
+        enemyId
       };
     }
-    
+
+    console.log(`[SERVER] ✅ VALIDATION SUCCESS: Processing collision between Bullet ${bulletId} and Enemy ${enemyId}`);
+
     // Collision is valid - process it and store result
     const result = this.processCollision(bulletIndex, enemyIndex, clientId);
-    
+
     // Mark as processed to avoid duplicates
     this.processedCollisions.set(collisionId, now);
-    
+
     return {
       valid: true,
       ...result
@@ -232,17 +321,25 @@ export default class CollisionManager {
     // Get bullet and enemy details
     const bulletId = this.bulletManager.id[bulletIndex];
     const enemyId = this.enemyManager.id[enemyIndex];
-    
+
+    const enemyHealthBefore = this.enemyManager.health[enemyIndex];
+
+    console.log(`[SERVER] ⚔️ PROCESSING COLLISION: Bullet ${bulletId} hitting Enemy ${enemyId} | ` +
+               `Enemy health before: ${enemyHealthBefore}`);
+
     // Calculate damage
-    const damage = this.bulletManager.damage ? 
+    const damage = this.bulletManager.damage ?
       this.bulletManager.damage[bulletIndex] : 10; // Default damage
-    
+
     // Apply damage to enemy (may return an object)
     const dmgResult = this.enemyManager.applyDamage(enemyIndex, damage);
     const remainingHealth = typeof dmgResult === 'object' && dmgResult !== null && 'health' in dmgResult
       ? dmgResult.health
       : (typeof dmgResult === 'number' ? dmgResult : this.enemyManager.health[enemyIndex]);
-    
+
+    console.log(`[SERVER] 💥 DAMAGE APPLIED: ${damage} damage | ` +
+               `Enemy ${enemyId} health: ${enemyHealthBefore} → ${remainingHealth}`);
+
     // Remove bullet and register
     if (this.bulletManager.markForRemoval) {
       this.bulletManager.markForRemoval(bulletIndex);
@@ -250,22 +347,26 @@ export default class CollisionManager {
       // Alternative removal method
       this.bulletManager.life[bulletIndex] = 0;
     }
-    
+
     if (this.bulletManager.registerRemoval) {
       this.bulletManager.registerRemoval('entityHit');
     }
-    
+
+    console.log(`[SERVER] 🔫 BULLET REMOVED: Bullet ${bulletId} marked for removal`);
+
     // Handle enemy death if needed
     let enemyKilled = false;
     if (remainingHealth <= 0) {
       enemyKilled = true;
-      
+
+      console.log(`[SERVER] 💀 ENEMY KILLED: Enemy ${enemyId} has been defeated by client ${clientId}!`);
+
       // Call enemy manager's death handler
       if (this.enemyManager.onDeath) {
         this.enemyManager.onDeath(enemyIndex, clientId);
       }
     }
-    
+
     // Return collision result
     return {
       bulletId,

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #222; color: #0f0; }
+        #log { white-space: pre-wrap; }
+        .error { color: #f00; }
+        .success { color: #0f0; }
+        .info { color: #ff0; }
+    </style>
+</head>
+<body>
+    <h1>Game Debug Test</h1>
+    <div id="log"></div>
+
+    <script>
+        const log = document.getElementById('log');
+
+        function addLog(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(line);
+            console.log(message);
+        }
+
+        addLog('=== Starting Debug Test ===');
+
+        // Test 1: Check if server is reachable
+        addLog('Test 1: Testing HTTP server...');
+        fetch('/')
+            .then(response => {
+                addLog(`✓ HTTP server responding (status ${response.status})`, 'success');
+            })
+            .catch(error => {
+                addLog(`✗ HTTP server failed: ${error.message}`, 'error');
+            });
+
+        // Test 2: Check WebSocket connection
+        addLog('Test 2: Testing WebSocket connection...');
+        const wsUrl = `ws://${location.hostname}:${location.port || 3000}`;
+        addLog(`WebSocket URL: ${wsUrl}`);
+
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            addLog('✓ WebSocket connected successfully!', 'success');
+            addLog('Sending test message...');
+            ws.send('test');
+        };
+
+        ws.onmessage = (event) => {
+            addLog(`✓ Received message: ${event.data}`, 'success');
+        };
+
+        ws.onerror = (error) => {
+            addLog(`✗ WebSocket error: ${error}`, 'error');
+        };
+
+        ws.onclose = () => {
+            addLog('WebSocket closed', 'info');
+        };
+
+        // Test 3: Check if game.js can be loaded
+        addLog('Test 3: Testing game.js import...');
+        import('./src/game/game.js')
+            .then(module => {
+                addLog('✓ game.js loaded successfully', 'success');
+                addLog(`Exports: ${Object.keys(module).join(', ')}`);
+
+                // Test 4: Try to init the game
+                if (module.initGame) {
+                    addLog('Test 4: Attempting to initialize game...');
+                    module.initGame()
+                        .then(() => {
+                            addLog('✓ Game initialized successfully!', 'success');
+                        })
+                        .catch(error => {
+                            addLog(`✗ Game initialization failed: ${error.message}`, 'error');
+                            addLog(`Stack: ${error.stack}`, 'error');
+                        });
+                } else {
+                    addLog('✗ initGame function not found in module', 'error');
+                }
+            })
+            .catch(error => {
+                addLog(`✗ Failed to load game.js: ${error.message}`, 'error');
+                addLog(`Stack: ${error.stack}`, 'error');
+            });
+
+        // Catch all unhandled errors
+        window.onerror = (msg, url, lineNo, columnNo, error) => {
+            addLog(`✗ Global error: ${msg} at ${url}:${lineNo}:${columnNo}`, 'error');
+            if (error && error.stack) {
+                addLog(`Stack: ${error.stack}`, 'error');
+            }
+            return false;
+        };
+
+        window.onunhandledrejection = (event) => {
+            addLog(`✗ Unhandled promise rejection: ${event.reason}`, 'error');
+        };
+    </script>
+</body>
+</html>

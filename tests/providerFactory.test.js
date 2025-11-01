@@ -12,7 +12,7 @@ jest.unstable_mockModule('@google/generative-ai', () => ({
   })),
 }));
 
-import { createProvider } from '../src/llm/ProviderFactory.js';
+import { createProvider } from '../src/boss/llm/ProviderFactory.js';
 
 describe('ProviderFactory', () => {
   afterEach(() => {

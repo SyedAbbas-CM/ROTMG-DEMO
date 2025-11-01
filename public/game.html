@@ -32,7 +32,7 @@
         <div id="loadingBar"><div id="loadingProgress"></div></div>
     </div>
     <div id="connectionStatus">Connecting...</div>
-    <div id="playerStatus">Initializing...</div>
+    <div id="playerStatus" style="display:none;">Initializing...</div>
     <div id="controlsHelp">WASD: Move | Click: Shoot | V: Switch View | F3: Debug | Shift+E: Sprite Editor | Shift+M: Map Editor | Shift+S: Sprite Test</div>
     <canvas id="glCanvas"></canvas>
     <canvas id="gameCanvas"></canvas>
@@ -42,7 +42,9 @@
     </div>
     <div id="gameUIContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; background-color: transparent;"></div>
     <script type="module">
+        console.log('[game.html] Module script is running');
         import { initGame } from './src/game/game.js';
+        console.log('[game.html] initGame imported successfully');
         let loadingProgress = 0;
         const progressBar = document.getElementById('loadingProgress');
         const loadingScreen = document.getElementById('loadingScreen');
@@ -66,23 +68,36 @@
         window.updateLoadingProgress = updateLoadingProgress;
         window.updateConnectionStatus = updateConnectionStatus;
         window.updatePlayerStatus = (s)=>{ const el=document.getElementById('playerStatus'); if(el) el.textContent=s; };
-        document.addEventListener('DOMContentLoaded', () => {
+        // Function to start the game
+        function startGame() {
+            console.log('[game.html] Starting game initialization');
             let progress = 0;
             const loadingInterval = setInterval(() => {
                 progress += 5;
                 updateLoadingProgress(progress);
                 if (progress >= 90) clearInterval(loadingInterval);
             }, 100);
+            console.log('[game.html] About to call initGame()...');
             initGame().then(() => {
+                console.log('[game.html] initGame() completed successfully');
                 updateLoadingProgress(100);
                 updateConnectionStatus('Connected');
             }).catch((error) => {
-                console.error('Game initialization error:', error);
+                console.error('[game.html] initGame() failed:', error);
                 updateLoadingProgress(100);
                 updateConnectionStatus('Error');
                 alert('Failed to initialize the game. Please check the console for details.');
             });
-        });
+        }
+
+        // Start game when DOM is ready (handle both cases: before and after DOMContentLoaded)
+        if (document.readyState === 'loading') {
+            console.log('[game.html] DOM still loading, adding event listener...');
+            document.addEventListener('DOMContentLoaded', startGame);
+        } else {
+            console.log('[game.html] DOM already loaded, starting game immediately...');
+            startGame();
+        }
         document.getElementById('closeSpriteEditor').addEventListener('click',()=>{
             document.getElementById('spriteEditorContainer').style.display='none';
         });

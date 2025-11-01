@@ -246,21 +246,26 @@ function onMouseMove(event) {
 function handleMouseClick(event) {
     // Only allow shooting if not in first-person view
     if (gameState.camera.viewType === 'first-person') return;
-    
+
     // Check if player can shoot
     if (gameState.character.canShoot && !gameState.character.canShoot()) {
         return;
     }
-    
+
     // Convert screen position to world position
     const canvas = document.getElementById('gameCanvas');
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    
-    // Calculate target position using camera position and mouse offset
-    const targetX = gameState.character.x + (event.clientX - centerX) / (TILE_SIZE * SCALE);
-    const targetY = gameState.character.y + (event.clientY - centerY) / (TILE_SIZE * SCALE);
-    
+
+    // Get camera scale factor for current view
+    const scaleFactor = gameState.camera.getViewScaleFactor();
+
+    // Convert screen coordinates to world coordinates (inverse of worldToScreen)
+    // worldToScreen: screenX = (worldX - camera.x) * TILE_SIZE * scaleFactor + centerX
+    // Inverse: worldX = (screenX - centerX) / (TILE_SIZE * scaleFactor) + camera.x
+    const targetX = (event.clientX - centerX) / (TILE_SIZE * scaleFactor) + gameState.camera.position.x;
+    const targetY = (event.clientY - centerY) / (TILE_SIZE * scaleFactor) + gameState.camera.position.y;
+
     // Call shoot handler
     handleShoot(targetX, targetY);
 }

@@ -64,16 +64,9 @@ export class CoordinateUtils {
    * @returns {Object} Screen coordinates {x, y}
    */
   worldToScreen(worldX, worldY, camera, screenWidth, screenHeight) {
-    const viewType = camera.viewType || 'top-down';
-    let scaleFactor = 1.0;
-    
-    // Get scale factor based on view type
-    if (viewType === 'strategic') {
-      scaleFactor = 0.5;
-    } else if (viewType === 'top-down') {
-      scaleFactor = 1.0;
-    }
-    
+    // Use camera's actual scale factor method
+    const scaleFactor = camera.getViewScaleFactor ? camera.getViewScaleFactor() : 4.0;
+
     // Calculate screen coordinates
     const screenX = (worldX - camera.position.x) * TILE_SIZE * scaleFactor + screenWidth / 2;
     const screenY = (worldY - camera.position.y) * TILE_SIZE * scaleFactor + screenHeight / 2;
@@ -95,16 +88,9 @@ export class CoordinateUtils {
    * @returns {Object} World coordinates {x, y}
    */
   screenToWorld(screenX, screenY, camera, screenWidth, screenHeight) {
-    const viewType = camera.viewType || 'top-down';
-    let scaleFactor = 1.0;
-    
-    // Get scale factor based on view type
-    if (viewType === 'strategic') {
-      scaleFactor = 0.5;
-    } else if (viewType === 'top-down') {
-      scaleFactor = 1.0;
-    }
-    
+    // Use camera's actual scale factor method
+    const scaleFactor = camera.getViewScaleFactor ? camera.getViewScaleFactor() : 4.0;
+
     // Calculate world coordinates
     const worldX = ((screenX - screenWidth / 2) / (this.tileSize * scaleFactor)) + camera.position.x;
     const worldY = ((screenY - screenHeight / 2) / (this.tileSize * scaleFactor)) + camera.position.y;
@@ -147,11 +133,9 @@ export const coordinateUtils = new CoordinateUtils();
  * This makes the utilities accessible to all parts of the codebase
  */
 export function initCoordinateUtils() {
-  console.log('Coordinate utilities initialized');
-  
   // Add to window for debugging if needed
   window.coordinateUtils = coordinateUtils;
-  
+
   return coordinateUtils;
 }
 

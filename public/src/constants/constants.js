@@ -41,18 +41,18 @@ export const TILE_IDS = {
 
 // ENHANCED: Properties for each tile type for consistent behavior
 export const TILE_PROPERTIES = {
-  [TILE_IDS.FLOOR]: { isWalkable: true, isTransparent: true, movementCost: 1.0 },
-  [TILE_IDS.WALL]: { isWalkable: false, isTransparent: false, movementCost: Infinity },
-  [TILE_IDS.OBSTACLE]: { isWalkable: false, isTransparent: true, movementCost: Infinity },
-  [TILE_IDS.WATER]: { isWalkable: false, isTransparent: true, movementCost: 2.0 },
-  [TILE_IDS.MOUNTAIN]: { isWalkable: false, isTransparent: true, movementCost: Infinity },
-  [TILE_IDS.SAND]: { isWalkable: true, isTransparent: true, movementCost: 1.5 },
-  [TILE_IDS.LAVA]: { isWalkable: false, isTransparent: true, movementCost: Infinity },
-  [TILE_IDS.ICE]: { isWalkable: true, isTransparent: true, movementCost: 0.8 },
-  [TILE_IDS.GRASS]: { isWalkable: true, isTransparent: true, movementCost: 1.2 },
-  [TILE_IDS.FOREST]: { isWalkable: true, isTransparent: true, movementCost: 1.8 },
-  [TILE_IDS.ROAD]: { isWalkable: true, isTransparent: true, movementCost: 0.9 },
-  [TILE_IDS.STONE]: { isWalkable: true, isTransparent: true, movementCost: 1.3 },
+  [TILE_IDS.FLOOR]: { isWalkable: true, isTransparent: true, movementCost: 1.0, damage: 0 },
+  [TILE_IDS.WALL]: { isWalkable: false, isTransparent: false, movementCost: Infinity, damage: 0 },
+  [TILE_IDS.OBSTACLE]: { isWalkable: false, isTransparent: true, movementCost: Infinity, damage: 0 },
+  [TILE_IDS.WATER]: { isWalkable: true, isTransparent: true, movementCost: 4.0, damage: 0 }, // Walkable but very slow (0.25x speed)
+  [TILE_IDS.MOUNTAIN]: { isWalkable: false, isTransparent: true, movementCost: Infinity, damage: 0 },
+  [TILE_IDS.SAND]: { isWalkable: true, isTransparent: true, movementCost: 1.5, damage: 0 },
+  [TILE_IDS.LAVA]: { isWalkable: true, isTransparent: true, movementCost: 6.0, damage: 20 }, // Walkable but extremely slow (0.17x speed) and deals 20 damage per second
+  [TILE_IDS.ICE]: { isWalkable: true, isTransparent: true, movementCost: 0.8, damage: 0 },
+  [TILE_IDS.GRASS]: { isWalkable: true, isTransparent: true, movementCost: 1.2, damage: 0 },
+  [TILE_IDS.FOREST]: { isWalkable: true, isTransparent: true, movementCost: 1.8, damage: 0 },
+  [TILE_IDS.ROAD]: { isWalkable: true, isTransparent: true, movementCost: 0.9, damage: 0 },
+  [TILE_IDS.STONE]: { isWalkable: true, isTransparent: true, movementCost: 1.3, damage: 0 },
 };
 
 // Sprite grid dimensions for tile sprite sheet

@@ -9,6 +9,7 @@ import { gameState } from './gamestate.js';
 import { initControls, getKeysPressed, getMoveSpeed } from './input.js';
 import { addFirstPersonElements, updateFirstPerson } from '../render/renderFirstPerson.js';
 import { updateCharacter, updateCollisionVisualization, addCollisionVisualizationToggle } from './updateCharacter.js';
+import { updateTileEffects, getTileSpeedMultiplier } from '../utils/tileEffects.js';
 import { renderTopDownView } from '../render/renderTopDown.js';
 import { renderStrategicView } from '../render/renderStrategic.js';
 import { updatePlayers, playerManager, updatePlayerInterpolation } from '../entities/entities.js';
@@ -32,6 +33,7 @@ import { EntityAnimator } from '../entities/EntityAnimator.js';
 import { PlayerManager } from '../entities/PlayerManager.js';
 import { initCoordinateUtils } from '../utils/coordinateUtils.js';
 import { initLogger, setLogLevel, LOG_LEVELS } from '../utils/logger.js';
+import '../utils/disableConsoleLogs.js'; // Disable console logs to reduce logs.txt spam
 import { setupDebugTools } from '../utils/debugTools.js';
 import { spriteDatabase } from '../assets/SpriteDatabase.js';
 import { tileDatabase } from '../assets/TileDatabase.js';
@@ -40,7 +42,6 @@ import { entityDatabase } from '../assets/EntityDatabase.js';
 import { speechBubbleManager } from '../ui/SpeechBubbleManager.js';
 import { ClientInventoryManager } from './ClientInventoryManager.js';
 import ClientUnitManager from '../units/ClientUnitManager.js';
-import { initializeChatSystem } from '../ui/ChatSystem.js';
 
 let renderer, scene, camera;
 let lastTime = 0;
@@ -147,9 +148,10 @@ export async function initGame() {
         // Initialize the new sprite database system
         console.log('Initializing sprite database...');
         await initializeSpriteManager();
-        
+
         // Load consolidated entity definitions (tiles, objects, enemies, …)
-        await entityDatabase.load();
+        // TODO: Disabled until /api/entities endpoint is created
+        // await entityDatabase.load();
 
         // Load tile database
         await tileDatabase.load('assets/database/tiles.json');
@@ -278,8 +280,10 @@ export async function initGame() {
         initCoordinateUtils();
         console.log('Coordinate utilities initialized.');
 
+        console.log('[DEBUG] About to call initializeGameState...');
         // Initialize the game state
         initializeGameState();
+        console.log('[DEBUG] initializeGameState completed.');
         
         // The sprite editor container is already in the HTML, skip initialization
         console.log('Sprite editor container already exists in HTML');
@@ -290,10 +294,12 @@ export async function initGame() {
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        window.renderer = renderer; // Expose to render.js for first-person view
         console.log('Three.js Renderer initialized.');
 
         // Create Three.js Scene
         scene = new THREE.Scene();
+        window.scene = scene; // Expose to render.js for first-person view
         console.log('Three.js Scene created.');
 
         // Create Camera
@@ -324,57 +330,57 @@ export async function initGame() {
         scene.add(directionalLight);
         console.log('Directional Light added to the scene.');
 
-        // Add First-Person Elements to the Scene
-        addFirstPersonElements(scene, () => {
-            console.log('First-person elements added. Connecting to server...');
-            
-            // Initialize GameUI
-            console.log('Initializing Game UI...');
-            gameUI = initUIManager(gameState);
-            
-            // Connect to the server first, don't block game start on UI loading
-            connectToServer().then(() => {
-                console.log('Connected to server. Starting the game loop.');
-                
-                // Start the Game Loop after connection is established
-                requestAnimationFrame(gameLoop);
-                
-                // Debug overlay is enabled but not shown by default
-                debugOverlay.enabled = true;
-                
-                // Add collision visualization toggle button
-                addCollisionVisualizationToggle();
-                
-                // Load UI after game has started
-                setTimeout(() => {
-                    gameUI.init().then(() => {
-                        console.log('Game UI loaded successfully');
-                        if (gameUI.isInitialized) {
-                            gameUI.addChatMessage('Connected to server successfully!', 'system');
-                        }
-                    }).catch(err => {
-                        console.warn('Game UI could not be loaded:', err);
-                    });
-                }, 1000); // Delay UI loading to prioritize game initialization
-            }).catch(error => {
-                console.error('Failed to connect to server:', error);
-                // Start game loop anyway for offline testing
-                requestAnimationFrame(gameLoop);
-                
-                // Debug overlay is enabled but not shown by default
-                debugOverlay.enabled = true;
-                
-                // Add collision visualization toggle button
-                addCollisionVisualizationToggle();
-                
-                // Try to load UI after game has started
-                setTimeout(() => {
-                    gameUI.init().catch(err => {
-                        console.warn('Game UI could not be loaded:', err);
-                    });
-                }, 1000);
-            });
-        });
+        // Add First-Person Elements to the Scene - now properly awaits async function
+        await addFirstPersonElements(scene, null);
+        console.log('First-person elements added. Connecting to server...');
+
+        // Initialize GameUI
+        console.log('Initializing Game UI...');
+        gameUI = initUIManager(gameState);
+
+        // Connect to the server
+        try {
+            await connectToServer();
+            console.log('Connected to server. Starting the game loop.');
+
+            // Start the Game Loop after connection is established
+            requestAnimationFrame(gameLoop);
+
+            // Debug overlay is enabled but not shown by default
+            debugOverlay.enabled = true;
+
+            // Add collision visualization toggle button
+            addCollisionVisualizationToggle();
+
+            // Load UI after game has started
+            setTimeout(() => {
+                gameUI.init().then(() => {
+                    console.log('Game UI loaded successfully');
+                    if (gameUI.isInitialized) {
+                        gameUI.addChatMessage('Connected to server successfully!', 'system');
+                    }
+                }).catch(err => {
+                    console.warn('Game UI could not be loaded:', err);
+                });
+            }, 1000); // Delay UI loading to prioritize game initialization
+        } catch (error) {
+            console.error('Failed to connect to server:', error);
+            // Start game loop anyway for offline testing
+            requestAnimationFrame(gameLoop);
+
+            // Debug overlay is enabled but not shown by default
+            debugOverlay.enabled = true;
+
+            // Add collision visualization toggle button
+            addCollisionVisualizationToggle();
+
+            // Try to load UI after game has started
+            setTimeout(() => {
+                gameUI.init().catch(err => {
+                    console.warn('Game UI could not be loaded:', err);
+                });
+            }, 1000);
+        }
 
         // Handle window resize
         window.addEventListener('resize', handleResize);
@@ -552,7 +558,9 @@ export async function initGame() {
  * Initialize game state and managers
  */
 function initializeGameState() {
+    console.log('[initializeGameState] Starting game state initialization...');
     // Create local player with complete properties
+    console.log('[initializeGameState] Creating local player...');
     localPlayer = new Player({
         name: 'Player',
         x: 2, // spawn slightly more to the left
@@ -599,7 +607,8 @@ function initializeGameState() {
     // Create map manager once and expose globally for any legacy references
     mapManager = new ClientMapManager({});
     window.mapManager = mapManager; // legacy scripts may refer here
-    
+    gameState.mapManager = mapManager; // Make available in gameState for tile effects system
+
     // IMPORTANT: Disable procedural generation to use server's map
     mapManager.proceduralEnabled = false;
     
@@ -730,7 +739,7 @@ function initializeGameState() {
 
     // Create network manager with game object
     networkManager = new ClientNetworkManager(SERVER_URL, gameObject);
-    
+
     // Set up connection event handlers
     networkManager.onConnect = () => {
         console.log("Connected to server");
@@ -788,15 +797,12 @@ function initializeGameState() {
     
     // Other message handlers can be added here as needed
     
-    // Expose globally for debug and input helpers  
+    // Expose globally for debug and input helpers
     window.networkManager = networkManager;
-    
-    // Initialize chat system for in-game commands
-    initializeChatSystem(networkManager);
-    console.log('Chat system initialized - press Enter to open chat, use /help for commands.');
-    
+
     // Now that network manager is created, set it in the map manager
     mapManager.networkManager = networkManager;
+    console.log('[INIT] Set networkManager in mapManager:', !!networkManager);
     
     // Initialize collision manager AFTER network manager
     collisionManager = new ClientCollisionManager({
@@ -890,7 +896,12 @@ function update(delta) {
     if (typeof updateCharacter === 'function') {
         updateCharacter(delta);
     }
-    
+
+    // Update tile effects (speed penalties + damage from water/lava)
+    if (gameState.character && typeof updateTileEffects === 'function') {
+        updateTileEffects(gameState.character);
+    }
+
     // Update collision visualization when enabled
     if (typeof updateCollisionVisualization === 'function') {
         updateCollisionVisualization();
@@ -910,22 +921,10 @@ function update(delta) {
     if (enemyManager) {
         enemyManager.update(delta);
     }
-    
-    // Update map visible chunks based on player position
-    if (mapManager && gameState.character) {
-        const viewType = gameState.camera ? gameState.camera.viewType : 'top-down';
-        
-        if (viewType === 'strategic') {
-            // For strategic view, update chunks less frequently
-        } else if (viewType === 'top-down') {
-            // For top-down view, update chunks at regular rate
-            mapManager.updateVisibleChunks(gameState.character.x, gameState.character.y);
-        } else {
-            // First-person view
-            mapManager.updateVisibleChunks(gameState.character.x, gameState.character.y);
-        }
-    }
-    
+
+    // Note: Chunk updates are handled by renderTopDown.js every 2 seconds
+    // Removed duplicate updateVisibleChunks call to prevent chunk spam
+
     // Update collision detection
     if (collisionManager) {
         collisionManager.update(delta);
@@ -1029,6 +1028,10 @@ export function handleShoot(targetX, targetY) {
     // Convert to angle/speed and use sendShoot API expected by server
     const angle = Math.atan2(vy, vx);
     const speed = Math.sqrt(vx * vx + vy * vy);
+
+    // Log shoot request
+    console.log(`[CLIENT SHOOT REQUEST] Pos: (${playerX.toFixed(4)}, ${playerY.toFixed(4)}), Tile: (${Math.floor(playerX)}, ${Math.floor(playerY)}), Angle: ${angle.toFixed(2)}, Speed: ${speed.toFixed(2)}, Target: (${targetX.toFixed(2)}, ${targetY.toFixed(2)})`);
+
     if (typeof networkManager.sendShoot === 'function') {
         networkManager.sendShoot({
             x: playerX,

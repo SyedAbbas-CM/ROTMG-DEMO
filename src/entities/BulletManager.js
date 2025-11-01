@@ -8,6 +8,13 @@ export default class BulletManager {
   /**
    * Creates a bullet manager
    * @param {number} maxBullets - Maximum number of bullets to allow
+   *
+   * COORDINATE SYSTEM:
+   * - All positions (x, y) are in TILE UNITS (not pixels)
+   * - All sizes (width, height) are in TILE UNITS (not pixels)
+   * - All velocities (vx, vy) are in TILES PER SECOND
+   * - This matches the server MapManager coordinate system
+   * - TILE_SIZE = 12 pixels per tile
    */
   constructor(maxBullets = 10000) {
     this.maxBullets = maxBullets;
@@ -16,13 +23,13 @@ export default class BulletManager {
 
     // SoA data layout
     this.id = new Array(maxBullets);        // Unique bullet IDs
-    this.x = new Float32Array(maxBullets);  // X position
-    this.y = new Float32Array(maxBullets);  // Y position
-    this.vx = new Float32Array(maxBullets); // X velocity
-    this.vy = new Float32Array(maxBullets); // Y velocity
+    this.x = new Float32Array(maxBullets);  // X position (TILE UNITS)
+    this.y = new Float32Array(maxBullets);  // Y position (TILE UNITS)
+    this.vx = new Float32Array(maxBullets); // X velocity (TILES/SEC)
+    this.vy = new Float32Array(maxBullets); // Y velocity (TILES/SEC)
     this.life = new Float32Array(maxBullets); // Remaining life in seconds
-    this.width = new Float32Array(maxBullets);  // Collision width
-    this.height = new Float32Array(maxBullets); // Collision height
+    this.width = new Float32Array(maxBullets);  // Collision width (TILE UNITS)
+    this.height = new Float32Array(maxBullets); // Collision height (TILE UNITS)
     this.damage = new Float32Array(maxBullets);  // Damage amount
     this.ownerId = new Array(maxBullets);   // ID of entity that created this bullet
     this.spriteName = new Array(maxBullets); // For client rendering
@@ -70,8 +77,8 @@ export default class BulletManager {
     this.vx[index] = bulletData.vx;
     this.vy[index] = bulletData.vy;
     this.life[index] = bulletData.lifetime || 3.0; // Default 3 seconds
-    this.width[index] = bulletData.width || 5;
-    this.height[index] = bulletData.height || 5;
+    this.width[index] = bulletData.width || 0.4;   // TILE UNITS: 40% of a tile (was 5 pixels - WRONG!)
+    this.height[index] = bulletData.height || 0.4; // TILE UNITS: 40% of a tile (was 5 pixels - WRONG!)
     this.damage[index] = bulletData.damage || 10;
     this.ownerId[index] = bulletData.ownerId || null;
     this.spriteName[index] = bulletData.spriteName || null;

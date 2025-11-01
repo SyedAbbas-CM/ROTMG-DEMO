@@ -7,15 +7,16 @@ import { WebSocketServer, WebSocket } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { MapManager } from './src/MapManager.js';
+import { MapManager } from './src/world/MapManager.js';
+import OVERWORLD_CONFIG from './src/world/OverworldConfig.js';
 import { BinaryPacket, MessageType } from './common/protocol.js';
-import BulletManager from './src/BulletManager.js';
-import EnemyManager from './src/EnemyManager.js';
-import CollisionManager from './src/CollisionManager.js';
-import BagManager from './src/BagManager.js';
-import { ItemManager } from './src/ItemManager.js';
+import BulletManager from './src/entities/BulletManager.js';
+import EnemyManager from './src/entities/EnemyManager.js';
+import CollisionManager from './src/entities/CollisionManager.js';
+import BagManager from './src/entities/BagManager.js';
+import { ItemManager } from './src/entities/ItemManager.js';
 // Import BehaviorSystem
-import BehaviorSystem from './src/BehaviorSystem.js';
+import BehaviorSystem from './src/Behaviours/BehaviorSystem.js';
 import { entityDatabase } from './src/assets/EntityDatabase.js';
 import { NETWORK_SETTINGS } from './common/constants.js';
 // Import Unit Systems
@@ -28,7 +29,12 @@ import { BossManager, LLMBossController, BossSpeechController } from './server/w
 import './src/telemetry/index.js'; // OpenTelemetry setup
 import llmRoutes from './src/routes/llmRoutes.js';
 import hotReloadRoutes from './src/routes/hotReloadRoutes.js';
+import mapEditorRoutes from './src/routes/mapEditorRoutes.js';
+import enemyEditorRoutes from './src/routes/enemyEditorRoutes.js';
+import behaviorDesignerRoutes from './src/routes/behaviorDesignerRoutes.js';
 import { logger } from './src/utils/logger.js';
+// ---- Tile System ----
+import { initTileSystem } from './src/assets/initTileSystem.js';
 
 // Debug flags to control logging
 const DEBUG = {
@@ -41,10 +47,10 @@ const DEBUG = {
   playerPositions: false,
   activeCounts: false,
   // Keep chunkRequests on so we can confirm the request-throttling fix works
-  chunkRequests: false,
+  chunkRequests: true,
   chat: false,
   playerMovement: false,
-  bulletEvents: false
+  bulletEvents: true
 };
 
 // Expose debug flags globally so helper classes can reference them
@@ -106,6 +112,15 @@ wss.on('error', (err) => {
 
 // Set up middleware
 app.use(express.json());
+
+// Disable caching for all static files during development
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 app.use(express.static(path.join(__dirname,'public')));
 // Expose common/ for browser consumption so client can import shared protocol/constants
 app.use('/common', express.static(path.join(__dirname,'common')));
@@ -256,6 +271,11 @@ app.post('/api/assets/images/save', (req, res) => {
   }
 });
 
+// Mount editor routes
+app.use('/api/map-editor', mapEditorRoutes);
+app.use('/api/enemy-editor', enemyEditorRoutes);
+app.use('/api/behavior-designer', behaviorDesignerRoutes);
+
 // Create global server managers
 const mapManager  = new MapManager({ mapStoragePath: path.join(__dirname, 'maps') });
 const itemManager = new ItemManager();
@@ -356,6 +376,188 @@ function broadcastToWorld(mapId, type, payload){
     if(c.mapId===mapId){
       sendToClient(c.socket, type, payload);
     }
+  });
+}
+
+// ---------------------------------------------------------------
+// Helper: Handle chunk requests from client
+// ---------------------------------------------------------------
+function handleChunkRequest(clientId, data) {
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  const { chunkX, chunkY } = data;
+  const mapId = client.mapId;
+
+  // Chunk request logging disabled to reduce spam
+
+  // Get chunk data from map manager
+  const chunkData = mapManager.getChunkData(mapId, chunkX, chunkY);
+
+  if (chunkData) {
+    // DEBUG: Log sample tile to verify sprite data
+    if (chunkX === 0 && chunkY === 0 && chunkData.tiles && chunkData.tiles[0] && chunkData.tiles[0][0]) {
+      const sampleTile = chunkData.tiles[0][0];
+      console.log('[SERVER] Sample tile before send:', {
+        type: sampleTile.type,
+        spriteX: sampleTile.spriteX,
+        spriteY: sampleTile.spriteY,
+        spriteName: sampleTile.spriteName,
+        biome: sampleTile.biome,
+        hasProperties: !!sampleTile.properties
+      });
+    }
+
+    // Send chunk data back to client
+    sendToClient(client.socket, MessageType.CHUNK_DATA, {
+      x: chunkX,
+      y: chunkY,
+      data: chunkData
+    });
+  } else {
+    // Chunk not found
+    sendToClient(client.socket, MessageType.CHUNK_NOT_FOUND, {
+      x: chunkX,
+      y: chunkY
+    });
+
+    console.warn(`[CHUNK] Chunk (${chunkX}, ${chunkY}) not found for map ${mapId}`);
+  }
+}
+
+// ---------------------------------------------------------------
+// Helper: Handle player shooting
+// ---------------------------------------------------------------
+function handlePlayerShoot(clientId, bulletData) {
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  const { x, y, angle, speed, damage } = bulletData;
+  const mapId = client.mapId;
+
+  // Get world context
+  const ctx = getWorldCtx(mapId);
+  if (!ctx || !ctx.bulletMgr) {
+    console.error(`[SHOOT] No bullet manager for map ${mapId}`);
+    return;
+  }
+
+  // Create bullet owned by player
+  // Spawn bullet slightly offset from player position to prevent immediate boundary collision
+  const BULLET_SPAWN_OFFSET = 0.4; // Spawn 0.4 tiles ahead of player
+  // CRITICAL FIX: Trust client-provided position instead of stale server player position
+  // Using (x || client.player.x) caused 3-tile position discrepancy due to network latency
+  const bulletX = x + Math.cos(angle) * BULLET_SPAWN_OFFSET;
+  const bulletY = y + Math.sin(angle) * BULLET_SPAWN_OFFSET;
+
+  const bullet = {
+    id: `bullet_${Date.now()}_${clientId}_${Math.random()}`,
+    x: bulletX,
+    y: bulletY,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    damage: damage || 10,
+    ownerId: clientId,
+    worldId: mapId,
+    width: 0.6,   // TILE UNITS: 60% of a tile (slightly larger for better hit detection)
+    height: 0.6,  // TILE UNITS: 60% of a tile (slightly larger for better hit detection)
+    lifetime: 5.0 // 5 seconds (in seconds, not milliseconds)
+  };
+
+  // Add to bullet manager
+  const bulletId = ctx.bulletMgr.addBullet(bullet);
+
+  if (DEBUG.bulletEvents || true) { // Always log for debugging
+    console.log(`[SERVER BULLET CREATE] ID: ${bulletId}, Pos: (${x.toFixed(4)}, ${y.toFixed(4)}), Tile: (${Math.floor(x)}, ${Math.floor(y)}), Owner: ${clientId}, Angle: ${angle.toFixed(2)}, Speed: ${speed.toFixed(2)}`);
+  }
+}
+
+// ---------------------------------------------------------------
+// Helper: Handle player position update
+// ---------------------------------------------------------------
+function handlePlayerUpdate(clientId, positionData) {
+  const client = clients.get(clientId);
+  if (!client || !client.player) return;
+
+  const { x, y, vx, vy } = positionData;
+
+  // Update server-side player position
+  if (x !== undefined && y !== undefined) {
+    client.player.x = x;
+    client.player.y = y;
+  }
+
+  // Update velocity if provided
+  if (vx !== undefined && vy !== undefined) {
+    client.player.vx = vx;
+    client.player.vy = vy;
+  }
+
+  // No need to broadcast - this will be handled by the normal game state update cycle
+}
+
+// ---------------------------------------------------------------
+// Helper: Handle player chat/text messages
+// ---------------------------------------------------------------
+function handlePlayerText(clientId, data) {
+  const client = clients.get(clientId);
+  if (!client || !data || !data.text) return;
+
+  const text = data.text.trim();
+  if (!text) return;
+
+  // Check if it's a command (starts with /)
+  if (text.startsWith('/')) {
+    const cmdSystem = initializeCommandSystem();
+    cmdSystem.processMessage(clientId, text, client.player);
+  } else {
+    // Regular chat message - broadcast to all players in same world
+    const chatMessage = {
+      sender: client.player.name || `Player ${clientId}`,
+      text: text,
+      senderId: clientId,
+      timestamp: Date.now()
+    };
+
+    // Broadcast to all players in same map
+    clients.forEach((c, id) => {
+      if (c.mapId === client.mapId) {
+        sendToClient(c.socket, MessageType.CHAT_MESSAGE, chatMessage);
+      }
+    });
+
+    if (DEBUG.chat) {
+      console.log(`[CHAT] ${chatMessage.sender}: ${text}`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------
+// Helper: Handle unhandled client messages
+// ---------------------------------------------------------------
+function handleClientMessage(clientId, message) {
+  if (DEBUG.messages) {
+    console.log(`[NET] Unhandled message from client ${clientId}:`, message);
+  }
+}
+
+// ---------------------------------------------------------------
+// Helper: Handle client disconnect
+// ---------------------------------------------------------------
+function handleClientDisconnect(clientId) {
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  const mapId = client.mapId;
+  console.log(`[SERVER] Client disconnected: ${clientId} from map ${mapId}`);
+
+  // Remove client from the map
+  clients.delete(clientId);
+
+  // Notify other clients in the same world about player leaving
+  broadcastToWorld(mapId, MessageType.PLAYER_LEAVE, {
+    playerId: clientId,
+    timestamp: Date.now()
   });
 }
 
@@ -525,24 +727,45 @@ app.get('/api/maps/:id/chunk/:x/:y', (req, res) => {
 
 // Duplicate route definitions removed - already defined above
 
+// Initialize tile system before map generation
+try {
+  console.log('[SERVER] Initializing tile system...');
+  // Use top-level await (Node 14.8+)
+  await initTileSystem();
+  console.log('[SERVER] Tile system initialized successfully');
+} catch (error) {
+  console.error('[SERVER] Failed to initialize tile system:', error);
+}
+
 // Create initial procedural map
 let defaultMapId;
 let fixedMapId; // map created from editor file
 try {
   // Set map storage path for the server
   mapManager.mapStoragePath = './maps';
-  
-  // Create a procedural map with reduced size
+
+  // ============================================================================
+  // CREATE OVERWORLD - 4x4 REGION GRID (512x512 tiles total)
+  // ============================================================================
+  // Each region = 128x128 tiles
+  // 4 regions × 128 tiles = 512 tiles per dimension
+  // Use timestamp-based seed for unique worlds each restart
+  // ============================================================================
+  const uniqueSeed = Date.now() + Math.random() * 1000;
+  console.log(`[SERVER] Generating overworld with seed: ${uniqueSeed}`);
+  console.log(`[SERVER] World size: ${OVERWORLD_CONFIG.worldSize}x${OVERWORLD_CONFIG.worldSize} tiles (${OVERWORLD_CONFIG.gridSize}x${OVERWORLD_CONFIG.gridSize} regions)`);
+
   defaultMapId = mapManager.createProceduralMap({
-    width: 64,
-    height: 64,
-    seed: 123456789,
-    name: 'Default Map'
+    width: OVERWORLD_CONFIG.worldSize,   // 512 tiles
+    height: OVERWORLD_CONFIG.worldSize,  // 512 tiles
+    seed: uniqueSeed,
+    name: 'Overworld',
+    overworldConfig: OVERWORLD_CONFIG     // Pass overworld config to MapManager
   });
   if (DEBUG.mapCreation) {
     console.log(`Created default map: ${defaultMapId} - This is the map ID that will be sent to clients`);
   }
-  
+
   // (we will move async load after storedMaps declaration below)
   // -------------------------------------------------------------------
 } catch (error) {
@@ -557,69 +780,101 @@ storedMaps.set(defaultMapId, mapManager.getMapMetadata(defaultMapId));
 console.log(`Created default map: ${defaultMapId}`);
 
 /* ------------------------------------------------------------------
- * TEMPORARY PORTAL HOOK
+ * MULTI-MAP PORTAL SYSTEM
  * ------------------------------------------------------------------
- * Until we finish the full multi-world system this helper will spawn a
- * single portal in the centre of the procedural map that links to a
- * handcrafted map file located at public/maps/test.json.  Remove once
- * proper portal placement / map loading pipeline is ready.
+ * Load all maps from /public/maps/ and create bidirectional portals
+ * between the procedural overworld and each dungeon/map.
  */
 (async () => {
   try {
-    const fixedMapPath = path.join(__dirname, 'public', 'maps', 'test.json');
+    const mapsDir = path.join(__dirname, 'public', 'maps');
+    const mapFiles = fs.readdirSync(mapsDir).filter(f => f.endsWith('.json'));
+    console.log(`[PORTALS] Found ${mapFiles.length} map files in ${mapsDir}`);
 
-    // Load (or retrieve) the handcrafted map so we have its ID.
-    let handmadeId;
-    // Check if this map has already been loaded previously
-    for (const m of storedMaps.values()) {
-      if (m && m.sourcePath === fixedMapPath) {
-        handmadeId = m.id;
-        break;
-      }
-    }
-    if (!handmadeId) {
-      handmadeId = await mapManager.loadFixedMap(fixedMapPath);
-      storedMaps.set(handmadeId, mapManager.getMapMetadata(handmadeId));
-      // Spawn any static enemies that map defines
-      spawnMapEnemies(handmadeId);
-      console.log(`[TEMP-PORTAL] Loaded handcrafted map ${handmadeId} from ${fixedMapPath}`);
+    const loadedMaps = [];
+    let portalX = 5;
 
-      // --- NEW: Restore procedural map as active so new players spawn there ---
-      mapManager.activeMapId = defaultMapId;
-      const defMeta = mapManager.getMapMetadata(defaultMapId);
-      if (defMeta) {
-        mapManager.width  = defMeta.width;
-        mapManager.height = defMeta.height;
+    // Load each map and create its portal in the overworld
+    for (const mapFile of mapFiles) {
+      const fixedMapPath = path.join(mapsDir, mapFile);
+
+      // Check if already loaded
+      let mapId;
+      for (const m of storedMaps.values()) {
+        if (m && m.sourcePath === fixedMapPath) {
+          mapId = m.id;
+          break;
+        }
       }
 
-      // Re-enable procedural generation for other maps
-      if (mapManager.enableProceduralGeneration) {
-        mapManager.enableProceduralGeneration();
-        // Also mark global fixed flag false so procedural chunks generate
-        mapManager.isFixedMap = false;
+      if (!mapId) {
+        mapId = await mapManager.loadFixedMap(fixedMapPath);
+        storedMaps.set(mapId, mapManager.getMapMetadata(mapId));
+        spawnMapEnemies(mapId);
+        console.log(`[PORTALS] Loaded map ${mapId} from ${mapFile}`);
       }
+
+      loadedMaps.push({ id: mapId, name: mapFile.replace('.json', '') });
     }
 
-    // Inject a portal into the default procedural map if one is not present
+    // Restore procedural map as active so new players spawn there
+    mapManager.activeMapId = defaultMapId;
     const defMeta = mapManager.getMapMetadata(defaultMapId);
-    if (!defMeta) return;
+    if (defMeta) {
+      mapManager.width  = defMeta.width;
+      mapManager.height = defMeta.height;
+    }
+
+    // Re-enable procedural generation
+    if (mapManager.enableProceduralGeneration) {
+      mapManager.enableProceduralGeneration();
+      mapManager.isFixedMap = false;
+    }
+
+    // Create portals in overworld to each dungeon
     if (!defMeta.objects) defMeta.objects = [];
 
-    const alreadyExists = defMeta.objects.some(o => o.type === 'portal' && o.destMap === handmadeId);
-    if (!alreadyExists) {
-      const portalObj = {
-        id: `debug_portal_${handmadeId}`,
-        type: 'portal',
-        sprite: 'portal',
-        x: 5,
-        y: 5,
-        destMap: handmadeId
-      };
-      defMeta.objects.push(portalObj);
-      console.log(`[TEMP-PORTAL] Spawned portal at (${portalObj.x},${portalObj.y}) linking ${defaultMapId} → ${handmadeId}`);
-    }
+    loadedMaps.forEach((map) => {
+      const alreadyExists = defMeta.objects.some(o => o.type === 'portal' && o.destMap === map.id);
+      if (!alreadyExists) {
+        const portalObj = {
+          id: `portal_to_${map.id}`,
+          type: 'portal',
+          sprite: 'portal',
+          x: portalX,
+          y: 5,
+          destMap: map.id
+        };
+        defMeta.objects.push(portalObj);
+        console.log(`[PORTALS] Created portal at (${portalX},5) → ${map.name}`);
+        portalX += 3; // Space portals 3 tiles apart
+      }
+    });
+
+    // Create return portals in each dungeon back to overworld
+    loadedMaps.forEach(map => {
+      const mapMeta = mapManager.getMapMetadata(map.id);
+      if (!mapMeta) return;
+      if (!mapMeta.objects) mapMeta.objects = [];
+
+      const returnExists = mapMeta.objects.some(o => o.type === 'portal' && o.destMap === defaultMapId);
+      if (!returnExists) {
+        const returnPortal = {
+          id: `portal_return_${map.id}`,
+          type: 'portal',
+          sprite: 'portal',
+          x: 2,
+          y: 2,
+          destMap: defaultMapId
+        };
+        mapMeta.objects.push(returnPortal);
+        console.log(`[PORTALS] Created return portal in ${map.name} at (2,2) → overworld`);
+      }
+    });
+
+    console.log(`[PORTALS] Setup complete: ${loadedMaps.length} dungeons accessible from overworld`);
   } catch (err) {
-    console.error('[TEMP-PORTAL] Failed to set up temporary portal', err);
+    console.error('[PORTALS] Failed to set up portal system', err);
   }
 })();
 
@@ -687,6 +942,15 @@ function handlePortals() {
     const destMeta  = mapManager.getMapMetadata(destMapId);
     if (!destMeta) {
       console.warn('[PORTAL] Destination map metadata missing:', destMapId);
+      // Notify player of the error
+      sendToClient(client.socket, MessageType.CHAT_MESSAGE, {
+        sender: 'System',
+        message: `Portal destination unavailable (${destMapId}). Please try again later.`,
+        color: '#FF0000'
+      });
+      // Move player slightly off portal to prevent getting stuck
+      player.x += 1;
+      player.y += 1;
       return;
     }
 
@@ -733,11 +997,16 @@ let commandSystem = null;
 // Initialize command system
 function initializeCommandSystem() {
   if (!commandSystem) {
-    commandSystem = new CommandSystem({
+    // Create a server interface object that CommandSystem expects
+    const serverInterface = {
       clients: clients,
       gameState: gameState,
-      getWorldCtx: getWorldCtx
-    });
+      getWorldCtx: getWorldCtx,
+      mapManager: mapManager,
+      sendToClient: sendToClient,
+      broadcastToWorld: broadcastToWorld
+    };
+    commandSystem = new CommandSystem(serverInterface);
     console.log('[SERVER] Command system initialized');
   }
   return commandSystem;
@@ -879,18 +1148,30 @@ wss.on('connection', (socket, req) => {
   // Set up message handler
   socket.on('message', (message) => {
     try {
-      const packet = BinaryPacket.decode(message);
+      // Ignore non-binary messages (e.g., text 'test' messages from debug tools)
+      if (typeof message === 'string') {
+        if (DEBUG.connections) {
+          console.log(`[NET] Ignoring text message from client ${clientId}: ${message}`);
+        }
+        return;
+      }
+
+      // Ensure message is an ArrayBuffer or Buffer
+      const buffer = message instanceof ArrayBuffer ? message : message.buffer;
+
+      const packet = BinaryPacket.decode(buffer);
       if(packet.type === MessageType.MOVE_ITEM){
         processMoveItem(clientId, packet.data);
       } else if(packet.type === MessageType.PICKUP_ITEM){
         processPickupMessage(clientId, packet.data);
       } else if(packet.type === MessageType.PLAYER_TEXT){
-        // Initialize command system if not already done
-        const cmdSystem = initializeCommandSystem();
-        const client = clients.get(clientId);
-        if (client && packet.data && packet.data.text) {
-          cmdSystem.processMessage(clientId, packet.data.text, client.player);
-        }
+        handlePlayerText(clientId, packet.data);
+      } else if(packet.type === MessageType.CHUNK_REQUEST){
+        handleChunkRequest(clientId, packet.data);
+      } else if(packet.type === MessageType.BULLET_CREATE){
+        handlePlayerShoot(clientId, packet.data);
+      } else if(packet.type === MessageType.PLAYER_UPDATE){
+        handlePlayerUpdate(clientId, packet.data);
       } else {
         handleClientMessage(clientId, message);
       }
@@ -950,13 +1231,6 @@ function updateGame() {
 
     ctx.collMgr.checkCollisions();
     applyEnemyBulletsToPlayers(ctx.bulletMgr, players);
-
-    // Hyper-boss lives in default world only (gameState.mapId)
-    if (bossManager && mapId === gameState.mapId) {
-      bossManager.tick(deltaTime, ctx.bulletMgr);
-      if (llmBossController) llmBossController.tick(deltaTime, players).catch(()=>{});
-      if (bossSpeechCtrl)    bossSpeechCtrl.tick(deltaTime, players).catch(()=>{});
-    }
   });
 
   if (DEBUG.activeCounts && totalActiveEnemies > 0 && now % 5000 < 50) {
@@ -1136,6 +1410,61 @@ function tryListen(port, attemptsLeft = 5) {
   const onListening = () => {
     const actualPort = server.address().port;
     console.log(`[SERVER] Running on port ${actualPort}`);
+
+    // Initialize boss AI for the main map
+    try {
+      const mainMapCtx = getWorldCtx(gameState.mapId);
+      bossManager = new BossManager();
+
+      // Build LLM controller config from environment variables
+      const llmConfig = {
+        // Tactical tier (enabled by default unless explicitly disabled)
+        tacticalEnabled: process.env.TACTICAL_ENABLED !== 'false',
+
+        // Adaptive frequency (enabled by default)
+        adaptiveFrequency: process.env.TACTICAL_ADAPTIVE !== 'false',
+        tacticalMinInterval: parseInt(process.env.TACTICAL_MIN_INTERVAL) || 10,
+        tacticalMaxInterval: parseInt(process.env.TACTICAL_MAX_INTERVAL) || 30,
+
+        // Strategic tier (opt-in via environment variable)
+        strategicEnabled: process.env.STRATEGIC_ENABLED === 'true',
+        strategicModel: process.env.STRATEGIC_MODEL,
+        strategicInterval: parseInt(process.env.STRATEGIC_INTERVAL) || 300,
+
+        // Tactical model override (optional)
+        tacticalModel: process.env.TACTICAL_MODEL
+      };
+
+      // Pass bulletMgr, mapMgr, enemyMgr (use nulls if not available - controller handles gracefully)
+      if (llmConfig.tacticalEnabled) {
+        llmBossController = new LLMBossController(
+          bossManager,
+          mainMapCtx?.bulletMgr || null,
+          mainMapCtx?.mapMgr || mapManager,
+          mainMapCtx?.enemyMgr || null,
+          llmConfig
+        );
+        console.log('[SERVER] Tactical LLM Boss AI enabled');
+      } else {
+        console.log('[SERVER] Tactical LLM Boss AI disabled (TACTICAL_ENABLED=false)');
+      }
+
+      if (llmConfig.tacticalEnabled) {
+        bossSpeechCtrl = new BossSpeechController(bossManager);
+        console.log('[SERVER] Boss Speech controller enabled');
+      } else {
+        console.log('[SERVER] Boss Speech controller disabled (TACTICAL_ENABLED=false)');
+      }
+
+      console.log('[SERVER] Boss AI initialized for main map:', gameState.mapId, {
+        tacticalEnabled: llmConfig.tacticalEnabled,
+        adaptiveFrequency: llmConfig.adaptiveFrequency,
+        strategicEnabled: llmConfig.strategicEnabled
+      });
+    } catch (err) {
+      console.error('[SERVER] Failed to initialize boss AI:', err);
+    }
+
     // Remove error listener; server is good.
     server.off('error', onError);
     server.off('listening', onListening);
@@ -1151,14 +1480,25 @@ tryListen(START_PORT);
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   console.log('\nShutting down server...');
-  
+
   // Clean up resources for every world
   worldContexts.forEach((ctx) => {
     if (ctx.collMgr.cleanup) ctx.collMgr.cleanup();
     if (ctx.enemyMgr.cleanup) ctx.enemyMgr.cleanup();
     if (ctx.bulletMgr.cleanup) ctx.bulletMgr.cleanup();
   });
-  
+
+  // Close all WebSocket connections immediately
+  wss.clients.forEach((client) => {
+    client.close();
+  });
+
+  // Force exit after 1 second if server.close() hasn't completed
+  setTimeout(() => {
+    console.log('Forcing exit...');
+    process.exit(0);
+  }, 1000);
+
   server.close(() => {
     console.log('Server closed');
     process.exit(0);

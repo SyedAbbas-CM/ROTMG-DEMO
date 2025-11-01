@@ -25,6 +25,16 @@ export class Tile {
       this.walkable = (properties.walkable !== undefined)
         ? !!properties.walkable
         : defaultWalkableForType(type);
+
+      // Expose sprite metadata as top-level properties for renderer access
+      // Use nullish coalescing (??) to preserve 0 values (valid sprite coordinates)
+      this.spriteName = properties.spriteName ?? null;
+      this.atlas = properties.atlas ?? null;
+      this.spriteRow = properties.spriteRow ?? null;
+      this.spriteCol = properties.spriteCol ?? null;
+      this.spriteX = properties.spriteX ?? null;
+      this.spriteY = properties.spriteY ?? null;
+      this.biome = properties.biome ?? null;
     }
 
     /** Convenience wrapper so callers can ask tile.isWalkable() like on client */

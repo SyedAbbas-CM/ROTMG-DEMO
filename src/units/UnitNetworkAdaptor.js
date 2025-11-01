@@ -9,7 +9,7 @@
  * on ws msg:         unitNet.handleClientPacket(clientId, packet);
  */
 
-import { BinaryPacket, MessageType } from '../net/NetworkManager.js';
+import { BinaryPacket, MessageType } from '../../common/protocol.js';
 
 export default class UnitNetworkAdapter {
   constructor(wss, unitManager, unitSystems) {

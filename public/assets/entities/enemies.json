@@ -81,5 +81,30 @@
       "spread": 45
     },
     "ai": { "behaviorTree": "StaticBoss" }
+  },
+  {
+    "id": "charging_shooter_bullet",
+    "sprite": "orc_arrow",
+    "speed": 25,
+    "lifetime": 2000
+  },
+  {
+    "id": "charging_shooter",
+    "name": "Charging Shooter",
+    "sprite": "orc",
+    "hp": 80,
+    "speed": 15,
+    "width": 1,
+    "height": 1,
+    "renderScale": 2,
+    "attack": {
+      "bulletId": "charging_shooter_bullet",
+      "cooldown": 500,
+      "speed": 25,
+      "lifetime": 2000,
+      "count": 1,
+      "spread": 0
+    },
+    "ai": { "behaviorTree": "ChargingShooter" }
   }
 ] 

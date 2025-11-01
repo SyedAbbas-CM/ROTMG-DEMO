@@ -21,13 +21,23 @@ export class Tile {
       
       // Default properties based on type
       const defaultProps = {
-        isWalkable: ![1, 2, 3, 4].includes(type), // All except WALL, OBSTACLE, WATER, MOUNTAIN are walkable
+        isWalkable: ![1, 2, 4].includes(type), // All except WALL, OBSTACLE, MOUNTAIN are walkable (WATER is walkable)
         isTransparent: type !== 1, // All except WALL are transparent
         variation: 0, // Default variation
       };
       
       // Merge default properties with provided properties
       this.properties = {...defaultProps, ...properties};
+
+      // Expose sprite metadata as top-level properties for renderer access
+      // This matches the server-side Tile constructor behavior
+      this.spriteName = properties.spriteName ?? null;
+      this.atlas = properties.atlas ?? null;
+      this.spriteRow = properties.spriteRow ?? null;
+      this.spriteCol = properties.spriteCol ?? null;
+      this.spriteX = properties.spriteX ?? null;
+      this.spriteY = properties.spriteY ?? null;
+      this.biome = properties.biome ?? null;
     }
     
     /**
