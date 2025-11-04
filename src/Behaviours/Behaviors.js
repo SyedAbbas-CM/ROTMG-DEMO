@@ -135,14 +135,133 @@ export class RunAway extends Behavior {
     const distance = Math.sqrt(distanceSquared);
     const dirX = dx / distance;
     const dirY = dy / distance;
-    
+
     // Calculate move amount based on enemy's base move speed
     const moveSpeed = enemyManager.moveSpeed[index] * this.speed;
     const moveAmount = moveSpeed * deltaTime;
-    
+
+    // Calculate new position
+    const newX = enemyManager.x[index] + dirX * moveAmount;
+    const newY = enemyManager.y[index] + dirY * moveAmount;
+
+    // Get map bounds from enemyManager's mapManager reference (if available)
+    // Otherwise assume a safe boundary of 5 tiles from edge
+    const mapWidth = enemyManager.mapWidth || 512;
+    const mapHeight = enemyManager.mapHeight || 512;
+    const margin = 5; // Stay 5 tiles away from map edge
+
+    // Enforce boundaries - prevent fleeing off map
+    if (newX >= margin && newX < mapWidth - margin &&
+        newY >= margin && newY < mapHeight - margin) {
+      enemyManager.x[index] = newX;
+      enemyManager.y[index] = newY;
+    }
+    // If at boundary, don't move (enemy is stuck at edge)
+  }
+}
+
+/**
+ * CavalryCharge behavior - charge with velocity phases
+ * When slow: can turn freely and shoot
+ * When charging: moves fast, limited turning, no shooting
+ */
+export class CavalryCharge extends Behavior {
+  /**
+   * @param {number} slowSpeed - Speed when in slow mode (default 0.5)
+   * @param {number} chargeSpeed - Speed when charging (default 2.5)
+   * @param {number} acceleration - How quickly to accelerate (default 3.0)
+   * @param {number} chargeDuration - How long to charge before slowing (default 2.0s)
+   * @param {number} slowDuration - How long to stay slow (default 1.5s)
+   */
+  constructor(slowSpeed = 0.5, chargeSpeed = 2.5, acceleration = 3.0, chargeDuration = 2.0, slowDuration = 1.5) {
+    super();
+    this.slowSpeed = slowSpeed;
+    this.chargeSpeed = chargeSpeed;
+    this.acceleration = acceleration;
+    this.chargeDuration = chargeDuration;
+    this.slowDuration = slowDuration;
+  }
+
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+    if (!target) return;
+
+    // Initialize charge state
+    if (!stateData.chargeState) {
+      stateData.chargeState = {
+        currentSpeed: this.slowSpeed,
+        isCharging: false,
+        timer: 0,
+        lastDirX: 0,
+        lastDirY: 0
+      };
+    }
+
+    const state = stateData.chargeState;
+
+    // Update timer and phase
+    state.timer += deltaTime;
+
+    if (state.isCharging && state.timer >= this.chargeDuration) {
+      // Switch to slow mode
+      state.isCharging = false;
+      state.timer = 0;
+    } else if (!state.isCharging && state.timer >= this.slowDuration) {
+      // Switch to charge mode
+      state.isCharging = true;
+      state.timer = 0;
+    }
+
+    // Calculate direction to target
+    const dx = target.x - enemyManager.x[index];
+    const dy = target.y - enemyManager.y[index];
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance === 0) return;
+
+    let dirX = dx / distance;
+    let dirY = dy / distance;
+
+    // Apply turn rate limiting when charging
+    if (state.isCharging && state.lastDirX !== 0 && state.lastDirY !== 0) {
+      // Calculate max turn angle per frame based on speed
+      // Fast = can't turn much, slow = can turn more
+      const maxTurnRate = 1.5 / (state.currentSpeed / this.slowSpeed); // Inversely proportional to speed, increased from 0.5 to 1.5
+      const maxTurnAngle = maxTurnRate * deltaTime;
+
+      // Get current heading
+      const currentAngle = Math.atan2(state.lastDirY, state.lastDirX);
+      const targetAngle = Math.atan2(dirY, dirX);
+
+      // Calculate angle difference
+      let angleDiff = targetAngle - currentAngle;
+      // Normalize to -PI to PI
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+      // Limit turn angle
+      const limitedAngleDiff = Math.max(-maxTurnAngle, Math.min(maxTurnAngle, angleDiff));
+      const newAngle = currentAngle + limitedAngleDiff;
+
+      dirX = Math.cos(newAngle);
+      dirY = Math.sin(newAngle);
+    }
+
+    // Accelerate/decelerate to target speed
+    const targetSpeed = state.isCharging ? this.chargeSpeed : this.slowSpeed;
+    const speedDiff = targetSpeed - state.currentSpeed;
+    const speedChange = Math.sign(speedDiff) * Math.min(Math.abs(speedDiff), this.acceleration * deltaTime);
+    state.currentSpeed += speedChange;
+
     // Apply movement
+    const moveSpeed = enemyManager.moveSpeed[index] * state.currentSpeed;
+    const moveAmount = moveSpeed * deltaTime;
+
     enemyManager.x[index] += dirX * moveAmount;
     enemyManager.y[index] += dirY * moveAmount;
+
+    // Store direction for next frame
+    state.lastDirX = dirX;
+    state.lastDirY = dirY;
   }
 }
 
@@ -476,6 +595,9 @@ export class Shoot extends Behavior {
     // Reset cooldown
     enemyManager.currentCooldown[index] = enemyManager.cooldown[index] * this.cooldownMultiplier;
 
+    // Debug: Log enemy shooting
+    console.log(`🔫 [ENEMY SHOOT] Index ${index} at (${enemyManager.x[index].toFixed(2)}, ${enemyManager.y[index].toFixed(2)}) firing ${this.projectileCount} bullet(s), angle ${(baseAngle * 180 / Math.PI).toFixed(1)}°`);
+
     // Fire projectiles
     this.fireProjectiles(index, enemyManager, bulletManager, baseAngle);
   }
@@ -492,48 +614,52 @@ export class Shoot extends Behavior {
       const spawnX = enemyManager.x[index] + Math.cos(angle) * spawnOffset;
       const spawnY = enemyManager.y[index] + Math.sin(angle) * spawnOffset;
       
-      bulletManager.addBullet({
+      const bulletId = bulletManager.addBullet({
         x: spawnX,
         y: spawnY,
         vx: Math.cos(angle) * enemyManager.bulletSpeed[index],
         vy: Math.sin(angle) * enemyManager.bulletSpeed[index],
         ownerId: enemyManager.id[index],
         damage: enemyManager.damage[index],
-        lifetime: 3.0,
+        lifetime: enemyManager.bulletLifetime[index],
         width: 0.4,
         height: 0.4,
         isEnemy: true,
         spriteName: enemyManager.bulletSpriteName[index] || 'projectile_basic',
         worldId: enemyManager.worldId[index]
       });
-      
+
+      console.log(`  ↳ Created bullet ${bulletId} from ${enemyManager.id[index]}, lifetime=${enemyManager.bulletLifetime[index].toFixed(2)}s, damage=${enemyManager.damage[index]}`);
+
       return;
     }
     
     // Multiple projectiles case
     const startAngle = baseAngle - (this.spread * (this.projectileCount - 1) / 2);
-    
+
     for (let i = 0; i < this.projectileCount; i++) {
       // Base angle plus spread offset plus inaccuracy
       const angle = startAngle + (this.spread * i) + (Math.random() * 2 - 1) * this.inaccuracy;
-      
+
       const spawnX = enemyManager.x[index] + Math.cos(angle) * spawnOffset;
       const spawnY = enemyManager.y[index] + Math.sin(angle) * spawnOffset;
-      
-      bulletManager.addBullet({
+
+      const bulletId = bulletManager.addBullet({
         x: spawnX,
         y: spawnY,
         vx: Math.cos(angle) * enemyManager.bulletSpeed[index],
         vy: Math.sin(angle) * enemyManager.bulletSpeed[index],
         ownerId: enemyManager.id[index],
         damage: enemyManager.damage[index],
-        lifetime: 3.0,
+        lifetime: enemyManager.bulletLifetime[index],
         width: 0.4,
         height: 0.4,
         isEnemy: true,
         spriteName: enemyManager.bulletSpriteName[index] || 'projectile_basic',
         worldId: enemyManager.worldId[index]
       });
+
+      console.log(`  ↳ Created bullet ${i + 1}/${this.projectileCount}: ${bulletId} from ${enemyManager.id[index]}, angle=${(angle * 180 / Math.PI).toFixed(1)}°`);
     }
   }
 }

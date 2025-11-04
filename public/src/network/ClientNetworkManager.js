@@ -643,6 +643,11 @@ export class ClientNetworkManager {
         };
 
         this.handlers[MessageType.WORLD_UPDATE] = (data) => {
+            // DIAGNOSTIC: Only log when bullets are present
+            if (data.bullets && data.bullets.length > 0) {
+                // console.error(`🌍 [WORLD UPDATE] Received ${data.bullets.length} bullets, First: ID=${data.bullets[0].id}, Pos=(${data.bullets[0].x?.toFixed(2)}, ${data.bullets[0].y?.toFixed(2)})`);
+            }
+
             // Only log occasionally to reduce spam
             throttledLog('world-update', `World update received`, null, 3000);
 
@@ -940,6 +945,17 @@ export class ClientNetworkManager {
                 };
                 
                 this.socket.onmessage = (event) => {
+                    // RAW MESSAGE DIAGNOSTIC: Only log when bullets are present
+                    try {
+                        const packet = BinaryPacket.decode(event.data);
+                        if (packet.type === MessageType.WORLD_UPDATE && packet.data?.bullets?.length > 0) {
+                            const bulletCount = packet.data.bullets.length;
+                            // console.error(`📨 [RAW WS] WORLD_UPDATE with ${bulletCount} bullets. First: ID=${packet.data.bullets[0].id}, Pos=(${packet.data.bullets[0].x?.toFixed(2)}, ${packet.data.bullets[0].y?.toFixed(2)})`);
+                        }
+                    } catch (e) {
+                        // Ignore decode errors
+                    }
+
                     this.handleMessage(event.data);
                 };
                 
@@ -1150,7 +1166,16 @@ export class ClientNetworkManager {
      * @param {Object} bulletData - Bullet data
      */
     sendShoot(bulletData) {
-        console.log(`Sending shoot event: pos=(${bulletData.x.toFixed(2)}, ${bulletData.y.toFixed(2)}), angle=${bulletData.angle.toFixed(2)}, speed=${bulletData.speed}`);
+        // SUPER VISIBLE: Change title to prove this function is called
+        document.title = `📤 NETWORK SEND! ${bulletData.x.toFixed(1)}`;
+        // DIAGNOSTIC: Log what we're about to send AND what gameState.character contains
+        console.log(`🔫 [NETWORK SEND] About to send shoot:`, {
+            bulletData,
+            characterPos: {
+                x: window.gameState?.character?.x,
+                y: window.gameState?.character?.y
+            }
+        });
         return this.send(MessageType.BULLET_CREATE, bulletData);
     }
     

@@ -65,7 +65,12 @@ export const MessageType = {
   // Chat and text
   PLAYER_TEXT: 89,
   CHAT_MESSAGE: 90,
-  SPEECH: 91
+  SPEECH: 91,
+
+  // Unit control
+  UNIT_SPAWN: 100,
+  UNIT_COMMAND: 101,
+  UNIT_SELECT: 102
 };
 
 // Helpers to build/validate message payloads (lightweight – no runtime deps)

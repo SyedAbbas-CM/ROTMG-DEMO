@@ -8,8 +8,6 @@
  * - Real-time behavior execution
  */
 
-const { useState, useEffect, useRef } = React;
-
 // Simple DSL parser and executor for testing
 class SimpleDSLExecutor {
   constructor() {
@@ -87,6 +85,7 @@ class SimpleDSLExecutor {
   }
 
   executeBlocks(entity, blocks, target, obstacles, stateData) {
+    if (!blocks || !Array.isArray(blocks)) return;
     for (const block of blocks) {
       this.executeBlock(entity, block, target, obstacles, stateData);
     }
@@ -221,22 +220,22 @@ class SimpleDSLExecutor {
 function BehaviorTestArena({ states, behaviorName }) {
   console.log('[BehaviorTestArena] Component mounted/updated with states:', states?.length, 'behaviorName:', behaviorName);
 
-  const canvasRef = useRef(null);
-  const [isRunning, setIsRunning] = useState(false);
-  const [testEnemy, setTestEnemy] = useState(null);
-  const [testPlayers, setTestPlayers] = useState([]);
-  const [walls, setWalls] = useState([]);
-  const [bullets, setBullets] = useState([]);
-  const executorRef = useRef(new SimpleDSLExecutor());
-  const animationRef = useRef(null);
-  const lastTimeRef = useRef(Date.now());
+  const canvasRef = React.useRef(null);
+  const [isRunning, setIsRunning] = React.useState(false);
+  const [testEnemy, setTestEnemy] = React.useState(null);
+  const [testPlayers, setTestPlayers] = React.useState([]);
+  const [walls, setWalls] = React.useState([]);
+  const [bullets, setBullets] = React.useState([]);
+  const executorRef = React.useRef(new SimpleDSLExecutor());
+  const animationRef = React.useRef(null);
+  const lastTimeRef = React.useRef(Date.now());
 
   const TILE_SIZE = 50;
   const GRID_SIZE = 8;
   const CANVAS_SIZE = TILE_SIZE * GRID_SIZE;
 
   // Initialize test environment
-  useEffect(() => {
+  React.useEffect(() => {
     console.log('[BehaviorTestArena] Initializing test environment');
 
     // Test enemy in center
@@ -273,7 +272,7 @@ function BehaviorTestArena({ states, behaviorName }) {
   }, [behaviorName]);
 
   // Game loop
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isRunning || !testEnemy) {
       if (isRunning) console.log('[GameLoop] Not starting - testEnemy:', testEnemy);
       return;
@@ -519,65 +518,58 @@ function BehaviorTestArena({ states, behaviorName }) {
     setTestPlayers([{ id: 'player1', x: 100, y: 100, size: 20, color: '#4CAF50' }]);
   };
 
-  return (
-    <div style={{ background: '#2d2d2d', borderRadius: '8px', padding: '15px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <h3 style={{ margin: 0, color: 'white' }}>Test Arena (8x8)</h3>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={() => setIsRunning(!isRunning)}
-            style={{
-              padding: '8px 16px',
-              background: isRunning ? '#f44336' : '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}>
-            {isRunning ? 'Pause' : 'Start'}
-          </button>
-          <button
-            onClick={reset}
-            style={{
-              padding: '8px 16px',
-              background: '#2196F3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold'
-            }}>
-            Reset
-          </button>
-        </div>
-      </div>
-
-      <p style={{ color: '#aaa', fontSize: '12px', margin: '5px 0 10px 0' }}>
-        Click to move the player. Watch the enemy execute your behavior!
-      </p>
-
-      <canvas
-        ref={canvasRef}
-        width={CANVAS_SIZE}
-        height={CANVAS_SIZE}
-        onClick={handleCanvasClick}
-        style={{
-          border: '2px solid #444',
-          borderRadius: '4px',
-          cursor: 'crosshair',
-          display: 'block',
-          background: '#1a1a1a'
-        }}
-      />
-
-      <div style={{ marginTop: '10px', color: '#aaa', fontSize: '11px' }}>
-        <div>🟢 Green = Test Player (click to move)</div>
-        <div>🔴 Red = Test Enemy (running behavior)</div>
-        <div>⬜ Gray = Walls (blocks movement)</div>
-        <div>🟠 Orange = Bullets</div>
-      </div>
-    </div>
+  return React.createElement('div', { style: { background: '#2d2d2d', borderRadius: '8px', padding: '15px' } },
+    React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' } },
+      React.createElement('h3', { style: { margin: 0, color: 'white' } }, 'Test Arena (8x8)'),
+      React.createElement('div', { style: { display: 'flex', gap: '10px' } },
+        React.createElement('button', {
+          onClick: () => setIsRunning(!isRunning),
+          style: {
+            padding: '8px 16px',
+            background: isRunning ? '#f44336' : '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }
+        }, isRunning ? 'Pause' : 'Start'),
+        React.createElement('button', {
+          onClick: reset,
+          style: {
+            padding: '8px 16px',
+            background: '#2196F3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }
+        }, 'Reset')
+      )
+    ),
+    React.createElement('p', { style: { color: '#aaa', fontSize: '12px', margin: '5px 0 10px 0' } },
+      'Click to move the player. Watch the enemy execute your behavior!'
+    ),
+    React.createElement('canvas', {
+      ref: canvasRef,
+      width: CANVAS_SIZE,
+      height: CANVAS_SIZE,
+      onClick: handleCanvasClick,
+      style: {
+        border: '2px solid #444',
+        borderRadius: '4px',
+        cursor: 'crosshair',
+        display: 'block',
+        background: '#1a1a1a'
+      }
+    }),
+    React.createElement('div', { style: { marginTop: '10px', color: '#aaa', fontSize: '11px' } },
+      React.createElement('div', null, '🟢 Green = Test Player (click to move)'),
+      React.createElement('div', null, '🔴 Red = Test Enemy (running behavior)'),
+      React.createElement('div', null, '⬜ Gray = Walls (blocks movement)'),
+      React.createElement('div', null, '🟠 Orange = Bullets')
+    )
   );
 }
 

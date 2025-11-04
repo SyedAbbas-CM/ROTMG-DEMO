@@ -215,6 +215,16 @@ export class ClientCollisionManager {
                     continue;
                 }
 
+                // FACTION CHECK: Skip if bullet and enemy are on the same faction layer
+                // Bullet faction 0 = enemy bullets (can only hit players)
+                // Bullet faction 1-12 = player bullets (can only hit enemies)
+                // Enemy faction is always 0
+                const bulletFaction = this.bulletManager.faction[i] || 0;
+                const enemyFaction = 0; // All enemies are faction 0
+                if (bulletFaction === enemyFaction) {
+                    continue; // Same faction, skip collision
+                }
+
                 // AABB collision test
                 const collision = this._checkAABBCollision(
                     this.bulletManager.x[i],
@@ -723,7 +733,8 @@ export class ClientCollisionManager {
                 }
             } else if (this.mapManager.isWallOrObstacle) {
                 // Fallback to old method if getTile not available
-                isWall = this.mapManager.isWallOrObstacle(x, y);
+                // Pass isBullet=true so bullets can fly through unloaded chunks
+                isWall = this.mapManager.isWallOrObstacle(x, y, true);
             }
 
             if (isWall) {
@@ -749,8 +760,8 @@ export class ClientCollisionManager {
                         }
                     }
 
-                    // Unified log format matching server
-                    console.log(`[CLIENT BULLET] ID: ${bulletId}, Pos: (${x.toFixed(4)}, ${y.toFixed(4)}), Tile: (${debugTileX}, ${debugTileY}), Type: ${tileTypeName}`);
+                    // Bullet debug logs disabled - collision fix verified ✓
+                    // console.log(`[CLIENT BULLET] ID: ${bulletId}, Pos: (${x.toFixed(4)}, ${y.toFixed(4)}), Tile: (${debugTileX}, ${debugTileY}), Type: ${tileTypeName}`);
 
                     // Debug the coordinate system at this position
                     if (this.debugCoordinates) {
@@ -762,6 +773,10 @@ export class ClientCollisionManager {
                 
                 // Mark bullet for removal if collision detected
                 if (isWall) {
+                    // SUPER VISIBLE: Show collision in browser tab title
+                    document.title = `🧱 WALL HIT! X=${x.toFixed(1)}`;
+                    console.error(`🧱 [WALL COLLISION] Bullet ${this.bulletManager.id[i]} hit wall at (${x.toFixed(2)}, ${y.toFixed(2)}), Tile: (${Math.floor(x)}, ${Math.floor(y)})`);
+
                     if (this.bulletManager.markForRemoval) {
                         this.bulletManager.markForRemoval(i);
                     } else if (this.bulletManager.removeBulletById && this.bulletManager.id) {
@@ -773,17 +788,18 @@ export class ClientCollisionManager {
                     }
                 }
             } else {
-                // If method doesn't exist, log warning only occasionally to prevent spam
-                if (Math.random() < 0.01) {
-                    console.warn('Warning: mapManager.isWallOrObstacle() method not available for bullet-wall collision detection');
+                // If method doesn't exist, log warning only once
+                if (!this._warnedAboutMapManager) {
+                    console.warn('Warning: mapManager.isWallOrObstacle() method not available for bullet-wall collision detection (will only warn once)');
+                    this._warnedAboutMapManager = true;
                 }
             }
         }
         
-        // Log summary if wall collisions were detected
-        if (wallCollisionsDetected > 0 && Math.random() < 0.2) {
-            console.log(`Detected ${wallCollisionsDetected} bullet-wall collisions this frame`);
-        }
+        // Bullet debug logs disabled - collision fix verified ✓
+        // if (wallCollisionsDetected > 0 && Math.random() < 0.2) {
+        //     console.log(`Detected ${wallCollisionsDetected} bullet-wall collisions this frame`);
+        // }
     }
     
     /**
@@ -791,9 +807,34 @@ export class ClientCollisionManager {
      * prediction (the server remains authoritative but this removes latency).
      */
     checkEnemyBulletsHitPlayer() {
-        if (!window.gameState || !window.gameState.character) return;
+        if (!this.bulletManager || !window.gameState || !window.gameState.character) {
+            // Only warn once to avoid spam
+            if (!this._warnedAboutMissingObjects) {
+                console.warn('[ENEMY BULLET CHECK] Missing required objects (will only warn once):', {
+                    bulletManager: !!this.bulletManager,
+                    gameState: !!window.gameState,
+                    character: !!window.gameState?.character
+                });
+                this._warnedAboutMissingObjects = true;
+            }
+            return;
+        }
 
         const player = window.gameState.character;
+
+        // DIAGNOSTIC: Count enemy bullets
+        let enemyBulletCount = 0;
+        for (let i = 0; i < this.bulletManager.bulletCount; i++) {
+            const ownerId = this.bulletManager.ownerId[i];
+            if (typeof ownerId === 'string' && ownerId.startsWith('enemy_')) {
+                enemyBulletCount++;
+            }
+        }
+
+        if (enemyBulletCount > 0 && Math.random() < 0.1) {
+            console.log(`[ENEMY BULLET CHECK] Found ${enemyBulletCount} enemy bullets to check against player at (${player.x.toFixed(2)}, ${player.y.toFixed(2)})`);
+        }
+
         const pw = player.collisionWidth || 1;
         const ph = player.collisionHeight || 1;
 
@@ -801,11 +842,29 @@ export class ClientCollisionManager {
             if (this.bulletManager.life[i] <= 0) continue;
 
             const ownerId = this.bulletManager.ownerId[i];
-            if (typeof ownerId !== 'string' || !ownerId.startsWith('enemy_')) continue;
+
+            // DIAGNOSTIC: Log bullet owner info
+            const isEnemyBullet = typeof ownerId === 'string' && ownerId.startsWith('enemy_');
+            if (!isEnemyBullet) {
+                if (Math.random() < 0.01) {
+                    console.log(`[ENEMY BULLET CHECK] Bullet ${this.bulletManager.id[i]} is NOT enemy bullet (owner: ${ownerId})`);
+                }
+                continue;
+            }
 
             // Ignore bullets from other realms
             if (this.bulletManager.worldId && this.bulletManager.worldId[i] !== player.worldId) {
+                if (Math.random() < 0.1) {
+                    console.log(`[ENEMY BULLET CHECK] Skipping bullet ${this.bulletManager.id[i]} - wrong worldId (bullet: ${this.bulletManager.worldId[i]}, player: ${player.worldId})`);
+                }
                 continue;
+            }
+
+            // FACTION CHECK: Enemy bullets (faction 0) should only hit players (faction 1-12)
+            const bulletFaction = this.bulletManager.faction[i] || 0;
+            const playerFaction = player.faction || 1; // Default player faction is 1
+            if (bulletFaction === playerFaction) {
+                continue; // Same faction, skip collision
             }
 
             const bx = this.bulletManager.x[i];
@@ -823,6 +882,12 @@ export class ClientCollisionManager {
             if (hit) {
                 const dmg = this.bulletManager.damage ? this.bulletManager.damage[i] : 10;
 
+                // ALWAYS log player hits for debugging
+                console.error(`🎯 [PLAYER HIT] Enemy bullet ${this.bulletManager.id[i]} from ${ownerId} hit player for ${dmg} damage!`);
+                console.error(`   Bullet pos: (${bx.toFixed(2)}, ${by.toFixed(2)}), size: ${bw.toFixed(2)}x${bh.toFixed(2)}`);
+                console.error(`   Player pos: (${player.x.toFixed(2)}, ${player.y.toFixed(2)}), size: ${pw.toFixed(2)}x${ph.toFixed(2)}`);
+                console.error(`   Player health: ${player.health} → ${Math.max(0, (player.health || 100) - dmg)}`);
+
                 // Apply visual flash (if any)
                 if (typeof player.takeDamage === 'function') {
                     player.takeDamage(dmg);
@@ -833,14 +898,15 @@ export class ClientCollisionManager {
                 // Mark bullet for removal locally
                 this.bulletManager.markForRemoval(i);
 
-                // Optionally show hit indicator (simple console for now)
-                if (Math.random() < 0.05) {
-                    console.log(`Local player hit by ${ownerId} for ${dmg} dmg (hp=${player.health})`);
-                }
-
                 // Immediately update UI health bar if available
                 if (window.gameUI && typeof window.gameUI.updateHealth === 'function') {
                     window.gameUI.updateHealth(player.health, player.maxHealth || 100);
+                }
+            } else if (Math.random() < 0.01) {
+                // Occasionally log near-misses for debugging
+                const distance = Math.sqrt(Math.pow(bx - player.x, 2) + Math.pow(by - player.y, 2));
+                if (distance < 3) {
+                    console.log(`[ENEMY BULLET] Near miss - bullet at (${bx.toFixed(2)}, ${by.toFixed(2)}), player at (${player.x.toFixed(2)}, ${player.y.toFixed(2)}), distance: ${distance.toFixed(2)}`);
                 }
             }
         }

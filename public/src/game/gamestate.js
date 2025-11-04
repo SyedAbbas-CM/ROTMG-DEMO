@@ -21,7 +21,11 @@ export const gameState = {
 
     // Loot bags currently visible to the client
     bags: [],
-    
+
+    // Unit control
+    selectedUnits: [], // Array of selected unit IDs
+    unitManager: null, // Set in game.js
+
     // Tracking info
     lastUpdateX: character.x,
     lastUpdateY: character.y,

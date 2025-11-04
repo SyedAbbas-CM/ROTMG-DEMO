@@ -34,6 +34,7 @@ export default class EnemyManager {
     this.type = new Uint8Array(maxEnemies);  // Enemy type (0-4)
     this.health = new Float32Array(maxEnemies); // Current health
     this.maxHealth = new Float32Array(maxEnemies); // Maximum health
+    this.renderScale = new Float32Array(maxEnemies); // Visual render scale
     
     // Behavior properties
     this.moveSpeed = new Float32Array(maxEnemies); // Movement speed
@@ -43,6 +44,7 @@ export default class EnemyManager {
     this.currentCooldown = new Float32Array(maxEnemies); // Current cooldown timer
     this.damage = new Float32Array(maxEnemies); // Bullet damage
     this.bulletSpeed = new Float32Array(maxEnemies); // Bullet speed
+    this.bulletLifetime = new Float32Array(maxEnemies); // Bullet lifetime in seconds
     this.projectileCount = new Uint8Array(maxEnemies); // Number of projectiles to fire
     this.projectileSpread = new Float32Array(maxEnemies); // Angular spread for multiple projectiles
     this.canChase = new Uint8Array(maxEnemies); // Whether enemy can chase (1 or 0)
@@ -62,10 +64,14 @@ export default class EnemyManager {
 
     // Mapping from ID to index for fast lookups
     this.idToIndex = new Map();
-    
+
     // Track which world / map this enemy belongs to so the server can filter
     // them per-world when broadcasting.  We keep string identifiers (mapId).
     this.worldId = new Array(maxEnemies);
+
+    // Debug: Timer for periodic position logging
+    this.debugPositionTimer = 0;
+    this.debugPositionInterval = 3.0; // Log every 3 seconds
     
     // Load enemy type definitions from entityDatabase, fallback to built-ins
     const dbEnemies = entityDatabase.getAll('enemies');
@@ -94,7 +100,17 @@ export default class EnemyManager {
           bulletSpriteName: attack.sprite || null
         };
       });
+
+      // IMPORTANT: Build ID→index mapping for EntityDB enemies
+      dbEnemies.forEach((e, idx) => {
+        // Skip bullet definitions (they don't have hp)
+        if (e.id && e.hp) {
+          this.enemyIdToTypeIndex.set(e.id, idx);
+        }
+      });
+
       console.log(`[EnemyManager] Loaded ${this.enemyTypes.length} enemy templates from EntityDB`);
+      console.log(`[EnemyManager] Mapped ${this.enemyIdToTypeIndex.size} enemy IDs: ${Array.from(this.enemyIdToTypeIndex.keys()).join(', ')}`);
     } else {
       console.warn('[EnemyManager] EntityDB returned zero enemies – falling back to hard-coded defaults');
       this.enemyTypes = [
@@ -283,6 +299,7 @@ export default class EnemyManager {
     this.type[index] = type;
     this.health[index] = defaults.maxHealth;
     this.maxHealth[index] = defaults.maxHealth;
+    this.renderScale[index] = defaults.renderScale;
     
     // Store behavior properties
     this.moveSpeed[index] = defaults.speed;
@@ -292,6 +309,7 @@ export default class EnemyManager {
     this.currentCooldown[index] = 0; // Start with no cooldown
     this.damage[index] = defaults.damage;
     this.bulletSpeed[index] = defaults.bulletSpeed;
+    this.bulletLifetime[index] = defaults.bulletLifetime;
     this.projectileCount[index] = defaults.projectileCount;
     this.projectileSpread[index] = defaults.spread;
     this.canChase[index] = 1;
@@ -400,7 +418,24 @@ export default class EnemyManager {
         }
       }
     }
-    
+
+    // Debug: Periodic position logging
+    this.debugPositionTimer += deltaTime;
+    if (this.debugPositionTimer >= this.debugPositionInterval) {
+      this.debugPositionTimer = 0;
+
+      if (activeCount > 0) {
+        console.log(`\n📍 [ENEMY POSITIONS] Active enemies: ${activeCount}`);
+        for (let i = 0; i < this.enemyCount; i++) {
+          if (this.health[i] > 0 && !this.isDying[i]) {
+            const typeName = this.enemyTypes[this.type[i]]?.name || `Type${this.type[i]}`;
+            const stateName = this.behaviorSystem?.currentState[i]?.name || 'unknown';
+            console.log(`  Enemy ${i} (${typeName}): pos=(${this.x[i].toFixed(2)}, ${this.y[i].toFixed(2)}), hp=${this.health[i].toFixed(0)}/${this.maxHealth[i]}, state=${stateName}`);
+          }
+        }
+      }
+    }
+
     return activeCount;
   }
   
@@ -504,6 +539,7 @@ export default class EnemyManager {
       this.type[index] = this.type[last];
       this.health[index] = this.health[last];
       this.maxHealth[index] = this.maxHealth[last];
+      this.renderScale[index] = this.renderScale[last];
       
       // Swap behavior properties
       this.moveSpeed[index] = this.moveSpeed[last];
@@ -513,6 +549,7 @@ export default class EnemyManager {
       this.currentCooldown[index] = this.currentCooldown[last];
       this.damage[index] = this.damage[last];
       this.bulletSpeed[index] = this.bulletSpeed[last];
+      this.bulletLifetime[index] = this.bulletLifetime[last];
       this.projectileCount[index] = this.projectileCount[last];
       this.projectileSpread[index] = this.projectileSpread[last];
       this.canChase[index] = this.canChase[last];
@@ -598,6 +635,7 @@ export default class EnemyManager {
         spriteName: this.enemyTypes[this.type[i]]?.spriteName || null,
         health: this.health[i],
         maxHealth: this.maxHealth[i],
+        renderScale: this.renderScale[i],
         isFlashing: this.isFlashing[i],
         isDying: this.isDying[i],
         deathStage: this.isDying[i] ? Math.floor((1 - this.deathTimer[i] / 0.5) * 4) : 0,

@@ -41,7 +41,10 @@
       "Bash(cat:*)",
       "Read(//dev/**)",
       "Bash(open:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(rm:*)",
+      "Bash(echo:*)",
+      "Bash(kill:*)"
     ],
     "deny": []
   }

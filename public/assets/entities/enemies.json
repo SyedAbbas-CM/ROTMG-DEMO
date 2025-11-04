@@ -1,110 +1,110 @@
 [
   {
+    "id": "goblin_dart",
+    "sprite": "Light_Infantry",
+    "speed": 2,
+    "lifetime": 1000
+  },
+  {
     "id": "goblin",
-    "name": "Goblin",
-    "sprite": "goblin",
-    "hp": 30,
-    "speed": 15,
-    "width": 1,
-    "height": 1,
-    "renderScale": 2,
+    "name": "Light Infantry",
+    "sprite": "Light_Infantry",
+    "hp": 120,
+    "speed": 3,
+    "width": 2,
+    "height": 2,
+    "renderScale": 3,
     "attack": {
       "bulletId": "goblin_dart",
-      "cooldown": 2500,
-      "speed": 25,
-      "lifetime": 2000,
-      "count": 1,
-      "spread": 0
-    },
-    "ai": { "behaviorTree": "BasicChaseAndShoot" }
-  },
-  {
-    "id": "orc",
-    "name": "Orc",
-    "sprite": "orc",
-    "hp": 50,
-    "speed": 12,
-    "width": 1,
-    "height": 1,
-    "renderScale": 2,
-    "attack": {
-      "bulletId": "orc_arrow",
       "cooldown": 2000,
-      "speed": 30,
-      "lifetime": 2500,
+      "speed": 2,
+      "lifetime": 1000,
       "count": 1,
-      "spread": 0
+      "spread": 0,
+      "range": 12,
+      "damage": 5
     },
     "ai": { "behaviorTree": "BasicChaseAndShoot" }
   },
   {
-    "id": "red_demon_bullet",
-    "sprite": "red_demon_fire",
+    "id": "archer_arrow",
+    "sprite": "Archer",
     "speed": 12,
     "lifetime": 1500
   },
   {
-    "id": "red_demon",
-    "name": "Red Demon",
-    "sprite": "red_demon",
-    "hp": 350,
-    "speed": 6,
-    "width": 1,
-    "height": 1,
-    "renderScale": 2,
+    "id": "archer",
+    "name": "Archer",
+    "sprite": "Archer",
+    "hp": 60,
+    "speed": 3,
+    "width": 2,
+    "height": 2,
+    "renderScale": 4,
     "attack": {
-      "bulletId": "red_demon_bullet",
-      "cooldown": 800,
+      "bulletId": "archer_arrow",
+      "cooldown": 2500,
       "speed": 12,
-      "lifetime": 2000,
-      "count": 5,
-      "spread": 45,
-      "inaccuracy": 5
-    },
-    "ai": { "behaviorTree": "RedDemonBT" }
-  },
-  {
-    "id": "hyper_demon",
-    "name": "Hyper Demon",
-    "sprite": "red_demon",
-    "hp": 50000,
-    "speed": 0,
-    "width": 1,
-    "height": 1,
-    "renderScale": 2,
-    "attack": {
-      "bulletId": "red_demon_bullet",
-      "cooldown": 1500,
-      "speed": 14,
-      "lifetime": 2500,
-      "count": 8,
-      "spread": 45
-    },
-    "ai": { "behaviorTree": "StaticBoss" }
-  },
-  {
-    "id": "charging_shooter_bullet",
-    "sprite": "orc_arrow",
-    "speed": 25,
-    "lifetime": 2000
-  },
-  {
-    "id": "charging_shooter",
-    "name": "Charging Shooter",
-    "sprite": "orc",
-    "hp": 80,
-    "speed": 15,
-    "width": 1,
-    "height": 1,
-    "renderScale": 2,
-    "attack": {
-      "bulletId": "charging_shooter_bullet",
-      "cooldown": 500,
-      "speed": 25,
-      "lifetime": 2000,
+      "lifetime": 1500,
       "count": 1,
-      "spread": 0
+      "spread": 0,
+      "range": 18,
+      "damage": 15
     },
-    "ai": { "behaviorTree": "ChargingShooter" }
+    "ai": { "behaviorTree": "BasicChaseAndShoot" }
+  },
+  {
+    "id": "cavalry_spear",
+    "sprite": "Light_Cavalry",
+    "speed": 10,
+    "lifetime": 600
+  },
+  {
+    "id": "red_demon",
+    "name": "Light Cavalry",
+    "sprite": "Light_Cavalry",
+    "hp": 500,
+    "speed": 4,
+    "width": 2,
+    "height": 2,
+    "renderScale": 6,
+    "attack": {
+      "bulletId": "cavalry_spear",
+      "cooldown": 1500,
+      "speed": 10,
+      "lifetime": 600,
+      "count": 2,
+      "spread": 15,
+      "range": 18,
+      "damage": 25
+    },
+    "ai": { "behaviorTree": "BasicChaseAndShoot" }
+  },
+  {
+    "id": "knight_axe",
+    "sprite": "Heavy_Infantry",
+    "speed": 2.5,
+    "lifetime": 1000
+  },
+  {
+    "id": "heavy_knight",
+    "name": "Heavy Infantry",
+    "sprite": "Heavy_Infantry",
+    "hp": 800,
+    "speed": 3,
+    "width": 2,
+    "height": 2,
+    "renderScale": 5,
+    "attack": {
+      "bulletId": "knight_axe",
+      "cooldown": 3000,
+      "speed": 2.5,
+      "lifetime": 1000,
+      "count": 1,
+      "spread": 0,
+      "range": 12,
+      "damage": 8
+    },
+    "ai": { "behaviorTree": "BasicChaseAndShoot" }
   }
 ] 

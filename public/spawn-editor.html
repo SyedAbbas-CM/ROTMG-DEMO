@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enemy Spawn Editor</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 32px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    select, input, button {
+      padding: 10px 15px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    button.danger {
+      background: #e74c3c;
+    }
+
+    button.danger:hover {
+      background: #c0392b;
+    }
+
+    button.success {
+      background: #27ae60;
+    }
+
+    button.success:hover {
+      background: #229954;
+    }
+
+    .editor-grid {
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .spawn-list {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 20px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .spawn-item {
+      background: white;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .spawn-item:hover {
+      transform: translateX(5px);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    .spawn-item.selected {
+      background: #e8eaf6;
+      border-left-color: #764ba2;
+    }
+
+    .spawn-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .spawn-coords {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .spawn-comment {
+      font-size: 11px;
+      color: #999;
+      font-style: italic;
+      margin-top: 5px;
+    }
+
+    .preview-area {
+      background: white;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      padding: 20px;
+      min-height: 600px;
+    }
+
+    .enemy-type-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .type-goblin { background: #ffeaa7; color: #d63031; }
+    .type-orc { background: #fdcb6e; color: #e17055; }
+    .type-red_demon { background: #ff7675; color: #d63031; }
+    .type-hyper_demon { background: #fd79a8; color: #6c5ce7; }
+    .type-charging_shooter { background: #74b9ff; color: #0984e3; }
+
+    .code-output {
+      background: #2c3e50;
+      color: #ecf0f1;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 500px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-top: 5px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+      font-size: 13px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+      font-family: inherit;
+    }
+
+    .tab-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .tab-button {
+      background: transparent;
+      color: #666;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .tab-button.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 Enemy Spawn Editor</h1>
+    <p class="subtitle">Visual editor for managing enemy spawns across all worlds</p>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-number" id="totalSpawns">0</div>
+        <div class="stat-label">Total Spawns</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="currentWorldSpawns">0</div>
+        <div class="stat-label">Current World</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="totalWorlds">0</div>
+        <div class="stat-label">Total Worlds</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <select id="worldSelect">
+        <option value="">Select a world...</option>
+      </select>
+
+      <button onclick="addNewSpawn()" class="success">➕ Add New Spawn</button>
+      <button onclick="deleteSelected()" class="danger">🗑️ Delete Selected</button>
+      <button onclick="exportConfig()">📥 Export Config</button>
+      <button onclick="refreshData()">🔄 Refresh</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-buttons">
+      <button class="tab-button active" onclick="switchTab('editor')">📝 Editor</button>
+      <button class="tab-button" onclick="switchTab('code')">💻 Generated Code</button>
+      <button class="tab-button" onclick="switchTab('help')">❓ Help</button>
+    </div>
+
+    <!-- Editor Tab -->
+    <div id="editorTab" class="tab-content active">
+      <div class="editor-grid">
+        <!-- Spawn List -->
+        <div class="spawn-list" id="spawnList">
+          <p style="color: #999; text-align: center;">Select a world to view spawns</p>
+        </div>
+
+        <!-- Preview/Edit Area -->
+        <div class="preview-area">
+          <h3 style="margin-bottom: 15px;">Edit Spawn</h3>
+          <div id="spawnForm">
+            <div class="form-group">
+              <label>Enemy Type</label>
+              <select id="enemyType">
+                <option value="goblin">Goblin (30 HP) - Basic chase enemy</option>
+                <option value="orc">Orc (50 HP) - Tankier, retreats when low</option>
+                <option value="red_demon">Red Demon (350 HP) - Boss with 5-shot spread</option>
+                <option value="hyper_demon">Hyper Demon (50000 HP) - Super boss</option>
+                <option value="charging_shooter">Charging Shooter (80 HP) - Charges while shooting</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+              <div class="form-group">
+                <label>X Position</label>
+                <input type="number" id="spawnX" min="0" value="10" />
+              </div>
+
+              <div class="form-group">
+                <label>Y Position</label>
+                <input type="number" id="spawnY" min="0" value="10" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Comment (Optional)</label>
+              <textarea id="spawnComment" placeholder="e.g., Boss guardian, Forest patrol..."></textarea>
+            </div>
+
+            <button onclick="saveSpawn()" class="success" style="width: 100%;">💾 Save Spawn</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Tab -->
+    <div id="codeTab" class="tab-content">
+      <h3 style="margin-bottom: 15px;">Generated JavaScript Code</h3>
+      <p style="color: #666; margin-bottom: 15px; font-size: 13px;">
+        Copy this code to <code>config/world-spawns.js</code> to apply your changes.
+      </p>
+      <div class="code-output" id="codeOutput">
+        // Select a world to view generated code
+      </div>
+    </div>
+
+    <!-- Help Tab -->
+    <div id="helpTab" class="tab-content">
+      <h3>How to Use</h3>
+      <p style="margin: 15px 0;">This editor helps you visually configure enemy spawns for each world in your game.</p>
+
+      <h4 style="margin-top: 20px;">Quick Start:</h4>
+      <ol style="margin: 10px 0 10px 30px; line-height: 1.8;">
+        <li>Select a world from the dropdown</li>
+        <li>Click on an existing spawn to edit it, or click "Add New Spawn"</li>
+        <li>Choose enemy type and set coordinates</li>
+        <li>Click "Save Spawn" to update</li>
+        <li>Use "Export Config" to generate the code</li>
+        <li>Copy the generated code to <code>config/world-spawns.js</code></li>
+        <li>Restart the server to apply changes</li>
+      </ol>
+
+      <h4 style="margin-top: 20px;">Available Enemy Types:</h4>
+      <ul style="margin: 10px 0 10px 30px; line-height: 1.8;">
+        <li><strong>Goblin</strong> - Basic enemy, good for starting areas (30 HP)</li>
+        <li><strong>Orc</strong> - Tougher enemy that retreats when wounded (50 HP)</li>
+        <li><strong>Red Demon</strong> - Mini-boss with spread shots (350 HP)</li>
+        <li><strong>Hyper Demon</strong> - Super boss for endgame (50000 HP)</li>
+        <li><strong>Charging Shooter</strong> - Mobile enemy that charges and shoots (80 HP)</li>
+      </ul>
+
+      <h4 style="margin-top: 20px;">Tips:</h4>
+      <ul style="margin: 10px 0 10px 30px; line-height: 1.8;">
+        <li>Place spawn coordinates based on your map size</li>
+        <li>Add comments to spawns for better organization</li>
+        <li>Group enemies by area (forest, mountains, etc.)</li>
+        <li>Leave safe zones (like Nexus) with no enemies</li>
+        <li>Test spawns in-game before finalizing</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // In-memory spawn data
+    let spawnData = {
+      overworld: { spawns: [] },
+      map_2: { spawns: [] },
+      map_3: { spawns: [] },
+      map_4: { spawns: [] },
+      map_5: { spawns: [] },
+      map_6: { spawns: [] },
+    };
+
+    let currentWorld = null;
+    let selectedSpawnIndex = null;
+
+    // Initialize
+    function init() {
+      loadSpawnData();
+      populateWorldSelect();
+      updateStats();
+    }
+
+    // Load spawn data from server (placeholder - would need API endpoint)
+    function loadSpawnData() {
+      // For now, use sample data - in production this would fetch from server
+      spawnData = {
+        overworld: {
+          description: "Main procedural overworld",
+          spawns: [
+            { id: 'goblin', x: 25, y: 30, comment: 'Tutorial enemy near spawn' },
+            { id: 'orc', x: 40, y: 35, comment: 'Forest patrol' },
+            { id: 'red_demon', x: 50, y: 40, comment: 'Mini-boss encounter' },
+          ]
+        },
+        map_2: {
+          description: "RiverBridge dungeon",
+          spawns: [
+            { id: 'goblin', x: 5, y: 8, comment: 'Bridge guards' },
+            { id: 'orc', x: 6, y: 10, comment: 'Bridge captain' },
+          ]
+        },
+        map_3: {
+          description: "Boss room",
+          spawns: [
+            { id: 'red_demon', x: 16, y: 16, comment: 'Main boss' },
+          ]
+        },
+        map_4: { description: "Nexus (safe zone)", spawns: [] },
+        map_5: { description: "Test dungeon", spawns: [] },
+        map_6: { description: "Test map", spawns: [] },
+      };
+    }
+
+    // Populate world selector
+    function populateWorldSelect() {
+      const select = document.getElementById('worldSelect');
+      select.innerHTML = '<option value="">Select a world...</option>';
+
+      const worldNames = {
+        overworld: '🌍 Overworld (map_1)',
+        map_2: '🌉 RiverBridge',
+        map_3: '⚔️ Boss Room',
+        map_4: '🏛️ Nexus',
+        map_5: '🧪 Test Dungeon',
+        map_6: '📦 Test Map',
+      };
+
+      for (const [key, data] of Object.entries(spawnData)) {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = `${worldNames[key] || key} (${data.spawns.length} spawns)`;
+        select.appendChild(option);
+      }
+
+      select.addEventListener('change', () => {
+        currentWorld = select.value;
+        displaySpawns();
+        updateStats();
+      });
+    }
+
+    // Display spawns for current world
+    function displaySpawns() {
+      const listEl = document.getElementById('spawnList');
+      if (!currentWorld || !spawnData[currentWorld]) {
+        listEl.innerHTML = '<p style="color: #999; text-align: center;">Select a world to view spawns</p>';
+        return;
+      }
+
+      const spawns = spawnData[currentWorld].spawns;
+      if (spawns.length === 0) {
+        listEl.innerHTML = '<p style="color: #999; text-align: center;">No spawns defined<br>Click "Add New Spawn" to create one</p>';
+        return;
+      }
+
+      listEl.innerHTML = spawns.map((spawn, idx) => `
+        <div class="spawn-item ${selectedSpawnIndex === idx ? 'selected' : ''}" onclick="selectSpawn(${idx})">
+          <div class="spawn-name">
+            ${spawn.id.replace('_', ' ')}
+            <span class="enemy-type-badge type-${spawn.id}">${spawn.id}</span>
+          </div>
+          <div class="spawn-coords">📍 Position: (${spawn.x}, ${spawn.y})</div>
+          ${spawn.comment ? `<div class="spawn-comment">💬 ${spawn.comment}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    // Select a spawn for editing
+    function selectSpawn(index) {
+      selectedSpawnIndex = index;
+      const spawn = spawnData[currentWorld].spawns[index];
+
+      document.getElementById('enemyType').value = spawn.id;
+      document.getElementById('spawnX').value = spawn.x;
+      document.getElementById('spawnY').value = spawn.y;
+      document.getElementById('spawnComment').value = spawn.comment || '';
+
+      displaySpawns();
+    }
+
+    // Add new spawn
+    function addNewSpawn() {
+      if (!currentWorld) {
+        alert('Please select a world first');
+        return;
+      }
+
+      const newSpawn = {
+        id: 'goblin',
+        x: 10,
+        y: 10,
+        comment: ''
+      };
+
+      spawnData[currentWorld].spawns.push(newSpawn);
+      selectedSpawnIndex = spawnData[currentWorld].spawns.length - 1;
+
+      displaySpawns();
+      selectSpawn(selectedSpawnIndex);
+      updateStats();
+    }
+
+    // Save spawn
+    function saveSpawn() {
+      if (!currentWorld || selectedSpawnIndex === null) {
+        alert('Please select a spawn to edit');
+        return;
+      }
+
+      const spawn = spawnData[currentWorld].spawns[selectedSpawnIndex];
+      spawn.id = document.getElementById('enemyType').value;
+      spawn.x = parseInt(document.getElementById('spawnX').value);
+      spawn.y = parseInt(document.getElementById('spawnY').value);
+      spawn.comment = document.getElementById('spawnComment').value;
+
+      displaySpawns();
+      updateStats();
+      alert('Spawn saved! Use "Export Config" to generate code.');
+    }
+
+    // Delete selected spawn
+    function deleteSelected() {
+      if (!currentWorld || selectedSpawnIndex === null) {
+        alert('Please select a spawn to delete');
+        return;
+      }
+
+      if (confirm('Delete this spawn?')) {
+        spawnData[currentWorld].spawns.splice(selectedSpawnIndex, 1);
+        selectedSpawnIndex = null;
+        displaySpawns();
+        updateStats();
+      }
+    }
+
+    // Export config
+    function exportConfig() {
+      switchTab('code');
+      generateCode();
+    }
+
+    // Generate JavaScript code
+    function generateCode() {
+      const output = document.getElementById('codeOutput');
+
+      let code = `export const worldSpawns = {\n\n`;
+
+      for (const [worldId, data] of Object.entries(spawnData)) {
+        const displayName = worldId === 'overworld' ? 'OVERWORLD' : worldId.toUpperCase();
+        code += `  // ${'='.repeat(40)}\n`;
+        code += `  // ${displayName}\n`;
+        code += `  // ${'='.repeat(40)}\n`;
+        code += `  ${worldId}: {\n`;
+        code += `    description: "${data.description || worldId}",\n`;
+        code += `    spawns: [\n`;
+
+        data.spawns.forEach(spawn => {
+          code += `      { id: '${spawn.id}', x: ${spawn.x}, y: ${spawn.y}`;
+          if (spawn.comment) {
+            code += `, comment: '${spawn.comment}'`;
+          }
+          code += ` },\n`;
+        });
+
+        code += `    ]\n`;
+        code += `  },\n\n`;
+      }
+
+      code += `};\n`;
+
+      output.textContent = code;
+    }
+
+    // Update statistics
+    function updateStats() {
+      const total = Object.values(spawnData).reduce((sum, world) => sum + world.spawns.length, 0);
+      const currentCount = currentWorld ? spawnData[currentWorld].spawns.length : 0;
+      const worldCount = Object.keys(spawnData).length;
+
+      document.getElementById('totalSpawns').textContent = total;
+      document.getElementById('currentWorldSpawns').textContent = currentCount;
+      document.getElementById('totalWorlds').textContent = worldCount;
+    }
+
+    // Refresh data
+    function refreshData() {
+      loadSpawnData();
+      populateWorldSelect();
+      displaySpawns();
+      updateStats();
+    }
+
+    // Switch tabs
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+      document.getElementById(`${tabName}Tab`).classList.add('active');
+
+      if (tabName === 'code') {
+        generateCode();
+      }
+    }
+
+    // Initialize on page load
+    init();
+  </script>
+</body>
+</html>

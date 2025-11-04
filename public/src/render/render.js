@@ -517,7 +517,12 @@ export function renderUnits() {
   
   // Get view type for proper scaling
   const viewType = gameState.camera?.viewType || 'top-down';
-  
+
+  // Set up selection callback
+  unitRenderer.isUnitSelected = (unitId) => {
+    return gameState.selectedUnits && gameState.selectedUnits.includes(unitId);
+  };
+
   // Render units using the unit renderer
   try {
     unitRenderer.renderUnits(ctx, units, gameState.camera.position, viewType);
@@ -551,6 +556,14 @@ export function renderBullets() {
   
   // Get bullet scale factor if available
   const bulletScale = bm.bulletScale || 1.0;
+
+  // DIAGNOSTIC: Log every bullet position being rendered (first 3 bullets only to avoid spam)
+  if (bm.bulletCount > 0 && Math.random() < 0.05) { // 5% sample rate
+    console.log(`[BULLET RENDER] Rendering ${bm.bulletCount} bullets. First bullet at world pos: (${bm.x[0].toFixed(2)}, ${bm.y[0].toFixed(2)}), ID: ${bm.id[0]}`);
+    if (gameState.camera) {
+      console.log(`[BULLET RENDER] Camera at: (${gameState.camera.position.x.toFixed(2)}, ${gameState.camera.position.y.toFixed(2)})`);
+    }
+  }
 
   for (let i = 0; i < bm.bulletCount; i++) {
     // world → screen
@@ -712,6 +725,29 @@ export function renderGame() {
  * Render UI elements
  */
 function renderUI() {
+  // Draw RTS command mode indicator
+  if (typeof window.isInRTSMode === 'function' && window.isInRTSMode()) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 255, 0, 0.7)';
+    ctx.strokeStyle = 'rgba(0, 200, 0, 1)';
+    ctx.lineWidth = 2;
+
+    // Draw indicator in top-right corner
+    const x = canvas2D.width - 150;
+    const y = 20;
+
+    ctx.fillRect(x, y, 130, 30);
+    ctx.strokeRect(x, y, 130, 30);
+
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('RTS MODE', x + 65, y + 15);
+
+    ctx.restore();
+  }
+
   // REMOVED: Placeholder health bar (now using Character Panel UI component)
   // Draw player health bar
   /*

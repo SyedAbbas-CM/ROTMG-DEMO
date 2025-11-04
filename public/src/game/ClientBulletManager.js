@@ -22,7 +22,8 @@ export class ClientBulletManager {
     this.height = new Float32Array(maxBullets); // Height for collision
     this.ownerId = new Array(maxBullets);   // Who fired this bullet
     this.damage = new Float32Array(maxBullets); // Damage value
-    
+    this.faction = new Uint8Array(maxBullets); // Faction layer (0=enemy, 1-12=player factions)
+
     // World association so client can filter/collide correctly
     this.worldId = new Array(maxBullets);
     
@@ -52,10 +53,15 @@ export class ClientBulletManager {
       console.warn('ClientBulletManager: Maximum bullet capacity reached');
       return null;
     }
-    
+
     const index = this.bulletCount++;
     const bulletId = bulletData.id || `local_${Date.now()}_${index}`;
-    
+
+    // DIAGNOSTIC: Log enemy bullets being added
+    if (typeof bulletData.ownerId === 'string' && bulletData.ownerId.startsWith('enemy_')) {
+      console.log(`✅ [ENEMY BULLET ADD] ID: ${bulletId}, Owner: ${bulletData.ownerId}, Pos: (${bulletData.x.toFixed(2)}, ${bulletData.y.toFixed(2)})`);
+    }
+
     // Store bullet properties
     this.id[index] = bulletId;
     this.x[index] = bulletData.x;
@@ -70,6 +76,15 @@ export class ClientBulletManager {
     this.ownerId[index] = bulletData.ownerId || null;
     this.damage[index] = bulletData.damage || 10;
     this.worldId[index] = bulletData.worldId;
+
+    // Determine faction layer
+    if (bulletData.faction !== undefined) {
+      this.faction[index] = bulletData.faction;
+    } else {
+      // Auto-detect from ownerId
+      const isEnemyBullet = typeof bulletData.ownerId === 'string' && bulletData.ownerId.startsWith('enemy_');
+      this.faction[index] = isEnemyBullet ? 0 : 1; // 0=enemy, 1=default player faction
+    }
     
     // Store sprite info
     this.sprite[index] = bulletData.spriteSheet ? {
@@ -102,19 +117,33 @@ export class ClientBulletManager {
     if (deltaTime <= 0) {
       return; // Skip if delta time is zero or negative
     }
-    
+
+    // DIAGNOSTIC: Log deltaTime to check if it's in correct units
+    if (this.bulletCount > 0 && Math.random() < 0.05) {
+      // console.error(`⏱️ [BULLET UPDATE] deltaTime=${deltaTime.toFixed(4)}s, bulletCount=${this.bulletCount}`);
+    }
+
     let count = this.bulletCount;
-    
+
     for (let i = 0; i < count; i++) {
+      const lifeBefore = this.life[i];
+
       // Update position
       this.x[i] += this.vx[i] * deltaTime;
       this.y[i] += this.vy[i] * deltaTime;
-      
+
       // Decrement lifetime
       this.life[i] -= deltaTime;
-      
+
+      // DIAGNOSTIC: Log lifetime changes
+      if (Math.random() < 0.05 && lifeBefore > 0) {
+        // console.error(`⏱️ [LIFE] Bullet ${this.id[i]}: life ${lifeBefore.toFixed(3)} → ${this.life[i].toFixed(3)} (delta: ${deltaTime.toFixed(4)})`);
+      }
+
       // Remove expired bullets
       if (this.life[i] <= 0) {
+        // DIAGNOSTIC: Log bullet removal
+        // console.error(`❌ [BULLET EXPIRED] ID: ${this.id[i]}, Pos: (${this.x[i].toFixed(2)}, ${this.y[i].toFixed(2)}), Life: ${this.life[i].toFixed(3)}, DeltaTime: ${deltaTime.toFixed(4)}`);
         this.swapRemove(i);
         count--;
         i--;
@@ -150,6 +179,7 @@ export class ClientBulletManager {
       this.height[index] = this.height[lastIndex];
       this.ownerId[index] = this.ownerId[lastIndex];
       this.damage[index] = this.damage[lastIndex];
+      this.faction[index] = this.faction[lastIndex];
       this.worldId[index] = this.worldId[lastIndex];
       this.sprite[index] = this.sprite[lastIndex];
       this.spriteName[index] = this.spriteName[lastIndex];
@@ -221,8 +251,9 @@ export class ClientBulletManager {
       
       this.addBullet(bulletData);
     }
-    
-    console.log(`Set ${bullets.length} bullets from server, total bullets: ${this.bulletCount}`);
+
+    // Bullet debug logs disabled - collision fix verified ✓
+    // console.log(`Set ${bullets.length} bullets from server, total bullets: ${this.bulletCount}`);
   }
   
   /**
@@ -247,15 +278,33 @@ export class ClientBulletManager {
       console.warn("Invalid bullets data in updateBullets");
       return;
     }
-    
+
     const playerWorld = window.gameState?.character?.worldId;
+    const beforeFilter = bullets.length;
     if (playerWorld) bullets = bullets.filter(b => b.worldId === playerWorld);
-    
+    const afterFilter = bullets.length;
+
+    // DIAGNOSTIC: Always log bullet updates
+    if (bullets.length > 0) {
+      // console.error(`🔵 [BULLET UPDATE] Received ${beforeFilter} bullets, ${afterFilter} after worldId filter. First: ID=${bullets[0].id}, Pos=(${bullets[0].x?.toFixed(2)}, ${bullets[0].y?.toFixed(2)}), WorldID=${bullets[0].worldId}`);
+    } else if (beforeFilter > 0) {
+      console.error(`❌ [BULLET UPDATE] ${beforeFilter} bullets FILTERED OUT by worldId! Player world: ${playerWorld}`);
+    }
+
     // Process server bullets
     for (const bullet of bullets) {
       const index = this.findIndexById(bullet.id);
-      
+
       if (index !== -1) {
+        // DIAGNOSTIC: Log position changes
+        const oldX = this.x[index];
+        const oldY = this.y[index];
+        const deltaX = bullet.x - oldX;
+        const deltaY = bullet.y - oldY;
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) { // Large jump
+          console.warn(`[CLIENT BULLET JUMP] Bullet ${bullet.id} jumped ${deltaX.toFixed(2)} tiles in X (from ${oldX.toFixed(2)} to ${bullet.x.toFixed(2)})`);
+        }
+
         // Update existing bullet
         this.x[index] = bullet.x;
         this.y[index] = bullet.y;
@@ -265,9 +314,15 @@ export class ClientBulletManager {
         this.width[index] = bullet.width || 5;
         this.height[index] = bullet.height || 5;
         this.damage[index] = bullet.damage || 10;
+        this.ownerId[index] = bullet.ownerId;
         this.worldId[index] = bullet.worldId;
         if (bullet.spriteName) {
           this.spriteName[index] = bullet.spriteName;
+        }
+
+        // DIAGNOSTIC: Log when enemy bullet ownerId is set
+        if (typeof bullet.ownerId === 'string' && bullet.ownerId.startsWith('enemy_') && Math.random() < 0.1) {
+          console.log(`🔄 [ENEMY BULLET UPDATE] ID: ${bullet.id}, Owner: ${bullet.ownerId} updated`);
         }
       } else {
         // Try to reconcile with a locally predicted bullet (same owner & close position)
@@ -300,6 +355,7 @@ export class ClientBulletManager {
             this.width[bestIdx] = bullet.width || 5;
             this.height[bestIdx] = bullet.height || 5;
             this.damage[bestIdx] = bullet.damage || 10;
+            this.ownerId[bestIdx] = bullet.ownerId;
             this.worldId[bestIdx] = bullet.worldId;
             this.spriteName[bestIdx] = bullet.spriteName || this.spriteName[bestIdx];
 

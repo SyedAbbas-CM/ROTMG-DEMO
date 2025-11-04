@@ -195,6 +195,11 @@ function applyTileDamage(character, tile, tileProps, tileType) {
       setTimeout(() => { character.isFlashing = false; }, 200);
     }
 
+    // Update UI health bar immediately (like bullet damage does)
+    if (window.gameUI && typeof window.gameUI.updateHealth === 'function') {
+      window.gameUI.updateHealth(character.health, character.maxHealth || 100);
+    }
+
     // Check for death
     if (character.health <= 0) {
       console.log(`💀 Character died from ${tileName}!`);

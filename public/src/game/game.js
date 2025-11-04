@@ -711,14 +711,28 @@ function initializeGameState() {
             if (localPlayer) {
                 const filteredPlayers = { ...players };
                 const localPlayerId = String(localPlayer.id);
-                
+
+                // CRITICAL FIX: Extract server health BEFORE deleting local player
+                // The server is authoritative for health, so we need to apply it!
+                const serverPlayer = players[localPlayerId];
+                if (serverPlayer && typeof serverPlayer.health === 'number') {
+                    // Update local player health from server
+                    const oldHealth = gameState.character.health;
+                    gameState.character.health = serverPlayer.health;
+
+                    // Update UI if health changed
+                    if (oldHealth !== serverPlayer.health && window.gameUI && typeof window.gameUI.updateHealth === 'function') {
+                        window.gameUI.updateHealth(gameState.character.health, gameState.character.maxHealth || 100);
+                    }
+                }
+
                 // Remove local player from updates
                 Object.keys(filteredPlayers).forEach(playerId => {
                     if (String(playerId) === localPlayerId) {
                         delete filteredPlayers[playerId];
                     }
                 });
-                
+
                 // Update players with the filtered data
                 if (typeof updatePlayers === 'function') {
                     updatePlayers(filteredPlayers);
@@ -832,6 +846,7 @@ function initializeGameState() {
     gameState.networkManager = networkManager;
     gameState.bulletManager = bulletManager;
     gameState.enemyManager = enemyManager;
+    gameState.unitManager = unitManager;
     gameState.collisionManager = collisionManager;
     gameState.playerManager = playerManager;
     
@@ -1003,8 +1018,21 @@ function render() {
  * @param {number} targetY - World Y coordinate to shoot at
  */
 export function handleShoot(targetX, targetY) {
+    // SUPER VISIBLE DIAGNOSTIC - Can't be cached!
+    document.title = `SHOOT! ${Date.now()}`;
+    console.log("=== DIAGNOSTIC: NEW CODE LOADED - handleShoot called ===", {
+        timestamp: new Date().toISOString(),
+        targetX,
+        targetY,
+        playerX: gameState.character?.x,
+        playerY: gameState.character?.y
+    });
+
     if (!gameState.character || !networkManager) {
-        console.warn("Cannot shoot: character or network manager not available");
+        console.error("❌ Cannot shoot: character or network manager not available", {
+            hasCharacter: !!gameState.character,
+            hasNetworkManager: !!networkManager
+        });
         return;
     }
 
@@ -1031,6 +1059,14 @@ export function handleShoot(targetX, targetY) {
 
     // Log shoot request
     console.log(`[CLIENT SHOOT REQUEST] Pos: (${playerX.toFixed(4)}, ${playerY.toFixed(4)}), Tile: (${Math.floor(playerX)}, ${Math.floor(playerY)}), Angle: ${angle.toFixed(2)}, Speed: ${speed.toFixed(2)}, Target: (${targetX.toFixed(2)}, ${targetY.toFixed(2)})`);
+
+    // DIAGNOSTIC: Show gameState.character and what coordinates we're sending to server
+    console.log(`[CLIENT SHOOT] gameState.character:`, {
+        x: gameState.character.x,
+        y: gameState.character.y,
+        worldId: gameState.character.worldId
+    });
+    console.log(`[CLIENT SHOOT] Sending to server: x=${playerX}, y=${playerY}`);
 
     if (typeof networkManager.sendShoot === 'function') {
         networkManager.sendShoot({

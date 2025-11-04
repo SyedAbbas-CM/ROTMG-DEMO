@@ -1,5 +1,103 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 const { Draggable } = ReactDraggable;
+
+// Sprite Preview Component
+function SpritePreview({ spriteName, scale = 2 }) {
+  const canvasRef = useRef(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const tileSize = 8; // Standard sprite size
+    const displaySize = tileSize * scale;
+
+    // Set canvas size
+    canvas.width = displaySize;
+    canvas.height = displaySize;
+
+    // Clear canvas
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0, 0, displaySize, displaySize);
+
+    // Try to load sprite
+    console.log(`[SPRITE PREVIEW] Attempting to load sprite: ${spriteName}`);
+
+    // Try multiple possible sprite locations
+    const possiblePaths = [
+      `/assets/sprites/${spriteName}.png`,
+      `/assets/images/${spriteName}.png`,
+      `/assets/enemies/${spriteName}.png`,
+      `/assets/lofi_char.png` // Fallback to character sheet
+    ];
+
+    let imageLoaded = false;
+
+    function tryLoadImage(paths, index = 0) {
+      if (index >= paths.length) {
+        setError(`Sprite "${spriteName}" not found in any location`);
+        setLoading(false);
+
+        // Draw error indicator
+        ctx.fillStyle = '#ff0000';
+        ctx.font = '10px monospace';
+        ctx.fillText('?', displaySize/2 - 5, displaySize/2 + 5);
+        console.error(`[SPRITE PREVIEW] Failed to load sprite: ${spriteName}`);
+        return;
+      }
+
+      const img = new Image();
+      const path = paths[index];
+
+      console.log(`[SPRITE PREVIEW] Trying path: ${path}`);
+
+      img.onload = () => {
+        console.log(`[SPRITE PREVIEW] Successfully loaded sprite from: ${path}`);
+        console.log(`[SPRITE PREVIEW] Image dimensions: ${img.width}x${img.height}`);
+
+        // Draw sprite (assuming single sprite or first frame)
+        ctx.imageSmoothingEnabled = false; // Pixel-perfect rendering
+        ctx.drawImage(img, 0, 0, tileSize, tileSize, 0, 0, displaySize, displaySize);
+
+        setLoading(false);
+        setError(null);
+        imageLoaded = true;
+      };
+
+      img.onerror = () => {
+        console.warn(`[SPRITE PREVIEW] Failed to load from: ${path}`);
+        tryLoadImage(paths, index + 1);
+      };
+
+      img.src = path;
+    }
+
+    setLoading(true);
+    tryLoadImage(possiblePaths);
+
+  }, [spriteName, scale]);
+
+  return (
+    <div style={{textAlign:'center'}}>
+      <canvas
+        ref={canvasRef}
+        style={{
+          border:'1px solid #999',
+          background:'linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%), linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%)',
+          backgroundSize:'8px 8px',
+          backgroundPosition:'0 0, 4px 4px',
+          imageRendering:'pixelated'
+        }}
+      />
+      {loading && <div style={{fontSize:9,color:'#666'}}>Loading...</div>}
+      {error && <div style={{fontSize:9,color:'#f00',marginTop:2}}>{error}</div>}
+      <div style={{fontSize:9,color:'#666',marginTop:2}}>Scale: {scale}x</div>
+    </div>
+  );
+}
 
 // ============= LOCAL STORAGE PERSISTENCE =============
 const STORAGE_PREFIX = 'enemyEditor_';
@@ -253,6 +351,13 @@ function App(){
             <input type="text" value={enemyName} onChange={e=>setEnemyName(e.target.value)} style={{width:'100%',marginBottom:4,fontSize:11}}/>
             <label style={{fontSize:11}}>Sprite:</label>
             <input type="text" value={sprite} onChange={e=>setSprite(e.target.value)} style={{width:'100%',marginBottom:4,fontSize:11}}/>
+
+            {/* Sprite Preview Canvas */}
+            <div style={{marginBottom:8,padding:4,background:'#eee',border:'1px solid #ccc'}}>
+              <div style={{fontSize:10,marginBottom:2}}>Sprite Preview:</div>
+              <SpritePreview spriteName={sprite} scale={renderScale} />
+            </div>
+
             <label style={{fontSize:11}}>HP:</label>
             <input type="number" value={hp} onChange={e=>setHp(Number(e.target.value))} style={{width:'100%',marginBottom:4,fontSize:11}}/>
             <label style={{fontSize:11}}>Speed:</label>

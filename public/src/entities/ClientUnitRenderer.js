@@ -145,8 +145,20 @@ export class ClientUnitRenderer {
      */
     renderUnitOverlay(ctx, unit, screenX, screenY, scaleFactor, viewType) {
         const size = 16 * scaleFactor;
-        
+
         ctx.save();
+
+        // Selection indicator
+        if (this.isUnitSelected && this.isUnitSelected(unit.id)) {
+            // Draw selection circle
+            ctx.strokeStyle = '#00FF00'; // Bright green
+            ctx.lineWidth = 2 * scaleFactor;
+            ctx.setLineDash([4 * scaleFactor, 4 * scaleFactor]);
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, size * 0.8, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash pattern
+        }
         
         // Health bar
         if (unit.health !== undefined && unit.maxHealth !== undefined) {

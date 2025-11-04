@@ -25,8 +25,10 @@ export default class CollisionManager {
   /**
    * Check for all collisions in the current state
    * Called on each update cycle
+   * @param {number} deltaTime - Time elapsed since last update in seconds
+   * @param {Array} players - Array of player objects in this world
    */
-  checkCollisions() {
+  checkCollisions(deltaTime = 0.033, players = []) {
     // Skip if managers aren't properly initialized
     if (!this.bulletManager || !this.enemyManager) return;
     
@@ -43,12 +45,18 @@ export default class CollisionManager {
       const bulletOwnerId = this.bulletManager.ownerId[bi];
       
       /* ------- Wall / obstacle collision (sub-stepped) ------- */
+      // RE-ENABLED WITH DETAILED LOGGING TO FIND ROOT CAUSE
       if (this.mapManager && this.mapManager.isWallOrOutOfBounds) {
         const vx = this.bulletManager.vx[bi];
         const vy = this.bulletManager.vy[bi];
 
+        // CRITICAL FIX: Calculate actual movement for THIS FRAME using deltaTime
+        // vx/vy are in tiles/SECOND, so multiply by deltaTime to get tiles moved this frame
+        const dx = vx * deltaTime;  // e.g., -10 tiles/sec * 0.033s = -0.33 tiles
+        const dy = vy * deltaTime;
+
         // Maximum distance bullet will move this tick (tile-units)
-        const maxDelta = Math.max(Math.abs(vx), Math.abs(vy));
+        const maxDelta = Math.max(Math.abs(dx), Math.abs(dy));
         // Break the motion into ≤0.5-tile chunks – prevents tunnelling
         const steps = Math.max(1, Math.ceil(maxDelta / 0.5));
 
@@ -57,8 +65,8 @@ export default class CollisionManager {
         let collided = false;
 
         for (let s = 0; s < steps; s++) {
-          bxStep += vx / steps;
-          byStep += vy / steps;
+          bxStep += dx / steps;
+          byStep += dy / steps;
 
           if (this.mapManager.isWallOrOutOfBounds(bxStep, byStep)) {
             collided = true;
@@ -74,9 +82,18 @@ export default class CollisionManager {
             const tileX = Math.floor(bxStep);
             const tileY = Math.floor(byStep);
 
-            console.log(`[SERVER BULLET] ID: ${bulletId}, Pos: (${bxStep.toFixed(4)}, ${byStep.toFixed(4)}), Tile: (${tileX}, ${tileY}), Reason: ${reason}`);
+            // DIAGNOSTIC: Always log collisions at X=8-11 range
+            if (bxStep >= 8 && bxStep <= 11) {
+              console.error(`❌ [COLLISION AT X=9!] Bullet ${bulletId} at (${bxStep.toFixed(4)}, ${byStep.toFixed(4)}), Tile: (${tileX}, ${tileY}), Reason: ${reason}, TileType: ${tileType}`);
+              if (tile) {
+                console.error(`  Tile properties:`, JSON.stringify(tile));
+              }
+            } else {
+              console.log(`[SERVER BULLET] ID: ${bulletId}, Pos: (${bxStep.toFixed(4)}, ${byStep.toFixed(4)}), Tile: (${tileX}, ${tileY}), Reason: ${reason}`);
+            }
             console.log(`  Start Pos: (${bulletX.toFixed(4)}, ${bulletY.toFixed(4)})`);
-            console.log(`  Velocity: (${vx.toFixed(4)}, ${vy.toFixed(4)})`);
+            console.log(`  Velocity: (${vx.toFixed(4)}, ${vy.toFixed(4)}) tiles/sec`);
+            console.log(`  Movement this frame: (${dx.toFixed(4)}, ${dy.toFixed(4)}) tiles (deltaTime=${deltaTime.toFixed(4)}s)`);
             console.log(`  Map Bounds: (0, 0) to (${this.mapManager.width}, ${this.mapManager.height})`);
             console.log(`  Tile Type: ${tileType}`);
             console.log(`  Out of bounds: bxStep < 0: ${bxStep < 0}, byStep < 0: ${byStep < 0}, bxStep >= width: ${bxStep >= this.mapManager.width}, byStep >= height: ${byStep >= this.mapManager.height}`);
@@ -86,6 +103,16 @@ export default class CollisionManager {
         }
 
         if (collided) {
+          // CRITICAL FIX: Update bullet position to MAP BOUNDARY before marking for removal
+          // Clamp to [0, mapWidth] and [0, mapHeight] so the Server.js clamp() function
+          // doesn't filter it out (clamp rejects x < 0 or y < 0)
+          // This allows clients to see bullets reach the boundary instead of disappearing at X≈9.5
+          const mapWidth = this.mapManager.width || 512;
+          const mapHeight = this.mapManager.height || 512;
+
+          this.bulletManager.x[bi] = Math.max(0, Math.min(bxStep, mapWidth - 0.01));
+          this.bulletManager.y[bi] = Math.max(0, Math.min(byStep, mapHeight - 0.01));
+
           this.bulletManager.markForRemoval(bi);
           if (this.bulletManager.registerRemoval) {
             this.bulletManager.registerRemoval('wallHit');
@@ -95,6 +122,7 @@ export default class CollisionManager {
       }
 
       /* ------- Object collision (trees, boulders, etc.) ------- */
+      // RE-ENABLED: Object collision for trees, boulders, etc.
       if (this.mapManager && this.mapManager.getObjects) {
         const worldId = this.bulletManager.worldId[bi];
         const worldObjects = this.mapManager.getObjects(worldId) || [];
@@ -160,7 +188,17 @@ export default class CollisionManager {
         
         // Skip self-collision (enemy bullets colliding with their owner)
         if (bulletOwnerId === enemyId) {
+          // DIAGNOSTIC: Log self-collision skip occasionally
+          if (Math.random() < 0.01) {
+            console.log(`[COLLISION] Skipping self-collision: Enemy ${enemyId} won't collide with own bullet ${bulletId}`);
+          }
           continue; // Bullet belongs to this enemy – ignore
+        }
+
+        // Skip enemy bullets hitting other enemies (they should only hit players)
+        const isEnemyBullet = typeof bulletOwnerId === 'string' && bulletOwnerId.startsWith('enemy_');
+        if (isEnemyBullet) {
+          continue; // Check players instead (handled separately below)
         }
         
         // Check if bullet and enemy collide (AABB)
@@ -184,9 +222,59 @@ export default class CollisionManager {
           break;
         }
       }
+
+      // NEW: Check enemy bullets against players
+      const isEnemyBullet = typeof bulletOwnerId === 'string' && bulletOwnerId.startsWith('enemy_');
+      if (isEnemyBullet && players && players.length > 0) {
+        for (const player of players) {
+          // Skip if player is dead or in different world
+          if (!player || player.health <= 0) continue;
+          if (this.bulletManager.worldId[bi] !== player.worldId) continue;
+
+          const playerX = player.x;
+          const playerY = player.y;
+          const playerWidth = player.collisionWidth || 1;
+          const playerHeight = player.collisionHeight || 1;
+          const playerId = player.id;
+
+          // Check if bullet and player collide (AABB)
+          if (this.checkAABBCollision(
+            bulletX, bulletY, bulletWidth, bulletHeight,
+            playerX, playerY, playerWidth, playerHeight
+          )) {
+            // Create collision ID to track this collision
+            const collisionId = `${bulletId}_${playerId}`;
+
+            // Skip if already processed
+            if (this.processedCollisions.has(collisionId)) continue;
+
+            // Apply damage to player
+            const damage = this.bulletManager.damage ? this.bulletManager.damage[bi] : 10;
+
+            console.log(`[SERVER] ⚔️ ENEMY BULLET HIT PLAYER: Bullet ${bulletId} from ${bulletOwnerId} hit player ${playerId} for ${damage} damage`);
+            console.log(`[SERVER]   Player health: ${player.health} → ${Math.max(0, player.health - damage)}`);
+
+            // Apply damage
+            if (typeof player.takeDamage === 'function') {
+              player.takeDamage(damage);
+            } else {
+              player.health = Math.max(0, player.health - damage);
+            }
+
+            // Mark bullet for removal
+            this.bulletManager.markForRemoval(bi);
+
+            // Mark as processed
+            this.processedCollisions.set(collisionId, Date.now());
+
+            // Break the player loop since bullet hit something
+            break;
+          }
+        }
+      }
     }
   }
-  
+
   /**
    * Validate client-reported collision (server-side)
    * @param {Object} data - Collision data from client

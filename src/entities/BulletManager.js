@@ -34,6 +34,7 @@ export default class BulletManager {
     this.ownerId = new Array(maxBullets);   // ID of entity that created this bullet
     this.spriteName = new Array(maxBullets); // For client rendering
     this.worldId = new Array(maxBullets);
+    this.faction = new Uint8Array(maxBullets); // Faction layer (0=enemy, 1-12=player factions)
 
     // Per-bullet speed multiplier (used for acceleration / slow effects)
     this.speedScale = new Float32Array(maxBullets);
@@ -84,7 +85,16 @@ export default class BulletManager {
     this.spriteName[index] = bulletData.spriteName || null;
     this.worldId[index] = bulletData.worldId;
     this.speedScale[index] = 1;
-    
+
+    // Determine faction layer
+    if (bulletData.faction !== undefined) {
+      this.faction[index] = bulletData.faction;
+    } else {
+      // Auto-detect from ownerId
+      const isEnemyBullet = typeof bulletData.ownerId === 'string' && bulletData.ownerId.startsWith('enemy_');
+      this.faction[index] = isEnemyBullet ? 0 : (bulletData.playerFaction || 1);
+    }
+
     if (this.stats) this.stats.created++;
     return bulletId;
   }
@@ -131,7 +141,7 @@ export default class BulletManager {
    */
   swapRemove(index) {
     const last = this.bulletCount - 1;
-    
+
     if (index !== last) {
       // Swap with the last bullet
       this.id[index] = this.id[last];
@@ -147,8 +157,9 @@ export default class BulletManager {
       this.spriteName[index] = this.spriteName[last];
       this.worldId[index] = this.worldId[last];
       this.speedScale[index] = this.speedScale[last];
+      this.faction[index] = this.faction[last];
     }
-    
+
     this.bulletCount--;
   }
   
@@ -201,10 +212,15 @@ export default class BulletManager {
   /**
    * Mark a bullet for removal
    * @param {number} index - Index of bullet to remove
+   *
+   * CRITICAL: Sets life to 0.001 instead of 0 to allow ONE MORE broadcast
+   * with the updated collision position before natural expiration
    */
   markForRemoval(index) {
     if (index >= 0 && index < this.bulletCount) {
-      this.life[index] = 0;
+      // Set to tiny positive value instead of 0 to allow final broadcast
+      // The next update() will decrement this below 0 and remove it
+      this.life[index] = 0.001;
     }
   }
 
@@ -230,9 +246,15 @@ export default class BulletManager {
    */
   getBulletsData(filterWorldId = null) {
     const bullets = [];
-    
+
     for (let i = 0; i < this.bulletCount; i++) {
+      // Skip bullets marked for removal (life <= 0)
+      // These bullets have already collided server-side. Don't broadcast them.
+      // The client will naturally stop receiving updates and clean up.
+      if (this.life[i] <= 0) continue;
+
       if (filterWorldId && this.worldId[i] !== filterWorldId) continue;
+
       bullets.push({
         id: this.id[i],
         x: this.x[i],
@@ -245,10 +267,11 @@ export default class BulletManager {
         damage: this.damage[i],
         ownerId: this.ownerId[i],
         spriteName: this.spriteName[i],
-        worldId: this.worldId[i]
+        worldId: this.worldId[i],
+        faction: this.faction[i]
       });
     }
-    
+
     return bullets;
   }
 

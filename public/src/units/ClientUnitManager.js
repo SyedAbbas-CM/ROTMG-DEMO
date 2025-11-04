@@ -62,5 +62,39 @@ export default class ClientUnitManager {
         this.id2index.delete(id);
       });
     }
+
+    /** Find units within a radius of a point */
+    getUnitsInRadius(x, y, radius) {
+      const units = [];
+      for (let i = 0; i < this.count; i++) {
+        const dx = this.x[i] - x;
+        const dy = this.y[i] - y;
+        const distSq = dx * dx + dy * dy;
+        if (distSq <= radius * radius) {
+          units.push({
+            id: this.id[i],
+            x: this.x[i],
+            y: this.y[i],
+            distance: Math.sqrt(distSq)
+          });
+        }
+      }
+      return units;
+    }
+
+    /** Get unit data by ID */
+    getUnitById(id) {
+      const idx = this.id2index.get(id);
+      if (idx === undefined) return null;
+      return {
+        id: this.id[idx],
+        typeIdx: this.typeIdx[idx],
+        x: this.x[idx],
+        y: this.y[idx],
+        vx: this.vx[idx],
+        vy: this.vy[idx],
+        hp: this.hp[idx]
+      };
+    }
   }
   

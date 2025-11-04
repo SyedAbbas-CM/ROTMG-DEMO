@@ -67,8 +67,8 @@
   <div id="loading">
     <h2>Loading Behavior Designer...</h2>
     <div class="spinner"></div>
-    <p style="margin-top: 20px; color: #888;">Transpiling React components...</p>
-    <p style="margin-top: 10px; color: #666; font-size: 12px;">Check console (F12) for errors if this takes too long</p>
+    <p style="margin-top: 20px; color: #888;">Loading components...</p>
+    <p style="margin-top: 10px; color: #666; font-size: 12px;">Should load in under 1 second</p>
   </div>
 
   <div id="error">
@@ -95,40 +95,75 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js" onload="console.log('[BehaviorDesigner] React loaded')"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" onload="console.log('[BehaviorDesigner] ReactDOM loaded')"></script>
 
-  <!-- Babel for JSX (development only) -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js" onload="console.log('[BehaviorDesigner] Babel loaded, starting transpilation...')"></script>
+  <!-- Sprite Database for rendering sprites -->
+  <script type="module">
+    import { SpriteDatabase } from '/src/assets/SpriteDatabase.js';
 
-  <!-- Behavior Test Arena -->
-  <script type="text/babel" src="/editor/BehaviorTestArena.js"></script>
+    // Create global sprite database
+    window.spriteDB = new SpriteDatabase();
 
-  <!-- Visual State Machine -->
-  <script type="text/babel" src="/editor/VisualStateMachine.js"></script>
+    // Load ALL atlases (characters, objects, tiles, etc.)
+    window.spriteDB.loadAtlases([
+      '/assets/atlases/chars.json',
+      '/assets/atlases/chars2.json',
+      '/assets/atlases/Mixed_Units.json',
+      '/assets/atlases/8-Bit_Remaster_World.json',
+      '/assets/atlases/lofi_obj.json',
+      '/assets/atlases/lofi_obj_packB.json',
+      '/assets/atlases/lofi_environment.json',
+      '/assets/atlases/tiles.json',
+      '/assets/atlases/tiles2.json'
+    ])
+      .then(() => {
+        console.log('[BehaviorDesigner] All sprite atlases loaded:', window.spriteDB.stats);
+        console.log('[BehaviorDesigner] Sprite groups:', Array.from(window.spriteDB.groups.keys()));
 
-  <!-- Behavior Designer -->
-  <script type="text/babel" src="/editor/BehaviorDesigner.js"></script>
+        // Make available sprites list accessible globally
+        window.getAllSprites = () => Array.from(window.spriteDB.sprites.keys());
+        window.getSpritesByGroup = (group) => {
+          const groupSet = window.spriteDB.groups.get(group);
+          return groupSet ? Array.from(groupSet) : [];
+        };
+      })
+      .catch(err => {
+        console.error('[BehaviorDesigner] Failed to load sprites:', err);
+      });
+  </script>
+
+  <!-- Behavior Test Arena (Pre-compiled) -->
+  <script src="/editor/BehaviorTestArena.js" onload="console.log('[BehaviorDesigner] BehaviorTestArena loaded')"></script>
+
+  <!-- Visual State Machine (Pre-compiled) -->
+  <script src="/editor/VisualStateMachine.js" onload="console.log('[BehaviorDesigner] VisualStateMachine loaded')"></script>
+
+  <!-- Behavior Atom Designer (Pre-compiled) -->
+  <script src="/editor/BehaviorAtomDesigner.js" onload="console.log('[BehaviorDesigner] BehaviorAtomDesigner loaded')"></script>
+
+  <!-- Behavior Designer (Pre-compiled) -->
+  <script src="/editor/BehaviorDesigner.js" onload="console.log('[BehaviorDesigner] BehaviorDesigner loaded')"></script>
 
   <script>
-    // Hide loading indicator after a short delay (Babel transpilation happens async)
+    // Hide loading indicator after components load (much faster without Babel!)
     setTimeout(() => {
       if (document.getElementById('behavior-designer-root').children.length > 0 || window.BehaviorDesigner) {
         console.log('[BehaviorDesigner] Components loaded successfully');
         document.getElementById('loading').style.display = 'none';
       } else {
-        console.warn('[BehaviorDesigner] Components not loaded after 5s, but continuing...');
+        console.warn('[BehaviorDesigner] Components not loaded after 1s, but continuing...');
       }
-    }, 5000);
+    }, 1000);
 
-    // Also try hiding after React renders
+    // Also try hiding immediately after React renders
     const checkInterval = setInterval(() => {
       if (document.getElementById('behavior-designer-root').children.length > 0) {
         console.log('[BehaviorDesigner] React rendered, hiding loading screen');
         document.getElementById('loading').style.display = 'none';
         clearInterval(checkInterval);
       }
-    }, 100);
+    }, 50);
 
-    // Stop checking after 10 seconds
-    setTimeout(() => clearInterval(checkInterval), 10000);
+    // Stop checking after 2 seconds
+    setTimeout(() => clearInterval(checkInterval), 2000);
   </script>
 </body>
 </html>

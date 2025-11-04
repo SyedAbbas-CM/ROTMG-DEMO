@@ -35,6 +35,8 @@ import behaviorDesignerRoutes from './src/routes/behaviorDesignerRoutes.js';
 import { logger } from './src/utils/logger.js';
 // ---- Tile System ----
 import { initTileSystem } from './src/assets/initTileSystem.js';
+// ---- World Spawn Configuration ----
+import { worldSpawns, getWorldSpawns } from './config/world-spawns.js';
 
 // Debug flags to control logging
 const DEBUG = {
@@ -468,7 +470,8 @@ function handlePlayerShoot(clientId, bulletData) {
   const bulletId = ctx.bulletMgr.addBullet(bullet);
 
   if (DEBUG.bulletEvents || true) { // Always log for debugging
-    console.log(`[SERVER BULLET CREATE] ID: ${bulletId}, Pos: (${x.toFixed(4)}, ${y.toFixed(4)}), Tile: (${Math.floor(x)}, ${Math.floor(y)}), Owner: ${clientId}, Angle: ${angle.toFixed(2)}, Speed: ${speed.toFixed(2)}`);
+    // DIAGNOSTIC: Show BOTH client position and actual bullet spawn position
+    console.log(`[SERVER BULLET CREATE] ID: ${bulletId}, ClientPos: (${x.toFixed(4)}, ${y.toFixed(4)}), BulletPos: (${bulletX.toFixed(4)}, ${bulletY.toFixed(4)}), Tile: (${Math.floor(bulletX)}, ${Math.floor(bulletY)}), Owner: ${clientId}, Angle: ${angle.toFixed(2)}, Speed: ${speed.toFixed(2)}`);
   }
 }
 
@@ -494,6 +497,72 @@ function handlePlayerUpdate(clientId, positionData) {
   }
 
   // No need to broadcast - this will be handled by the normal game state update cycle
+}
+
+// ---------------------------------------------------------------
+// Helper: Handle unit spawn requests
+// ---------------------------------------------------------------
+function handleUnitSpawn(clientId, data) {
+  const client = clients.get(clientId);
+  if (!client || !client.player) return;
+
+  const { unitType, x, y } = data;
+  const mapId = client.mapId || gameState.mapId;
+  const ctx = getWorldCtx(mapId);
+
+  if (!ctx || !ctx.soldierMgr) {
+    console.warn(`[UNIT SPAWN] No soldier manager for map ${mapId}`);
+    return;
+  }
+
+  // Spawn unit at specified position (or near player if not specified)
+  const spawnX = x !== undefined ? x : client.player.x + 2;
+  const spawnY = y !== undefined ? y : client.player.y;
+
+  const unitId = ctx.soldierMgr.spawn(unitType, spawnX, spawnY, {
+    team: String(clientId), // Units belong to the player who spawned them
+    owner: String(clientId)
+  });
+
+  if (unitId) {
+    console.log(`[UNIT SPAWN] Player ${clientId} spawned ${unitType} at (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)})`);
+  }
+}
+
+// ---------------------------------------------------------------
+// Helper: Handle unit commands (move, attack, etc.)
+// ---------------------------------------------------------------
+function handleUnitCommand(clientId, data) {
+  const client = clients.get(clientId);
+  if (!client || !client.player) return;
+
+  const { unitIds, command, targetX, targetY } = data;
+  const mapId = client.mapId || gameState.mapId;
+  const ctx = getWorldCtx(mapId);
+
+  if (!ctx || !ctx.soldierMgr) {
+    console.warn(`[UNIT COMMAND] No soldier manager for map ${mapId}`);
+    return;
+  }
+
+  // Apply command to each selected unit
+  unitIds.forEach(unitId => {
+    const index = ctx.soldierMgr.findIndexById(unitId);
+    if (index === -1) return;
+
+    // Verify this unit belongs to the player
+    if (ctx.soldierMgr.owner[index] !== String(clientId)) {
+      return; // Not their unit
+    }
+
+    // Apply command
+    if (command === 'move' && targetX !== undefined && targetY !== undefined) {
+      ctx.soldierMgr.cmd[index] = 'move';
+      ctx.soldierMgr.cmdX[index] = targetX;
+      ctx.soldierMgr.cmdY[index] = targetY;
+      console.log(`[UNIT COMMAND] Unit ${unitId} move to (${targetX.toFixed(2)}, ${targetY.toFixed(2)})`);
+    }
+  });
 }
 
 // ---------------------------------------------------------------
@@ -779,6 +848,15 @@ storedMaps.set(defaultMapId, mapManager.getMapMetadata(defaultMapId));
 
 console.log(`Created default map: ${defaultMapId}`);
 
+// ====== LOAD ENEMY SPAWNS FROM CONFIG ======
+// Apply enemy spawns from config/world-spawns.js to overworld
+const defaultMeta = mapManager.getMapMetadata(defaultMapId);
+if (defaultMeta) {
+  const overworldSpawns = getWorldSpawns(defaultMapId);
+  defaultMeta.enemies = overworldSpawns;
+  console.log(`[SPAWNS] Loaded ${overworldSpawns.length} enemy spawns for overworld from config`);
+}
+
 /* ------------------------------------------------------------------
  * MULTI-MAP PORTAL SYSTEM
  * ------------------------------------------------------------------
@@ -809,7 +887,16 @@ console.log(`Created default map: ${defaultMapId}`);
 
       if (!mapId) {
         mapId = await mapManager.loadFixedMap(fixedMapPath);
-        storedMaps.set(mapId, mapManager.getMapMetadata(mapId));
+        const meta = mapManager.getMapMetadata(mapId);
+
+        // Load enemy spawns from config for this map
+        const configSpawns = getWorldSpawns(mapId);
+        if (configSpawns && configSpawns.length > 0) {
+          meta.enemies = configSpawns;
+          console.log(`[SPAWNS] Loaded ${configSpawns.length} enemy spawns for ${mapId} from config`);
+        }
+
+        storedMaps.set(mapId, meta);
         spawnMapEnemies(mapId);
         console.log(`[PORTALS] Loaded map ${mapId} from ${mapFile}`);
       }
@@ -1172,6 +1259,10 @@ wss.on('connection', (socket, req) => {
         handlePlayerShoot(clientId, packet.data);
       } else if(packet.type === MessageType.PLAYER_UPDATE){
         handlePlayerUpdate(clientId, packet.data);
+      } else if(packet.type === MessageType.UNIT_SPAWN){
+        handleUnitSpawn(clientId, packet.data);
+      } else if(packet.type === MessageType.UNIT_COMMAND){
+        handleUnitCommand(clientId, packet.data);
       } else {
         handleClientMessage(clientId, message);
       }
@@ -1229,8 +1320,8 @@ function updateGame() {
       ctx.unitSystems.update(deltaTime);
     }
 
-    ctx.collMgr.checkCollisions();
-    applyEnemyBulletsToPlayers(ctx.bulletMgr, players);
+    ctx.collMgr.checkCollisions(deltaTime, players);
+    // applyEnemyBulletsToPlayers(ctx.bulletMgr, players); // Now handled in CollisionManager
   });
 
   if (DEBUG.activeCounts && totalActiveEnemies > 0 && now % 5000 < 50) {
@@ -1276,13 +1367,20 @@ function broadcastWorldUpdates() {
     const ctx = getWorldCtx(mapId);
     const enemies = ctx.enemyMgr.getEnemiesData(mapId);
     const bullets = ctx.bulletMgr.getBulletsData(mapId);
-    
+
     // Get unit data for this world
     const units = ctx.soldierMgr ? ctx.soldierMgr.getSoldiersData() : [];
 
     // Optionally clamp by map bounds to avoid stray entities outside map
     const meta = mapManager.getMapMetadata(mapId) || { width: 0, height: 0 };
-    const clamp = (arr) => arr.filter(o => o.x >= 0 && o.y >= 0 && o.x < meta.width && o.y < meta.height);
+    const clamp = (arr) => arr.filter(o => {
+      const inBounds = o.x >= 0 && o.y >= 0 && o.x < meta.width && o.y < meta.height;
+      // DIAGNOSTIC: Log bullets being clamped out at suspect X coordinates
+      if (!inBounds && o.id && o.x >= 8 && o.x <= 11) {
+        console.error(`❌ [CLAMP] Bullet ${o.id} at X=${o.x.toFixed(2)} CLAMPED OUT! Map bounds: ${meta.width}x${meta.height}`);
+      }
+      return inBounds;
+    });
     const enemiesClamped = clamp(enemies);
     const bulletsClamped = clamp(bullets);
     const unitsClamped = clamp(units);
@@ -1310,7 +1408,15 @@ function broadcastWorldUpdates() {
       const visibleBullets = bulletsClamped.filter(b => {
         const dx = b.x - px;
         const dy = b.y - py;
-        return (dx * dx + dy * dy) <= UPDATE_RADIUS_SQ;
+        const distSq = dx * dx + dy * dy;
+        const isVisible = distSq <= UPDATE_RADIUS_SQ;
+
+        // DIAGNOSTIC: Log if bullet is being filtered at suspect X coordinates
+        if (!isVisible && b.x >= 8 && b.x <= 11) {
+          console.error(`❌ [VIS FILTER] Bullet at X=${b.x.toFixed(2)} filtered! Player at X=${px.toFixed(2)}, Dist=${Math.sqrt(distSq).toFixed(2)}, MaxDist=${UPDATE_RADIUS}`);
+        }
+
+        return isVisible;
       });
 
       const visibleBags = bagsClamped.filter(b => {
@@ -1339,6 +1445,8 @@ function broadcastWorldUpdates() {
       if (ctx.bulletMgr.stats) {
         payload.bulletStats = { ...ctx.bulletMgr.stats };
       }
+
+      // Bullet debug logs removed - too spammy (collision fix verified ✓)
 
       sendToClient(c.socket, MessageType.WORLD_UPDATE, payload);
     });

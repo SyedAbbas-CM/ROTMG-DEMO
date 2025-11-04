@@ -673,16 +673,38 @@ export class MapManager {
   }
   
   /**
-   * Check if a position is a wall or out of bounds
-   * @param {number} x - World X coordinate
-   * @param {number} y - World Y coordinate
-   * @returns {boolean} True if wall or out of bounds
+   * Check if a position is a wall, obstacle, or out of bounds
+   * @param {number} x - World X coordinate (in tiles)
+   * @param {number} y - World Y coordinate (in tiles)
+   * @returns {boolean} True if wall, obstacle object, or out of bounds
    */
   isWallOrOutOfBounds(x, y) {
     // Coordinates supplied to this function are already expressed in tile units
     // Do NOT divide by tileSize or we will create mismatches between server and client.
     const tileX = Math.floor(x);
     const tileY = Math.floor(y);
+
+    // PRIORITY 0: Check for obstacle objects at this position (boulders, trees, etc.)
+    if (this.objects && Array.isArray(this.objects)) {
+      for (const obj of this.objects) {
+        if (!obj) continue;
+        // Check if object blocks movement and is at this tile position
+        const objX = Math.floor(obj.x || 0);
+        const objY = Math.floor(obj.y || 0);
+        if (objX === tileX && objY === tileY) {
+          // Check if this object type blocks movement
+          const blocksMovement = obj.blocksMovement ||
+                                 obj.type === 'boulder' ||
+                                 obj.type === 'tree' ||
+                                 obj.type === 'rock' ||
+                                 obj.sprite === 'boulder' ||
+                                 obj.sprite === 'tree';
+          if (blocksMovement) {
+            return true;
+          }
+        }
+      }
+    }
 
     // Debug coordinate conversion occasionally
     if (global.DEBUG?.wallChecks) {

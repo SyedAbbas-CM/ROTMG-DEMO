@@ -9,24 +9,25 @@
  * - Click state to edit behaviors
  */
 
-const { useState, useEffect, useRef } = React;
-
 console.log('[VisualStateMachine] Module loading...');
 
 // ============= VISUAL STATE MACHINE =============
 function VisualStateMachine({ states, onStatesChange, selectedState, onSelectState }) {
-  const canvasRef = useRef(null);
-  const [draggingNode, setDraggingNode] = useState(null);
-  const [connectingFrom, setConnectingFrom] = useState(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const canvasRef = React.useRef(null);
+  const [draggingNodeId, setDraggingNodeId] = React.useState(null);  // Store ID instead of reference
+  const [connectingFromId, setConnectingFromId] = React.useState(null);  // Store ID instead of reference
+  const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
+  const [offset, setOffset] = React.useState({ x: 0, y: 0 });
 
   const NODE_WIDTH = 120;
   const NODE_HEIGHT = 80;
 
-  useEffect(() => {
+  // Get node by ID (helper function)
+  const getNodeById = (id) => states.find(s => s.id === id);
+
+  React.useEffect(() => {
     drawCanvas();
-  }, [states, selectedState, connectingFrom, mousePos]);
+  }, [states, selectedState, connectingFromId, mousePos, draggingNodeId]);
 
   const drawCanvas = () => {
     const canvas = canvasRef.current;
@@ -73,15 +74,18 @@ function VisualStateMachine({ states, onStatesChange, selectedState, onSelectSta
     });
 
     // Draw connecting line (while dragging)
-    if (connectingFrom) {
-      ctx.strokeStyle = '#FF9800';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
-      ctx.beginPath();
-      ctx.moveTo(connectingFrom.x + NODE_WIDTH / 2, connectingFrom.y + NODE_HEIGHT / 2);
-      ctx.lineTo(mousePos.x, mousePos.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
+    if (connectingFromId) {
+      const connectingFrom = getNodeById(connectingFromId);
+      if (connectingFrom) {
+        ctx.strokeStyle = '#FF9800';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(connectingFrom.x + NODE_WIDTH / 2, connectingFrom.y + NODE_HEIGHT / 2);
+        ctx.lineTo(mousePos.x, mousePos.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
     }
 
     // Draw nodes
@@ -104,11 +108,40 @@ function VisualStateMachine({ states, onStatesChange, selectedState, onSelectSta
       ctx.textAlign = 'center';
       ctx.fillText(state.name, state.x + NODE_WIDTH / 2, state.y + 25);
 
-      // Behavior count
-      const behaviorCount = (state.onEnter?.length || 0) + (state.onTick?.length || 0) + (state.onExit?.length || 0);
+      // Category-based behavior count with color coding
+      const moveCount = state.movement?.length || 0;
+      const attackCount = state.attack?.length || 0;
+      const utilityCount = state.utility?.length || 0;
+
       ctx.font = '11px Arial';
-      ctx.fillStyle = '#aaa';
-      ctx.fillText(`${behaviorCount} behaviors`, state.x + NODE_WIDTH / 2, state.y + 45);
+      ctx.textAlign = 'left';
+
+      // Movement (green)
+      if (moveCount > 0) {
+        ctx.fillStyle = '#4CAF50';
+        ctx.fillText(`\u25CF ${moveCount}`, state.x + 5, state.y + 45);
+      }
+
+      // Attack (red)
+      if (attackCount > 0) {
+        ctx.fillStyle = '#F44336';
+        ctx.fillText(`\u25CF ${attackCount}`, state.x + 40, state.y + 45);
+      }
+
+      // Utility (blue)
+      if (utilityCount > 0) {
+        ctx.fillStyle = '#2196F3';
+        ctx.fillText(`\u25CF ${utilityCount}`, state.x + 75, state.y + 45);
+      }
+
+      // Show "empty" if no behaviors
+      if (moveCount === 0 && attackCount === 0 && utilityCount === 0) {
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('(empty)', state.x + NODE_WIDTH / 2, state.y + 45);
+      }
+
+      ctx.textAlign = 'center';
 
       // Duration
       if (state.duration) {
@@ -157,20 +190,20 @@ function VisualStateMachine({ states, onStatesChange, selectedState, onSelectSta
     if (clickedNode) {
       if (e.shiftKey) {
         // Shift+click to connect
-        if (connectingFrom) {
+        if (connectingFromId) {
           // Complete connection
           const updatedStates = states.map(s =>
-            s.id === connectingFrom.id ? { ...s, next: clickedNode.name } : s
+            s.id === connectingFromId ? { ...s, next: clickedNode.name } : s
           );
           onStatesChange(updatedStates);
-          setConnectingFrom(null);
+          setConnectingFromId(null);
         } else {
-          setConnectingFrom(clickedNode);
+          setConnectingFromId(clickedNode.id);
         }
       } else {
         // Normal click to select/drag
         onSelectState(clickedNode);
-        setDraggingNode(clickedNode);
+        setDraggingNodeId(clickedNode.id);
         setOffset({
           x: x - clickedNode.x,
           y: y - clickedNode.y
@@ -178,7 +211,7 @@ function VisualStateMachine({ states, onStatesChange, selectedState, onSelectSta
       }
     } else {
       // Cancel connecting
-      setConnectingFrom(null);
+      setConnectingFromId(null);
     }
   };
 
@@ -189,9 +222,9 @@ function VisualStateMachine({ states, onStatesChange, selectedState, onSelectSta
 
     setMousePos({ x, y });
 
-    if (draggingNode) {
+    if (draggingNodeId) {
       const updatedStates = states.map(state =>
-        state.id === draggingNode.id
+        state.id === draggingNodeId
           ? { ...state, x: x - offset.x, y: y - offset.y }
           : state
       );
@@ -200,72 +233,41 @@ function VisualStateMachine({ states, onStatesChange, selectedState, onSelectSta
   };
 
   const handleMouseUp = () => {
-    setDraggingNode(null);
+    setDraggingNodeId(null);
   };
 
-  const handleDoubleClick = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  // Double-click disabled per user request
+  // const handleDoubleClick = (e) => {
+  //   // User prefers manual state creation via buttons
+  // };
 
-    // Check if double-clicking on empty space
-    const clickedNode = states.find(state =>
-      x >= state.x && x <= state.x + NODE_WIDTH &&
-      y >= state.y && y <= state.y + NODE_HEIGHT
-    );
-
-    if (!clickedNode) {
-      // Create new state
-      const newState = {
-        id: `state_${Date.now()}`,
-        name: `state_${states.length + 1}`,
-        x: x - NODE_WIDTH / 2,
-        y: y - NODE_HEIGHT / 2,
-        onEnter: [],
-        onTick: [],
-        onExit: [],
-        duration: null,
-        next: null
-      };
-      onStatesChange([...states, newState]);
-      onSelectState(newState);
-    }
-  };
-
-  return (
-    <div style={{ background: '#1a1a1a', borderRadius: '8px', padding: '10px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ marginBottom: '10px', padding: '10px', background: '#2a2a2a', borderRadius: '6px', border: '1px solid #444' }}>
-        <div style={{ color: '#64B5F6', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' }}>State Machine Graph</div>
-        <div style={{ color: '#888', fontSize: '11px', lineHeight: '1.6' }}>
-          <div><strong>Double-click</strong> empty space to add state</div>
-          <div><strong>Click & drag</strong> to move states</div>
-          <div><strong>Shift+click</strong> two states to connect them</div>
-        </div>
-      </div>
-
-      <canvas
-        ref={canvasRef}
-        width={800}
-        height={500}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onDoubleClick={handleDoubleClick}
-        style={{
-          border: '2px solid #444',
-          borderRadius: '4px',
-          cursor: draggingNode ? 'grabbing' : (connectingFrom ? 'crosshair' : 'grab'),
-          display: 'block',
-          background: '#0d0d0d'
-        }}
-      />
-
-      {connectingFrom && (
-        <div style={{ marginTop: '10px', padding: '10px', background: '#FF9800', borderRadius: '4px', color: 'black', fontWeight: 'bold' }}>
-          Connecting from "{connectingFrom.name}" - Shift+click another state to connect
-        </div>
-      )}
-    </div>
+  return React.createElement('div', { style: { background: '#1a1a1a', borderRadius: '8px', padding: '10px', height: '100%', display: 'flex', flexDirection: 'column' } },
+    React.createElement('div', { style: { marginBottom: '10px', padding: '10px', background: '#2a2a2a', borderRadius: '6px', border: '1px solid #444' } },
+      React.createElement('div', { style: { color: '#64B5F6', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px' } }, 'State Machine Graph'),
+      React.createElement('div', { style: { color: '#888', fontSize: '11px', lineHeight: '1.6' } },
+        React.createElement('div', null, React.createElement('strong', null, 'Click'), ' state to select & edit'),
+        React.createElement('div', null, React.createElement('strong', null, 'Click & drag'), ' to move states'),
+        React.createElement('div', null, React.createElement('strong', null, 'Shift+click'), ' two states to connect them')
+      )
+    ),
+    React.createElement('canvas', {
+      ref: canvasRef,
+      width: 800,
+      height: 500,
+      onMouseDown: handleMouseDown,
+      onMouseMove: handleMouseMove,
+      onMouseUp: handleMouseUp,
+      style: {
+        border: '2px solid #444',
+        borderRadius: '4px',
+        cursor: draggingNodeId ? 'grabbing' : (connectingFromId ? 'crosshair' : 'grab'),
+        display: 'block',
+        background: '#0d0d0d'
+      }
+    }),
+    connectingFromId && React.createElement('div', { style: { marginTop: '10px', padding: '10px', background: '#FF9800', borderRadius: '4px', color: 'black', fontWeight: 'bold' } },
+      'Connecting from "', getNodeById(connectingFromId)?.name, '" - Shift+click another state to connect'
+    )
   );
 }
 

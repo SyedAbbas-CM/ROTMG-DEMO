@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RotMG-Demo – Game</title>
+    <link rel="icon" type="image/png" href="assets/images/chars.png">
+    <link rel="stylesheet" href="styles/gameUI.css">
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+        #glCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; }
+        #gameCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #loadingScreen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        #loadingBar { width: 300px; height: 20px; background-color: #333; margin-top: 20px; border-radius: 10px; overflow: hidden; }
+        #loadingProgress { width: 0%; height: 100%; background-color: #0f0; transition: width 0.3s ease; }
+        #connectionStatus { position: absolute; top: 10px; right: 10px; padding: 5px 10px; background-color: rgba(0, 0, 0, 0.5); color: #fff; border-radius: 5px; font-family: Arial, sans-serif; }
+        #playerStatus { position: absolute; top: 10px; left: 10px; padding: 5px 10px; background-color: rgba(0, 0, 0, 0.5); color: #fff; border-radius: 5px; font-family: Arial, sans-serif; }
+        #controlsHelp { position: absolute; bottom: 10px; left: 10px; padding: 5px 10px; background-color: rgba(0, 0, 0, 0.7); color: #fff; border-radius: 5px; font-family: Arial, sans-serif; font-size: 12px; }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/"
+        }
+      }
+    </script>
+</head>
+<body>
+    <div id="loadingScreen">
+        <h1>Loading Game...</h1>
+        <div id="loadingBar"><div id="loadingProgress"></div></div>
+    </div>
+    <div id="connectionStatus">Connecting...</div>
+    <div id="playerStatus" style="display:none;">Initializing...</div>
+    <div id="controlsHelp">WASD: Move | Click: Shoot | V: Switch View | F3: Debug | Shift+E: Sprite Editor | Shift+M: Map Editor | Shift+S: Sprite Test</div>
+    <canvas id="glCanvas"></canvas>
+    <canvas id="gameCanvas"></canvas>
+    <div id="spriteEditorContainer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000;">
+        <button id="closeSpriteEditor" style="position:absolute; top:10px; right:10px; padding:6px 10px; font-size:16px;">✖</button>
+        <iframe id="spriteEditorFrame" src="" style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+    <div id="gameUIContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; background-color: transparent;"></div>
+    <script type="module">
+        console.log('[game-nocache.html] CACHE BUSTING VERSION - Module script is running');
+        const timestamp = Date.now();
+        console.log('[game-nocache.html] Loading with timestamp:', timestamp);
+        const { initGame } = await import(`./src/game/game.js?v=${timestamp}`);
+        console.log('[game-nocache.html] initGame imported successfully with cache bust');
+        let loadingProgress = 0;
+        const progressBar = document.getElementById('loadingProgress');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const connectionStatus = document.getElementById('connectionStatus');
+        function updateLoadingProgress(progress) {
+            loadingProgress = progress;
+            progressBar.style.width = `${loadingProgress}%`;
+            if (loadingProgress >= 100) {
+                setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
+            }
+        }
+        function updateConnectionStatus(status) {
+            connectionStatus.textContent = status;
+            switch (status) {
+                case 'Connected': connectionStatus.style.backgroundColor = 'rgba(0, 128, 0, 0.5)'; break;
+                case 'Disconnected': connectionStatus.style.backgroundColor = 'rgba(255, 0, 0, 0.5)'; break;
+                case 'Connecting...': connectionStatus.style.backgroundColor = 'rgba(255, 165, 0, 0.5)'; break;
+                default: connectionStatus.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            }
+        }
+        window.updateLoadingProgress = updateLoadingProgress;
+        window.updateConnectionStatus = updateConnectionStatus;
+        window.updatePlayerStatus = (s)=>{ const el=document.getElementById('playerStatus'); if(el) el.textContent=s; };
+        // Function to start the game
+        function startGame() {
+            console.log('[game.html] Starting game initialization');
+            let progress = 0;
+            const loadingInterval = setInterval(() => {
+                progress += 5;
+                updateLoadingProgress(progress);
+                if (progress >= 90) clearInterval(loadingInterval);
+            }, 100);
+            console.log('[game.html] About to call initGame()...');
+            initGame().then(() => {
+                console.log('[game.html] initGame() completed successfully');
+                updateLoadingProgress(100);
+                updateConnectionStatus('Connected');
+            }).catch((error) => {
+                console.error('[game.html] initGame() failed:', error);
+                updateLoadingProgress(100);
+                updateConnectionStatus('Error');
+                alert('Failed to initialize the game. Please check the console for details.');
+            });
+        }
+
+        // Start game when DOM is ready (handle both cases: before and after DOMContentLoaded)
+        if (document.readyState === 'loading') {
+            console.log('[game.html] DOM still loading, adding event listener...');
+            document.addEventListener('DOMContentLoaded', startGame);
+        } else {
+            console.log('[game.html] DOM already loaded, starting game immediately...');
+            startGame();
+        }
+        document.getElementById('closeSpriteEditor').addEventListener('click',()=>{
+            document.getElementById('spriteEditorContainer').style.display='none';
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'S' && e.shiftKey) window.open('test-sprites.html', '_blank');
+            if (e.key === 'E' && e.shiftKey) window.open('tools/sprite-editor.html', '_blank');
+            if (e.key === 'M' && e.shiftKey) window.open('tools/map-editor.html', '_blank');
+        });
+    </script>
+</body>
+</html>
+

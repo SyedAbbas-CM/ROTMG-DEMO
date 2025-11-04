@@ -154,6 +154,10 @@ export class ClientEnemyManager {
       } catch (err) {
         console.warn('[ClientEnemyManager] Failed to merge external enemy defs', err);
       }
+
+      // Debug: Timer for periodic position logging
+      this.debugPositionTimer = 0;
+      this.debugPositionInterval = 5.0; // Log every 5 seconds (less frequent than server)
     }
     
     /**
@@ -361,6 +365,20 @@ export class ClientEnemyManager {
         // for custom gameplay modes where the server might not be involved
         if (window.ALLOW_CLIENT_ENEMY_BEHAVIOR) {
           this.updateBehaviors(i, deltaTime);
+        }
+      }
+
+      // Debug: Periodic position logging
+      this.debugPositionTimer += deltaTime;
+      if (this.debugPositionTimer >= this.debugPositionInterval) {
+        this.debugPositionTimer = 0;
+
+        if (this.enemyCount > 0) {
+          console.log(`\n🎮 [CLIENT ENEMIES] Active: ${this.enemyCount}`);
+          for (let i = 0; i < this.enemyCount; i++) {
+            const typeName = this.enemyTypes[this.type[i]]?.name || `Type${this.type[i]}`;
+            console.log(`  Client Enemy ${i} (${typeName}): pos=(${this.x[i].toFixed(2)}, ${this.y[i].toFixed(2)}), target=(${this.targetX[i].toFixed(2)}, ${this.targetY[i].toFixed(2)}), hp=${this.health[i].toFixed(0)}/${this.maxHealth[i]}`);
+          }
         }
       }
     }
@@ -571,10 +589,11 @@ export class ClientEnemyManager {
      */
     updateEnemies(enemies) {
       const playerWorld = window.gameState?.character?.worldId;
+
       if (playerWorld) {
         enemies = enemies.filter(e => e.worldId === playerWorld);
       }
-      
+
       // Track which enemies we've seen in this update
       const seenEnemies = new Set();
       

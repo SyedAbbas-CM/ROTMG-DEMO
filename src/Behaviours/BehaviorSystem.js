@@ -32,21 +32,27 @@ export default class BehaviorSystem {
   initDefaultBehaviors() {
     // Type 0: Basic enemy - chases and shoots single bullets
     this.registerBehaviorTemplate(0, this.createBasicEnemyBehavior());
-    
+
     // Type 1: Fast enemy - quickly chases and fires rapid shots
     this.registerBehaviorTemplate(1, this.createFastEnemyBehavior());
-    
+
     // Type 2: Heavy enemy - slow movement, multiple projectile shots
     this.registerBehaviorTemplate(2, this.createHeavyEnemyBehavior());
-    
+
     // Type 3: Stationary turret - doesn't move, shoots from fixed position
     this.registerBehaviorTemplate(3, this.createTurretBehavior());
-    
+
     // Type 4: Melee enemy - aggressively chases but doesn't shoot
     this.registerBehaviorTemplate(4, this.createMeleeEnemyBehavior());
-    
-    // Type 5: Advanced enemy with orbit and teleport tactics
-    this.registerBehaviorTemplate(5, this.createAdvancedEnemyBehavior());
+
+    // Type 5: Cavalry - charges with velocity phases, limited turning when fast
+    this.registerBehaviorTemplate(5, this.createCavalryBehavior());
+
+    // Type 6: Charging Shooter - charges while shooting rapidly
+    this.registerBehaviorTemplate(6, this.createChargingShooterBehavior());
+
+    // Type 7: Heavy Infantry - defensive, only chases when player is close
+    this.registerBehaviorTemplate(7, this.createDefensiveHeavyBehavior());
   }
   
   /**
@@ -123,18 +129,22 @@ export default class BehaviorSystem {
    */
   switchState(index, newState) {
     if (!newState) return;
-    
+
     // Exit current state
+    const oldState = this.currentState[index];
     this.onStateExit(index);
-    
+
     // Change to new state
     this.currentState[index] = newState;
     this.stateData[index] = {}; // Reset state data
     this.behaviorTimers[index] = 0;
     this.transitionChecks[index] = [...newState.transitions]; // Copy transitions
-    
+
     // Enter new state
     this.onStateEntry(index);
+
+    // Log state transition
+    console.log(`🤖 [ENEMY STATE] Index ${index} transitioned: ${oldState?.name || 'unknown'} → ${newState.name}`);
   }
   
   /**
@@ -173,24 +183,25 @@ export default class BehaviorSystem {
   /* === Behavior Template Factories === */
   
   /**
-   * Create behavior template for Basic enemy (Type 0)
+   * Create behavior template for Basic enemy (Type 0) - Light Infantry
    */
   createBasicEnemyBehavior() {
     // Idle state when no players nearby
     const idleState = new BehaviorState('idle', [
       new Behaviors.Wander(0.5) // Slow wandering
     ]);
-    
+
     // Chase state when players are detected
     const chaseState = new BehaviorState('chase', [
-      new Behaviors.Chase(1.0, 200), // Chase at normal speed
+      new Behaviors.Chase(1.0, 12), // Chase but maintain 12 tile distance (same as attack range)
       new Behaviors.Shoot(1.0, 1, 0) // Single shots
     ]);
-    
+
     // Transitions
-    idleState.addTransition(new Transitions.PlayerWithinRange(250, chaseState));
-    chaseState.addTransition(new Transitions.NoPlayerWithinRange(300, idleState));
-    
+    idleState.addTransition(new Transitions.PlayerWithinRange(12, chaseState)); // Detect within 12 tiles
+    chaseState.addTransition(new Transitions.NoPlayerWithinRange(18, idleState)); // Give up at 18 tiles
+    chaseState.addTransition(new Transitions.TimedTransition(4.0, idleState)); // Give up after 4 seconds
+
     return idleState; // Return the root state
   }
   
@@ -205,7 +216,7 @@ export default class BehaviorSystem {
     
     // Chase state when players are detected
     const chaseState = new BehaviorState('chase', [
-      new Behaviors.Chase(1.5, 150), // Fast chase
+      new Behaviors.Chase(1.5, 1), // Fast chase
       new Behaviors.Shoot(0.5, 1, 0) // Quick single shots
     ]);
     
@@ -235,13 +246,13 @@ export default class BehaviorSystem {
     
     // Chase state
     const chaseState = new BehaviorState('chase', [
-      new Behaviors.Chase(0.6, 250), // Slow chase
+      new Behaviors.Chase(0.6, 1), // Slow chase
       new Behaviors.Shoot(2.0, 3, Math.PI/8) // Triple shot with spread
     ]);
     
     // Rage state when low health
     const rageState = new BehaviorState('rage', [
-      new Behaviors.Chase(0.8, 200), // Slightly faster chase
+      new Behaviors.Chase(0.8, 1), // Slightly faster chase
       new Behaviors.Shoot(1.0, 5, Math.PI/6) // Five shots with wide spread
     ]);
     
@@ -255,23 +266,41 @@ export default class BehaviorSystem {
   }
   
   /**
-   * Create behavior template for Turret enemy (Type 3)
+   * Create behavior template for Turret enemy (Type 3) - Archer
+   * Shoots from distance, retreats if player gets too close
    */
   createTurretBehavior() {
-    // Only one state - stationary shooting
+    // Idle state - wander slowly until player in range
+    const idleState = new BehaviorState('idle', [
+      new Behaviors.Wander(0.3) // Slow wandering
+    ]);
+
+    // Shoot state - stationary shooting from safe distance
     const shootState = new BehaviorState('shoot', [
       new Behaviors.Shoot(1.5, 1, 0) // Single shots with medium cooldown
     ]);
-    
-    // Add a self-transition for health triggers
+
+    // Retreat state - run away when player gets too close
+    const retreatState = new BehaviorState('retreat', [
+      new Behaviors.RunAway(2.2, 20), // Run away at 2.2x speed for up to 20 tiles (faster retreat)
+      new Behaviors.Shoot(2.0, 1, 0) // Slower shooting while retreating
+    ]);
+
+    // Rage state - faster shooting at low health
     const rageState = new BehaviorState('rage', [
       new Behaviors.Shoot(0.75, 2, Math.PI/12) // Double shots with shorter cooldown
     ]);
-    
+
     // Transitions
-    shootState.addTransition(new Transitions.HealthBelow(0.5, rageState));
-    
-    return shootState;
+    idleState.addTransition(new Transitions.PlayerWithinRange(18, shootState)); // Detect player at 18 tiles (matches range)
+    shootState.addTransition(new Transitions.PlayerWithinRange(5, retreatState)); // Retreat if player within 5 tiles
+    shootState.addTransition(new Transitions.NoPlayerWithinRange(22, idleState)); // Return to idle if player too far
+    shootState.addTransition(new Transitions.HealthBelow(0.5, rageState)); // Rage at low health
+    retreatState.addTransition(new Transitions.NoPlayerWithinRange(8, shootState)); // Return to shooting when safe
+    rageState.addTransition(new Transitions.PlayerWithinRange(5, retreatState)); // Can still retreat in rage
+    rageState.addTransition(new Transitions.NoPlayerWithinRange(22, idleState)); // Return to idle if player escapes
+
+    return idleState;
   }
   
   /**
@@ -285,7 +314,7 @@ export default class BehaviorSystem {
     
     // Chase state - very aggressive
     const chaseState = new BehaviorState('chase', [
-      new Behaviors.Chase(1.2, 50) // Fast chase with close range
+      new Behaviors.Chase(1.2, 1) // Fast chase with close range
     ]);
     
     // Circle state - circle around target when very close
@@ -301,7 +330,61 @@ export default class BehaviorSystem {
     
     return idleState;
   }
-  
+
+  /**
+   * Create behavior template for Cavalry (Type 5)
+   * Charges with velocity phases - fast charging with limited turning, slow mode for shooting
+   */
+  createCavalryBehavior() {
+    // Idle state - wander until enemy detected
+    const idleState = new BehaviorState('idle', [
+      new Behaviors.Wander(0.5) // Medium speed wandering
+    ]);
+
+    // Slow mode - can turn and shoot
+    const slowState = new BehaviorState('slow', [
+      new Behaviors.CavalryCharge(0.6, 3.5, 6.0, 2.5, 1.2), // Faster charge (3.5x), faster accel (6.0), better turn
+      new Behaviors.Shoot(1.2, 2, Math.PI/12) // 2-spread shot with 15-degree spread
+    ]);
+
+    // Transitions
+    idleState.addTransition(new Transitions.PlayerWithinRange(18, slowState)); // Detect at 18 tiles (matches shooting range)
+    slowState.addTransition(new Transitions.NoPlayerWithinRange(25, idleState)); // Give up chase at 25 tiles
+
+    return idleState;
+  }
+
+  /**
+   * Create behavior template for Defensive Heavy Infantry (Type 7)
+   * Only chases when player is very close, otherwise stays defensive
+   */
+  createDefensiveHeavyBehavior() {
+    // Idle/defensive state - wander slowly
+    const idleState = new BehaviorState('idle', [
+      new Behaviors.Wander(0.2) // Very slow wandering
+    ]);
+
+    // Chase state - only when player is close
+    const chaseState = new BehaviorState('chase', [
+      new Behaviors.Chase(0.5, 12), // Slow chase but maintain 12 tile distance (same as attack range)
+      new Behaviors.Shoot(2.0, 1, 0) // Single shots
+    ]);
+
+    // Rage state - faster when damaged
+    const rageState = new BehaviorState('rage', [
+      new Behaviors.Chase(0.7, 12), // Slightly faster chase but still maintain 12 tile distance
+      new Behaviors.Shoot(1.5, 2, Math.PI/12) // Double shots
+    ]);
+
+    // Transitions - only chase when player is within 12 tiles
+    idleState.addTransition(new Transitions.PlayerWithinRange(12, chaseState));
+    chaseState.addTransition(new Transitions.NoPlayerWithinRange(18, idleState)); // Return to idle if player escapes
+    chaseState.addTransition(new Transitions.HealthBelow(0.4, rageState)); // Rage when low health
+    rageState.addTransition(new Transitions.NoPlayerWithinRange(15, idleState)); // Back to idle if player far
+
+    return idleState;
+  }
+
   /**
    * Create a simple behavior template that only chases (optional) and shoots with custom parameters
    * @param {Object} opts
@@ -384,5 +467,27 @@ export default class BehaviorSystem {
     swirlState.addTransition(new Transitions.HealthAbove(0.7, orbitState));
 
     return idleState;
+  }
+
+  /**
+   * Create behavior template for Charging Shooter (Type 6)
+   */
+  createChargingShooterBehavior() {
+    // Charge state - aggressively chase and shoot rapidly
+    const chargeState = new BehaviorState('charge', [
+      new Behaviors.Chase(2.0, 50),    // Fast aggressive chase
+      new Behaviors.Shoot(0.5, 1, 0)   // Rapid single shots
+    ]);
+
+    // Wander state - move around slowly between charges
+    const wanderState = new BehaviorState('wander', [
+      new Behaviors.Wander(0.5)         // Slow wandering
+    ]);
+
+    // Transitions - cycle between charge and wander
+    chargeState.addTransition(new Transitions.TimedTransition(2.0, wanderState));
+    wanderState.addTransition(new Transitions.TimedTransition(1.5, chargeState));
+
+    return chargeState; // Start in charge state
   }
 } 

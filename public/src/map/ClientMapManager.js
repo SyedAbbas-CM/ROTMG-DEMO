@@ -880,9 +880,10 @@ export class ClientMapManager {
      * Check if a position is a wall or obstacle
      * @param {number} x - World X coordinate (not tile coordinates)
      * @param {number} y - World Y coordinate (not tile coordinates)
+     * @param {boolean} isBullet - If true, missing chunks won't block (bullets can fly through unloaded areas)
      * @returns {boolean} True if wall or obstacle
      */
-    isWallOrObstacle(x, y) {
+    isWallOrObstacle(x, y, isBullet = false) {
         // Track collision checks in global stats
         if (window.COLLISION_STATS) {
             window.COLLISION_STATS.totalWallChecks++;
@@ -934,12 +935,15 @@ export class ClientMapManager {
         // If we don't have a tile yet it means the chunk hasn't arrived.  To
         // avoid "running ahead of the world" we consider that position
         // temporarily blocked and force the player to wait until the data is
-        // streamed in.
+        // streamed in. HOWEVER: bullets should be able to fly through unloaded
+        // chunks since they're just projectiles.
         if (!tile) {
-            if (isProblematicCoord) {
-                console.log(`WALL CHECK RESULT: TRUE (missing chunk)`);
+            if (isBullet) {
+                // Bullets can pass through unloaded chunks - they'll hit actual walls when chunks load
+                return false;
             }
-            return true; // treat as wall until chunk arrives
+            // Players are blocked by unloaded chunks (prevents walking into void)
+            return true;
         }
         
         // IMPROVED: Use tile's isWalkable method if available
