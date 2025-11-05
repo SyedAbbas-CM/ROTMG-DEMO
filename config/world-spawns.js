@@ -17,12 +17,19 @@ export const worldSpawns = {
   // OVERWORLD (Procedural Generated World)
   // ========================================
   overworld: {
-    description: "Main procedural overworld - test area for 4 enemy types",
+    description: "Main procedural overworld - test area with 11 enemies",
     spawns: [
-      // === 4 Basic Enemy Types ===
+      // === Basic Enemy Types ===
       { id: 'goblin', x: 25, y: 25, comment: 'Infantry - Tank' },
+      { id: 'goblin', x: 30, y: 25, comment: 'Infantry 2' },
+      { id: 'goblin', x: 20, y: 25, comment: 'Infantry 3' },
+      { id: 'goblin', x: 25, y: 30, comment: 'Infantry 4' },
+      { id: 'goblin', x: 30, y: 30, comment: 'Infantry 5' },
+      { id: 'goblin', x: 20, y: 30, comment: 'Infantry 6' },
       { id: 'archer', x: 35, y: 25, comment: 'Archer - Long Range' },
+      { id: 'archer', x: 40, y: 25, comment: 'Archer 2 - Long Range' },
       { id: 'red_demon', x: 45, y: 25, comment: 'Cavalry - Charger' },
+      { id: 'heavy_cavalry', x: 50, y: 25, comment: 'Heavy Cavalry - Tanky Charger' },
       { id: 'heavy_knight', x: 55, y: 25, comment: 'Knight - Ultra Tank' }
     ]
   },

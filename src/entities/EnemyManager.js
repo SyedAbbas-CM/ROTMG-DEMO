@@ -76,8 +76,11 @@ export default class EnemyManager {
     // Load enemy type definitions from entityDatabase, fallback to built-ins
     const dbEnemies = entityDatabase.getAll('enemies');
     if (dbEnemies.length > 0) {
+      // Filter out bullet definitions (only load actual enemies with hp)
+      const actualEnemies = dbEnemies.filter(e => e.hp);
+
       // Normalize definitions coming from JSON so core fields exist
-      this.enemyTypes = dbEnemies.map((e, idx) => {
+      this.enemyTypes = actualEnemies.map((e, idx) => {
         const attack = e.attack || {};
         return {
           id: idx,
@@ -101,10 +104,9 @@ export default class EnemyManager {
         };
       });
 
-      // IMPORTANT: Build ID→index mapping for EntityDB enemies
-      dbEnemies.forEach((e, idx) => {
-        // Skip bullet definitions (they don't have hp)
-        if (e.id && e.hp) {
+      // IMPORTANT: Build ID→index mapping for EntityDB enemies (use filtered array indices)
+      actualEnemies.forEach((e, idx) => {
+        if (e.id) {
           this.enemyIdToTypeIndex.set(e.id, idx);
         }
       });
@@ -417,6 +419,9 @@ export default class EnemyManager {
           // Optional: nudge enemy in random safe direction
         }
       }
+
+      // Check for collision with other enemies
+      this.checkEnemyCollision(i);
     }
 
     // Debug: Periodic position logging
@@ -447,7 +452,42 @@ export default class EnemyManager {
     this.isFlashing[index] = 1;
     this.flashTimer[index] = 0.1; // Flash for 100ms
   }
-  
+
+  /**
+   * Check for collisions with other enemies and apply separation
+   * @param {number} index - Enemy index to check
+   */
+  checkEnemyCollision(index) {
+    // Check against all other enemies
+    for (let j = 0; j < this.enemyCount; j++) {
+      // Skip self and dead/dying enemies
+      if (j === index || this.health[j] <= 0 || this.isDying[j]) continue;
+
+      // Calculate distance between enemies
+      const dx = this.x[index] - this.x[j];
+      const dy = this.y[index] - this.y[j];
+      const distSquared = dx * dx + dy * dy;
+      const dist = Math.sqrt(distSquared);
+
+      // Calculate minimum distance (sum of radii)
+      const minDist = (this.width[index] + this.width[j]) / 2;
+
+      // If colliding (distance is less than minimum)
+      if (dist < minDist && dist > 0.01) {
+        // Calculate separation force (push enemies apart)
+        const overlap = minDist - dist;
+        const pushForce = overlap * 0.5; // Each enemy gets pushed half the overlap
+
+        // Normalize direction vector
+        const angle = Math.atan2(dy, dx);
+
+        // Apply separation force to current enemy (push away from other enemy)
+        this.x[index] += Math.cos(angle) * pushForce;
+        this.y[index] += Math.sin(angle) * pushForce;
+      }
+    }
+  }
+
   /**
    * Update flash effect
    * @param {number} index - Enemy index
@@ -524,11 +564,11 @@ export default class EnemyManager {
    */
   removeEnemy(index) {
     const last = this.enemyCount - 1;
-    
+
     // Remove from ID mapping
     const id = this.id[index];
     this.idToIndex.delete(id);
-    
+
     if (index !== last) {
       // Swap with the last enemy - basic properties
       this.id[index] = this.id[last];
@@ -540,7 +580,7 @@ export default class EnemyManager {
       this.health[index] = this.health[last];
       this.maxHealth[index] = this.maxHealth[last];
       this.renderScale[index] = this.renderScale[last];
-      
+
       // Swap behavior properties
       this.moveSpeed[index] = this.moveSpeed[last];
       this.chaseRadius[index] = this.chaseRadius[last];
@@ -554,17 +594,21 @@ export default class EnemyManager {
       this.projectileSpread[index] = this.projectileSpread[last];
       this.canChase[index] = this.canChase[last];
       this.canShoot[index] = this.canShoot[last];
-      
+
       // Swap visual effect properties
       this.flashTimer[index] = this.flashTimer[last];
       this.isFlashing[index] = this.isFlashing[last];
       this.deathTimer[index] = this.deathTimer[last];
       this.isDying[index] = this.isDying[last];
-      
+
+      // CRITICAL: Swap behavior system data to maintain correct behavior state
+      // Without this, the swapped enemy would inherit the dead enemy's behavior!
+      this.behaviorSystem.swapBehaviorData(index, last);
+
       // Update ID mapping for the swapped enemy
       this.idToIndex.set(this.id[index], index);
     }
-    
+
     this.enemyCount--;
   }
   

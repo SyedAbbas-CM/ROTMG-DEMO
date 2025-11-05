@@ -80,18 +80,18 @@ let keysPressed = {};
 let mouseX = 0;
 let mouseY = 0;
 
-// RTS command mode state
-let capsLockEnabled = false;
+// RTS command mode state (toggled with Tab key)
+let rtsCommandMode = false;
 
 // Sensitivity and speed settings
 const MOUSE_SENSITIVITY = 0.002;
 const MOVE_SPEED = 6.0; // Very slow movement speed for ROTMG-like feel
 
 /**
- * Check if RTS command mode is active (caps lock OR shift held)
+ * Check if RTS command mode is active (Tab toggle OR shift held temporarily)
  */
 function isRTSCommandMode(event) {
-    return capsLockEnabled || event?.shiftKey;
+    return rtsCommandMode || event?.shiftKey;
 }
 
 /**
@@ -110,13 +110,17 @@ export function initControls() {
     
     // Keyboard input
     window.addEventListener('keydown', (e) => {
-        // Track caps lock state
-        if (e.getModifierState) {
-            const wasCapsLockEnabled = capsLockEnabled;
-            capsLockEnabled = e.getModifierState('CapsLock');
-            if (wasCapsLockEnabled !== capsLockEnabled) {
-                console.log(`[RTS MODE] Caps Lock ${capsLockEnabled ? 'ON' : 'OFF'}`);
+        // Toggle RTS command mode with Tab key
+        if (e.code === 'Tab') {
+            e.preventDefault(); // Prevent default tab behavior
+            rtsCommandMode = !rtsCommandMode;
+            console.log(`[RTS MODE] ${rtsCommandMode ? 'ENABLED' : 'DISABLED'} (press Tab to toggle)`);
+
+            // Clear selections when disabling RTS mode
+            if (!rtsCommandMode && gameState.selectedUnits) {
+                gameState.selectedUnits = [];
             }
+            return;
         }
 
         // Check for Enter key to focus chat input
@@ -247,11 +251,6 @@ export function initControls() {
     });
 
     window.addEventListener('keyup', (e) => {
-        // Track caps lock state
-        if (e.getModifierState) {
-            capsLockEnabled = e.getModifierState('CapsLock');
-        }
-
         // Skip game controls if chat input is active
         if (window.chatInputActive) {
             return;
@@ -477,12 +476,12 @@ function handleMouseClick(event) {
         const worldX = (event.clientX - centerX) / (TILE_SIZE * scaleFactor) + gameState.camera.position.x;
         const worldY = (event.clientY - centerY) / (TILE_SIZE * scaleFactor) + gameState.camera.position.y;
 
-        // Check if in RTS command mode (caps lock or shift held)
+        // Check if in RTS command mode (Tab toggle or shift held)
         const rtsMode = isRTSCommandMode(event);
 
         // Debug logging
         if (Math.random() < 0.1) { // Log occasionally to avoid spam
-            console.log(`[CLICK] RTS Mode: ${rtsMode}, CapsLock: ${capsLockEnabled}, Shift: ${event.shiftKey}`);
+            console.log(`[CLICK] RTS Mode: ${rtsMode}, Tab Toggle: ${rtsCommandMode}, Shift: ${event.shiftKey}`);
         }
 
         // Only allow unit selection in RTS mode
@@ -595,10 +594,10 @@ export function getMousePosition() {
 
 /**
  * Check if RTS mode is currently active
- * @returns {boolean} True if caps lock is on
+ * @returns {boolean} True if Tab toggle is enabled
  */
 export function isInRTSMode() {
-    return capsLockEnabled;
+    return rtsCommandMode;
 }
 
 /**

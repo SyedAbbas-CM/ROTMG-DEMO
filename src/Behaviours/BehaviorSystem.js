@@ -30,20 +30,20 @@ export default class BehaviorSystem {
    * Initialize default behavior templates for standard enemy types
    */
   initDefaultBehaviors() {
-    // Type 0: Basic enemy - chases and shoots single bullets
+    // Type 0: Light Infantry - chases and shoots single bullets
     this.registerBehaviorTemplate(0, this.createBasicEnemyBehavior());
 
-    // Type 1: Fast enemy - quickly chases and fires rapid shots
-    this.registerBehaviorTemplate(1, this.createFastEnemyBehavior());
+    // Type 1: Archer - long-range sniper that maintains 18+ tile distance
+    this.registerBehaviorTemplate(1, this.createArcherBehavior());
 
-    // Type 2: Heavy enemy - slow movement, multiple projectile shots
-    this.registerBehaviorTemplate(2, this.createHeavyEnemyBehavior());
+    // Type 2: Light Cavalry - charges with velocity phases, limited turning when fast
+    this.registerBehaviorTemplate(2, this.createCavalryBehavior());
 
-    // Type 3: Stationary turret - doesn't move, shoots from fixed position
-    this.registerBehaviorTemplate(3, this.createTurretBehavior());
+    // Type 3: Heavy Cavalry - slower but tankier cavalry, slightly slower max speed
+    this.registerBehaviorTemplate(3, this.createHeavyCavalryBehavior());
 
-    // Type 4: Melee enemy - aggressively chases but doesn't shoot
-    this.registerBehaviorTemplate(4, this.createMeleeEnemyBehavior());
+    // Type 4: Heavy Infantry - defensive, chases when close, rages when damaged
+    this.registerBehaviorTemplate(4, this.createDefensiveHeavyBehavior());
 
     // Type 5: Cavalry - charges with velocity phases, limited turning when fast
     this.registerBehaviorTemplate(5, this.createCavalryBehavior());
@@ -158,10 +158,10 @@ export default class BehaviorSystem {
   updateBehavior(index, enemyManager, bulletManager, target, deltaTime) {
     const state = this.currentState[index];
     if (!state) return;
-    
+
     // Update timer
     this.behaviorTimers[index] += deltaTime;
-    
+
     // Check transitions first
     if (this.transitionChecks[index]) {
       for (const transition of this.transitionChecks[index]) {
@@ -171,13 +171,33 @@ export default class BehaviorSystem {
         }
       }
     }
-    
+
     // Execute behaviors
     if (state.behaviors) {
       for (const behavior of state.behaviors) {
         behavior.execute(index, enemyManager, bulletManager, target, deltaTime, this.stateData[index]);
       }
     }
+  }
+
+  /**
+   * Swap behavior data when EnemyManager swaps enemies during removal
+   * This is critical for maintaining correct behavior when using swap-and-pop pattern
+   * @param {number} index - Index being filled (dead enemy position)
+   * @param {number} lastIndex - Index being moved (last enemy position)
+   */
+  swapBehaviorData(index, lastIndex) {
+    // Swap all behavior state data from lastIndex to index
+    this.currentState[index] = this.currentState[lastIndex];
+    this.stateData[index] = this.stateData[lastIndex];
+    this.behaviorTimers[index] = this.behaviorTimers[lastIndex];
+    this.transitionChecks[index] = this.transitionChecks[lastIndex];
+
+    // Clear the last index data (optional, but good practice)
+    this.currentState[lastIndex] = null;
+    this.stateData[lastIndex] = null;
+    this.behaviorTimers[lastIndex] = 0;
+    this.transitionChecks[lastIndex] = null;
   }
   
   /* === Behavior Template Factories === */
@@ -193,14 +213,14 @@ export default class BehaviorSystem {
 
     // Chase state when players are detected
     const chaseState = new BehaviorState('chase', [
-      new Behaviors.Chase(1.0, 12), // Chase but maintain 12 tile distance (same as attack range)
+      new Behaviors.Chase(1.0, 6), // Chase at normal speed, stop at 6 tiles
       new Behaviors.Shoot(1.0, 1, 0) // Single shots
     ]);
 
-    // Transitions
-    idleState.addTransition(new Transitions.PlayerWithinRange(12, chaseState)); // Detect within 12 tiles
-    chaseState.addTransition(new Transitions.NoPlayerWithinRange(18, idleState)); // Give up at 18 tiles
-    chaseState.addTransition(new Transitions.TimedTransition(4.0, idleState)); // Give up after 4 seconds
+    // Transitions - Engagement range: 15 tiles
+    idleState.addTransition(new Transitions.PlayerWithinRange(15, chaseState)); // Engage within 15 tiles
+    chaseState.addTransition(new Transitions.NoPlayerWithinRange(18, idleState)); // Disengage at 18 tiles
+    chaseState.addTransition(new Transitions.TimedTransition(5.0, idleState)); // Give up after 5 seconds
 
     return idleState; // Return the root state
   }
@@ -234,7 +254,37 @@ export default class BehaviorSystem {
     
     return idleState;
   }
-  
+
+  /**
+   * Create behavior template for Archer (Type 1)
+   * Long-range sniper that maintains distance and retreats when threatened
+   */
+  createArcherBehavior() {
+    // Idle state when no players nearby
+    const idleState = new BehaviorState('idle', [
+      new Behaviors.Wander(0.4) // Slow wandering
+    ]);
+
+    // Sniper state - maintains long range distance
+    const sniperState = new BehaviorState('sniper', [
+      new Behaviors.Chase(1.0, 22), // Stop at 22 tiles (long range)
+      new Behaviors.Shoot(2.5, 1, 0) // Single precise shots with longer cooldown
+    ]);
+
+    // Retreat state - runs away when player gets too close, NO SHOOTING
+    const retreatState = new BehaviorState('retreat', [
+      new Behaviors.RunAway(1.5, 18) // Run away until 18 tiles away
+    ]);
+
+    // Transitions - Engagement range: 30 tiles (long range)
+    idleState.addTransition(new Transitions.PlayerWithinRange(30, sniperState)); // Engage within 30 tiles
+    sniperState.addTransition(new Transitions.NoPlayerWithinRange(32, idleState)); // Disengage at 32 tiles
+    sniperState.addTransition(new Transitions.PlayerWithinRange(8, retreatState)); // Retreat if player gets within 8 tiles
+    retreatState.addTransition(new Transitions.NoPlayerWithinRange(12, sniperState)); // Return to sniping when safe
+
+    return idleState;
+  }
+
   /**
    * Create behavior template for Heavy enemy (Type 2)
    */
@@ -341,21 +391,44 @@ export default class BehaviorSystem {
       new Behaviors.Wander(0.5) // Medium speed wandering
     ]);
 
-    // Slow mode - can turn and shoot
+    // Slow mode - can turn and shoot (only forward-facing)
     const slowState = new BehaviorState('slow', [
-      new Behaviors.CavalryCharge(0.6, 3.5, 6.0, 2.5, 1.2), // Faster charge (3.5x), faster accel (6.0), better turn
-      new Behaviors.Shoot(1.2, 2, Math.PI/12) // 2-spread shot with 15-degree spread
+      new Behaviors.CavalryCharge(0.6, 2.5, 6.0, 2.5, 1.2), // Charge at 2.5x max speed, faster accel (6.0), better turn
+      new Behaviors.DirectionalShoot(1.2, 2, Math.PI/12, Math.PI/4) // 2-spread shot, only shoots within 45° of forward
     ]);
 
-    // Transitions
-    idleState.addTransition(new Transitions.PlayerWithinRange(18, slowState)); // Detect at 18 tiles (matches shooting range)
-    slowState.addTransition(new Transitions.NoPlayerWithinRange(25, idleState)); // Give up chase at 25 tiles
+    // Transitions - Engagement range: 20 tiles
+    idleState.addTransition(new Transitions.PlayerWithinRange(20, slowState)); // Engage within 20 tiles
+    slowState.addTransition(new Transitions.NoPlayerWithinRange(25, idleState)); // Disengage at 25 tiles
 
     return idleState;
   }
 
   /**
-   * Create behavior template for Defensive Heavy Infantry (Type 7)
+   * Create behavior template for Heavy Cavalry (Type 3)
+   * Slower base speed but charges to high speed, tankier than light cavalry
+   */
+  createHeavyCavalryBehavior() {
+    // Idle state - wander until enemy detected
+    const idleState = new BehaviorState('idle', [
+      new Behaviors.Wander(0.4) // Slower wandering than light cavalry
+    ]);
+
+    // Slow mode - can turn and shoot (only forward-facing)
+    const slowState = new BehaviorState('slow', [
+      new Behaviors.CavalryCharge(0.5, 2.8, 5.0, 2.0, 1.0), // Slower base (0.5), faster max (2.8x), slower accel
+      new Behaviors.DirectionalShoot(1.2, 2, Math.PI/12, Math.PI/4) // 2-spread shot, only shoots within 45° of forward
+    ]);
+
+    // Transitions - Engagement range: 20 tiles
+    idleState.addTransition(new Transitions.PlayerWithinRange(20, slowState)); // Engage within 20 tiles
+    slowState.addTransition(new Transitions.NoPlayerWithinRange(25, idleState)); // Disengage at 25 tiles
+
+    return idleState;
+  }
+
+  /**
+   * Create behavior template for Defensive Heavy Infantry (Type 4)
    * Only chases when player is very close, otherwise stays defensive
    */
   createDefensiveHeavyBehavior() {
@@ -366,21 +439,21 @@ export default class BehaviorSystem {
 
     // Chase state - only when player is close
     const chaseState = new BehaviorState('chase', [
-      new Behaviors.Chase(0.5, 12), // Slow chase but maintain 12 tile distance (same as attack range)
-      new Behaviors.Shoot(2.0, 1, 0) // Single shots
+      new Behaviors.Chase(0.8, 6), // Chase at slower speed, stop at 6 tiles
+      new Behaviors.Shoot(2.0, 2, Math.PI/12) // Double shots with 15° spread
     ]);
 
     // Rage state - faster when damaged
     const rageState = new BehaviorState('rage', [
-      new Behaviors.Chase(0.7, 12), // Slightly faster chase but still maintain 12 tile distance
-      new Behaviors.Shoot(1.5, 2, Math.PI/12) // Double shots
+      new Behaviors.Chase(1.2, 6), // Chase faster when enraged, stop at 6 tiles
+      new Behaviors.Shoot(1.5, 2, Math.PI/12) // Double shots with 15° spread
     ]);
 
-    // Transitions - only chase when player is within 12 tiles
-    idleState.addTransition(new Transitions.PlayerWithinRange(12, chaseState));
-    chaseState.addTransition(new Transitions.NoPlayerWithinRange(18, idleState)); // Return to idle if player escapes
-    chaseState.addTransition(new Transitions.HealthBelow(0.4, rageState)); // Rage when low health
-    rageState.addTransition(new Transitions.NoPlayerWithinRange(15, idleState)); // Back to idle if player far
+    // Transitions - Engagement range: 15 tiles (defensive unit)
+    idleState.addTransition(new Transitions.PlayerWithinRange(15, chaseState)); // Engage within 15 tiles
+    chaseState.addTransition(new Transitions.NoPlayerWithinRange(18, idleState)); // Disengage at 18 tiles
+    chaseState.addTransition(new Transitions.HealthBelow(0.4, rageState)); // Rage when health below 40%
+    rageState.addTransition(new Transitions.NoPlayerWithinRange(20, idleState)); // Disengage from rage at 20 tiles
 
     return idleState;
   }

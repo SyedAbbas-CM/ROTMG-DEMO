@@ -266,6 +266,123 @@ export class CavalryCharge extends Behavior {
 }
 
 /**
+ * DirectionalShoot behavior - only shoots if target is within a cone in front
+ * Used for cavalry to prevent shooting sideways/backwards while charging
+ */
+export class DirectionalShoot extends Behavior {
+  /**
+   * @param {number} cooldownMultiplier - Multiplier for cooldown (lower = faster shots)
+   * @param {number} projectileCount - Number of projectiles to fire at once
+   * @param {number} spread - Angular spread between projectiles (radians)
+   * @param {number} maxAngle - Maximum angle from facing direction to allow shooting (radians, default PI/4 = 45°)
+   */
+  constructor(cooldownMultiplier = 1.0, projectileCount = 1, spread = 0, maxAngle = Math.PI / 4) {
+    super();
+    this.cooldownMultiplier = cooldownMultiplier;
+    this.projectileCount = projectileCount;
+    this.spread = spread;
+    this.maxAngle = maxAngle;
+  }
+
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+    if (!target || !bulletManager) return;
+
+    // Skip if enemy can't shoot
+    if (!enemyManager.canShoot[index]) return;
+
+    // Skip if on cooldown
+    if (enemyManager.currentCooldown[index] > 0) return;
+
+    // Get cavalry's facing direction from charge state
+    const chargeState = stateData.chargeState;
+    if (!chargeState || chargeState.lastDirX === 0 && chargeState.lastDirY === 0) {
+      return; // No facing direction yet
+    }
+
+    // Calculate direction to target
+    const dx = target.x - enemyManager.x[index];
+    const dy = target.y - enemyManager.y[index];
+    const distanceSquared = dx * dx + dy * dy;
+
+    // Skip if out of range
+    if (distanceSquared > enemyManager.shootRange[index] * enemyManager.shootRange[index]) {
+      return;
+    }
+
+    // Calculate angle to target
+    const targetAngle = Math.atan2(dy, dx);
+
+    // Calculate cavalry's facing angle
+    const facingAngle = Math.atan2(chargeState.lastDirY, chargeState.lastDirX);
+
+    // Calculate angle difference
+    let angleDiff = targetAngle - facingAngle;
+    // Normalize to -PI to PI
+    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+    // Only shoot if target is within the forward cone
+    if (Math.abs(angleDiff) > this.maxAngle) {
+      return; // Target is too far to the side or behind
+    }
+
+    // Reset cooldown
+    enemyManager.currentCooldown[index] = enemyManager.cooldown[index] * this.cooldownMultiplier;
+
+    // Debug: Log enemy shooting
+    console.log(`🔫 [CAVALRY SHOOT] Index ${index} at (${enemyManager.x[index].toFixed(2)}, ${enemyManager.y[index].toFixed(2)}) firing ${this.projectileCount} bullet(s), angle ${(targetAngle * 180 / Math.PI).toFixed(1)}°, angleDiff ${(angleDiff * 180 / Math.PI).toFixed(1)}°`);
+
+    // Fire projectiles (reuse from Shoot behavior)
+    this.fireProjectiles(index, enemyManager, bulletManager, targetAngle);
+  }
+
+  fireProjectiles(index, enemyManager, bulletManager, baseAngle) {
+    // Spawn bullet at enemy center (no offset)
+    const spawnOffset = 0;
+    const spawnX = enemyManager.x[index];
+    const spawnY = enemyManager.y[index];
+
+    // Fire multiple projectiles with spread
+    for (let i = 0; i < this.projectileCount; i++) {
+      // Calculate angle offset for this projectile
+      let angleOffset = 0;
+      if (this.projectileCount > 1) {
+        // Spread projectiles evenly
+        const spreadRange = this.spread * (this.projectileCount - 1);
+        angleOffset = -spreadRange / 2 + (i * this.spread);
+      }
+
+      // Apply inaccuracy (random variation)
+      const inaccuracyOffset = (Math.random() - 0.5) * this.inaccuracy;
+      const finalAngle = baseAngle + angleOffset + inaccuracyOffset;
+
+      // Calculate velocity
+      const speed = enemyManager.bulletSpeed[index];
+      const vx = Math.cos(finalAngle) * speed;
+      const vy = Math.sin(finalAngle) * speed;
+
+      // Create bullet
+      const bulletId = bulletManager.addBullet({
+        x: spawnX,
+        y: spawnY,
+        vx: vx,
+        vy: vy,
+        ownerId: enemyManager.id[index],
+        damage: enemyManager.damage[index],
+        lifetime: enemyManager.bulletLifetime[index],
+        width: 0.3,
+        height: 0.3,
+        isEnemy: true,
+        spriteName: enemyManager.bulletSpriteName[index] || null,
+        worldId: enemyManager.worldId[index]
+      });
+
+      console.log(`  ↳ Created bullet ${bulletId} from ${enemyManager.id[index]}, lifetime=${enemyManager.bulletLifetime[index].toFixed(2)}s, damage=${enemyManager.damage[index]}`);
+    }
+  }
+}
+
+/**
  * Orbit behavior - circle around target
  */
 export class Orbit extends Behavior {
@@ -603,8 +720,8 @@ export class Shoot extends Behavior {
   }
   
   fireProjectiles(index, enemyManager, bulletManager, baseAngle) {
-    // Push bullet so it starts just outside the enemy's own hit-box (enemyWidth/2 + small margin)
-    const spawnOffset = (enemyManager.width[index] * 0.5) + 0.3; // tile-units
+    // Spawn bullet at enemy center (no offset)
+    const spawnOffset = 0; // tile-units
 
     // Single projectile case
     if (this.projectileCount <= 1) {
@@ -622,8 +739,8 @@ export class Shoot extends Behavior {
         ownerId: enemyManager.id[index],
         damage: enemyManager.damage[index],
         lifetime: enemyManager.bulletLifetime[index],
-        width: 0.4,
-        height: 0.4,
+        width: 0.3,
+        height: 0.3,
         isEnemy: true,
         spriteName: enemyManager.bulletSpriteName[index] || 'projectile_basic',
         worldId: enemyManager.worldId[index]
@@ -652,8 +769,8 @@ export class Shoot extends Behavior {
         ownerId: enemyManager.id[index],
         damage: enemyManager.damage[index],
         lifetime: enemyManager.bulletLifetime[index],
-        width: 0.4,
-        height: 0.4,
+        width: 0.3,
+        height: 0.3,
         isEnemy: true,
         spriteName: enemyManager.bulletSpriteName[index] || 'projectile_basic',
         worldId: enemyManager.worldId[index]

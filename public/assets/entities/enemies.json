@@ -2,8 +2,8 @@
   {
     "id": "goblin_dart",
     "sprite": "Light_Infantry",
-    "speed": 2,
-    "lifetime": 1000
+    "speed": 1.0,
+    "lifetime": 1500
   },
   {
     "id": "goblin",
@@ -17,11 +17,11 @@
     "attack": {
       "bulletId": "goblin_dart",
       "cooldown": 2000,
-      "speed": 2,
-      "lifetime": 1000,
+      "speed": 4.0,
+      "lifetime": 1500,
       "count": 1,
       "spread": 0,
-      "range": 12,
+      "range": 24,
       "damage": 5
     },
     "ai": { "behaviorTree": "BasicChaseAndShoot" }
@@ -40,7 +40,7 @@
     "speed": 3,
     "width": 2,
     "height": 2,
-    "renderScale": 4,
+    "renderScale": 3,
     "attack": {
       "bulletId": "archer_arrow",
       "cooldown": 2500,
@@ -48,7 +48,7 @@
       "lifetime": 1500,
       "count": 1,
       "spread": 0,
-      "range": 18,
+      "range": 28,
       "damage": 15
     },
     "ai": { "behaviorTree": "BasicChaseAndShoot" }
@@ -71,20 +71,47 @@
     "attack": {
       "bulletId": "cavalry_spear",
       "cooldown": 1500,
-      "speed": 10,
+      "speed": 45,
       "lifetime": 600,
       "count": 2,
       "spread": 15,
-      "range": 18,
+      "range": 32,
       "damage": 25
+    },
+    "ai": { "behaviorTree": "BasicChaseAndShoot" }
+  },
+  {
+    "id": "heavy_cavalry_lance",
+    "sprite": "Heavy_Cavalry",
+    "speed": 10,
+    "lifetime": 700
+  },
+  {
+    "id": "heavy_cavalry",
+    "name": "Heavy Cavalry",
+    "sprite": "Heavy_Cavalry",
+    "hp": 800,
+    "speed": 2.5,
+    "width": 2,
+    "height": 2,
+    "renderScale": 7,
+    "attack": {
+      "bulletId": "heavy_cavalry_lance",
+      "cooldown": 1800,
+      "speed": 45,
+      "lifetime": 700,
+      "count": 2,
+      "spread": 15,
+      "range": 32,
+      "damage": 35
     },
     "ai": { "behaviorTree": "BasicChaseAndShoot" }
   },
   {
     "id": "knight_axe",
     "sprite": "Heavy_Infantry",
-    "speed": 2.5,
-    "lifetime": 1000
+    "speed": 1.3,
+    "lifetime": 1200
   },
   {
     "id": "heavy_knight",
@@ -98,11 +125,11 @@
     "attack": {
       "bulletId": "knight_axe",
       "cooldown": 3000,
-      "speed": 2.5,
-      "lifetime": 1000,
+      "speed": 4.0,
+      "lifetime": 1200,
       "count": 1,
       "spread": 0,
-      "range": 12,
+      "range": 24,
       "damage": 8
     },
     "ai": { "behaviorTree": "BasicChaseAndShoot" }
