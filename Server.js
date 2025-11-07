@@ -434,6 +434,12 @@ function handlePlayerShoot(clientId, bulletData) {
   const client = clients.get(clientId);
   if (!client) return;
 
+  // BLOCK SHOOTING IF PLAYER IS DEAD
+  if (client.player && client.player.isDead) {
+    console.log(`[SERVER] 🚫 Blocked shoot from dead player ${clientId}`);
+    return;
+  }
+
   const { x, y, angle, speed, damage } = bulletData;
   const mapId = client.mapId;
 
@@ -476,11 +482,157 @@ function handlePlayerShoot(clientId, bulletData) {
 }
 
 // ---------------------------------------------------------------
+// Helper: Check and resolve player-enemy collisions
+// ---------------------------------------------------------------
+function checkPlayerEnemyCollision(player, mapId) {
+  const ctx = getWorldCtx(mapId);
+  if (!ctx || !ctx.enemyMgr) return;
+
+  const enemyMgr = ctx.enemyMgr;
+  const playerRadius = 0.5; // Player collision radius
+
+  // Check all enemies
+  for (let i = 0; i < enemyMgr.enemyCount; i++) {
+    // Skip dead/dying enemies
+    if (enemyMgr.health[i] <= 0 || enemyMgr.isDying[i]) continue;
+
+    // Calculate distance
+    const dx = player.x - enemyMgr.x[i];
+    const dy = player.y - enemyMgr.y[i];
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // Calculate minimum separation distance
+    const enemyRadius = enemyMgr.width[i] / 2;
+    const minDist = playerRadius + enemyRadius;
+
+    // If colliding, push player back
+    if (dist < minDist && dist > 0.01) {
+      const overlap = minDist - dist;
+      const angle = Math.atan2(dy, dx);
+
+      // Push player away from enemy
+      player.x += Math.cos(angle) * overlap;
+      player.y += Math.sin(angle) * overlap;
+    }
+  }
+}
+
+// ---------------------------------------------------------------
+// Helper: Load starting area spawn points
+// ---------------------------------------------------------------
+let startingAreaCache = null;
+async function loadStartingAreaSpawnPoints() {
+  if (startingAreaCache) return startingAreaCache;
+
+  try {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    const __dirname = path.dirname(new URL(import.meta.url).pathname);
+    const startingAreaPath = path.join(__dirname, 'public', 'maps', 'StartingArea.json');
+
+    const data = await fs.readFile(startingAreaPath, 'utf-8');
+    const mapData = JSON.parse(data);
+
+    // Extract entry points
+    if (mapData.entryPoints && Array.isArray(mapData.entryPoints) && mapData.entryPoints.length > 0) {
+      startingAreaCache = mapData.entryPoints;
+      console.log(`[SERVER] 🏠 Loaded ${startingAreaCache.length} starting area spawn points from StartingArea.json`);
+    } else {
+      // Fallback to center if no entry points defined
+      startingAreaCache = [{ x: 16, y: 16 }];
+      console.log('[SERVER] ⚠️ No entry points found in StartingArea.json, using default center spawn');
+    }
+
+    return startingAreaCache;
+  } catch (error) {
+    console.error('[SERVER] ❌ Failed to load StartingArea.json:', error.message);
+    // Fallback to default spawn point
+    startingAreaCache = [{ x: 16, y: 16 }];
+    return startingAreaCache;
+  }
+}
+
+// ---------------------------------------------------------------
+// Helper: Handle player respawn (MMO-style: full delete and recreate)
+// ---------------------------------------------------------------
+async function handlePlayerRespawn(clientId) {
+  const client = clients.get(clientId);
+  if (!client) {
+    console.warn(`[SERVER] ⚠️ Respawn request from unknown client ${clientId}`);
+    return;
+  }
+
+  console.log(`[SERVER] 🔄 Player ${clientId} requesting respawn - DELETING old character and CREATING new one`);
+
+  const socket = client.socket;
+  const mapId = client.mapId || 'map_1';
+
+  // MMO-STYLE: Completely delete the old player object from the clients Map
+  // This simulates a full "logout" - player is removed from the world
+  if (client.player) {
+    console.log(`[SERVER] 💀 Deleting dead player ${clientId} from backend (x: ${client.player.x?.toFixed(2)}, y: ${client.player.y?.toFixed(2)})`);
+  }
+
+  // Remove player from clients Map (like they disconnected)
+  clients.delete(clientId);
+  console.log(`[SERVER] ✅ Player ${clientId} removed from backend`);
+
+  // Calculate spawn location at world center (1280, 1280)
+  const metaForSpawn = mapManager.getMapMetadata(mapId) || { width: 2560, height: 2560 };
+  const spawnX = metaForSpawn.width / 2;   // Center X: 2560 / 2 = 1280
+  const spawnY = metaForSpawn.height / 2;  // Center Y: 2560 / 2 = 1280
+
+  console.log(`[SERVER] 🌍 Spawning at world center: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)}) in world ${mapId}`);
+
+  // MMO-STYLE: Create a completely NEW player object (like a fresh login)
+  const newPlayer = {
+    id: clientId,
+    x: spawnX,
+    y: spawnY,
+    inventory: new Array(20).fill(null),
+    health: 1000,
+    maxHealth: 1000,
+    worldId: mapId,
+    lastUpdate: Date.now(),
+    isDead: false,
+    // No death metadata - this is a fresh character
+  };
+
+  // Re-add to clients Map with the new player object
+  clients.set(clientId, {
+    socket: socket,
+    player: newPlayer,
+    mapId: mapId,
+    lastUpdate: Date.now()
+  });
+
+  console.log(`[SERVER] ✨ Created NEW player ${clientId} at (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)}) with 1000 HP`);
+
+  // Send confirmation to client with new character data
+  sendToClient(socket, MessageType.PLAYER_RESPAWN, {
+    x: spawnX,
+    y: spawnY,
+    health: 1000,
+    maxHealth: 1000,
+    timestamp: Date.now(),
+    clientId: clientId
+  });
+
+  console.log(`[SERVER] 🎮 Respawn complete - Player ${clientId} is now alive and in the game`);
+}
+
+// ---------------------------------------------------------------
 // Helper: Handle player position update
 // ---------------------------------------------------------------
 function handlePlayerUpdate(clientId, positionData) {
   const client = clients.get(clientId);
   if (!client || !client.player) return;
+
+  // BLOCK MOVEMENT IF PLAYER IS DEAD
+  if (client.player.isDead) {
+    console.log(`[SERVER] 🚫 Blocked movement from dead player ${clientId}`);
+    return;
+  }
 
   const { x, y, vx, vy } = positionData;
 
@@ -488,6 +640,10 @@ function handlePlayerUpdate(clientId, positionData) {
   if (x !== undefined && y !== undefined) {
     client.player.x = x;
     client.player.y = y;
+
+    // Check and resolve collision with enemies
+    const mapId = client.mapId || gameState.mapId;
+    checkPlayerEnemyCollision(client.player, mapId);
   }
 
   // Update velocity if provided
@@ -1144,7 +1300,7 @@ function spawnMapEnemies(mapId) {
 spawnMapEnemies(gameState.mapId);
 
 // WebSocket connection handler
-wss.on('connection', (socket, req) => {
+wss.on('connection', async (socket, req) => {
   // Generate client ID
   const clientId = nextClientId++;
   
@@ -1169,13 +1325,14 @@ wss.on('connection', (socket, req) => {
   } else if (DEBUG.connections) {
     console.log(`Client ${clientId} connected without map request, using default map: ${defaultMapId}`);
   }
-  
-  // Determine safe spawn coordinates within map bounds (avoid edges)
-  const metaForSpawn = mapManager.getMapMetadata(useMapId) || { width: 64, height: 64 };
-  const safeMargin = 2; // tiles away from the border
-  const spawnX = Math.random() * (metaForSpawn.width  - safeMargin * 2) + safeMargin;
-  const spawnY = Math.random() * (metaForSpawn.height - safeMargin * 2) + safeMargin;
-  
+
+  // Spawn at world center (1280, 1280) for 2560x2560 world
+  const metaForSpawn = mapManager.getMapMetadata(useMapId) || { width: 2560, height: 2560 };
+  const spawnX = metaForSpawn.width / 2;   // Center X: 2560 / 2 = 1280
+  const spawnY = metaForSpawn.height / 2;  // Center Y: 2560 / 2 = 1280
+
+  console.log(`[SERVER] 🌍 New player ${clientId} spawning at world center: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)})`);
+
   // Store client info
   clients.set(clientId, {
     socket,
@@ -1184,9 +1341,11 @@ wss.on('connection', (socket, req) => {
       x: spawnX,
       y: spawnY,
       inventory: new Array(20).fill(null),
-      health: 100,
+      health: 1000,
+      maxHealth: 1000,
       worldId: useMapId,
-      lastUpdate: Date.now()
+      lastUpdate: Date.now(),
+      isDead: false
     },
     mapId: useMapId,  // Use the appropriate map ID
     lastUpdate: Date.now()
@@ -1259,6 +1418,8 @@ wss.on('connection', (socket, req) => {
         handlePlayerShoot(clientId, packet.data);
       } else if(packet.type === MessageType.PLAYER_UPDATE){
         handlePlayerUpdate(clientId, packet.data);
+      } else if(packet.type === MessageType.PLAYER_RESPAWN){
+        handlePlayerRespawn(clientId);
       } else if(packet.type === MessageType.UNIT_SPAWN){
         handleUnitSpawn(clientId, packet.data);
       } else if(packet.type === MessageType.UNIT_COMMAND){
@@ -1290,11 +1451,14 @@ function updateGame() {
     console.log(`[SERVER] ${clients.size} connected client(s)`);
   }
 
-  // Group players by world for quick look-ups
+  // Group players by world for quick look-ups (exclude dead players from AI targeting)
   const playersByWorld = new Map();
   clients.forEach(({ player, mapId }) => {
     if (!playersByWorld.has(mapId)) playersByWorld.set(mapId, []);
-    playersByWorld.get(mapId).push(player);
+    // Only add alive players to the targeting list so AI doesn't attack dead players
+    if (!player.isDead) {
+      playersByWorld.get(mapId).push(player);
+    }
   });
 
   // Iterate over EVERY world context (even empty ones – keeps bullets moving)
@@ -1359,9 +1523,15 @@ function broadcastWorldUpdates() {
 
   // Iterate per mapId and broadcast to only those clients
   clientsByMap.forEach((idSet, mapId) => {
-    // Collect players in this map
+    // Collect players in this map (exclude dead players from rendering)
     const playersObj = {};
-    idSet.forEach(cid => { playersObj[cid] = clients.get(cid).player; });
+    idSet.forEach(cid => {
+      const player = clients.get(cid).player;
+      // Only include alive players in world updates
+      if (!player.isDead) {
+        playersObj[cid] = player;
+      }
+    });
 
     // Use per-world managers
     const ctx = getWorldCtx(mapId);
@@ -1448,6 +1618,18 @@ function broadcastWorldUpdates() {
 
       // Bullet debug logs removed - too spammy (collision fix verified ✓)
 
+      // Check for player death and send death message
+      if (c.player && c.player.isDead && !c.player.deathMessageSent) {
+        c.player.deathMessageSent = true;
+        sendToClient(c.socket, MessageType.PLAYER_DEATH, {
+          playerId: cid,
+          deathX: c.player.deathX,
+          deathY: c.player.deathY,
+          timestamp: c.player.deathTimestamp
+        });
+        console.log(`[SERVER] 📤 Sent PLAYER_DEATH message to client ${cid}`);
+      }
+
       sendToClient(c.socket, MessageType.WORLD_UPDATE, payload);
     });
 
@@ -1502,7 +1684,7 @@ setInterval(() => {
 }, 30000); // Changed from 5000 to 30000 (30 seconds)
 
 // Server listen
-const START_PORT = Number(process.env.PORT) || 3000;
+const START_PORT = Number(process.env.PORT) || 4000;
 
 function tryListen(port, attemptsLeft = 5) {
   const onError = (err) => {

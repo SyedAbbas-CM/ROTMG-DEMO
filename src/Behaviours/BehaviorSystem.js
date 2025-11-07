@@ -36,7 +36,7 @@ export default class BehaviorSystem {
     // Type 1: Archer - long-range sniper that maintains 18+ tile distance
     this.registerBehaviorTemplate(1, this.createArcherBehavior());
 
-    // Type 2: Light Cavalry - charges with velocity phases, limited turning when fast
+    // Type 2: Light Cavalry - charges with velocity phases, directional shooting
     this.registerBehaviorTemplate(2, this.createCavalryBehavior());
 
     // Type 3: Heavy Cavalry - slower but tankier cavalry, slightly slower max speed
@@ -217,10 +217,10 @@ export default class BehaviorSystem {
       new Behaviors.Shoot(1.0, 1, 0) // Single shots
     ]);
 
-    // Transitions - Engagement range: 15 tiles
-    idleState.addTransition(new Transitions.PlayerWithinRange(15, chaseState)); // Engage within 15 tiles
-    chaseState.addTransition(new Transitions.NoPlayerWithinRange(18, idleState)); // Disengage at 18 tiles
-    chaseState.addTransition(new Transitions.TimedTransition(5.0, idleState)); // Give up after 5 seconds
+    // Transitions - Engagement range: 25 tiles (matches cavalry shootRange)
+    idleState.addTransition(new Transitions.PlayerWithinRange(25, chaseState)); // Engage within 25 tiles
+    chaseState.addTransition(new Transitions.NoPlayerWithinRange(28, idleState)); // Disengage at 28 tiles
+    chaseState.addTransition(new Transitions.TimedTransition(10.0, idleState)); // Give up after 10 seconds
 
     return idleState; // Return the root state
   }
@@ -394,12 +394,12 @@ export default class BehaviorSystem {
     // Slow mode - can turn and shoot (only forward-facing)
     const slowState = new BehaviorState('slow', [
       new Behaviors.CavalryCharge(0.6, 2.5, 6.0, 2.5, 1.2), // Charge at 2.5x max speed, faster accel (6.0), better turn
-      new Behaviors.DirectionalShoot(1.2, 2, Math.PI/12, Math.PI/4) // 2-spread shot, only shoots within 45° of forward
+      new Behaviors.DirectionalShoot(1.0, Math.PI/3) // Shoots from JSON config, allows 60° cone
     ]);
 
-    // Transitions - Engagement range: 20 tiles
-    idleState.addTransition(new Transitions.PlayerWithinRange(20, slowState)); // Engage within 20 tiles
-    slowState.addTransition(new Transitions.NoPlayerWithinRange(25, idleState)); // Disengage at 25 tiles
+    // Transitions - Engagement range: 30 tiles (matches cavalry range)
+    idleState.addTransition(new Transitions.PlayerWithinRange(30, slowState)); // Engage within 30 tiles
+    slowState.addTransition(new Transitions.NoPlayerWithinRange(35, idleState)); // Disengage at 35 tiles
 
     return idleState;
   }
@@ -416,13 +416,13 @@ export default class BehaviorSystem {
 
     // Slow mode - can turn and shoot (only forward-facing)
     const slowState = new BehaviorState('slow', [
-      new Behaviors.CavalryCharge(0.5, 2.8, 5.0, 2.0, 1.0), // Slower base (0.5), faster max (2.8x), slower accel
-      new Behaviors.DirectionalShoot(1.2, 2, Math.PI/12, Math.PI/4) // 2-spread shot, only shoots within 45° of forward
+      new Behaviors.CavalryCharge(0.4, 2.8, 3.0, 3.0, 1.5), // Slowest start (0.4), high max (2.8x), slow accel (3.0), longer charge
+      new Behaviors.DirectionalShoot(1.0, Math.PI/3) // Shoots from JSON config, allows 60° cone
     ]);
 
-    // Transitions - Engagement range: 20 tiles
-    idleState.addTransition(new Transitions.PlayerWithinRange(20, slowState)); // Engage within 20 tiles
-    slowState.addTransition(new Transitions.NoPlayerWithinRange(25, idleState)); // Disengage at 25 tiles
+    // Transitions - Engagement range: 30 tiles
+    idleState.addTransition(new Transitions.PlayerWithinRange(30, slowState)); // Engage within 30 tiles
+    slowState.addTransition(new Transitions.NoPlayerWithinRange(35, idleState)); // Disengage at 35 tiles
 
     return idleState;
   }

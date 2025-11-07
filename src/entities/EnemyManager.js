@@ -421,7 +421,12 @@ export default class EnemyManager {
       }
 
       // Check for collision with other enemies
-      this.checkEnemyCollision(i);
+      // Skip collision if cavalry is in stationary mode (prevents drift)
+      const stateData = this.behaviorSystem.stateData[i];
+      const isStationary = stateData?.chargeState?.phase === 'STATIONARY';
+      if (!isStationary) {
+        this.checkEnemyCollision(i);
+      }
     }
 
     // Debug: Periodic position logging
@@ -469,14 +474,14 @@ export default class EnemyManager {
       const distSquared = dx * dx + dy * dy;
       const dist = Math.sqrt(distSquared);
 
-      // Calculate minimum distance (sum of radii)
-      const minDist = (this.width[index] + this.width[j]) / 2;
+      // Calculate minimum distance (sum of radii, reduced by 0.6 to allow tighter packing)
+      const minDist = ((this.width[index] + this.width[j]) / 2) * 0.6;
 
       // If colliding (distance is less than minimum)
       if (dist < minDist && dist > 0.01) {
         // Calculate separation force (push enemies apart)
         const overlap = minDist - dist;
-        const pushForce = overlap * 0.5; // Each enemy gets pushed half the overlap
+        const pushForce = overlap * 0.3; // Reduced from 0.5 to 0.3 for less separation
 
         // Normalize direction vector
         const angle = Math.atan2(dy, dx);

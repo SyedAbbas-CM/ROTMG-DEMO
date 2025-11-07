@@ -124,6 +124,13 @@ export default class BulletManager {
       // Remove expired bullets
       if (this.life[i] <= 0) {
         if (this.stats) this.stats.expired++;
+
+        // Debug cavalry bullets
+        const ownerIdStr = String(this.ownerId[i] || '');
+        if (ownerIdStr.includes('enemy_9') || ownerIdStr.includes('enemy_10')) {
+          console.log(`⚠️  CAVALRY BULLET EXPIRED: ${this.id[i]} from ${this.ownerId[i]} at (${this.x[i].toFixed(2)}, ${this.y[i].toFixed(2)})`);
+        }
+
         this.swapRemove(i);
         count--;
         i--;

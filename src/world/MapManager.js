@@ -177,9 +177,9 @@ export class MapManager {
       biomeWeights = meta.overworldConfig.getBiomeWeights(regionConfig.type);
 
       // DEBUG: Log region info for first chunk in each region
-      const chunksPerRegion = meta.overworldConfig.regionSize / meta.overworldConfig.chunkSize; // 128/16 = 8
+      const chunksPerRegion = meta.overworldConfig.regionSize / meta.overworldConfig.chunkSize; // 640/16 = 40 (was 128/16=8)
       if (chunkCol % chunksPerRegion === 0 && chunkRow % chunksPerRegion === 0) {
-        console.log(`[REGION] Chunk (${chunkCol},${chunkRow}) → Region (${regionX},${regionY}) [${regionConfig.name}] type: ${regionConfig.type}`);
+        console.log(`[REGION] Chunk (${chunkCol},${chunkRow}) → Region (${regionX},${regionY}) [${regionConfig.name}] type: ${regionConfig.type}, BiomeScale: ${500 * (meta.overworldConfig.regionSize / 128)}`);
       }
     }
 
@@ -241,8 +241,23 @@ export class MapManager {
         }
 
         // Generate temperature and moisture noise for biome selection
-        // Use MUCH larger scale for cohesive biome regions (100-200 tiles wide)
-        const BIOME_SCALE = 500;  // Large regions for biome clustering (increased from 300 for bigger biomes)
+        // Scale biome size based on region size from overworld config
+        // Default 500 for 128-tile regions, scales proportionally with region size
+        let BIOME_SCALE = 500;
+        if (meta && meta.overworldConfig) {
+          // Scale biome noise frequency based on region size
+          // regionSize 128 → scale 500, regionSize 640 → scale 2500 (5x larger)
+          const regionSizeRatio = meta.overworldConfig.regionSize / 128;
+          BIOME_SCALE = 500 * regionSizeRatio;
+
+          // DEBUG: Log BIOME_SCALE for first tile of first chunk in each region
+          if (x === 0 && y === 0) {
+            const chunksPerRegion = meta.overworldConfig.regionSize / meta.overworldConfig.chunkSize;
+            if (chunkCol % chunksPerRegion === 0 && chunkRow % chunksPerRegion === 0) {
+              console.log(`[BIOME_SCALE] Chunk (${chunkCol},${chunkRow}): regionSize=${meta.overworldConfig.regionSize}, ratio=${regionSizeRatio}, BIOME_SCALE=${BIOME_SCALE}`);
+            }
+          }
+        }
         const DETAIL_SCALE = 60;   // Small-scale variation within biomes
 
         // Layer 1: Biome-scale (creates large regions)
@@ -1474,6 +1489,28 @@ export class MapManager {
     }
 
     return fixedObjects;
+  }
+
+  /**
+   * Add a dynamic object to a map (e.g., graves, spawned items)
+   * @param {string} mapId - Map ID
+   * @param {Object} object - Object to add
+   */
+  addObject(mapId, object) {
+    const meta = this.getMapMetadata(mapId);
+    if (!meta) {
+      console.warn(`[MapManager] Cannot add object: map ${mapId} not found`);
+      return;
+    }
+
+    // Initialize objects array if it doesn't exist
+    if (!Array.isArray(meta.objects)) {
+      meta.objects = [];
+    }
+
+    // Add the object
+    meta.objects.push(object);
+    console.log(`[MapManager] Added object ${object.id} to map ${mapId} at (${object.x}, ${object.y})`);
   }
   getEnemySpawns(mapId){
     const meta=this.getMapMetadata(mapId); return meta&&Array.isArray(meta.enemySpawns)?meta.enemySpawns:[];

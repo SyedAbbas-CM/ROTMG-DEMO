@@ -31,9 +31,9 @@ if (!window.COLLISION_STATS) {
  */
 export function updateCharacter(delta) {
   const character = gameState.character;
-  
+
   // Abort movement and logic when character is dead
-  if (!character || (typeof character.health === 'number' && character.health <= 0)) {
+  if (!character || character.isDead || (typeof character.health === 'number' && character.health <= 0)) {
     return; // dead or missing character – skip rest of update
   }
   

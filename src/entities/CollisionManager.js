@@ -261,6 +261,36 @@ export default class CollisionManager {
               player.health = Math.max(0, player.health - damage);
             }
 
+            // Check for player death
+            if (player.health <= 0 && !player.isDead) {
+              player.isDead = true;
+              player.deathX = player.x;
+              player.deathY = player.y;
+              player.deathTimestamp = Date.now();
+              console.log(`[SERVER] 💀 PLAYER DEATH: ${playerId} has died at (${player.x.toFixed(2)}, ${player.y.toFixed(2)})`);
+
+              // Spawn grave object at death location
+              if (this.mapManager && this.mapManager.addObject) {
+                const graveId = `grave_${playerId}_${Date.now()}`;
+                const graveObject = {
+                  id: graveId,
+                  type: 'grave',
+                  x: player.deathX,
+                  y: player.deathY,
+                  playerId: playerId,
+                  timestamp: player.deathTimestamp,
+                  sprite: 'grave', // This should match a sprite in the assets
+                  width: 2,
+                  height: 2
+                };
+
+                // Get player's world ID
+                const worldId = player.worldId || 'overworld';
+                this.mapManager.addObject(worldId, graveObject);
+                console.log(`[SERVER] 🪦 Spawned grave ${graveId} at (${player.deathX.toFixed(2)}, ${player.deathY.toFixed(2)}) in world ${worldId}`);
+              }
+            }
+
             // Mark bullet for removal
             this.bulletManager.markForRemoval(bi);
 

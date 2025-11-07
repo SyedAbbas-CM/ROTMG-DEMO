@@ -53,6 +53,8 @@ export const MessageType = {
   PLAYER_LEAVE: 11,
   PLAYER_UPDATE: 12,
   PLAYER_LIST: 13,
+  PLAYER_DEATH: 14,
+  PLAYER_RESPAWN: 15,
 
   // Enemies
   ENEMY_LIST: 20,

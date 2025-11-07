@@ -884,6 +884,80 @@ export class ClientNetworkManager {
         this.handlers[MessageType.MOVE_DENIED] = (data)=>{
             if(window.showToast) window.showToast(data?.reason || 'Move denied');
         };
+
+        // Handle player death
+        this.handlers[MessageType.PLAYER_DEATH] = (data) => {
+            console.log('[CLIENT] Player death received:', data);
+
+            // Mark character as dead to hide sprite
+            if (window.gameState && window.gameState.character) {
+                window.gameState.character.isDead = true;
+            }
+
+            // Trigger death screen fade to black
+            if (this.game.handlePlayerDeath) {
+                this.game.handlePlayerDeath(data);
+            }
+
+            // Show death screen UI
+            const deathScreen = document.getElementById('death-screen');
+            if (deathScreen) {
+                deathScreen.style.display = 'flex';
+                // Trigger fade-in animation
+                setTimeout(() => {
+                    deathScreen.classList.add('visible');
+                }, 10);
+            }
+        };
+
+        // Handle player respawn response from server
+        this.handlers[MessageType.PLAYER_RESPAWN] = (data) => {
+            console.log('[CLIENT] 🔄 Player respawn confirmed by server:', data);
+
+            // COMPLETELY RECREATE the character at the new position
+            if (window.gameState && window.gameState.character) {
+                const oldPos = { x: window.gameState.character.x, y: window.gameState.character.y };
+                console.log(`[CLIENT] 💀 Destroying old character at (${oldPos.x.toFixed(2)}, ${oldPos.y.toFixed(2)})`);
+
+                // Store character class reference for recreation
+                const PlayerClass = window.gameState.character.constructor;
+                const characterId = window.gameState.character.id;
+
+                // Destroy old character completely
+                delete window.gameState.character;
+
+                // Create brand new character object at respawn location
+                window.gameState.character = new PlayerClass({
+                    id: characterId,
+                    x: data.x,
+                    y: data.y,
+                    health: data.health,
+                    maxHealth: 100,
+                    isDead: false
+                });
+
+                console.log(`[CLIENT] ✨ Created NEW character at (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
+                console.log(`[CLIENT] 📍 Verifying new character position: (${window.gameState.character.x.toFixed(2)}, ${window.gameState.character.y.toFixed(2)})`);
+
+                // Update camera position to follow respawned character
+                if (window.gameState.camera) {
+                    window.gameState.camera.position.x = data.x;
+                    window.gameState.camera.position.y = data.y;
+                    console.log(`[CLIENT] 📷 Camera repositioned to: (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
+                }
+            } else {
+                console.error('[CLIENT] ❌ Cannot respawn: gameState.character not found!');
+            }
+
+            // Hide death screen
+            const deathScreen = document.getElementById('death-screen');
+            if (deathScreen) {
+                deathScreen.classList.remove('visible');
+                setTimeout(() => {
+                    deathScreen.style.display = 'none';
+                }, 500);
+            }
+        };
     }
     
     /**
@@ -1155,6 +1229,12 @@ export class ClientNetworkManager {
      * @param {Object} playerData - Player state data
      */
     sendPlayerUpdate(playerData) {
+        // Block sending updates if player is dead
+        if (window.gameState && window.gameState.character && window.gameState.character.isDead) {
+            console.log('[CLIENT] 🚫 Blocked sendPlayerUpdate - character is dead');
+            return false;
+        }
+
         if (playerData) {
             //console.log(`Sending player update: pos=(${playerData.x ? playerData.x.toFixed(2) : 'undefined'}, ${playerData.y ? playerData.y.toFixed(2) : 'undefined'}), angle=${playerData.angle ? playerData.angle.toFixed(2) : 'undefined'}`);
         }
@@ -1166,6 +1246,12 @@ export class ClientNetworkManager {
      * @param {Object} bulletData - Bullet data
      */
     sendShoot(bulletData) {
+        // Block shooting if player is dead
+        if (window.gameState && window.gameState.character && window.gameState.character.isDead) {
+            console.log('[CLIENT] 🚫 Blocked sendShoot - character is dead');
+            return false;
+        }
+
         // SUPER VISIBLE: Change title to prove this function is called
         document.title = `📤 NETWORK SEND! ${bulletData.x.toFixed(1)}`;
         // DIAGNOSTIC: Log what we're about to send AND what gameState.character contains
@@ -1327,6 +1413,16 @@ export class ClientNetworkManager {
      */
     sendMoveItem(fromSlot, toSlot){
         this.send(MessageType.MOVE_ITEM,{fromSlot,toSlot});
+    }
+
+    /**
+     * Request player respawn after death
+     */
+    sendRespawn() {
+        console.log('[NETWORK] Sending respawn request to server');
+        return this.send(MessageType.PLAYER_RESPAWN, {
+            timestamp: Date.now()
+        });
     }
 }
 

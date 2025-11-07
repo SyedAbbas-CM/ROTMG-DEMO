@@ -10,12 +10,12 @@
  */
 
 export const OVERWORLD_CONFIG = {
-    // Grid configuration
-    gridSize: 4,        // 4x4 regions
-    regionSize: 128,    // 128x128 tiles per region
+    // Grid configuration - Made 5x larger
+    gridSize: 4,        // 4x4 regions (same number of biomes)
+    regionSize: 640,    // 640x640 tiles per region (was 128, now 5x larger)
     chunkSize: 16,      // Keep existing 16x16 tile chunks
 
-    // Total world size: 4 * 128 = 512 tiles in each dimension
+    // Total world size: 4 * 640 = 2560 tiles in each dimension (was 512, now 5x larger)
     get worldSize() {
         return this.gridSize * this.regionSize;
     },

@@ -463,6 +463,12 @@ function handleMouseClick(event) {
         return;
     }
 
+    // Don't allow shooting when dead
+    if (gameState.character && gameState.character.isDead) {
+        console.log('⚠️ Click ignored: character is dead');
+        return;
+    }
+
     try {
         // Convert screen position to world position
         const canvas = document.getElementById('gameCanvas');

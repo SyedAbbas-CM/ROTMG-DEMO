@@ -161,107 +161,179 @@ export class RunAway extends Behavior {
 }
 
 /**
- * CavalryCharge behavior - charge with velocity phases
- * When slow: can turn freely and shoot
- * When charging: moves fast, limited turning, no shooting
+ * CavalryCharge behavior - Ability-based charge system
+ * ABILITY 1 (CHARGE): Triggers when target enters range, cavalry charges forward with high speed
+ * ABILITY 2 (STATIONARY ATTACK): After charge ends, cavalry enters stationary phase
+ *
+ * State Machine:
+ * IDLE → (target in range) → CHARGING → STATIONARY (stays while target in range) → (target leaves range) → IDLE
+ *
+ * This is designed for future player control where charge is an activated ability
  */
 export class CavalryCharge extends Behavior {
   /**
-   * @param {number} slowSpeed - Speed when in slow mode (default 0.5)
    * @param {number} chargeSpeed - Speed when charging (default 2.5)
-   * @param {number} acceleration - How quickly to accelerate (default 3.0)
-   * @param {number} chargeDuration - How long to charge before slowing (default 2.0s)
-   * @param {number} slowDuration - How long to stay slow (default 1.5s)
+   * @param {number} acceleration - How quickly to accelerate (default 1.2 - slower buildup)
+   * @param {number} chargeDuration - How long the charge lasts (default 2.0s)
+   * @param {number} attackRange - Range that triggers charge ability (default 8 tiles)
+   * @param {number} idleSpeed - Speed when idle/looking for target (default 0.3)
    */
-  constructor(slowSpeed = 0.5, chargeSpeed = 2.5, acceleration = 3.0, chargeDuration = 2.0, slowDuration = 1.5) {
+  constructor(chargeSpeed = 2.5, acceleration = 1.2, chargeDuration = 2.0, attackRange = 8.0, idleSpeed = 0.3) {
     super();
-    this.slowSpeed = slowSpeed;
     this.chargeSpeed = chargeSpeed;
     this.acceleration = acceleration;
     this.chargeDuration = chargeDuration;
-    this.slowDuration = slowDuration;
+    this.attackRange = attackRange;
+    this.idleSpeed = idleSpeed;
   }
 
   execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
     if (!target) return;
 
-    // Initialize charge state
+    // Initialize ability state machine
     if (!stateData.chargeState) {
       stateData.chargeState = {
-        currentSpeed: this.slowSpeed,
-        isCharging: false,
+        phase: 'IDLE',          // IDLE, CHARGING, STATIONARY
+        currentSpeed: this.idleSpeed,
         timer: 0,
         lastDirX: 0,
-        lastDirY: 0
+        lastDirY: 0,
+        chargeDirection: { x: 0, y: 0 }, // Locked direction during charge
+        jiggleTimer: 0,
+        jiggleDir: { x: 0, y: 0 },
+        canCharge: true   // Ready to charge
       };
     }
 
     const state = stateData.chargeState;
-
-    // Update timer and phase
     state.timer += deltaTime;
 
-    if (state.isCharging && state.timer >= this.chargeDuration) {
-      // Switch to slow mode
-      state.isCharging = false;
-      state.timer = 0;
-    } else if (!state.isCharging && state.timer >= this.slowDuration) {
-      // Switch to charge mode
-      state.isCharging = true;
-      state.timer = 0;
-    }
-
-    // Calculate direction to target
+    // Calculate distance to target
     const dx = target.x - enemyManager.x[index];
     const dy = target.y - enemyManager.y[index];
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance === 0) return;
+    // ===== STATE MACHINE LOGIC =====
 
-    let dirX = dx / distance;
-    let dirY = dy / distance;
+    if (state.phase === 'IDLE') {
+      // IDLE STATE: Looking for target, moving slowly
+      // TRIGGER: When target enters attack range AND charge is ready, activate CHARGE ability
 
-    // Apply turn rate limiting when charging
-    if (state.isCharging && state.lastDirX !== 0 && state.lastDirY !== 0) {
-      // Calculate max turn angle per frame based on speed
-      // Fast = can't turn much, slow = can turn more
-      const maxTurnRate = 1.5 / (state.currentSpeed / this.slowSpeed); // Inversely proportional to speed, increased from 0.5 to 1.5
-      const maxTurnAngle = maxTurnRate * deltaTime;
+      if (distance <= this.attackRange && state.canCharge) {
+        console.log(`🐎 [CAVALRY] CHARGE ABILITY ACTIVATED! Target at ${distance.toFixed(1)} tiles`);
+        state.phase = 'CHARGING';
+        state.timer = 0;
+        state.canCharge = false; // Charge used, need to wait for cooldown
 
-      // Get current heading
-      const currentAngle = Math.atan2(state.lastDirY, state.lastDirX);
-      const targetAngle = Math.atan2(dirY, dirX);
+        // Lock charge direction toward current target position
+        if (distance > 0) {
+          state.chargeDirection.x = dx / distance;
+          state.chargeDirection.y = dy / distance;
+          state.lastDirX = state.chargeDirection.x;
+          state.lastDirY = state.chargeDirection.y;
+        }
+      } else {
+        // Move slowly toward target in idle mode
+        if (distance > 0) {
+          const dirX = dx / distance;
+          const dirY = dy / distance;
+          const moveSpeed = enemyManager.moveSpeed[index] * this.idleSpeed;
+          const moveAmount = moveSpeed * deltaTime;
 
-      // Calculate angle difference
-      let angleDiff = targetAngle - currentAngle;
-      // Normalize to -PI to PI
-      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+          enemyManager.x[index] += dirX * moveAmount;
+          enemyManager.y[index] += dirY * moveAmount;
 
-      // Limit turn angle
-      const limitedAngleDiff = Math.max(-maxTurnAngle, Math.min(maxTurnAngle, angleDiff));
-      const newAngle = currentAngle + limitedAngleDiff;
+          state.lastDirX = dirX;
+          state.lastDirY = dirY;
+        }
+      }
+    }
+    else if (state.phase === 'CHARGING') {
+      // CHARGING STATE: High speed charge in locked direction
+      // This is ABILITY 1 - the charge attack
 
-      dirX = Math.cos(newAngle);
-      dirY = Math.sin(newAngle);
+      if (state.timer >= this.chargeDuration) {
+        // Charge complete - transition to stationary phase
+        console.log(`🐎 [CAVALRY] Charge complete! Entering STATIONARY mode`);
+        state.phase = 'STATIONARY';
+        state.timer = 0;
+        state.currentSpeed = 0; // Stop moving immediately
+        // Face toward target for stationary attacks
+        if (distance > 0) {
+          state.lastDirX = dx / distance;
+          state.lastDirY = dy / distance;
+        }
+        // DON'T RETURN - let the code continue to set isStationary flag
+      } else {
+        // Continue charging in locked direction
+        // Accelerate to charge speed (slower acceleration now)
+        const speedDiff = this.chargeSpeed - state.currentSpeed;
+        const speedChange = Math.sign(speedDiff) * Math.min(Math.abs(speedDiff), this.acceleration * deltaTime);
+        state.currentSpeed += speedChange;
+
+        // Move in locked charge direction (doesn't track target during charge)
+        const moveSpeed = enemyManager.moveSpeed[index] * state.currentSpeed;
+        const moveAmount = moveSpeed * deltaTime;
+
+        enemyManager.x[index] += state.chargeDirection.x * moveAmount;
+        enemyManager.y[index] += state.chargeDirection.y * moveAmount;
+
+        // Keep facing charge direction
+        state.lastDirX = state.chargeDirection.x;
+        state.lastDirY = state.chargeDirection.y;
+      }
+    }
+    else if (state.phase === 'STATIONARY') {
+      // STATIONARY STATE: Stopped, jiggling, firing 2-shot attacks
+      // This is ABILITY 2 - the stationary attack mode
+      // Stays in this state AS LONG AS target is in range
+
+      // Check if target left range (but give a small grace period to prevent instant exit)
+      const minStationaryTime = 0.1; // Stay stationary for at least 0.1 seconds
+      if (distance > this.attackRange && state.timer > minStationaryTime) {
+        // Target escaped! Return to IDLE and enable charging
+        console.log(`🐎 [CAVALRY] Target left range! Returning to IDLE, charge ready`);
+        state.phase = 'IDLE';
+        state.timer = 0;
+        state.canCharge = true; // Charge is ready again
+        state.currentSpeed = this.idleSpeed;
+      } else {
+        // STATIONARY ATTACK MODE: Jiggle and face target while they're in range
+        state.jiggleTimer += deltaTime;
+
+        // Change jiggle direction every 0.5 seconds
+        if (state.jiggleTimer >= 0.5 || state.jiggleDir.x === 0) {
+          state.jiggleDir = {
+            x: (Math.random() * 2 - 1) * 0.2,
+            y: (Math.random() * 2 - 1) * 0.2
+          };
+          state.jiggleTimer = 0;
+        }
+
+        // Normalize jiggle direction
+        const jiggleLength = Math.sqrt(state.jiggleDir.x ** 2 + state.jiggleDir.y ** 2);
+        if (jiggleLength > 0) {
+          state.jiggleDir.x /= jiggleLength;
+          state.jiggleDir.y /= jiggleLength;
+        }
+
+        // Apply very small jiggle movement
+        const jiggleSpeed = enemyManager.moveSpeed[index] * this.idleSpeed * 0.15;
+        const jiggleAmount = jiggleSpeed * deltaTime;
+
+        enemyManager.x[index] += state.jiggleDir.x * jiggleAmount;
+        enemyManager.y[index] += state.jiggleDir.y * jiggleAmount;
+
+        // Always face toward target during stationary phase
+        if (distance > 0) {
+          state.lastDirX = dx / distance;
+          state.lastDirY = dy / distance;
+        }
+      }
     }
 
-    // Accelerate/decelerate to target speed
-    const targetSpeed = state.isCharging ? this.chargeSpeed : this.slowSpeed;
-    const speedDiff = targetSpeed - state.currentSpeed;
-    const speedChange = Math.sign(speedDiff) * Math.min(Math.abs(speedDiff), this.acceleration * deltaTime);
-    state.currentSpeed += speedChange;
-
-    // Apply movement
-    const moveSpeed = enemyManager.moveSpeed[index] * state.currentSpeed;
-    const moveAmount = moveSpeed * deltaTime;
-
-    enemyManager.x[index] += dirX * moveAmount;
-    enemyManager.y[index] += dirY * moveAmount;
-
-    // Store direction for next frame
-    state.lastDirX = dirX;
-    state.lastDirY = dirY;
+    // Store facing direction and state for DirectionalShoot to use
+    state.isStationary = (state.phase === 'STATIONARY');
   }
 }
 
@@ -272,15 +344,11 @@ export class CavalryCharge extends Behavior {
 export class DirectionalShoot extends Behavior {
   /**
    * @param {number} cooldownMultiplier - Multiplier for cooldown (lower = faster shots)
-   * @param {number} projectileCount - Number of projectiles to fire at once
-   * @param {number} spread - Angular spread between projectiles (radians)
    * @param {number} maxAngle - Maximum angle from facing direction to allow shooting (radians, default PI/4 = 45°)
    */
-  constructor(cooldownMultiplier = 1.0, projectileCount = 1, spread = 0, maxAngle = Math.PI / 4) {
+  constructor(cooldownMultiplier = 1.0, maxAngle = Math.PI / 4) {
     super();
     this.cooldownMultiplier = cooldownMultiplier;
-    this.projectileCount = projectileCount;
-    this.spread = spread;
     this.maxAngle = maxAngle;
   }
 
@@ -330,36 +398,54 @@ export class DirectionalShoot extends Behavior {
     enemyManager.currentCooldown[index] = enemyManager.cooldown[index] * this.cooldownMultiplier;
 
     // Debug: Log enemy shooting
-    console.log(`🔫 [CAVALRY SHOOT] Index ${index} at (${enemyManager.x[index].toFixed(2)}, ${enemyManager.y[index].toFixed(2)}) firing ${this.projectileCount} bullet(s), angle ${(targetAngle * 180 / Math.PI).toFixed(1)}°, angleDiff ${(angleDiff * 180 / Math.PI).toFixed(1)}°`);
+    const projectileCount = enemyManager.projectileCount[index];
+    console.log(`🔫 [CAVALRY SHOOT] Index ${index} at (${enemyManager.x[index].toFixed(2)}, ${enemyManager.y[index].toFixed(2)}) firing ${projectileCount} bullet(s), angle ${(targetAngle * 180 / Math.PI).toFixed(1)}°, angleDiff ${(angleDiff * 180 / Math.PI).toFixed(1)}°, speed ${chargeState.currentSpeed.toFixed(2)}`);
 
-    // Fire projectiles (reuse from Shoot behavior)
-    this.fireProjectiles(index, enemyManager, bulletManager, targetAngle);
+    // Fire projectiles with data from JSON config
+    this.fireProjectiles(index, enemyManager, bulletManager, targetAngle, stateData);
   }
 
-  fireProjectiles(index, enemyManager, bulletManager, baseAngle) {
-    // Spawn bullet at enemy center (no offset)
-    const spawnOffset = 0;
-    const spawnX = enemyManager.x[index];
-    const spawnY = enemyManager.y[index];
+  fireProjectiles(index, enemyManager, bulletManager, baseAngle, stateData) {
+    // Read all attack properties from JSON config
+    const bulletSpeed = enemyManager.bulletSpeed[index];
+    const bulletLifetime = enemyManager.bulletLifetime[index];
+    let projectileCount = enemyManager.projectileCount[index];
 
-    // Fire multiple projectiles with spread
-    for (let i = 0; i < this.projectileCount; i++) {
-      // Calculate angle offset for this projectile
-      let angleOffset = 0;
-      if (this.projectileCount > 1) {
-        // Spread projectiles evenly
-        const spreadRange = this.spread * (this.projectileCount - 1);
-        angleOffset = -spreadRange / 2 + (i * this.spread);
-      }
+    // Get cavalry state to check if stationary
+    const chargeState = stateData.chargeState;
+    const isStationary = chargeState && chargeState.isStationary;
 
-      // Apply inaccuracy (random variation)
-      const inaccuracyOffset = (Math.random() - 0.5) * this.inaccuracy;
-      const finalAngle = baseAngle + angleOffset + inaccuracyOffset;
+    // STATIONARY MODE: Fire 2 bullets instead of 3
+    if (isStationary) {
+      projectileCount = 2;
+    }
 
-      // Calculate velocity
-      const speed = enemyManager.bulletSpeed[index];
-      const vx = Math.cos(finalAngle) * speed;
-      const vy = Math.sin(finalAngle) * speed;
+    // DEBUG: Log bullet stats for cavalry bullets
+    console.log(`\n📊 [CAVALRY LANCE ATTACK]`);
+    console.log(`   Enemy: ${enemyManager.id[index]}`);
+    console.log(`   Mode: ${isStationary ? 'STATIONARY (2-shot)' : 'CHARGING (3-shot)'}`);
+    console.log(`   Bullet speed: ${bulletSpeed.toFixed(1)} tiles/sec`);
+    console.log(`   Projectile count: ${projectileCount} in a lance formation`);
+    console.log(`   Firing angle: ${(baseAngle * 180 / Math.PI).toFixed(1)}°`);
+
+    // Calculate firing direction
+    const dirX = Math.cos(baseAngle);
+    const dirY = Math.sin(baseAngle);
+
+    // Calculate velocity (same for all bullets)
+    const vx = dirX * bulletSpeed;
+    const vy = dirY * bulletSpeed;
+
+    // Fire projectiles in a line ALONG the firing direction (like a lance/spear)
+    for (let i = 0; i < projectileCount; i++) {
+      // Calculate offset along firing direction, centered on cavalry
+      // For 3 bullets: -1, 0, +1 (centered formation)
+      // For 2 bullets: -0.5, +0.5 (centered formation)
+      const offset = (i - (projectileCount - 1) / 2) * 1.0; // 1.0 tile spacing, centered
+
+      // Calculate spawn position along the firing direction
+      const spawnX = enemyManager.x[index] + (dirX * offset);
+      const spawnY = enemyManager.y[index] + (dirY * offset);
 
       // Create bullet
       const bulletId = bulletManager.addBullet({
@@ -369,7 +455,7 @@ export class DirectionalShoot extends Behavior {
         vy: vy,
         ownerId: enemyManager.id[index],
         damage: enemyManager.damage[index],
-        lifetime: enemyManager.bulletLifetime[index],
+        lifetime: bulletLifetime,
         width: 0.3,
         height: 0.3,
         isEnemy: true,
@@ -377,7 +463,9 @@ export class DirectionalShoot extends Behavior {
         worldId: enemyManager.worldId[index]
       });
 
-      console.log(`  ↳ Created bullet ${bulletId} from ${enemyManager.id[index]}, lifetime=${enemyManager.bulletLifetime[index].toFixed(2)}s, damage=${enemyManager.damage[index]}`);
+      console.log(`  ↳ 🎯 LINE BULLET ${i+1}: ${bulletId}`);
+      console.log(`     Spawn: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)}) [offset: ${offset.toFixed(1)} tiles]`);
+      console.log(`     Velocity: (${vx.toFixed(2)}, ${vy.toFixed(2)})`);
     }
   }
 }

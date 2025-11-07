@@ -495,14 +495,15 @@ export class Player {
       // Draw health bar if health is defined
       if (this.health !== undefined && this.maxHealth !== undefined) {
         const healthPercent = this.health / this.maxHealth;
-        const barWidth = width;
+        // Fixed width health bar (not based on sprite size)
+        const barWidth = 40; // Fixed 40 pixels wide
         const barHeight = 3;
         const barY = height/2 + 5;
-        
+
         // Background
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.fillRect(-barWidth/2, barY, barWidth, barHeight);
-        
+
         // Health
         ctx.fillStyle = healthPercent > 0.6 ? 'green' : healthPercent > 0.3 ? 'yellow' : 'red';
         ctx.fillRect(-barWidth/2, barY, barWidth * healthPercent, barHeight);

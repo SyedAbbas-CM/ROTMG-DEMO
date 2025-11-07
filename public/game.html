@@ -16,6 +16,78 @@
         #connectionStatus { position: absolute; top: 10px; right: 10px; padding: 5px 10px; background-color: rgba(0, 0, 0, 0.5); color: #fff; border-radius: 5px; font-family: Arial, sans-serif; }
         #playerStatus { position: absolute; top: 10px; left: 10px; padding: 5px 10px; background-color: rgba(0, 0, 0, 0.5); color: #fff; border-radius: 5px; font-family: Arial, sans-serif; }
         #controlsHelp { position: absolute; bottom: 10px; left: 10px; padding: 5px 10px; background-color: rgba(0, 0, 0, 0.7); color: #fff; border-radius: 5px; font-family: Arial, sans-serif; font-size: 12px; }
+
+        /* Death Screen Styles */
+        #death-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            pointer-events: auto;
+            transition: background-color 1.5s ease-in;
+        }
+
+        #death-screen.visible {
+            background-color: rgba(0, 0, 0, 1.0);
+        }
+
+        #death-screen .death-content {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease-in 1s, transform 1s ease-in 1s;
+            text-align: center;
+            color: #fff;
+        }
+
+        #death-screen.visible .death-content {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #death-screen .death-title {
+            font-family: Arial, sans-serif;
+            font-size: 48px;
+            font-weight: bold;
+            color: #ff0000;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+
+        #death-screen .death-message {
+            font-family: Arial, sans-serif;
+            font-size: 20px;
+            color: #ccc;
+            margin-bottom: 40px;
+        }
+
+        #death-screen .respawn-button {
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #ff0000;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            font-family: Arial, sans-serif;
+        }
+
+        #death-screen .respawn-button:hover {
+            background-color: #cc0000;
+            transform: scale(1.05);
+        }
+
+        #death-screen .respawn-button:active {
+            transform: scale(0.95);
+        }
     </style>
     <script type="importmap">
       {
@@ -41,6 +113,16 @@
         <iframe id="spriteEditorFrame" src="" style="width:100%; height:100%; border:none;"></iframe>
     </div>
     <div id="gameUIContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; background-color: transparent;"></div>
+
+    <!-- Death Screen Overlay -->
+    <div id="death-screen">
+        <div class="death-content">
+            <div class="death-title">YOU DIED</div>
+            <div class="death-message">Your journey has ended...</div>
+            <button class="respawn-button" onclick="handleRespawn()">RESPAWN</button>
+        </div>
+    </div>
+
     <script type="module">
         console.log('[game.html] Module script is running');
         import { initGame } from './src/game/game.js';
@@ -68,6 +150,20 @@
         window.updateLoadingProgress = updateLoadingProgress;
         window.updateConnectionStatus = updateConnectionStatus;
         window.updatePlayerStatus = (s)=>{ const el=document.getElementById('playerStatus'); if(el) el.textContent=s; };
+
+        // Handle respawn button click
+        window.handleRespawn = function() {
+            console.log('[CLIENT] Respawn button clicked');
+
+            // Send respawn request to server (networkManager is exposed globally)
+            if (window.networkManager) {
+                window.networkManager.sendRespawn();
+                console.log('[CLIENT] Sent respawn request to server');
+            } else {
+                console.error('[CLIENT] Cannot respawn: networkManager not available');
+            }
+        };
+
         // Function to start the game
         function startGame() {
             console.log('[game.html] Starting game initialization');

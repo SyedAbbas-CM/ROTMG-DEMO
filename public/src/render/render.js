@@ -41,6 +41,12 @@ export function renderCharacter() {
     return;
   }
 
+  // Don't render character if dead
+  if (character.isDead) {
+    console.log('[DEBUG renderCharacter] Character is dead, skipping render');
+    return;
+  }
+
   // Debug: Log the current view type to verify it's being detected correctly
   //console.log(`[renderCharacter] Current view type: ${gameState.camera?.viewType}`);
 
