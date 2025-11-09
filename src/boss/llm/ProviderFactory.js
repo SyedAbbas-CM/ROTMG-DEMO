@@ -27,17 +27,9 @@ export function createProvider(config = {}) {
 
   switch (backend) {
     case 'gemini':
-      if (!apiKey) {
-        throw new Error('GOOGLE_API_KEY not set (required for Gemini)');
-      }
-      return new GeminiProvider(apiKey, opts);
-
     case 'ollama':
-      return new OllamaProvider(opts);
-
     case 'mock':
       return new MockProvider(opts);
-
     default:
       throw new Error(`Unknown LLM_BACKEND '${backend}'`);
   }

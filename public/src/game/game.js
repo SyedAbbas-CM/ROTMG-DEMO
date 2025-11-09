@@ -392,7 +392,9 @@ export async function initGame() {
             
             // Debug dump of player info on 'i' key
             if (e.key === 'i') {
-                debugDumpPlayerInfo();
+                console.log('Player:', character);
+                console.log('Position:', character?.x, character?.y);
+                console.log('Health:', character?.health, '/', character?.maxHealth);
             }
             
             // Request player list update from server on Shift+D key

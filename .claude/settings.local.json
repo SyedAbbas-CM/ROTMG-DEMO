@@ -44,7 +44,9 @@
       "Read(//tmp/**)",
       "Bash(rm:*)",
       "Bash(echo:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "WebFetch(domain:code.claude.com)",
+      "Bash(claude output-style collaborative)"
     ],
     "deny": []
   }
