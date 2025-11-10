@@ -806,56 +806,8 @@ export function renderTopDownView() {
       lastFPSUpdate = performance.now();
     }
 
-    // Draw performance overlay in top-left corner
-    ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillRect(10, 10, 450, 250); // Larger for more stats
-
-    // FPS and timing stats (green)
-    ctx.fillStyle = '#00FF00';
-    ctx.font = '14px monospace';
-    ctx.fillText(`FPS: ${currentFPS}`, 20, 30);
-    ctx.fillText(`Frame Time: ${frameTime.toFixed(2)}ms`, 20, 50);
-    ctx.fillText(`Draw Calls: ${drawCallCount}`, 20, 70);
-    ctx.fillText(`Tiles Rendered: ${tilesRendered}`, 20, 90);
-
-    // Player position (white)
-    ctx.fillStyle = '#FFFFFF';
-    const char = gameState?.character;
-    if (char) {
-      ctx.fillText(`X: ${char.x?.toFixed(2) || 0}`, 20, 110);
-      ctx.fillText(`Y: ${char.y?.toFixed(2) || 0}`, 20, 130);
-      ctx.fillText(`Z: ${char.z?.toFixed(2) || 0}`, 20, 150);
-    }
-
-    // MEMORY LEAK MONITORING: Display cache sizes (yellow)
-    ctx.fillStyle = '#FFFF00';
-    ctx.fillText(`Sprite Cache: ${_transparentSpriteCache.size}/${MAX_TRANSPARENT_CACHE_SIZE}`, 20, 170);
-    ctx.fillText(`Tile Cache: ${topDownTileCache.size}/${MAX_TILE_CACHE_SIZE}`, 20, 190);
-
-    // Object tracking (cyan)
-    ctx.fillStyle = '#00FFFF';
-    const objectCount = (window.currentObjects && Array.isArray(window.currentObjects)) ? window.currentObjects.length : 0;
-    ctx.fillText(`Objects: ${objectCount}`, 20, 210);
-
-    // Memory usage (orange)
-    ctx.fillStyle = '#FFA500';
-    if (performance.memory) {
-      const memoryMB = (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(2);
-      const memoryLimitMB = (performance.memory.jsHeapSizeLimit / 1024 / 1024).toFixed(0);
-      ctx.fillText(`Memory: ${memoryMB}/${memoryLimitMB} MB`, 20, 230);
-    } else {
-      ctx.fillText(`Memory: N/A (use Chrome/Edge)`, 20, 230);
-    }
-
-    // Transparency cache stats (magenta)
-    ctx.fillStyle = '#FF00FF';
-    const hitRate = transparencyCalls > 0 ? ((transparencyCacheHits / transparencyCalls) * 100).toFixed(1) : 0;
-    ctx.fillText(`Transparency Calls: ${transparencyCalls}`, 240, 30);
-    ctx.fillText(`Cache Hits: ${transparencyCacheHits} (${hitRate}%)`, 240, 50);
-    ctx.fillText(`Cache Misses: ${transparencyCacheMisses}`, 240, 70);
-
-    ctx.restore();
+    // DEBUG OVERLAY: Removed - Use DebugOverlay component (F3 or Debug button) instead
+    // This on-canvas debug rendering has been removed to consolidate all debug displays.
   }
 
   // ============================================================================

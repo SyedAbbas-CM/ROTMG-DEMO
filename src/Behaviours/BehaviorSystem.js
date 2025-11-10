@@ -393,7 +393,7 @@ export default class BehaviorSystem {
 
     // Slow mode - can turn and shoot (only forward-facing)
     const slowState = new BehaviorState('slow', [
-      new Behaviors.CavalryCharge(0.6, 2.5, 6.0, 2.5, 1.2), // Charge at 2.5x max speed, faster accel (6.0), better turn
+      new Behaviors.CavalryCharge(2.5, 6.0, 2.5, 8.0, 0.6, 8.0), // chargeSpeed: 2.5x, accel: 6.0, duration: 2.5s, range: 8 tiles, idle: 0.6x, decel: 8.0 (fast stop)
       new Behaviors.DirectionalShoot(1.0, Math.PI/3) // Shoots from JSON config, allows 60° cone
     ]);
 
@@ -416,7 +416,7 @@ export default class BehaviorSystem {
 
     // Slow mode - can turn and shoot (only forward-facing)
     const slowState = new BehaviorState('slow', [
-      new Behaviors.CavalryCharge(0.4, 2.8, 3.0, 3.0, 1.5), // Slowest start (0.4), high max (2.8x), slow accel (3.0), longer charge
+      new Behaviors.CavalryCharge(3.5, 5.0, 4.0, 8.0, 0.3, 7.0), // chargeSpeed: 3.5x (very high), accel: 5.0 (heavy buildup), duration: 4.0s (longest), range: 8 tiles, idle: 0.3x (slowest), decel: 7.0 (heavy stop)
       new Behaviors.DirectionalShoot(1.0, Math.PI/3) // Shoots from JSON config, allows 60° cone
     ]);
 

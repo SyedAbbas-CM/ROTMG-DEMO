@@ -722,6 +722,11 @@ function initializeGameState() {
                     const oldHealth = gameState.character.health;
                     gameState.character.health = serverPlayer.health;
 
+                    // Also sync maxHealth from server to fix HP bar display
+                    if (typeof serverPlayer.maxHealth === 'number') {
+                        gameState.character.maxHealth = serverPlayer.maxHealth;
+                    }
+
                     // Update UI if health changed
                     if (oldHealth !== serverPlayer.health && window.gameUI && typeof window.gameUI.updateHealth === 'function') {
                         window.gameUI.updateHealth(gameState.character.health, gameState.character.maxHealth || 100);

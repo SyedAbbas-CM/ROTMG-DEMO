@@ -96,6 +96,12 @@ export class ControlBar extends UIComponent {
     healthText.style.fontSize = '10px';
     healthText.style.color = '#eee';
     healthText.style.marginLeft = '4px';
+    healthText.style.width = '60px';
+    healthText.style.minWidth = '60px';
+    healthText.style.maxWidth = '60px';
+    healthText.style.textAlign = 'left';
+    healthText.style.overflow = 'hidden';
+    healthText.style.whiteSpace = 'nowrap';
     
     healthBarContainer.appendChild(healthBar);
     healthContainer.appendChild(healthIcon);
@@ -136,6 +142,12 @@ export class ControlBar extends UIComponent {
     manaText.style.fontSize = '10px';
     manaText.style.color = '#eee';
     manaText.style.marginLeft = '4px';
+    manaText.style.width = '60px';
+    manaText.style.minWidth = '60px';
+    manaText.style.maxWidth = '60px';
+    manaText.style.textAlign = 'left';
+    manaText.style.overflow = 'hidden';
+    manaText.style.whiteSpace = 'nowrap';
     
     manaBarContainer.appendChild(manaBar);
     manaContainer.appendChild(manaIcon);

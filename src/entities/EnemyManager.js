@@ -116,106 +116,7 @@ export default class EnemyManager {
     } else {
       console.warn('[EnemyManager] EntityDB returned zero enemies – falling back to hard-coded defaults');
       this.enemyTypes = [
-        {
-          id: 0,
-          name: 'Goblin',
-          spriteName: 'goblin',
-          maxHealth: 30,
-          speed: 15,
-          damage: 5,
-          width: 1,
-          height: 1,
-          renderScale: 2,
-          shootRange: 50,
-          shootCooldown: 2.5,
-          bulletSpeed: 25,
-          bulletLifetime: 2.0,
-          projectileCount: 1,
-          spread: 0,
-          inaccuracy: 0.1,
-          behavior: 'aggressive',
-          dropTable:[
-            { id:1001, prob:0.3, bagType:0 },  // Ironveil Sword in white bag
-            { id:1004, prob:0.1, bagType:1 },  // Greenwatch Sword in brown bag
-            { id:1007, prob:0.02, bagType:2 } // Skysteel Sword in purple bag
-          ]
-        },
-        {
-          id: 1,
-          name: 'Orc',
-          spriteName: 'orc',
-          maxHealth: 50,
-          speed: 12,
-          damage: 8,
-          width: 1,
-          height: 1,
-          renderScale: 2,
-          shootRange: 60,
-          shootCooldown: 2.0,
-          bulletSpeed: 30,
-          bulletLifetime: 2.5,
-          projectileCount: 1,
-          spread: 0,
-          inaccuracy: 0.05,
-          behavior: 'defensive'
-        },
-        {
-          id: 2,
-          name: 'Skeleton',
-          spriteName: 'skeleton',
-          maxHealth: 25,
-          speed: 20,
-          damage: 6,
-          width: 1,
-          height: 1,
-          renderScale: 2,
-          shootRange: 80,
-          shootCooldown: 1.8,
-          bulletSpeed: 35,
-          bulletLifetime: 3.0,
-          projectileCount: 1,
-          spread: 0,
-          inaccuracy: 0.08,
-          behavior: 'patrol'
-        },
-        {
-          id: 3,
-          name: 'Troll',
-          spriteName: 'troll',
-          maxHealth: 100,
-          speed: 8,
-          damage: 15,
-          width: 1,
-          height: 1,
-          renderScale: 2,
-          shootRange: 40,
-          shootCooldown: 3.0,
-          bulletSpeed: 20,
-          bulletLifetime: 2.0,
-          projectileCount: 3,
-          spread: 0.5,
-          inaccuracy: 0.2,
-          behavior: 'guard'
-        },
-        {
-          id: 4,
-          name: 'Wizard',
-          spriteName: 'wizard',
-          maxHealth: 40,
-          speed: 10,
-          damage: 12,
-          width: 1,
-          height: 1,
-          renderScale: 2,
-          shootRange: 100,
-          shootCooldown: 2.2,
-          bulletSpeed: 40,
-          bulletLifetime: 4.0,
-          projectileCount: 1,
-          spread: 0,
-          inaccuracy: 0.02,
-          behavior: 'ranged'
-        }
+
       ];
     }
     
@@ -421,10 +322,11 @@ export default class EnemyManager {
       }
 
       // Check for collision with other enemies
-      // Skip collision if cavalry is in stationary mode (prevents drift)
+      // Skip collision if cavalry is decelerating or stationary (prevents drift)
       const stateData = this.behaviorSystem.stateData[i];
-      const isStationary = stateData?.chargeState?.phase === 'STATIONARY';
-      if (!isStationary) {
+      const cavalryPhase = stateData?.chargeState?.phase;
+      const skipCollision = cavalryPhase === 'DECELERATING' || cavalryPhase === 'STATIONARY';
+      if (!skipCollision) {
         this.checkEnemyCollision(i);
       }
     }

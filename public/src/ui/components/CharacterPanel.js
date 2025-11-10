@@ -101,6 +101,7 @@ export class CharacterPanel extends UIComponent {
     const content = document.createElement('div');
     content.className = 'stats-content';
     content.style.padding = '8px';
+    content.style.maxWidth = '128px';
     
     // Health bar
     const healthContainer = document.createElement('div');
@@ -109,6 +110,9 @@ export class CharacterPanel extends UIComponent {
     healthContainer.style.alignItems = 'center';
     healthContainer.style.gap = '4px';
     healthContainer.style.marginBottom = '4px';
+    healthContainer.style.width = '120px';
+    healthContainer.style.maxWidth = '120px';
+    healthContainer.style.flexShrink = '0';
     
     const healthIcon = document.createElement('div');
     healthIcon.className = 'resource-icon health-icon';
@@ -119,7 +123,9 @@ export class CharacterPanel extends UIComponent {
     
     const healthBarContainer = document.createElement('div');
     healthBarContainer.className = 'bar-container';
-    healthBarContainer.style.flexGrow = '1';
+    healthBarContainer.style.width = '100px';
+    healthBarContainer.style.flexShrink = '0';
+    healthBarContainer.style.flexGrow = '0';
     healthBarContainer.style.height = '16px';
     healthBarContainer.style.backgroundColor = '#222';
     healthBarContainer.style.border = '1px solid #333';
@@ -137,6 +143,11 @@ export class CharacterPanel extends UIComponent {
     healthText.style.fontSize = '12px';
     healthText.style.textAlign = 'center';
     healthText.style.marginBottom = '8px';
+    healthText.style.width = '80px';
+    healthText.style.minWidth = '80px';
+    healthText.style.maxWidth = '80px';
+    healthText.style.overflow = 'hidden';
+    healthText.style.whiteSpace = 'nowrap';
     
     healthContainer.appendChild(healthIcon);
     healthContainer.appendChild(healthBarContainer);
@@ -148,6 +159,9 @@ export class CharacterPanel extends UIComponent {
     manaContainer.style.alignItems = 'center';
     manaContainer.style.gap = '4px';
     manaContainer.style.marginBottom = '4px';
+    manaContainer.style.width = '120px';
+    manaContainer.style.maxWidth = '120px';
+    manaContainer.style.flexShrink = '0';
     
     const manaIcon = document.createElement('div');
     manaIcon.className = 'resource-icon mana-icon';
@@ -158,7 +172,9 @@ export class CharacterPanel extends UIComponent {
     
     const manaBarContainer = document.createElement('div');
     manaBarContainer.className = 'bar-container';
-    manaBarContainer.style.flexGrow = '1';
+    manaBarContainer.style.width = '100px';
+    manaBarContainer.style.flexShrink = '0';
+    manaBarContainer.style.flexGrow = '0';
     manaBarContainer.style.height = '16px';
     manaBarContainer.style.backgroundColor = '#222';
     manaBarContainer.style.border = '1px solid #333';
@@ -176,6 +192,11 @@ export class CharacterPanel extends UIComponent {
     manaText.style.fontSize = '12px';
     manaText.style.textAlign = 'center';
     manaText.style.marginBottom = '8px';
+    manaText.style.width = '80px';
+    manaText.style.minWidth = '80px';
+    manaText.style.maxWidth = '80px';
+    manaText.style.overflow = 'hidden';
+    manaText.style.whiteSpace = 'nowrap';
     
     manaContainer.appendChild(manaIcon);
     manaContainer.appendChild(manaBarContainer);

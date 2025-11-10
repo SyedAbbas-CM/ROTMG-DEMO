@@ -65,7 +65,7 @@
 }
 
 .bar-container {
-  flex-grow: 1;
+  flex-grow: 0;
   height: 8px;
   background-color: #222;
   border: 1px solid #333;

@@ -46,7 +46,8 @@
       "Bash(echo:*)",
       "Bash(kill:*)",
       "WebFetch(domain:code.claude.com)",
-      "Bash(claude output-style collaborative)"
+      "Bash(claude output-style collaborative)",
+      "Bash(timeout 20 npm start:*)"
     ],
     "deny": []
   }
