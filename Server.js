@@ -152,6 +152,15 @@ wss.on('error', (err) => {
 // Set up middleware
 app.use(express.json());
 
+// Artificial latency middleware for testing (controlled by ARTIFICIAL_LATENCY_MS env var)
+const ARTIFICIAL_LATENCY_MS = parseInt(process.env.ARTIFICIAL_LATENCY_MS || '0', 10);
+if (ARTIFICIAL_LATENCY_MS > 0) {
+  console.log(`[SERVER] Adding ${ARTIFICIAL_LATENCY_MS}ms artificial latency to all requests`);
+  app.use((req, res, next) => {
+    setTimeout(next, ARTIFICIAL_LATENCY_MS);
+  });
+}
+
 // Disable caching for all static files during development
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
