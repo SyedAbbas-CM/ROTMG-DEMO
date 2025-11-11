@@ -303,6 +303,73 @@ export default class CollisionManager {
         }
       }
     }
+
+    // ============================================================================
+    // ENEMY-PLAYER CONTACT COLLISIONS (New System)
+    // ============================================================================
+    // Check for enemy body collisions with players
+    const enemyContactCollisions = [];
+
+    for (let ei = 0; ei < this.enemyManager.enemyCount; ei++) {
+      // Skip dead enemies
+      if (this.enemyManager.health[ei] <= 0) continue;
+
+      const enemyX = this.enemyManager.x[ei];
+      const enemyY = this.enemyManager.y[ei];
+      const enemyWidth = this.enemyManager.width[ei];
+      const enemyHeight = this.enemyManager.height[ei];
+      const enemyWorldId = this.enemyManager.worldId[ei];
+      const enemyContactDamage = this.enemyManager.contactDamage[ei] || 0;
+      const enemyKnockback = this.enemyManager.knockbackForce[ei] || 0;
+
+      // Only check if enemy has contact damage
+      if (enemyContactDamage <= 0) continue;
+
+      // Check collision with each player
+      for (const player of players) {
+        if (!player || player.health <= 0) continue;
+        if (enemyWorldId !== player.worldId) continue;
+
+        // Check AABB collision between enemy and player
+        const playerWidth = 1; // Default player collision size
+        const playerHeight = 1;
+
+        if (this.checkAABBCollision(
+          enemyX, enemyY, enemyWidth, enemyHeight,
+          player.x, player.y, playerWidth, playerHeight
+        )) {
+          // Collision detected! Calculate knockback direction
+          const dx = player.x - enemyX;
+          const dy = player.y - enemyY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          let knockbackX = 0;
+          let knockbackY = 0;
+
+          if (distance > 0) {
+            // Knockback away from enemy
+            knockbackX = (dx / distance) * enemyKnockback;
+            knockbackY = (dy / distance) * enemyKnockback;
+          }
+
+          enemyContactCollisions.push({
+            enemyIndex: ei,
+            player: player,
+            playerId: player.id,
+            contactDamage: enemyContactDamage,
+            knockbackX,
+            knockbackY,
+            enemyX,
+            enemyY
+          });
+        }
+      }
+    }
+
+    // Return enemy contact collisions for server to process
+    return {
+      enemyContactCollisions
+    };
   }
 
   /**

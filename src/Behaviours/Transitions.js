@@ -48,12 +48,18 @@ export class NoPlayerWithinRange extends Transition {
   
   check(index, enemyManager, target, deltaTime, stateData) {
     if (!target) return true; // No player, so condition is met
-    
+
+    // CAVALRY FIX: Do not transition if cavalry is actively charging
+    // This prevents the charge from being interrupted mid-flight
+    if (stateData && stateData.chargeState && stateData.chargeState.phase === 'CHARGING') {
+      return false; // Don't transition while charging
+    }
+
     // Calculate distance to target
     const dx = target.x - enemyManager.x[index];
     const dy = target.y - enemyManager.y[index];
     const distanceSquared = dx * dx + dy * dy;
-    
+
     // Transition if outside range
     return distanceSquared > this.rangeSquared;
   }

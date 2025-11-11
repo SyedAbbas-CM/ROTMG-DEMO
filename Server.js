@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { MapManager } from './src/world/MapManager.js';
 import OVERWORLD_CONFIG from './src/world/OverworldConfig.js';
+import { SetPieceManager } from './src/world/SetPieceManager.js';
 import { BinaryPacket, MessageType } from './common/protocol.js';
 import BulletManager from './src/entities/BulletManager.js';
 import EnemyManager from './src/entities/EnemyManager.js';
@@ -78,6 +79,42 @@ const ENABLE_FIXED_MAP_LOADING = false;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// -----------------------------------------------------------------------------
+// Helper: Random Spawn Location
+// -----------------------------------------------------------------------------
+/**
+ * Generates a random spawn location within the map bounds
+ * @param {Object} mapMetadata - Map metadata with width/height
+ * @param {Object} mapManager - MapManager instance for walkability checks
+ * @returns {Object} {x, y} coordinates in tile units
+ */
+function generateRandomSpawnLocation(mapMetadata, mapManager) {
+  const { width, height } = mapMetadata;
+  const margin = 50; // Stay 50 tiles away from edges
+  const maxAttempts = 100;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Generate random position with margin
+    const x = margin + Math.random() * (width - 2 * margin);
+    const y = margin + Math.random() * (height - 2 * margin);
+
+    // Check if location is walkable
+    const tileX = Math.floor(x);
+    const tileY = Math.floor(y);
+    const tile = mapManager.getTile(tileX, tileY);
+
+    // If tile exists and is walkable, use this spawn
+    if (tile && tile.walkable !== false) {
+      console.log(`[SPAWN] Generated random spawn at (${x.toFixed(2)}, ${y.toFixed(2)}) after ${attempt + 1} attempts`);
+      return { x, y };
+    }
+  }
+
+  // Fallback to center if no walkable location found
+  console.warn(`[SPAWN] Could not find walkable spawn after ${maxAttempts} attempts, using center`);
+  return { x: width / 2, y: height / 2 };
+}
 
 // Create Express app and HTTP server
 const app = express();
@@ -281,6 +318,7 @@ app.use('/api/behavior-designer', behaviorDesignerRoutes);
 // Create global server managers
 const mapManager  = new MapManager({ mapStoragePath: path.join(__dirname, 'maps') });
 const itemManager = new ItemManager();
+const setPieceManager = new SetPieceManager();
 
 // Load item definitions from JSON (sync read once at startup)
 try {
@@ -469,7 +507,7 @@ function handlePlayerShoot(clientId, bulletData) {
     worldId: mapId,
     width: 0.6,   // TILE UNITS: 60% of a tile (slightly larger for better hit detection)
     height: 0.6,  // TILE UNITS: 60% of a tile (slightly larger for better hit detection)
-    lifetime: 5.0 // 5 seconds (in seconds, not milliseconds)
+    lifetime: 1.0 // 1 second = 10 tile range (speed 10 tiles/sec * 1.0s)
   };
 
   // Add to bullet manager
@@ -577,12 +615,11 @@ async function handlePlayerRespawn(clientId) {
   clients.delete(clientId);
   console.log(`[SERVER] ✅ Player ${clientId} removed from backend`);
 
-  // Calculate spawn location at world center (1280, 1280)
+  // Calculate random spawn location
   const metaForSpawn = mapManager.getMapMetadata(mapId) || { width: 2560, height: 2560 };
-  const spawnX = metaForSpawn.width / 2;   // Center X: 2560 / 2 = 1280
-  const spawnY = metaForSpawn.height / 2;  // Center Y: 2560 / 2 = 1280
+  const { x: spawnX, y: spawnY } = generateRandomSpawnLocation(metaForSpawn, mapManager);
 
-  console.log(`[SERVER] 🌍 Spawning at world center: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)}) in world ${mapId}`);
+  console.log(`[SERVER] 🌍 Respawning at random location: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)}) in world ${mapId}`);
 
   // MMO-STYLE: Create a completely NEW player object (like a fresh login)
   const newPlayer = {
@@ -991,6 +1028,41 @@ try {
     console.log(`Created default map: ${defaultMapId} - This is the map ID that will be sent to clients`);
   }
 
+  // ============================================================================
+  // LOAD AND PLACE SET PIECES
+  // ============================================================================
+  try {
+    console.log('[SETPIECE] Loading set pieces...');
+    setPieceManager.loadSetPieces(path.join(__dirname, 'public', 'maps'));
+
+    if (setPieceManager.getCount() > 0) {
+      console.log(`[SETPIECE] Loaded ${setPieceManager.getCount()} set pieces`);
+
+      // Generate random placement locations (3-5 set pieces)
+      const mapMeta = mapManager.getMapMetadata(defaultMapId);
+      const placements = setPieceManager.generatePlacements(
+        mapMeta.width,
+        mapMeta.height,
+        3, // Place 3 random set pieces
+        200 // Minimum 200 tiles apart
+      );
+
+      // Apply each set piece to the map
+      for (const placement of placements) {
+        setPieceManager.applySetPiece(
+          mapManager,
+          placement.x,
+          placement.y,
+          placement.setPieceId
+        );
+      }
+
+      console.log(`[SETPIECE] Placed ${placements.length} set pieces on the map`);
+    }
+  } catch (error) {
+    console.error('[SETPIECE] Error loading set pieces:', error);
+  }
+
   // (we will move async load after storedMaps declaration below)
   // -------------------------------------------------------------------
 } catch (error) {
@@ -1326,12 +1398,11 @@ wss.on('connection', async (socket, req) => {
     console.log(`Client ${clientId} connected without map request, using default map: ${defaultMapId}`);
   }
 
-  // Spawn at world center (1280, 1280) for 2560x2560 world
+  // Generate random spawn location
   const metaForSpawn = mapManager.getMapMetadata(useMapId) || { width: 2560, height: 2560 };
-  const spawnX = metaForSpawn.width / 2;   // Center X: 2560 / 2 = 1280
-  const spawnY = metaForSpawn.height / 2;  // Center Y: 2560 / 2 = 1280
+  const { x: spawnX, y: spawnY } = generateRandomSpawnLocation(metaForSpawn, mapManager);
 
-  console.log(`[SERVER] 🌍 New player ${clientId} spawning at world center: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)})`);
+  console.log(`[SERVER] 🌍 New player ${clientId} spawning at random location: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)})`);
 
   // Store client info
   clients.set(clientId, {
@@ -1484,7 +1555,45 @@ function updateGame() {
       ctx.unitSystems.update(deltaTime);
     }
 
-    ctx.collMgr.checkCollisions(deltaTime, players);
+    // Check collisions and process results
+    const collisionResults = ctx.collMgr.checkCollisions(deltaTime, players);
+
+    // Process enemy contact collisions (damage + knockback)
+    if (collisionResults && collisionResults.enemyContactCollisions) {
+      for (const collision of collisionResults.enemyContactCollisions) {
+        const player = collision.player;
+
+        // Apply contact damage (damage per second * deltaTime)
+        const damageThisFrame = collision.contactDamage * deltaTime;
+        player.health = Math.max(0, player.health - damageThisFrame);
+
+        // Apply knockback (instant velocity change)
+        if (!player.vx) player.vx = 0;
+        if (!player.vy) player.vy = 0;
+        player.vx += collision.knockbackX;
+        player.vy += collision.knockbackY;
+
+        // Push player away from enemy to prevent overlap (hard collision)
+        const pushDistance = 0.5; // Push 0.5 tiles away
+        const dx = player.x - collision.enemyX;
+        const dy = player.y - collision.enemyY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 0 && distance < 2) {
+          // Push player away if too close
+          player.x = collision.enemyX + (dx / distance) * 2;
+          player.y = collision.enemyY + (dy / distance) * 2;
+        }
+
+        // Check for player death
+        if (player.health <= 0 && !player.isDead) {
+          player.isDead = true;
+          console.log(`[CONTACT DAMAGE] Player ${player.id} killed by enemy contact!`);
+          // TODO: Spawn grave, handle death properly
+        }
+      }
+    }
+
     // applyEnemyBulletsToPlayers(ctx.bulletMgr, players); // Now handled in CollisionManager
   });
 

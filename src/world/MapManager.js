@@ -667,15 +667,43 @@ export class MapManager {
     const chunkY = Math.floor(y / CHUNK_SIZE);
     const localX = x % CHUNK_SIZE;
     const localY = y % CHUNK_SIZE;
-    
+
     // Get chunk
     const chunk = this.getChunkData(mapId, chunkX, chunkY);
     if (!chunk) return null;
-    
+
     // Get tile from chunk
     return chunk.tiles[localY][localX];
   }
-  
+
+  /**
+   * Set a tile at a specific coordinate
+   * @param {number} x - Tile X coordinate
+   * @param {number} y - Tile Y coordinate
+   * @param {Object} tileData - Tile data to set
+   */
+  setTile(x, y, tileData) {
+    const mapId = this.activeMapId;
+    // Convert to chunk coordinates
+    const chunkX = Math.floor(x / CHUNK_SIZE);
+    const chunkY = Math.floor(y / CHUNK_SIZE);
+    const localX = x % CHUNK_SIZE;
+    const localY = y % CHUNK_SIZE;
+
+    // Get or create chunk
+    let chunk = this.getChunkData(mapId, chunkX, chunkY);
+    if (!chunk) {
+      // Create new chunk if it doesn't exist
+      chunk = this.generateChunk(chunkX, chunkY);
+      this.chunks.set(`${mapId}_${chunkX}_${chunkY}`, chunk);
+    }
+
+    // Set tile in chunk
+    if (chunk.tiles && chunk.tiles[localY]) {
+      chunk.tiles[localY][localX] = tileData;
+    }
+  }
+
   /**
    * Get the tile type at a specific coordinate
    * @param {number} x - Tile X coordinate

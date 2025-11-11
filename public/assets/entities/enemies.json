@@ -14,6 +14,8 @@
     "width": 2,
     "height": 2,
     "renderScale": 3,
+    "contactDamage": 25,
+    "knockbackForce": 3,
     "attack": {
       "bulletId": "goblin_dart",
       "cooldown": 2000,
@@ -41,6 +43,8 @@
     "width": 2,
     "height": 2,
     "renderScale": 3,
+    "contactDamage": 10,
+    "knockbackForce": 2,
     "attack": {
       "bulletId": "archer_arrow",
       "cooldown": 2500,
@@ -68,6 +72,8 @@
     "width": 2,
     "height": 2,
     "renderScale": 6,
+    "contactDamage": 50,
+    "knockbackForce": 8,
     "attack": {
       "bulletId": "cavalry_spear",
       "cooldown": 2500,
@@ -95,6 +101,8 @@
     "width": 2,
     "height": 2,
     "renderScale": 7,
+    "contactDamage": 60,
+    "knockbackForce": 10,
     "attack": {
       "bulletId": "heavy_cavalry_lance",
       "cooldown": 2800,
@@ -122,6 +130,8 @@
     "width": 2,
     "height": 2,
     "renderScale": 5,
+    "contactDamage": 35,
+    "knockbackForce": 5,
     "attack": {
       "bulletId": "knight_axe",
       "cooldown": 3000,

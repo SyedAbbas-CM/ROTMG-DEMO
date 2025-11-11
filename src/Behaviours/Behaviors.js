@@ -203,8 +203,7 @@ export class CavalryCharge extends Behavior {
         chargeDirection: { x: 0, y: 0 }, // Locked direction during charge
         jiggleTimer: 0,
         jiggleDir: { x: 0, y: 0 },
-        canCharge: true,   // Ready to charge
-        finishingTimer: 0  // Timer for finishing the charge after entering range
+        canCharge: true   // Ready to charge
       };
     }
 
@@ -227,7 +226,6 @@ export class CavalryCharge extends Behavior {
         state.phase = 'CHARGING';
         state.timer = 0;
         state.canCharge = false; // Charge used, need to wait for cooldown
-        state.finishingTimer = 0; // Reset finishing timer for new charge
 
         // Lock charge direction toward current target position
         if (distance > 0) {
@@ -288,37 +286,9 @@ export class CavalryCharge extends Behavior {
         }
       } else {
         // Continue charging in locked direction
+        // Cavalry charges continuously until timer expires or loses target
 
-        // Check if we've reached target during charge
-        if (distance <= this.attackRange && state.finishingTimer === 0) {
-          // Just entered range - start finishing timer to allow charge attack to fire
-          console.log(`🐎 [CAVALRY] Entered attack range at ${distance.toFixed(1)} tiles, finishing charge attack`);
-          state.finishingTimer = 0.4; // Continue for 0.4 seconds to complete attack
-        }
-
-        // If finishing timer is active, count down
-        if (state.finishingTimer > 0) {
-          state.finishingTimer -= deltaTime;
-
-          // If timer expired, stop and enter STATIONARY
-          if (state.finishingTimer <= 0) {
-            console.log(`🐎 [CAVALRY] Charge attack complete, entering STATIONARY`);
-            state.currentSpeed = 0; // Instant stop
-            state.phase = 'STATIONARY';
-            state.timer = 0;
-            state.finishingTimer = 0;
-            state.isStationary = true; // Set flag so DirectionalShoot knows mode
-
-            // Face toward target
-            if (distance > 0) {
-              state.lastDirX = dx / distance;
-              state.lastDirY = dy / distance;
-            }
-            return; // Exit early - don't move this frame
-          }
-        }
-
-        // Continue charging (either approaching or finishing)
+        // Continue charging at full speed
         // Accelerate to charge speed
         const speedDiff = this.chargeSpeed - state.currentSpeed;
         const speedChange = Math.sign(speedDiff) * Math.min(Math.abs(speedDiff), this.acceleration * deltaTime);

@@ -49,7 +49,11 @@ export default class EnemyManager {
     this.projectileSpread = new Float32Array(maxEnemies); // Angular spread for multiple projectiles
     this.canChase = new Uint8Array(maxEnemies); // Whether enemy can chase (1 or 0)
     this.canShoot = new Uint8Array(maxEnemies); // Whether enemy can shoot (1 or 0)
-    
+
+    // Contact damage and knockback
+    this.contactDamage = new Float32Array(maxEnemies); // Damage dealt on contact per second
+    this.knockbackForce = new Float32Array(maxEnemies); // Knockback force on contact
+
     // Sprite for projectiles fired by this enemy
     this.bulletSpriteName = new Array(maxEnemies);
 
@@ -100,7 +104,9 @@ export default class EnemyManager {
           spread: (attack.spread||0) * Math.PI / 180,
           inaccuracy: (attack.inaccuracy||0) * Math.PI / 180,
           behavior: e.ai?.behavior || 'aggressive',
-          bulletSpriteName: attack.sprite || null
+          bulletSpriteName: attack.sprite || null,
+          contactDamage: e.contactDamage || 0,
+          knockbackForce: e.knockbackForce || 0
         };
       });
 
@@ -217,6 +223,9 @@ export default class EnemyManager {
     this.projectileSpread[index] = defaults.spread;
     this.canChase[index] = 1;
     this.canShoot[index] = 1;
+    // Contact damage and knockback
+    this.contactDamage[index] = defaults.contactDamage || 0;
+    this.knockbackForce[index] = defaults.knockbackForce || 0;
     // Store bullet sprite for rendering on clients
     this.bulletSpriteName[index] = defaults.bulletSpriteName || null;
     
@@ -501,6 +510,8 @@ export default class EnemyManager {
       this.projectileSpread[index] = this.projectileSpread[last];
       this.canChase[index] = this.canChase[last];
       this.canShoot[index] = this.canShoot[last];
+      this.contactDamage[index] = this.contactDamage[last];
+      this.knockbackForce[index] = this.knockbackForce[last];
 
       // Swap visual effect properties
       this.flashTimer[index] = this.flashTimer[last];

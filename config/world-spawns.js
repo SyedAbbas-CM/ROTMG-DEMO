@@ -17,9 +17,33 @@ export const worldSpawns = {
   // OVERWORLD (Procedural Generated World)
   // ========================================
   overworld: {
-    description: "Single cavalry unit test",
+    description: "Battle formation: 5 cavalry, 10 soldiers, 5 archers",
     spawns: [
-      { id: 'red_demon', x: 30, y: 30, comment: 'Light Cavalry - Testing' }
+      // Front line: 5 Light Cavalry (red_demon)
+      { id: 'red_demon', x: 20, y: 30, comment: 'Cavalry Left Flank' },
+      { id: 'red_demon', x: 25, y: 30, comment: 'Cavalry Left' },
+      { id: 'red_demon', x: 30, y: 30, comment: 'Cavalry Center' },
+      { id: 'red_demon', x: 35, y: 30, comment: 'Cavalry Right' },
+      { id: 'red_demon', x: 40, y: 30, comment: 'Cavalry Right Flank' },
+
+      // Middle line: 10 Infantry (goblin soldiers)
+      { id: 'goblin', x: 18, y: 35, comment: 'Infantry' },
+      { id: 'goblin', x: 22, y: 35, comment: 'Infantry' },
+      { id: 'goblin', x: 26, y: 35, comment: 'Infantry' },
+      { id: 'goblin', x: 30, y: 35, comment: 'Infantry Center' },
+      { id: 'goblin', x: 34, y: 35, comment: 'Infantry' },
+      { id: 'goblin', x: 38, y: 35, comment: 'Infantry' },
+      { id: 'goblin', x: 42, y: 35, comment: 'Infantry' },
+      { id: 'goblin', x: 46, y: 35, comment: 'Infantry' },
+      { id: 'goblin', x: 50, y: 35, comment: 'Infantry' },
+      { id: 'goblin', x: 54, y: 35, comment: 'Infantry' },
+
+      // Back line: 5 Archers
+      { id: 'archer', x: 25, y: 40, comment: 'Archer Left' },
+      { id: 'archer', x: 30, y: 40, comment: 'Archer Left Center' },
+      { id: 'archer', x: 35, y: 40, comment: 'Archer Center' },
+      { id: 'archer', x: 40, y: 40, comment: 'Archer Right Center' },
+      { id: 'archer', x: 45, y: 40, comment: 'Archer Right' },
     ]
   },
 

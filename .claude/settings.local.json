@@ -47,7 +47,14 @@
       "Bash(kill:*)",
       "WebFetch(domain:code.claude.com)",
       "Bash(claude output-style collaborative)",
-      "Bash(timeout 20 npm start:*)"
+      "Bash(timeout 20 npm start:*)",
+      "Bash(sshpass -p '1234' ssh:*)",
+      "Bash(brew install:*)",
+      "Bash(sshpass -p '1234' ssh -o StrictHostKeyChecking=no newadmin@192.168.0.202 \"uname -a && cat /etc/os-release 2>/dev/null || sw_vers\")",
+      "Bash(sshpass:*)",
+      "Bash(ping:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
