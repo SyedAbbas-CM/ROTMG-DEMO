@@ -34,6 +34,8 @@ import mapEditorRoutes from './src/routes/mapEditorRoutes.js';
 import enemyEditorRoutes from './src/routes/enemyEditorRoutes.js';
 import behaviorDesignerRoutes from './src/routes/behaviorDesignerRoutes.js';
 import { logger } from './src/utils/logger.js';
+// ---- Network Logger ----
+import NetworkLogger from './NetworkLogger.js';
 // ---- Tile System ----
 import { initTileSystem } from './src/assets/initTileSystem.js';
 // ---- World Spawn Configuration ----
@@ -160,6 +162,17 @@ if (ARTIFICIAL_LATENCY_MS > 0) {
     setTimeout(next, ARTIFICIAL_LATENCY_MS);
   });
 }
+
+// Initialize Network Logger
+const NETWORK_LOGGER_ENABLED = process.env.NETWORK_LOGGER_ENABLED !== 'false';
+const NETWORK_LOGGER_VERBOSE = process.env.NETWORK_LOGGER_VERBOSE === 'true';
+const NETWORK_LOGGER_INTERVAL = parseInt(process.env.NETWORK_LOGGER_INTERVAL || '30000', 10);
+
+const networkLogger = new NetworkLogger({
+  enabled: NETWORK_LOGGER_ENABLED,
+  verbose: NETWORK_LOGGER_VERBOSE,
+  logInterval: NETWORK_LOGGER_INTERVAL
+});
 
 // Disable caching for all static files during development
 app.use((req, res, next) => {
@@ -355,9 +368,18 @@ function sendToClient(socket, type, data = {}) {
 
   const doSend = () => {
     try {
-      socket.send(BinaryPacket.encode(type, data));
+      const encoded = BinaryPacket.encode(type, data);
+      socket.send(encoded);
+
+      // Log outgoing message
+      if (networkLogger.enabled && socket.clientId) {
+        networkLogger.onMessageSent(socket.clientId, type, encoded.byteLength || encoded.length || 0);
+      }
     } catch (err) {
       console.error('[NET] Failed to send packet', type, err);
+      if (networkLogger.enabled && socket.clientId) {
+        networkLogger.onMessageError(socket.clientId, err);
+      }
     }
   };
 
@@ -1394,9 +1416,18 @@ spawnMapEnemies(gameState.mapId);
 wss.on('connection', async (socket, req) => {
   // Generate client ID
   const clientId = nextClientId++;
-  
+
+  // Store client ID on socket for network logger
+  socket.clientId = clientId;
+
   // Set binary type
   socket.binaryType = 'arraybuffer';
+
+  // Log connection open
+  if (networkLogger.enabled) {
+    const remoteAddress = req.socket.remoteAddress || 'unknown';
+    networkLogger.onConnectionOpen(clientId, remoteAddress, 'ws');
+  }
   
   // Parse URL to check for map ID in query parameters
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -1500,6 +1531,12 @@ wss.on('connection', async (socket, req) => {
 
         const packet = BinaryPacket.decode(buffer);
 
+        // Log received message
+        if (networkLogger.enabled) {
+          const messageSize = buffer.byteLength || buffer.length || 0;
+          networkLogger.onMessageReceived(clientId, packet.type, messageSize);
+        }
+
         // Log latency for BULLET_CREATE messages to verify artificial delay
         if (packet.type === MessageType.BULLET_CREATE && ARTIFICIAL_LATENCY_MS > 0) {
           const processTime = Date.now();
@@ -1508,6 +1545,11 @@ wss.on('connection', async (socket, req) => {
         }
 
         if(packet.type === MessageType.PING){
+          // Track latency for PING messages
+          if (networkLogger.enabled && packet.data && packet.data.timestamp) {
+            const rtt = Date.now() - packet.data.timestamp;
+            networkLogger.recordLatency(clientId, rtt);
+          }
           // Immediately respond with PONG (echo back the timestamp)
           sendToClient(socket, MessageType.PONG, packet.data);
         } else if(packet.type === MessageType.MOVE_ITEM){
@@ -1533,6 +1575,9 @@ wss.on('connection', async (socket, req) => {
         }
       } catch(err){
         console.error('[NET] Failed to process message', err);
+        if (networkLogger.enabled) {
+          networkLogger.onMessageError(clientId, err);
+        }
       }
     };
 
@@ -1545,8 +1590,19 @@ wss.on('connection', async (socket, req) => {
   });
   
   // Set up disconnect handler
-  socket.on('close', () => {
+  socket.on('close', (code, reason) => {
+    if (networkLogger.enabled) {
+      networkLogger.onConnectionClose(clientId, code, reason);
+    }
     handleClientDisconnect(clientId);
+  });
+
+  // Set up error handler
+  socket.on('error', (error) => {
+    if (networkLogger.enabled) {
+      networkLogger.onConnectionError(clientId, error);
+    }
+    console.error(`[NET] Socket error for client ${clientId}:`, error);
   });
 });
 
