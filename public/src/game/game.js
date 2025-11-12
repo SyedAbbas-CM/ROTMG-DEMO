@@ -1165,3 +1165,87 @@ async function connectToServer() {
         throw error;
     }
 }
+
+// Ping test function - call from console: testPing(10)
+window.testPing = function(count = 10) {
+    if (!networkManager || !networkManager.ws || networkManager.ws.readyState !== WebSocket.OPEN) {
+        console.error('❌ Not connected to server!');
+        return;
+    }
+
+    console.log(`🏓 Starting ping test - sending ${count} pings...`);
+
+    const stats = { sent: 0, received: 0, rtts: [], min: Infinity, max: 0 };
+    const pendingPings = new Map();
+
+    const originalOnMessage = networkManager.ws.onmessage;
+
+    // Intercept PONG messages
+    networkManager.ws.onmessage = (event) => {
+        try {
+            const packet = networkManager.BinaryPacket.decode(event.data);
+            if (packet.type === MessageType.PONG) {
+                const sentTime = packet.data.timestamp;
+                if (pendingPings.has(sentTime)) {
+                    const rtt = Date.now() - sentTime;
+                    stats.received++;
+                    stats.rtts.push(rtt);
+                    stats.min = Math.min(stats.min, rtt);
+                    stats.max = Math.max(stats.max, rtt);
+                    pendingPings.delete(sentTime);
+                    console.log(`📥 PONG #${stats.received}: RTT = ${rtt}ms`);
+
+                    if (stats.received === count) {
+                        printStats();
+                    }
+                }
+            }
+        } catch (err) {
+            // Not a PONG message, pass to original handler
+        }
+
+        // Always call original handler
+        if (originalOnMessage) originalOnMessage.call(networkManager.ws, event);
+    };
+
+    function printStats() {
+        const avg = stats.rtts.reduce((a, b) => a + b, 0) / stats.rtts.length;
+        const loss = ((stats.sent - stats.received) / stats.sent * 100).toFixed(1);
+
+        console.log(`
+╔════════════════════════════════════╗
+║     PING TEST RESULTS              ║
+╠════════════════════════════════════╣
+║ Packets Sent:      ${stats.sent.toString().padStart(3)}            ║
+║ Packets Received:  ${stats.received.toString().padStart(3)}            ║
+║ Packet Loss:       ${loss}%          ║
+║ Min RTT:           ${stats.min.toString().padStart(3)}ms          ║
+║ Max RTT:           ${stats.max.toString().padStart(3)}ms          ║
+║ Average RTT:       ${Math.round(avg).toString().padStart(3)}ms          ║
+╚════════════════════════════════════╝
+        `);
+
+        // Restore original handler
+        networkManager.ws.onmessage = originalOnMessage;
+    }
+
+    // Send pings
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+            const timestamp = Date.now();
+            const packet = networkManager.BinaryPacket.encode(MessageType.PING, { timestamp });
+            networkManager.ws.send(packet);
+            pendingPings.set(timestamp, true);
+            stats.sent++;
+            console.log(`📤 PING #${stats.sent} sent at ${timestamp}`);
+
+            // Clean up after 5 seconds
+            setTimeout(() => pendingPings.delete(timestamp), 5000);
+        }, i * 100); // 100ms between each ping
+    }
+
+    // Print stats after all pings should have completed
+    setTimeout(printStats, (count * 100) + 2000);
+};
+
+console.log('💡 Ping test available! Run: testPing(10) to send 10 pings');
