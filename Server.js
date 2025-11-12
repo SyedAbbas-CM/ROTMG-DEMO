@@ -1473,6 +1473,8 @@ wss.on('connection', async (socket, req) => {
   
   // Set up message handler with artificial latency support
   socket.on('message', (message) => {
+    const receiveTime = Date.now(); // Record when message arrived
+
     const processMessage = () => {
       try {
         // Ignore non-binary messages (e.g., text 'test' messages from debug tools)
@@ -1487,6 +1489,14 @@ wss.on('connection', async (socket, req) => {
         const buffer = message instanceof ArrayBuffer ? message : message.buffer;
 
         const packet = BinaryPacket.decode(buffer);
+
+        // Log latency for BULLET_CREATE messages to verify artificial delay
+        if (packet.type === MessageType.BULLET_CREATE && ARTIFICIAL_LATENCY_MS > 0) {
+          const processTime = Date.now();
+          const actualDelay = processTime - receiveTime;
+          console.log(`🕐 [LATENCY TEST] Bullet message: Received at ${receiveTime}, Processed at ${processTime}, Delay: ${actualDelay}ms (expected: ${ARTIFICIAL_LATENCY_MS}ms)`);
+        }
+
         if(packet.type === MessageType.MOVE_ITEM){
           processMoveItem(clientId, packet.data);
         } else if(packet.type === MessageType.PICKUP_ITEM){
