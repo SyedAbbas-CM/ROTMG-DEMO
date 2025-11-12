@@ -54,7 +54,11 @@
       "Bash(sshpass:*)",
       "Bash(ping:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(ssh root@94.130.106.5 \"cd /opt/ROTMG-DEMO && git pull origin main\")",
+      "Bash(ssh-keygen:*)",
+      "Bash(ssh -o StrictHostKeyChecking=no root@94.130.106.5 \"cd /opt/ROTMG-DEMO && git pull origin main\")"
     ],
     "deny": []
   }

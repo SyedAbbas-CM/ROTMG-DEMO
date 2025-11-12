@@ -1497,7 +1497,10 @@ wss.on('connection', async (socket, req) => {
           console.log(`🕐 [LATENCY TEST] Bullet message: Received at ${receiveTime}, Processed at ${processTime}, Delay: ${actualDelay}ms (expected: ${ARTIFICIAL_LATENCY_MS}ms)`);
         }
 
-        if(packet.type === MessageType.MOVE_ITEM){
+        if(packet.type === MessageType.PING){
+          // Immediately respond with PONG (echo back the timestamp)
+          sendToClient(socket, MessageType.PONG, packet.data);
+        } else if(packet.type === MessageType.MOVE_ITEM){
           processMoveItem(clientId, packet.data);
         } else if(packet.type === MessageType.PICKUP_ITEM){
           processPickupMessage(clientId, packet.data);
