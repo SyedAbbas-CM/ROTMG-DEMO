@@ -352,10 +352,20 @@ const worldContexts = new Map(); // mapId → { bulletMgr, enemyMgr, collisionMg
 function sendToClient(socket, type, data = {}) {
   // Skip if socket is closed or undefined
   if (!socket || socket.readyState !== WebSocket.OPEN) return;
-  try {
-    socket.send(BinaryPacket.encode(type, data));
-  } catch (err) {
-    console.error('[NET] Failed to send packet', type, err);
+
+  const doSend = () => {
+    try {
+      socket.send(BinaryPacket.encode(type, data));
+    } catch (err) {
+      console.error('[NET] Failed to send packet', type, err);
+    }
+  };
+
+  // Apply artificial latency to outgoing messages if configured
+  if (ARTIFICIAL_LATENCY_MS > 0) {
+    setTimeout(doSend, ARTIFICIAL_LATENCY_MS);
+  } else {
+    doSend();
   }
 }
 
