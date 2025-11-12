@@ -36,6 +36,8 @@ import behaviorDesignerRoutes from './src/routes/behaviorDesignerRoutes.js';
 import { logger } from './src/utils/logger.js';
 // ---- Network Logger ----
 import NetworkLogger from './NetworkLogger.js';
+// ---- File Logger ----
+import FileLogger from './FileLogger.js';
 // ---- Tile System ----
 import { initTileSystem } from './src/assets/initTileSystem.js';
 // ---- World Spawn Configuration ----
@@ -173,6 +175,25 @@ const networkLogger = new NetworkLogger({
   verbose: NETWORK_LOGGER_VERBOSE,
   logInterval: NETWORK_LOGGER_INTERVAL
 });
+
+// Initialize File Logger
+const FILE_LOGGER_ENABLED = process.env.FILE_LOGGER_ENABLED !== 'false';
+const fileLogger = new FileLogger({
+  enabled: FILE_LOGGER_ENABLED,
+  logsDir: path.join(__dirname, 'logs'),
+  maxFileSize: 10 * 1024 * 1024, // 10MB
+  maxFiles: 10
+});
+
+// Expose fileLogger globally so NetworkLogger can access it
+global.fileLogger = fileLogger;
+
+// Log server startup
+if (fileLogger.enabled) {
+  fileLogger.info('SERVER', `Server starting with PID ${process.pid}`);
+  fileLogger.info('CONFIG', 'Artificial latency', { latencyMs: ARTIFICIAL_LATENCY_MS });
+  fileLogger.info('CONFIG', 'Network logger', { enabled: NETWORK_LOGGER_ENABLED, verbose: NETWORK_LOGGER_VERBOSE });
+}
 
 // Disable caching for all static files during development
 app.use((req, res, next) => {
@@ -1654,6 +1675,9 @@ function updateGame() {
 
     // Check collisions and process results
     const collisionResults = ctx.collMgr.checkCollisions(deltaTime, players);
+    if (collisionResults && collisionResults.enemyContactCollisions && collisionResults.enemyContactCollisions.length > 0) {
+      console.log(`[SERVER COLLISION] Processing ${collisionResults.enemyContactCollisions.length} contact collision(s)`);
+    }
 
     // Process enemy contact collisions (damage + knockback)
     if (collisionResults && collisionResults.enemyContactCollisions) {

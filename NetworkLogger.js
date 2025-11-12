@@ -254,6 +254,11 @@ class NetworkLogger {
   }
 
   logStats() {
+    // Log to file if fileLogger exists (will be passed from Server.js)
+    if (global.fileLogger && global.fileLogger.enabled) {
+      global.fileLogger.stats(this.getStats());
+    }
+
     console.log('\n========== NETWORK STATISTICS ==========');
     console.log(`Timestamp: ${new Date().toISOString()}`);
 
