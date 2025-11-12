@@ -1471,44 +1471,53 @@ wss.on('connection', async (socket, req) => {
   // Send initial state (player list, enemy list, bullet list)
   sendInitialState(socket, clientId);
   
-  // Set up message handler
+  // Set up message handler with artificial latency support
   socket.on('message', (message) => {
-    try {
-      // Ignore non-binary messages (e.g., text 'test' messages from debug tools)
-      if (typeof message === 'string') {
-        if (DEBUG.connections) {
-          console.log(`[NET] Ignoring text message from client ${clientId}: ${message}`);
+    const processMessage = () => {
+      try {
+        // Ignore non-binary messages (e.g., text 'test' messages from debug tools)
+        if (typeof message === 'string') {
+          if (DEBUG.connections) {
+            console.log(`[NET] Ignoring text message from client ${clientId}: ${message}`);
+          }
+          return;
         }
-        return;
-      }
 
-      // Ensure message is an ArrayBuffer or Buffer
-      const buffer = message instanceof ArrayBuffer ? message : message.buffer;
+        // Ensure message is an ArrayBuffer or Buffer
+        const buffer = message instanceof ArrayBuffer ? message : message.buffer;
 
-      const packet = BinaryPacket.decode(buffer);
-      if(packet.type === MessageType.MOVE_ITEM){
-        processMoveItem(clientId, packet.data);
-      } else if(packet.type === MessageType.PICKUP_ITEM){
-        processPickupMessage(clientId, packet.data);
-      } else if(packet.type === MessageType.PLAYER_TEXT){
-        handlePlayerText(clientId, packet.data);
-      } else if(packet.type === MessageType.CHUNK_REQUEST){
-        handleChunkRequest(clientId, packet.data);
-      } else if(packet.type === MessageType.BULLET_CREATE){
-        handlePlayerShoot(clientId, packet.data);
-      } else if(packet.type === MessageType.PLAYER_UPDATE){
-        handlePlayerUpdate(clientId, packet.data);
-      } else if(packet.type === MessageType.PLAYER_RESPAWN){
-        handlePlayerRespawn(clientId);
-      } else if(packet.type === MessageType.UNIT_SPAWN){
-        handleUnitSpawn(clientId, packet.data);
-      } else if(packet.type === MessageType.UNIT_COMMAND){
-        handleUnitCommand(clientId, packet.data);
-      } else {
-        handleClientMessage(clientId, message);
+        const packet = BinaryPacket.decode(buffer);
+        if(packet.type === MessageType.MOVE_ITEM){
+          processMoveItem(clientId, packet.data);
+        } else if(packet.type === MessageType.PICKUP_ITEM){
+          processPickupMessage(clientId, packet.data);
+        } else if(packet.type === MessageType.PLAYER_TEXT){
+          handlePlayerText(clientId, packet.data);
+        } else if(packet.type === MessageType.CHUNK_REQUEST){
+          handleChunkRequest(clientId, packet.data);
+        } else if(packet.type === MessageType.BULLET_CREATE){
+          handlePlayerShoot(clientId, packet.data);
+        } else if(packet.type === MessageType.PLAYER_UPDATE){
+          handlePlayerUpdate(clientId, packet.data);
+        } else if(packet.type === MessageType.PLAYER_RESPAWN){
+          handlePlayerRespawn(clientId);
+        } else if(packet.type === MessageType.UNIT_SPAWN){
+          handleUnitSpawn(clientId, packet.data);
+        } else if(packet.type === MessageType.UNIT_COMMAND){
+          handleUnitCommand(clientId, packet.data);
+        } else {
+          handleClientMessage(clientId, message);
+        }
+      } catch(err){
+        console.error('[NET] Failed to process message', err);
       }
-    } catch(err){
-      console.error('[NET] Failed to process message', err);
+    };
+
+    // Apply artificial latency to WebSocket messages if configured
+    if (ARTIFICIAL_LATENCY_MS > 0) {
+      setTimeout(processMessage, ARTIFICIAL_LATENCY_MS);
+    } else {
+      processMessage();
     }
   });
   
