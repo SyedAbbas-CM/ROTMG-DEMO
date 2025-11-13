@@ -226,6 +226,7 @@ export default class EnemyManager {
     // Contact damage and knockback
     this.contactDamage[index] = defaults.contactDamage || 0;
     this.knockbackForce[index] = defaults.knockbackForce || 0;
+    console.log(`[ENEMY SPAWN] ${enemyId} type=${type} contactDamage=${this.contactDamage[index]} knockback=${this.knockbackForce[index]} hp=${this.health[index]}`);
     // Store bullet sprite for rendering on clients
     this.bulletSpriteName[index] = defaults.bulletSpriteName || null;
     

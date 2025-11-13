@@ -11,12 +11,14 @@ export default class CollisionManager {
    * @param {Object} bulletManager - The bullet manager instance
    * @param {Object} enemyManager - The enemy manager instance
    * @param {Object} mapManager - The map manager (optional)
+   * @param {Object} lagCompensation - Lag compensation system (optional)
    */
-  constructor(bulletManager, enemyManager, mapManager = null) {
+  constructor(bulletManager, enemyManager, mapManager = null, lagCompensation = null) {
     this.bulletManager = bulletManager;
     this.enemyManager = enemyManager;
     this.mapManager = mapManager;
-    
+    this.lagCompensation = lagCompensation;
+
     // Tracking processed collisions to avoid duplicates
     this.processedCollisions = new Map(); // collisionId -> timestamp
     this.cleanupInterval = setInterval(() => this.cleanupProcessedCollisions(), 10000);
@@ -31,7 +33,37 @@ export default class CollisionManager {
   checkCollisions(deltaTime = 0.033, players = []) {
     // Skip if managers aren't properly initialized
     if (!this.bulletManager || !this.enemyManager) return;
-    
+
+    // Lag Compensation: Rewind player positions before collision detection
+    let originalPositions = new Map();
+    let rewindAmount = 0;
+
+    if (this.lagCompensation && this.lagCompensation.enabled && players.length > 0) {
+      // Calculate average RTT across all players for rewind amount
+      let totalRTT = 0;
+      let rttCount = 0;
+
+      for (const player of players) {
+        if (player.rtt && player.rtt > 0) {
+          totalRTT += player.rtt;
+          rttCount++;
+        }
+      }
+
+      if (rttCount > 0) {
+        const avgRTT = totalRTT / rttCount;
+        rewindAmount = this.lagCompensation.calculateRewindAmount(avgRTT);
+
+        if (rewindAmount > 0) {
+          const currentTime = Date.now();
+          originalPositions = this.lagCompensation.rewindAllPlayers(players, rewindAmount, currentTime);
+        }
+      }
+    }
+
+    // Use try-finally to guarantee position restoration
+    try {
+
     // For each bullet, check collision with enemies
     for (let bi = 0; bi < this.bulletManager.bulletCount; bi++) {
       // Skip expired bullets
@@ -310,6 +342,10 @@ export default class CollisionManager {
     // Check for enemy body collisions with players
     const enemyContactCollisions = [];
 
+    if (players.length > 0 && this.enemyManager.enemyCount > 0) {
+      console.log(`[COLLISION CHECK] Checking ${this.enemyManager.enemyCount} enemies vs ${players.length} players`);
+    }
+
     for (let ei = 0; ei < this.enemyManager.enemyCount; ei++) {
       // Skip dead enemies
       if (this.enemyManager.health[ei] <= 0) continue;
@@ -324,6 +360,8 @@ export default class CollisionManager {
 
       // Only check if enemy has contact damage
       if (enemyContactDamage <= 0) continue;
+
+      console.log(`[COLLISION CHECK] Enemy ${ei} has contactDamage=${enemyContactDamage}, checking ${players.length} players...`);
 
       // Check collision with each player
       for (const player of players) {
@@ -362,6 +400,8 @@ export default class CollisionManager {
             enemyX,
             enemyY
           });
+
+          console.log(`[CONTACT COLLISION] Enemy ${ei} hit player ${player.id}! Damage=${enemyContactDamage}/sec Knockback=(${knockbackX.toFixed(2)}, ${knockbackY.toFixed(2)})`);
         }
       }
     }
@@ -370,6 +410,13 @@ export default class CollisionManager {
     return {
       enemyContactCollisions
     };
+
+    } finally {
+      // Lag Compensation: Always restore player positions
+      if (this.lagCompensation && originalPositions.size > 0) {
+        this.lagCompensation.restoreAllPlayers(players, originalPositions);
+      }
+    }
   }
 
   /**

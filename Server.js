@@ -38,6 +38,11 @@ import { logger } from './src/utils/logger.js';
 import NetworkLogger from './NetworkLogger.js';
 // ---- File Logger ----
 import FileLogger from './FileLogger.js';
+// ---- Lag Compensation ----
+import CircularBuffer from './src/utils/CircularBuffer.js';
+import LagCompensation from './src/entities/LagCompensation.js';
+import MovementValidator from './src/entities/MovementValidator.js';
+import { LAG_COMPENSATION, MOVEMENT_VALIDATION } from './common/constants.js';
 // ---- Tile System ----
 import { initTileSystem } from './src/assets/initTileSystem.js';
 // ---- World Spawn Configuration ----
@@ -188,11 +193,40 @@ const fileLogger = new FileLogger({
 // Expose fileLogger globally so NetworkLogger can access it
 global.fileLogger = fileLogger;
 
+// Initialize Lag Compensation System
+const lagCompensation = new LagCompensation({
+  enabled: LAG_COMPENSATION.ENABLED,
+  maxRewindMs: LAG_COMPENSATION.MAX_REWIND_MS,
+  minRTT: LAG_COMPENSATION.MIN_RTT_MS,
+  debug: LAG_COMPENSATION.DEBUG,
+  fileLogger: fileLogger
+});
+
+// Initialize Movement Validator
+const movementValidator = new MovementValidator({
+  enabled: MOVEMENT_VALIDATION.ENABLED,
+  maxSpeedTilesPerSec: MOVEMENT_VALIDATION.MAX_SPEED_TILES_PER_SEC,
+  teleportThresholdTiles: MOVEMENT_VALIDATION.TELEPORT_THRESHOLD_TILES,
+  logInterval: MOVEMENT_VALIDATION.LOG_INTERVAL_MS,
+  fileLogger: fileLogger
+});
+
 // Log server startup
 if (fileLogger.enabled) {
   fileLogger.info('SERVER', `Server starting with PID ${process.pid}`);
   fileLogger.info('CONFIG', 'Artificial latency', { latencyMs: ARTIFICIAL_LATENCY_MS });
   fileLogger.info('CONFIG', 'Network logger', { enabled: NETWORK_LOGGER_ENABLED, verbose: NETWORK_LOGGER_VERBOSE });
+  fileLogger.info('CONFIG', 'Lag compensation', {
+    enabled: LAG_COMPENSATION.ENABLED,
+    maxRewindMs: LAG_COMPENSATION.MAX_REWIND_MS,
+    minRTT: LAG_COMPENSATION.MIN_RTT_MS,
+    debug: LAG_COMPENSATION.DEBUG
+  });
+  fileLogger.info('CONFIG', 'Movement validation', {
+    enabled: MOVEMENT_VALIDATION.ENABLED,
+    maxSpeed: MOVEMENT_VALIDATION.MAX_SPEED_TILES_PER_SEC,
+    teleportThreshold: MOVEMENT_VALIDATION.TELEPORT_THRESHOLD_TILES
+  });
 }
 
 // Disable caching for all static files during development
@@ -737,8 +771,16 @@ function handlePlayerUpdate(clientId, positionData) {
 
   // Update server-side player position
   if (x !== undefined && y !== undefined) {
+    // Validate movement (soft validation - logs only, never blocks)
+    if (movementValidator && movementValidator.enabled) {
+      movementValidator.validate(clientId, x, y, Date.now());
+    }
+
     client.player.x = x;
     client.player.y = y;
+
+    // Record position in history for lag compensation
+    client.player.positionHistory.add(x, y, Date.now());
 
     // Check and resolve collision with enemies
     const mapId = client.mapId || gameState.mapId;
@@ -878,6 +920,11 @@ function handleClientDisconnect(clientId) {
   // Remove client from the map
   clients.delete(clientId);
 
+  // Cleanup movement validator tracking
+  if (movementValidator) {
+    movementValidator.removePlayer(clientId);
+  }
+
   // Notify other clients in the same world about player leaving
   broadcastToWorld(mapId, MessageType.PLAYER_LEAVE, {
     playerId: clientId,
@@ -918,7 +965,7 @@ function getWorldCtx(mapId) {
   if (!worldContexts.has(mapId)) {
     const bulletMgr = new BulletManager(10000);
     const enemyMgr  = new EnemyManager(1000);
-    const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager);
+    const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager, lagCompensation);
     const bagMgr    = new BagManager(500);
     
     // Initialize Unit Systems
@@ -1487,12 +1534,18 @@ wss.on('connection', async (socket, req) => {
       maxHealth: 1000,
       worldId: useMapId,
       lastUpdate: Date.now(),
-      isDead: false
+      isDead: false,
+      positionHistory: new CircularBuffer(10), // 300ms history at 30Hz
+      rtt: 50 // Default RTT in milliseconds, updated from PING/PONG
     },
     mapId: useMapId,  // Use the appropriate map ID
     lastUpdate: Date.now()
   });
-  
+
+  // Initialize position history with spawn position
+  const client = clients.get(clientId);
+  client.player.positionHistory.add(spawnX, spawnY, Date.now());
+
   if (DEBUG.connections) {
     console.log(`Client connected: ${clientId}, assigned to map: ${useMapId}`);
   }
@@ -1570,6 +1623,13 @@ wss.on('connection', async (socket, req) => {
           if (networkLogger.enabled && packet.data && packet.data.timestamp) {
             const rtt = Date.now() - packet.data.timestamp;
             networkLogger.recordLatency(clientId, rtt);
+
+            // Update player RTT for lag compensation
+            const client = clients.get(clientId);
+            if (client && client.player) {
+              // Use moving average: 80% old value + 20% new sample
+              client.player.rtt = client.player.rtt * 0.8 + rtt * 0.2;
+            }
           }
           // Immediately respond with PONG (echo back the timestamp)
           sendToClient(socket, MessageType.PONG, packet.data);
