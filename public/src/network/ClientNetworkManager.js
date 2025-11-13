@@ -1008,10 +1008,11 @@ export class ClientNetworkManager {
                     
                     // Send handshake
                     this.sendHandshake();
-                    
-                    // Start ping
+
+                    // Start ping and send immediate first ping for lag compensation
                     this.startPing();
-                    
+                    this.sendPing(); // Immediate first ping
+
                     // Drain message queue
                     this.drainMessageQueue();
                     
@@ -1086,7 +1087,7 @@ export class ClientNetworkManager {
         this.stopPing();
         this.pingInterval = setInterval(() => {
             this.sendPing();
-        }, 30000); // Every 30 seconds
+        }, 1000); // Every 1 second for lag compensation
     }
     
     /**
