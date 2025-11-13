@@ -37,6 +37,7 @@ export default class CollisionManager {
     // Lag Compensation: Rewind player positions before collision detection
     let originalPositions = new Map();
     let rewindAmount = 0;
+    let lagCompensationActive = false;
 
     if (this.lagCompensation && this.lagCompensation.enabled && players.length > 0) {
       // Calculate average RTT across all players for rewind amount
@@ -57,6 +58,11 @@ export default class CollisionManager {
         if (rewindAmount > 0) {
           const currentTime = Date.now();
           originalPositions = this.lagCompensation.rewindAllPlayers(players, rewindAmount, currentTime);
+          lagCompensationActive = true;
+
+          if (this.lagCompensation.debug && players.length > 0) {
+            console.log(`[LAG_COMP] Rewound ${players.length} players by ${rewindAmount.toFixed(2)}ms (avgRTT: ${avgRTT.toFixed(2)}ms)`);
+          }
         }
       }
     }

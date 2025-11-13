@@ -64,6 +64,16 @@ export class LagCompensation {
     // Get position from history
     const result = player.positionHistory.getPositionAt(targetTimestamp);
 
+    // If position history is empty or unavailable, fall back to current position
+    let finalX = result.x;
+    let finalY = result.y;
+
+    if (!result.found && player.positionHistory.count === 0) {
+      // Empty history - use current position as fallback
+      finalX = player.x;
+      finalY = player.y;
+    }
+
     // Track statistics
     if (result.found) {
       this.stats.rewindsPerformed++;
@@ -74,8 +84,8 @@ export class LagCompensation {
     }
 
     return {
-      x: result.x,
-      y: result.y,
+      x: finalX,
+      y: finalY,
       found: result.found,
       originalX: player.x,
       originalY: player.y,
