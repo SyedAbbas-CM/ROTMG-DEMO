@@ -965,7 +965,7 @@ function getWorldCtx(mapId) {
   if (!worldContexts.has(mapId)) {
     const bulletMgr = new BulletManager(10000);
     const enemyMgr  = new EnemyManager(1000);
-    const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager, lagCompensation);
+    const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager, lagCompensation, fileLogger);
     const bagMgr    = new BagManager(500);
     
     // Initialize Unit Systems

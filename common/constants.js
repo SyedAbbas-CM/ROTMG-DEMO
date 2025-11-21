@@ -36,4 +36,24 @@ export const MOVEMENT_VALIDATION = typeof process !== 'undefined' && process.env
   LOG_INTERVAL_MS: 5000
 };
 
+// Collision Validation Settings (server-side only)
+// Validates that collisions happen at reasonable positions based on player latency
+export const COLLISION_VALIDATION = typeof process !== 'undefined' && process.env ? {
+  ENABLED: process.env.COLLISION_VALIDATION_ENABLED !== 'false',
+  // Mode: 'soft' = log suspicious only, 'strict' = reject invalid collisions
+  MODE: process.env.COLLISION_VALIDATION_MODE || 'soft',
+  // Max distance (tiles) player can be from server position, adjusted by latency
+  MAX_DISTANCE_BASE_TILES: parseFloat(process.env.COLLISION_VALIDATION_MAX_DISTANCE || '2.0'),
+  // Extra distance allowed per 100ms of RTT
+  DISTANCE_PER_100MS_RTT: parseFloat(process.env.COLLISION_VALIDATION_DISTANCE_PER_RTT || '0.5'),
+  // Suspicion threshold - distance multiplier that triggers logging
+  SUSPICIOUS_THRESHOLD: parseFloat(process.env.COLLISION_VALIDATION_SUSPICIOUS_THRESHOLD || '1.5')
+} : {
+  ENABLED: false,
+  MODE: 'soft',
+  MAX_DISTANCE_BASE_TILES: 2.0,
+  DISTANCE_PER_100MS_RTT: 0.5,
+  SUSPICIOUS_THRESHOLD: 1.5
+};
+
 

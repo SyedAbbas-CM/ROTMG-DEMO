@@ -12,12 +12,14 @@ export default class CollisionManager {
    * @param {Object} enemyManager - The enemy manager instance
    * @param {Object} mapManager - The map manager (optional)
    * @param {Object} lagCompensation - Lag compensation system (optional)
+   * @param {Object} fileLogger - File logger for collision events (optional)
    */
-  constructor(bulletManager, enemyManager, mapManager = null, lagCompensation = null) {
+  constructor(bulletManager, enemyManager, mapManager = null, lagCompensation = null, fileLogger = null) {
     this.bulletManager = bulletManager;
     this.enemyManager = enemyManager;
     this.mapManager = mapManager;
     this.lagCompensation = lagCompensation;
+    this.fileLogger = fileLogger;
 
     // Tracking processed collisions to avoid duplicates
     this.processedCollisions = new Map(); // collisionId -> timestamp
@@ -120,21 +122,19 @@ export default class CollisionManager {
             const tileX = Math.floor(bxStep);
             const tileY = Math.floor(byStep);
 
-            // DIAGNOSTIC: Always log collisions at X=8-11 range
-            if (bxStep >= 8 && bxStep <= 11) {
-              console.error(`❌ [COLLISION AT X=9!] Bullet ${bulletId} at (${bxStep.toFixed(4)}, ${byStep.toFixed(4)}), Tile: (${tileX}, ${tileY}), Reason: ${reason}, TileType: ${tileType}`);
-              if (tile) {
-                console.error(`  Tile properties:`, JSON.stringify(tile));
-              }
-            } else {
-              console.log(`[SERVER BULLET] ID: ${bulletId}, Pos: (${bxStep.toFixed(4)}, ${byStep.toFixed(4)}), Tile: (${tileX}, ${tileY}), Reason: ${reason}`);
+            // Log wall collision to file instead of console
+            if (this.fileLogger) {
+              this.fileLogger.logCollision('WALL_HIT', {
+                bulletId,
+                position: { x: bxStep, y: byStep },
+                tile: { x: tileX, y: tileY },
+                reason,
+                tileType,
+                startPos: { x: bulletX, y: bulletY },
+                velocity: { x: vx, y: vy },
+                deltaTime
+              });
             }
-            console.log(`  Start Pos: (${bulletX.toFixed(4)}, ${bulletY.toFixed(4)})`);
-            console.log(`  Velocity: (${vx.toFixed(4)}, ${vy.toFixed(4)}) tiles/sec`);
-            console.log(`  Movement this frame: (${dx.toFixed(4)}, ${dy.toFixed(4)}) tiles (deltaTime=${deltaTime.toFixed(4)}s)`);
-            console.log(`  Map Bounds: (0, 0) to (${this.mapManager.width}, ${this.mapManager.height})`);
-            console.log(`  Tile Type: ${tileType}`);
-            console.log(`  Out of bounds: bxStep < 0: ${bxStep < 0}, byStep < 0: ${byStep < 0}, bxStep >= width: ${bxStep >= this.mapManager.width}, byStep >= height: ${byStep >= this.mapManager.height}`);
 
             break;
           }
@@ -188,13 +188,14 @@ export default class CollisionManager {
             bulletX, bulletY, bulletWidth, bulletHeight,
             objCenterX, objCenterY, objWidth, objHeight
           )) {
-            // DEBUG: Log object collision details
-            console.log(`[SERVER] 🎯 BULLET-OBJECT COLLISION:
-  Bullet: pos=(${bulletX.toFixed(2)}, ${bulletY.toFixed(2)}), size=${bulletWidth.toFixed(2)}x${bulletHeight.toFixed(2)}
-  Object: tile=(${objX}, ${objY}), center=(${objCenterX.toFixed(2)}, ${objCenterY.toFixed(2)}), size=${objWidth.toFixed(2)}x${objHeight.toFixed(2)}
-  Object sprite: ${obj.sprite || 'none'}
-  Distance: ${Math.sqrt(Math.pow(bulletX - objCenterX, 2) + Math.pow(bulletY - objCenterY, 2)).toFixed(2)} tiles`);
-
+            if (this.fileLogger) {
+              this.fileLogger.logCollision('OBJECT_HIT', {
+                bulletId,
+                bulletPos: { x: bulletX, y: bulletY },
+                bulletSize: { w: bulletWidth, h: bulletHeight },
+                object: { tile: { x: objX, y: objY }, center: { x: objCenterX, y: objCenterY }, sprite: obj.sprite }
+              });
+            }
             objectCollision = true;
             break;
           }
@@ -226,10 +227,6 @@ export default class CollisionManager {
         
         // Skip self-collision (enemy bullets colliding with their owner)
         if (bulletOwnerId === enemyId) {
-          // DIAGNOSTIC: Log self-collision skip occasionally
-          if (Math.random() < 0.01) {
-            console.log(`[COLLISION] Skipping self-collision: Enemy ${enemyId} won't collide with own bullet ${bulletId}`);
-          }
           continue; // Bullet belongs to this enemy – ignore
         }
 
@@ -289,8 +286,9 @@ export default class CollisionManager {
             // Apply damage to player
             const damage = this.bulletManager.damage ? this.bulletManager.damage[bi] : 10;
 
-            console.log(`[SERVER] ⚔️ ENEMY BULLET HIT PLAYER: Bullet ${bulletId} from ${bulletOwnerId} hit player ${playerId} for ${damage} damage`);
-            console.log(`[SERVER]   Player health: ${player.health} → ${Math.max(0, player.health - damage)}`);
+            if (this.fileLogger) {
+              this.fileLogger.bulletHit(bulletId, 'player', playerId, damage, { x: playerX, y: playerY });
+            }
 
             // Apply damage
             if (typeof player.takeDamage === 'function') {
@@ -305,7 +303,10 @@ export default class CollisionManager {
               player.deathX = player.x;
               player.deathY = player.y;
               player.deathTimestamp = Date.now();
-              console.log(`[SERVER] 💀 PLAYER DEATH: ${playerId} has died at (${player.x.toFixed(2)}, ${player.y.toFixed(2)})`);
+
+              if (this.fileLogger) {
+                this.fileLogger.logCollision('PLAYER_DEATH', { playerId, position: { x: player.x, y: player.y } });
+              }
 
               // Spawn grave object at death location
               if (this.mapManager && this.mapManager.addObject) {
@@ -317,15 +318,13 @@ export default class CollisionManager {
                   y: player.deathY,
                   playerId: playerId,
                   timestamp: player.deathTimestamp,
-                  sprite: 'grave', // This should match a sprite in the assets
+                  sprite: 'grave',
                   width: 2,
                   height: 2
                 };
 
-                // Get player's world ID
                 const worldId = player.worldId || 'overworld';
                 this.mapManager.addObject(worldId, graveObject);
-                console.log(`[SERVER] 🪦 Spawned grave ${graveId} at (${player.deathX.toFixed(2)}, ${player.deathY.toFixed(2)}) in world ${worldId}`);
               }
             }
 
@@ -348,8 +347,8 @@ export default class CollisionManager {
     // Check for enemy body collisions with players
     const enemyContactCollisions = [];
 
-    if (players.length > 0 && this.enemyManager.enemyCount > 0) {
-      console.log(`[COLLISION CHECK] Checking ${this.enemyManager.enemyCount} enemies vs ${players.length} players`);
+    if (players.length > 0 && this.enemyManager.enemyCount > 0 && this.fileLogger) {
+      this.fileLogger.collisionCheck('enemy-player', this.enemyManager.enemyCount, players.length);
     }
 
     for (let ei = 0; ei < this.enemyManager.enemyCount; ei++) {
@@ -366,8 +365,6 @@ export default class CollisionManager {
 
       // Only check if enemy has contact damage
       if (enemyContactDamage <= 0) continue;
-
-      console.log(`[COLLISION CHECK] Enemy ${ei} has contactDamage=${enemyContactDamage}, checking ${players.length} players...`);
 
       // Check collision with each player
       for (const player of players) {
@@ -407,7 +404,9 @@ export default class CollisionManager {
             enemyY
           });
 
-          console.log(`[CONTACT COLLISION] Enemy ${ei} hit player ${player.id}! Damage=${enemyContactDamage}/sec Knockback=(${knockbackX.toFixed(2)}, ${knockbackY.toFixed(2)})`);
+          if (this.fileLogger) {
+            this.fileLogger.contactDamage(ei, player.id, enemyContactDamage, { x: knockbackX, y: knockbackY }, { enemy: { x: enemyX, y: enemyY }, player: { x: player.x, y: player.y } });
+          }
         }
       }
     }
@@ -433,56 +432,34 @@ export default class CollisionManager {
   validateCollision(data) {
     const { bulletId, enemyId, timestamp, clientId } = data;
 
-    console.log(`[SERVER] 📨 COLLISION REPORT received from client ${clientId}: Bullet ${bulletId} vs Enemy ${enemyId}`);
-
     // Find bullet and enemy indices using IDs
     const bulletIndex = this.findBulletIndex(bulletId);
     const enemyIndex = this.findEnemyIndex(enemyId);
 
     // Check if both entities exist
     if (bulletIndex === -1 || enemyIndex === -1) {
-      console.log(`[SERVER] ❌ VALIDATION FAILED: Entity not found | Bullet index: ${bulletIndex}, Enemy index: ${enemyIndex}`);
-      return {
-        valid: false,
-        reason: 'Entity not found',
-        bulletId,
-        enemyId
-      };
+      if (this.fileLogger) this.fileLogger.collisionValidation('rejected', { reason: 'entity_not_found', bulletId, enemyId, clientId });
+      return { valid: false, reason: 'Entity not found', bulletId, enemyId };
     }
     
     // Ensure bullet and enemy are in the same world to prevent cross-realm hits
     if (this.bulletManager.worldId[bulletIndex] !== this.enemyManager.worldId[enemyIndex]) {
-      console.log(`[SERVER] ❌ VALIDATION FAILED: Different world | Bullet world: ${this.bulletManager.worldId[bulletIndex]}, Enemy world: ${this.enemyManager.worldId[enemyIndex]}`);
-      return {
-        valid: false,
-        reason: 'Different world',
-        bulletId,
-        enemyId
-      };
+      if (this.fileLogger) this.fileLogger.collisionValidation('rejected', { reason: 'different_world', bulletId, enemyId, clientId });
+      return { valid: false, reason: 'Different world', bulletId, enemyId };
     }
 
     // Check if this collision was already processed recently
     const collisionId = `${bulletId}_${enemyId}`;
     if (this.processedCollisions.has(collisionId)) {
-      console.log(`[SERVER] ❌ VALIDATION FAILED: Already processed | CollisionId: ${collisionId}`);
-      return {
-        valid: false,
-        reason: 'Already processed',
-        bulletId,
-        enemyId
-      };
+      if (this.fileLogger) this.fileLogger.collisionValidation('rejected', { reason: 'already_processed', bulletId, enemyId, clientId });
+      return { valid: false, reason: 'Already processed', bulletId, enemyId };
     }
 
     // Check if timestamp is reasonable (within 500ms from now)
     const now = Date.now();
     if (Math.abs(now - timestamp) > 500) {
-      console.log(`[SERVER] ❌ VALIDATION FAILED: Timestamp too old | Age: ${Math.abs(now - timestamp)}ms`);
-      return {
-        valid: false,
-        reason: 'Timestamp too old',
-        bulletId,
-        enemyId
-      };
+      if (this.fileLogger) this.fileLogger.collisionValidation('rejected', { reason: 'timestamp_old', age: Math.abs(now - timestamp), bulletId, enemyId, clientId });
+      return { valid: false, reason: 'Timestamp too old', bulletId, enemyId };
     }
     
     // Check for line of sight obstruction
@@ -493,13 +470,8 @@ export default class CollisionManager {
         this.enemyManager.x[enemyIndex],
         this.enemyManager.y[enemyIndex]
       )) {
-        console.log(`[SERVER] ❌ VALIDATION FAILED: No line of sight`);
-        return {
-          valid: false,
-          reason: 'No line of sight',
-          bulletId,
-          enemyId
-        };
+        if (this.fileLogger) this.fileLogger.collisionValidation('rejected', { reason: 'no_line_of_sight', bulletId, enemyId, clientId });
+        return { valid: false, reason: 'No line of sight', bulletId, enemyId };
       }
     }
 
@@ -523,18 +495,11 @@ export default class CollisionManager {
       this.enemyManager.width[enemyIndex],
       this.enemyManager.height[enemyIndex]
     )) {
-      console.log(`[SERVER] ❌ VALIDATION FAILED: No collision detected | ` +
-                 `Bullet pos: (${bulletPos.x.toFixed(2)}, ${bulletPos.y.toFixed(2)}), ` +
-                 `Enemy pos: (${enemyPos.x.toFixed(2)}, ${enemyPos.y.toFixed(2)})`);
-      return {
-        valid: false,
-        reason: 'No collision detected',
-        bulletId,
-        enemyId
-      };
+      if (this.fileLogger) this.fileLogger.collisionValidation('rejected', { reason: 'no_collision', bulletPos, enemyPos, bulletId, enemyId, clientId });
+      return { valid: false, reason: 'No collision detected', bulletId, enemyId };
     }
 
-    console.log(`[SERVER] ✅ VALIDATION SUCCESS: Processing collision between Bullet ${bulletId} and Enemy ${enemyId}`);
+    if (this.fileLogger) this.fileLogger.collisionValidation('valid', { bulletId, enemyId, clientId });
 
     // Collision is valid - process it and store result
     const result = this.processCollision(bulletIndex, enemyIndex, clientId);
@@ -559,11 +524,7 @@ export default class CollisionManager {
     // Get bullet and enemy details
     const bulletId = this.bulletManager.id[bulletIndex];
     const enemyId = this.enemyManager.id[enemyIndex];
-
     const enemyHealthBefore = this.enemyManager.health[enemyIndex];
-
-    console.log(`[SERVER] ⚔️ PROCESSING COLLISION: Bullet ${bulletId} hitting Enemy ${enemyId} | ` +
-               `Enemy health before: ${enemyHealthBefore}`);
 
     // Calculate damage
     const damage = this.bulletManager.damage ?
@@ -575,8 +536,9 @@ export default class CollisionManager {
       ? dmgResult.health
       : (typeof dmgResult === 'number' ? dmgResult : this.enemyManager.health[enemyIndex]);
 
-    console.log(`[SERVER] 💥 DAMAGE APPLIED: ${damage} damage | ` +
-               `Enemy ${enemyId} health: ${enemyHealthBefore} → ${remainingHealth}`);
+    if (this.fileLogger) {
+      this.fileLogger.bulletHit(bulletId, 'enemy', enemyId, damage, { healthBefore: enemyHealthBefore, healthAfter: remainingHealth });
+    }
 
     // Remove bullet and register
     if (this.bulletManager.markForRemoval) {
@@ -590,16 +552,13 @@ export default class CollisionManager {
       this.bulletManager.registerRemoval('entityHit');
     }
 
-    console.log(`[SERVER] 🔫 BULLET REMOVED: Bullet ${bulletId} marked for removal`);
-
     // Handle enemy death if needed
     let enemyKilled = false;
     if (remainingHealth <= 0) {
       enemyKilled = true;
-
-      console.log(`[SERVER] 💀 ENEMY KILLED: Enemy ${enemyId} has been defeated by client ${clientId}!`);
-
-      // Call enemy manager's death handler
+      if (this.fileLogger) {
+        this.fileLogger.logCollision('ENEMY_DEATH', { enemyId, killedBy: clientId });
+      }
       if (this.enemyManager.onDeath) {
         this.enemyManager.onDeath(enemyIndex, clientId);
       }

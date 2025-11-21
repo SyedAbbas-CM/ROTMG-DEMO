@@ -25,20 +25,23 @@ class FileLogger {
     this.currentLogFile = path.join(this.logsDir, `server-${timestamp}.log`);
     this.currentErrorFile = path.join(this.logsDir, `error-${timestamp}.log`);
     this.currentNetworkFile = path.join(this.logsDir, `network-${timestamp}.log`);
+    this.currentCollisionFile = path.join(this.logsDir, `collision-${timestamp}.log`);
 
     // Log streams
     this.logStream = null;
     this.errorStream = null;
     this.networkStream = null;
+    this.collisionStream = null;
 
     if (this.enabled) {
       this.initStreams();
       this.rotateOldLogs();
       console.log('[FileLogger] Initialized');
       console.log(`[FileLogger] Log files:`);
-      console.log(`  - General: ${this.currentLogFile}`);
-      console.log(`  - Errors:  ${this.currentErrorFile}`);
-      console.log(`  - Network: ${this.currentNetworkFile}`);
+      console.log(`  - General:   ${this.currentLogFile}`);
+      console.log(`  - Errors:    ${this.currentErrorFile}`);
+      console.log(`  - Network:   ${this.currentNetworkFile}`);
+      console.log(`  - Collision: ${this.currentCollisionFile}`);
     }
   }
 
@@ -46,11 +49,13 @@ class FileLogger {
     this.logStream = fs.createWriteStream(this.currentLogFile, { flags: 'a' });
     this.errorStream = fs.createWriteStream(this.currentErrorFile, { flags: 'a' });
     this.networkStream = fs.createWriteStream(this.currentNetworkFile, { flags: 'a' });
+    this.collisionStream = fs.createWriteStream(this.currentCollisionFile, { flags: 'a' });
 
     // Handle stream errors
     this.logStream.on('error', (err) => console.error('[FileLogger] Log stream error:', err));
     this.errorStream.on('error', (err) => console.error('[FileLogger] Error stream error:', err));
     this.networkStream.on('error', (err) => console.error('[FileLogger] Network stream error:', err));
+    this.collisionStream.on('error', (err) => console.error('[FileLogger] Collision stream error:', err));
   }
 
   rotateOldLogs() {
@@ -65,8 +70,8 @@ class FileLogger {
       .sort((a, b) => b.time - a.time);
 
     // Delete old logs beyond maxFiles
-    if (files.length > this.maxFiles * 3) { // 3 types of logs
-      files.slice(this.maxFiles * 3).forEach(file => {
+    if (files.length > this.maxFiles * 4) { // 4 types of logs (server, error, network, collision)
+      files.slice(this.maxFiles * 4).forEach(file => {
         try {
           fs.unlinkSync(file.path);
           console.log(`[FileLogger] Deleted old log: ${file.name}`);
@@ -146,6 +151,59 @@ class FileLogger {
     }
   }
 
+  logCollision(event, data) {
+    if (!this.enabled) return;
+
+    const timestamp = this.formatTimestamp();
+    const logLine = `[${timestamp}] [COLLISION] [${event}] ${JSON.stringify(data)}\n`;
+
+    try {
+      this.collisionStream.write(logLine);
+    } catch (err) {
+      console.error('[FileLogger] Failed to write collision log:', err);
+    }
+  }
+
+  // Collision-specific convenience methods
+  bulletHit(bulletId, targetType, targetId, damage, position) {
+    this.logCollision('BULLET_HIT', {
+      bulletId,
+      targetType, // 'enemy' or 'player'
+      targetId,
+      damage,
+      position,
+      timestamp: Date.now()
+    });
+  }
+
+  contactDamage(enemyId, playerId, damage, knockback, positions) {
+    this.logCollision('CONTACT_DAMAGE', {
+      enemyId,
+      playerId,
+      damage,
+      knockback,
+      positions,
+      timestamp: Date.now()
+    });
+  }
+
+  collisionCheck(checkType, entityCount, playerCount) {
+    this.logCollision('CHECK', {
+      checkType,
+      entityCount,
+      playerCount,
+      timestamp: Date.now()
+    });
+  }
+
+  collisionValidation(result, details) {
+    this.logCollision('VALIDATION', {
+      result, // 'valid', 'suspicious', 'rejected'
+      ...details,
+      timestamp: Date.now()
+    });
+  }
+
   // Convenience methods
   info(category, message, data) {
     this.log('INFO', category, message, data);
@@ -206,6 +264,7 @@ class FileLogger {
     if (this.logStream) this.logStream.end();
     if (this.errorStream) this.errorStream.end();
     if (this.networkStream) this.networkStream.end();
+    if (this.collisionStream) this.collisionStream.end();
   }
 
   close() {
