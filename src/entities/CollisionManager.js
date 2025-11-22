@@ -5,6 +5,8 @@
  * Handles collision detection and processing between entities
  */
 
+import CollisionValidator from './CollisionValidator.js';
+
 export default class CollisionManager {
   /**
    * Creates a collision manager
@@ -20,6 +22,9 @@ export default class CollisionManager {
     this.mapManager = mapManager;
     this.lagCompensation = lagCompensation;
     this.fileLogger = fileLogger;
+
+    // Initialize collision validator
+    this.collisionValidator = new CollisionValidator({ fileLogger });
 
     // Tracking processed collisions to avoid duplicates
     this.processedCollisions = new Map(); // collisionId -> timestamp
@@ -430,7 +435,7 @@ export default class CollisionManager {
    * @returns {Object} Validation result
    */
   validateCollision(data) {
-    const { bulletId, enemyId, timestamp, clientId } = data;
+    const { bulletId, enemyId, timestamp, clientId, playerPosition, playerRTT } = data;
 
     // Find bullet and enemy indices using IDs
     const bulletIndex = this.findBulletIndex(bulletId);
@@ -497,6 +502,28 @@ export default class CollisionManager {
     )) {
       if (this.fileLogger) this.fileLogger.collisionValidation('rejected', { reason: 'no_collision', bulletPos, enemyPos, bulletId, enemyId, clientId });
       return { valid: false, reason: 'No collision detected', bulletId, enemyId };
+    }
+
+    // Validate collision position if player data provided
+    if (playerPosition && this.collisionValidator && this.collisionValidator.enabled) {
+      const positionValidation = this.collisionValidator.validatePosition({
+        serverPosition: bulletPos,
+        clientPosition: playerPosition,
+        rtt: playerRTT || 0,
+        playerId: clientId,
+        collisionType: 'bullet_hit'
+      });
+
+      // In strict mode, reject invalid collisions
+      if (!positionValidation.valid && this.collisionValidator.mode === 'strict') {
+        return {
+          valid: false,
+          reason: 'Position validation failed',
+          bulletId,
+          enemyId,
+          details: positionValidation
+        };
+      }
     }
 
     if (this.fileLogger) this.fileLogger.collisionValidation('valid', { bulletId, enemyId, clientId });
