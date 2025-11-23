@@ -990,12 +990,14 @@ function spawnInitialUnits(soldierMgr) {
   // Spawn a small army formation
   const formations = [
     { x: 30, y: 30, type: 0, count: 8, team: 'blue' },   // Infantry
-    { x: 30, y: 40, type: 1, count: 6, team: 'blue' },   // Heavy Infantry  
+    { x: 30, y: 40, type: 1, count: 6, team: 'blue' },   // Heavy Infantry
     { x: 30, y: 50, type: 4, count: 10, team: 'blue' },  // Archers
-    
+
     { x: 170, y: 30, type: 2, count: 6, team: 'red' },   // Light Cavalry
     { x: 170, y: 40, type: 3, count: 4, team: 'red' },   // Heavy Cavalry
     { x: 170, y: 50, type: 5, count: 8, team: 'red' },   // Crossbowmen
+
+    { x: 100, y: 100, type: 6, count: 1, team: 'boss' }, // Boss Infantry
   ];
   
   formations.forEach(formation => {

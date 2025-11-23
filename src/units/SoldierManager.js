@@ -86,6 +86,11 @@ export default class SoldierManager {
              health: 75,  armor: 4,  speed: 50,  damage: 16, range: 200, mass: 75, stability: 45,
              sprite: { sheet: 'Mixed_Units', name: 'Mixed_Units_0_5', scale: 0.5 },
              tactical: { role: 'ranged', chargeBonus: 0.0, momentum: 0.7 }, projectileSpeed: 180 },
+
+        6: { name: 'Boss Infantry',   displayName: 'Boss Infantry',   category: 'boss',
+             health: 500, armor: 25, speed: 55,  damage: 40, range: 35, mass: 150, stability: 95,
+             sprite: { sheet: 'Mixed_Units', name: 'Mixed_Units_0_1', scale: 0.8 },
+             tactical: { role: 'boss', chargeBonus: 0.15, momentum: 2.5 } },
       };
     }
   
