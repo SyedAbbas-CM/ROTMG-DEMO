@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Bullet Pattern Visualizer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+        }
+        #container {
+            display: flex;
+            gap: 20px;
+        }
+        #canvas-container {
+            position: relative;
+        }
+        canvas {
+            border: 2px solid #444;
+            background: #000;
+        }
+        #controls {
+            background: #222;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 300px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.secondary {
+            background: #2196F3;
+        }
+        button.secondary:hover {
+            background: #0b7dda;
+        }
+        .stat {
+            margin: 10px 0;
+            padding: 8px;
+            background: #333;
+            border-radius: 4px;
+        }
+        .pattern-info {
+            margin: 15px 0;
+            padding: 10px;
+            background: #2a2a2a;
+            border-left: 3px solid #4CAF50;
+        }
+        h2 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .slider-container {
+            margin: 15px 0;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        #legend {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 AI Bullet Pattern Visualizer</h1>
+    <div id="container">
+        <div id="canvas-container">
+            <canvas id="canvas" width="800" height="800"></canvas>
+            <div id="legend">
+                <div style="color: #ff0">Boss (Center)</div>
+                <div style="color: #f00">Enemy Bullets</div>
+                <div style="color: #0ff">Intensity Map</div>
+            </div>
+        </div>
+        <div id="controls">
+            <h2>Pattern Controls</h2>
+
+            <button onclick="spawnRandomPattern()">🎲 Random Pattern</button>
+            <button onclick="spawnPatternByStyle('sparse')" class="secondary">Sparse</button>
+            <button onclick="spawnPatternByStyle('medium')" class="secondary">Medium</button>
+            <button onclick="spawnPatternByStyle('dense')" class="secondary">Dense</button>
+
+            <div class="slider-container">
+                <label>Spawn Threshold: <span id="thresholdValue">0.30</span></label>
+                <input type="range" id="threshold" min="0.1" max="0.6" step="0.05" value="0.3"
+                       oninput="updateThreshold(this.value)">
+            </div>
+
+            <div class="slider-container">
+                <label>Speed: <span id="speedValue">4.0</span> tiles/sec</label>
+                <input type="range" id="speed" min="2" max="10" step="0.5" value="4"
+                       oninput="updateSpeed(this.value)">
+            </div>
+
+            <div class="slider-container">
+                <label>Sparsity: <span id="sparsityValue">2</span></label>
+                <input type="range" id="sparsity" min="1" max="4" step="1" value="2"
+                       oninput="updateSparsity(this.value)">
+            </div>
+
+            <button onclick="clearBullets()">🗑️ Clear Bullets</button>
+            <button onclick="togglePause()" id="pauseBtn">⏸️ Pause</button>
+
+            <div class="pattern-info">
+                <strong>Current Pattern:</strong>
+                <div id="patternInfo">No pattern loaded</div>
+            </div>
+
+            <div class="stat">
+                <strong>Bullets:</strong> <span id="bulletCount">0</span>
+            </div>
+            <div class="stat">
+                <strong>FPS:</strong> <span id="fps">0</span>
+            </div>
+            <div class="stat">
+                <strong>Spawned:</strong> <span id="spawnedCount">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Mini BulletManager for visualization
+        class BulletManager {
+            constructor(maxBullets = 5000) {
+                this.maxBullets = maxBullets;
+                this.bulletCount = 0;
+                this.x = new Float32Array(maxBullets);
+                this.y = new Float32Array(maxBullets);
+                this.vx = new Float32Array(maxBullets);
+                this.vy = new Float32Array(maxBullets);
+                this.life = new Float32Array(maxBullets);
+                this.damage = new Float32Array(maxBullets);
+            }
+
+            addBullet(data) {
+                if (this.bulletCount >= this.maxBullets) return;
+                const i = this.bulletCount++;
+                this.x[i] = data.x;
+                this.y[i] = data.y;
+                this.vx[i] = data.vx;
+                this.vy[i] = data.vy;
+                this.life[i] = data.lifetime || 5.0;
+                this.damage[i] = data.damage || 10;
+            }
+
+            update(dt) {
+                let count = this.bulletCount;
+                for (let i = 0; i < count; i++) {
+                    this.x[i] += this.vx[i] * dt;
+                    this.y[i] += this.vy[i] * dt;
+                    this.life[i] -= dt;
+
+                    if (this.life[i] <= 0) {
+                        this.swapRemove(i);
+                        count--;
+                        i--;
+                    }
+                }
+                this.bulletCount = count;
+            }
+
+            swapRemove(index) {
+                const last = this.bulletCount - 1;
+                if (index !== last) {
+                    this.x[index] = this.x[last];
+                    this.y[index] = this.y[last];
+                    this.vx[index] = this.vx[last];
+                    this.vy[index] = this.vy[last];
+                    this.life[index] = this.life[last];
+                    this.damage[index] = this.damage[last];
+                }
+            }
+
+            clear() {
+                this.bulletCount = 0;
+            }
+        }
+
+        // Pattern adapter (simplified)
+        class PatternAdapter {
+            constructor(bulletManager) {
+                this.bulletManager = bulletManager;
+                this.config = {
+                    spawnThreshold: 0.3,
+                    spawnRadius: 20,
+                    baseSpeed: 4.0,
+                    sparsity: 2
+                };
+            }
+
+            spawnPattern(pattern, bossX, bossY) {
+                let count = 0;
+                const gridSize = 32;
+
+                for (let row = 0; row < gridSize; row += this.config.sparsity) {
+                    for (let col = 0; col < gridSize; col += this.config.sparsity) {
+                        const intensity = pattern[row][col][0];
+                        const direction = pattern[row][col][1];
+
+                        if (intensity < this.config.spawnThreshold) continue;
+
+                        const offsetX = ((col - gridSize/2) / (gridSize/2)) * this.config.spawnRadius;
+                        const offsetY = ((row - gridSize/2) / (gridSize/2)) * this.config.spawnRadius;
+
+                        const angle = direction * Math.PI * 2;
+                        const speed = this.config.baseSpeed * (0.8 + intensity * 0.4);
+
+                        this.bulletManager.addBullet({
+                            x: bossX + offsetX,
+                            y: bossY + offsetY,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            lifetime: 5.0,
+                            damage: Math.floor(10 * (0.5 + intensity))
+                        });
+
+                        count++;
+                    }
+                }
+                return count;
+            }
+        }
+
+        // Main application
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const bulletMgr = new BulletManager();
+        const adapter = new PatternAdapter(bulletMgr);
+
+        let patterns = [];
+        let currentPattern = null;
+        let isPaused = false;
+        let totalSpawned = 0;
+        let lastTime = Date.now();
+        let fps = 0;
+
+        // Coordinate system: 100 tiles = 800 pixels, so 1 tile = 8 pixels
+        const TILE_SIZE = 8;
+        const BOSS_X = 50; // tiles
+        const BOSS_Y = 50; // tiles
+
+        // Load patterns
+        fetch('/ml/visualizations/pattern_library.json')
+            .then(r => r.json())
+            .then(data => {
+                patterns = data.patterns;
+                console.log(`Loaded ${patterns.length} patterns`);
+                document.getElementById('patternInfo').textContent = `${patterns.length} patterns ready`;
+            })
+            .catch(err => {
+                console.error('Failed to load patterns:', err);
+                document.getElementById('patternInfo').textContent = 'Failed to load patterns';
+            });
+
+        // Functions
+        window.spawnRandomPattern = () => {
+            if (patterns.length === 0) return;
+            const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+            spawnPattern(pattern);
+        };
+
+        window.spawnPatternByStyle = (style) => {
+            if (patterns.length === 0) return;
+            // Simple density-based selection
+            let filtered;
+            if (style === 'sparse') {
+                filtered = patterns.filter(p => p.stats.density_30 < 0.15);
+            } else if (style === 'medium') {
+                filtered = patterns.filter(p => p.stats.density_30 >= 0.15 && p.stats.density_30 < 0.30);
+            } else {
+                filtered = patterns.filter(p => p.stats.density_30 >= 0.30);
+            }
+
+            if (filtered.length === 0) filtered = patterns;
+            const pattern = filtered[Math.floor(Math.random() * filtered.length)];
+            spawnPattern(pattern);
+        };
+
+        function spawnPattern(pattern) {
+            currentPattern = pattern;
+            const count = adapter.spawnPattern(
+                convertToArray(pattern),
+                BOSS_X,
+                BOSS_Y
+            );
+            totalSpawned += count;
+
+            document.getElementById('patternInfo').innerHTML = `
+                ID: ${pattern.id}<br>
+                Density: ${(pattern.stats.density_30 * 100).toFixed(1)}%<br>
+                Spawned: ${count} bullets
+            `;
+        }
+
+        function convertToArray(pattern) {
+            const arr = [];
+            for (let row = 0; row < 32; row++) {
+                const rowData = [];
+                for (let col = 0; col < 32; col++) {
+                    rowData.push([
+                        pattern.intensity[row][col],
+                        pattern.direction[row][col]
+                    ]);
+                }
+                arr.push(rowData);
+            }
+            return arr;
+        }
+
+        window.clearBullets = () => {
+            bulletMgr.clear();
+        };
+
+        window.togglePause = () => {
+            isPaused = !isPaused;
+            document.getElementById('pauseBtn').textContent = isPaused ? '▶️ Resume' : '⏸️ Pause';
+        };
+
+        window.updateThreshold = (val) => {
+            adapter.config.spawnThreshold = parseFloat(val);
+            document.getElementById('thresholdValue').textContent = val;
+        };
+
+        window.updateSpeed = (val) => {
+            adapter.config.baseSpeed = parseFloat(val);
+            document.getElementById('speedValue').textContent = val;
+        };
+
+        window.updateSparsity = (val) => {
+            adapter.config.sparsity = parseInt(val);
+            document.getElementById('sparsityValue').textContent = val;
+        };
+
+        // Render loop
+        function render() {
+            const now = Date.now();
+            const dt = (now - lastTime) / 1000;
+            lastTime = now;
+
+            fps = Math.round(1 / dt);
+
+            if (!isPaused) {
+                bulletMgr.update(dt);
+            }
+
+            // Clear
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 100; i += 10) {
+                const px = i * TILE_SIZE;
+                ctx.beginPath();
+                ctx.moveTo(px, 0);
+                ctx.lineTo(px, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, px);
+                ctx.lineTo(canvas.width, px);
+                ctx.stroke();
+            }
+
+            // Draw boss
+            ctx.fillStyle = '#ff0';
+            ctx.beginPath();
+            ctx.arc(BOSS_X * TILE_SIZE, BOSS_Y * TILE_SIZE, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw bullets
+            ctx.fillStyle = '#f00';
+            for (let i = 0; i < bulletMgr.bulletCount; i++) {
+                const x = bulletMgr.x[i] * TILE_SIZE;
+                const y = bulletMgr.y[i] * TILE_SIZE;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Update UI
+            document.getElementById('bulletCount').textContent = bulletMgr.bulletCount;
+            document.getElementById('fps').textContent = fps;
+            document.getElementById('spawnedCount').textContent = totalSpawned;
+
+            requestAnimationFrame(render);
+        }
+
+        render();
+    </script>
+</body>
+</html>

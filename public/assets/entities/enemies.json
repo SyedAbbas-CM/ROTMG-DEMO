@@ -143,5 +143,23 @@
       "damage": 8
     },
     "ai": { "behaviorTree": "BasicChaseAndShoot" }
+  },
+  {
+    "id": "enemy_8",
+    "name": "AI Pattern Boss",
+    "sprite": "Mega_Cavalry",
+    "hp": 5000,
+    "speed": 2,
+    "width": 3,
+    "height": 3,
+    "renderScale": 8,
+    "contactDamage": 0,
+    "knockbackForce": 0,
+    "ai": {
+      "behaviorTree": "NoAttack",
+      "behaviors": [
+        { "type": "Wander", "speed": 2, "wanderRadius": 10 }
+      ]
+    }
   }
 ] 

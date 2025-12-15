@@ -76,7 +76,7 @@ export default class LLMBossController {
     if (this.pendingLLM) return; // Only one in-flight call allowed
     if (this.cooldown <= 0) {
       const snap = this.bossMgr.buildSnapshot(players, this.bulletMgr, this.tickCount);
-      import('../llm/llmLogger.js').then(m=>m.logLLM({type:'snapshot',tick:this.tickCount,data:snap})).catch(()=>{});
+      import('./llm/llmLogger.js').then(m=>m.logLLM({type:'snapshot',tick:this.tickCount,data:snap})).catch(()=>{});
       if (!snap) return;
       // Attach recent feedback memory (last 5 rated decisions)
       snap.feedback = this.feedback.slice(-5);
@@ -112,7 +112,7 @@ export default class LLMBossController {
           const sentAt = Date.now();
           const { json: res, deltaMs, tokens } = await provider.generate(snap);
           // Log raw LLM actions/explanation (if any)
-          import('../llm/llmLogger.js').then(m=>m.logLLM({type:'llm_res',res})).catch(()=>{});
+          import('./llm/llmLogger.js').then(m=>m.logLLM({type:'llm_res',res})).catch(()=>{});
 
           // Persist raw output for later analysis
           logLLM({ ts: sentAt, snapshot: snap, result: res, deltaMs, tokens });
@@ -151,7 +151,7 @@ export default class LLMBossController {
   async _ingestPlan(plan) {
     if (!plan) return;
     if (plan.explain) {
-      import('../llm/llmLogger.js').then(m=>m.logLLM({type:'explain',text:plan.explain})).catch(()=>{});
+      import('./llm/llmLogger.js').then(m=>m.logLLM({type:'explain',text:plan.explain})).catch(()=>{});
       delete plan.explain;
     }
 
@@ -168,7 +168,7 @@ export default class LLMBossController {
     this.feedback.push({ planId, ts: Date.now(), rating, plan: plan.actions?.map(a=>a.ability) });
 
     // Persist rating for RLHF dataset
-    import('../llm/llmLogger.js').then(m=>m.logLLMRating(planId, rating));
+    import('./llm/llmLogger.js').then(m=>m.logLLMRating(planId, rating));
 
     // Handle dynamic capability creation first
     if (plan.define_component && plan.define_component.manifest && plan.define_component.impl) {

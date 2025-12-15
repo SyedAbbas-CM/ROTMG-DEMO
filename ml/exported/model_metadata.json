@@ -1,0 +1,22 @@
+{
+  "model_type": "bullet_pattern_decoder",
+  "framework": "pytorch",
+  "export_format": "onnx",
+  "opset_version": 11,
+  "input_shape": [
+    1,
+    32
+  ],
+  "output_shape": [
+    1,
+    2,
+    32,
+    32
+  ],
+  "latent_dim": 32,
+  "parameters": 57170,
+  "file_size_kb": 11.4599609375,
+  "deployment_target": "jetson_nano",
+  "pytorch_model": "models/pattern_decoder_20251125_015324.pth",
+  "onnx_model": "exported/pattern_decoder.onnx"
+}

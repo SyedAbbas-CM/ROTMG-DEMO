@@ -292,8 +292,9 @@ export class MapManager {
         }
 
         // Store sprite metadata in tile definition for client rendering
+        // Use renderer-compatible sprite name format for fallback when biome coordinates fail
         const def = {
-          spriteName: tileSelection.tile.name,
+          spriteName: `${tileSelection.tile.atlas}_sprite_${tileSelection.tile.row}_${tileSelection.tile.col}`,
           atlas: tileSelection.tile.atlas,
           spriteRow: tileSelection.tile.row,
           spriteCol: tileSelection.tile.col,

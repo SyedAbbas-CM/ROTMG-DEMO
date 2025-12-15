@@ -1,0 +1,19 @@
+[Unit]
+Description=ROTMG Game Server
+After=network.target
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/opt/ROTMG-DEMO
+Environment=NODE_ENV=production
+Environment=PORT=4000
+ExecStart=/usr/bin/node Server.js
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=rotmg-server
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+{
+  "latent_dim": 32,
+  "patch_size": 32,
+  "total_params": 220066,
+  "decoder_params": 57170,
+  "timestamp": "20251125_015324",
+  "final_train_loss": 80.37788227291927,
+  "final_val_loss": 78.76643783981736,
+  "best_val_loss": 78.61342187829919,
+  "device": "mps"
+}

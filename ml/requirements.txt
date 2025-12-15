@@ -1,0 +1,9 @@
+tensorflow==2.13.0
+tensorflow-macos==2.13.0; sys_platform == 'darwin' and platform_machine == 'arm64'
+tensorflow-metal==1.0.1; sys_platform == 'darwin' and platform_machine == 'arm64'
+numpy==1.24.3
+opencv-python==4.8.0.74
+matplotlib==3.7.2
+tf2onnx==1.15.1
+onnx==1.14.1
+onnxruntime==1.15.1

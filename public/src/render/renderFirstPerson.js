@@ -744,25 +744,14 @@ function updateVisibleTiles() {
         if (tile.spriteX !== null && tile.spriteY !== null &&
             tile.spriteX !== undefined && tile.spriteY !== undefined) {
 
-          // CRITICAL FIX: Convert row/col indices to pixel coordinates
-          // Server sends row/col (0-15 range), but createBiomeTileMaterial needs pixels (0-120 range)
-          let pixelX = tile.spriteX;
-          let pixelY = tile.spriteY;
-
-          // If values are small (< 20), assume they're row/col indices and convert to pixels
-          // lofi_environment uses 8x8 pixel sprites
-          if (tile.spriteX < 20 && tile.spriteY < 20) {
-            pixelX = tile.spriteX * 8;  // Convert col to pixel X
-            pixelY = tile.spriteY * 8;  // Convert row to pixel Y
-
-            if (Math.random() < 0.01) {
-              console.log(`[FirstPerson] Converted row/col (${tile.spriteX},${tile.spriteY}) to pixels (${pixelX},${pixelY})`);
-            }
-          }
+          // Server already sends pixel coordinates (TileRegistry.js converts row/col to pixels)
+          // No conversion needed - use values directly
+          const pixelX = tile.spriteX;
+          const pixelY = tile.spriteY;
 
           // DEBUG: Log biome tile detection (increased frequency for debugging)
           if (Math.random() < 0.05) {
-            console.log(`[FirstPerson] 🎨 Biome tile at (${tileX},${tileY}): spriteX=${tile.spriteX}, spriteY=${tile.spriteY}, pixelX=${pixelX}, pixelY=${pixelY}, type=${tile.type}`);
+            console.log(`[FirstPerson] 🎨 Biome tile at (${tileX},${tileY}): pixelX=${pixelX}, pixelY=${pixelY}, type=${tile.type}`);
           }
 
           // Use biome-specific InstancedMesh with PIXEL coordinates

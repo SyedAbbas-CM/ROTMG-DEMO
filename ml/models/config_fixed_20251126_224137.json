@@ -1,0 +1,11 @@
+{
+  "latent_dim": 32,
+  "patch_size": 32,
+  "total_params": 577154,
+  "decoder_params": 311138,
+  "timestamp": "20251126_224137",
+  "architecture": "fixed_with_global_pooling",
+  "final_train_loss": 76.39038282523126,
+  "final_val_loss": 79.53730742995803,
+  "best_val_loss": 79.26843581328521
+}

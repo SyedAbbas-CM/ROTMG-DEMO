@@ -58,7 +58,27 @@
       "Bash(git push:*)",
       "Bash(ssh root@94.130.106.5 \"cd /opt/ROTMG-DEMO && git pull origin main\")",
       "Bash(ssh-keygen:*)",
-      "Bash(ssh -o StrictHostKeyChecking=no root@94.130.106.5 \"cd /opt/ROTMG-DEMO && git pull origin main\")"
+      "Bash(ssh -o StrictHostKeyChecking=no root@94.130.106.5 \"cd /opt/ROTMG-DEMO && git pull origin main\")",
+      "Bash(for dir in cracked spiralled swirly veined zigzagged woven cobwebbed bumpy)",
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(vm_stat:*)",
+      "Bash(arp:*)",
+      "Bash(scp:*)",
+      "Bash(tee:*)",
+      "Bash(ps:*)",
+      "Bash(for ip in 192.168.0.201 192.168.0.202)",
+      "Bash(do echo \"=== $ip ===\")",
+      "Bash(/dev/null)",
+      "Bash(nmap:*)",
+      "Bash(do echo '=== $ip ===')",
+      "Bash(mkdir:*)",
+      "Bash(node-gyp --version)",
+      "Bash(npm install:*)",
+      "Bash(npx node-gyp:*)",
+      "Bash(nc:*)"
     ],
     "deny": []
   }

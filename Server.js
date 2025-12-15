@@ -10,7 +10,7 @@ import fs from 'fs';
 import { MapManager } from './src/world/MapManager.js';
 import OVERWORLD_CONFIG from './src/world/OverworldConfig.js';
 import { SetPieceManager } from './src/world/SetPieceManager.js';
-import { BinaryPacket, MessageType } from './common/protocol.js';
+import { BinaryPacket, MessageType, ProtocolStats } from './common/protocol-native.js';
 import BulletManager from './src/entities/BulletManager.js';
 import EnemyManager from './src/entities/EnemyManager.js';
 import CollisionManager from './src/entities/CollisionManager.js';
@@ -27,6 +27,7 @@ import UnitNetworkAdapter from './src/units/UnitNetworkAdaptor.js';
 import { CommandSystem } from './src/CommandSystem.js';
 // ---- Hyper-Boss LLM stack ----
 import { BossManager, LLMBossController, BossSpeechController } from './server/world/llm/index.js';
+import { AIPatternBoss } from './src/boss/AIPatternBoss.js';
 import './src/telemetry/index.js'; // OpenTelemetry setup
 import llmRoutes from './src/routes/llmRoutes.js';
 import hotReloadRoutes from './src/routes/hotReloadRoutes.js';
@@ -74,6 +75,7 @@ globalThis.DEBUG = DEBUG;
 let bossManager       = null;
 let llmBossController = null;
 let bossSpeechCtrl    = null;
+let aiPatternBoss     = null;
 
 // -----------------------------------------------------------------------------
 // Feature flags
@@ -1722,6 +1724,12 @@ function updateGame() {
     // ---------- Boss logic first so mirroring happens before physics & collisions ----------
     if (bossManager && mapId === gameState.mapId) {
       bossManager.tick(deltaTime, ctx.bulletMgr);
+
+      // AI Pattern attacks
+      if (aiPatternBoss) {
+        aiPatternBoss.update(deltaTime);
+      }
+
       if (llmBossController) llmBossController.tick(deltaTime, players).catch(()=>{});
       if (bossSpeechCtrl)    bossSpeechCtrl.tick(deltaTime, players).catch(()=>{});
     }
@@ -1993,11 +2001,24 @@ function tryListen(port, attemptsLeft = 5) {
   const onListening = () => {
     const actualPort = server.address().port;
     console.log(`[SERVER] Running on port ${actualPort}`);
+    console.log(`[SERVER] Protocol: ${ProtocolStats.implementation}`);
+    if (ProtocolStats.usingNative) {
+      console.log(`[SERVER] ⚡ Performance: 2x faster message encoding/decoding`);
+    }
 
     // Initialize boss AI for the main map
     try {
       const mainMapCtx = getWorldCtx(gameState.mapId);
-      bossManager = new BossManager();
+      bossManager = new BossManager(mainMapCtx?.enemyMgr);
+
+      // Initialize AI Pattern Boss system
+      try {
+        aiPatternBoss = new AIPatternBoss(bossManager, mainMapCtx?.bulletMgr);
+        console.log('[SERVER] AI Pattern Boss system enabled');
+      } catch (aiErr) {
+        console.warn('[SERVER] AI Pattern Boss failed to initialize:', aiErr.message);
+        console.log('[SERVER] Boss will use fallback patterns only');
+      }
 
       // Build LLM controller config from environment variables
       const llmConfig = {
@@ -2044,6 +2065,12 @@ function tryListen(port, attemptsLeft = 5) {
         adaptiveFrequency: llmConfig.adaptiveFrequency,
         strategicEnabled: llmConfig.strategicEnabled
       });
+
+      // Spawn test boss with AI patterns
+      if (bossManager && mainMapCtx?.enemyMgr) {
+        const bossId = bossManager.spawnBoss('enemy_8', 50, 50, gameState.mapId);
+        console.log('[SERVER] AI Pattern Boss spawned at (50, 50):', bossId);
+      }
     } catch (err) {
       console.error('[SERVER] Failed to initialize boss AI:', err);
     }

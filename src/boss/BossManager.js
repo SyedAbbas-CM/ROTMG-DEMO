@@ -97,33 +97,32 @@ export default class BossManager {
         this.hp[i] = Math.max(0, Math.min(1, h / mh));
       }
 
-      // Baseline automatic fire (cone AOE every 3 s)
-      this.cooldownAOE[i] -= dt;
-      if (this.cooldownAOE[i] <= 0) {
-        this.cooldownAOE[i] = 3.0;   // hard-coded for MVP
-        // Baseline radial burst 12 bullets
-        if (bulletMgr && typeof bulletMgr.addBullet === 'function') {
-          const projectiles = 12;
-          const speed = 6;
-          const twoPi = Math.PI * 2;
-          for (let p = 0; p < projectiles; p++) {
-            const theta = (p / projectiles) * twoPi;
-            const eid = this.enemyIndex[i] >= 0 ? this.enemyMgr.id[this.enemyIndex[i]] : this.id[i];
-            bulletMgr.addBullet({
-              x: this.x[i],
-              y: this.y[i],
-              vx: Math.cos(theta) * speed,
-              vy: Math.sin(theta) * speed,
-              ownerId: eid,
-              damage: 8,
-              width: 0.6,
-              height: 0.6,
-              spriteName: null,
-              worldId: this.worldId[i]
-            });
-          }
-        }
-      }
+      // Baseline automatic fire DISABLED - using AI patterns instead
+      // this.cooldownAOE[i] -= dt;
+      // if (this.cooldownAOE[i] <= 0) {
+      //   this.cooldownAOE[i] = 3.0;
+      //   if (bulletMgr && typeof bulletMgr.addBullet === 'function') {
+      //     const projectiles = 12;
+      //     const speed = 6;
+      //     const twoPi = Math.PI * 2;
+      //     for (let p = 0; p < projectiles; p++) {
+      //       const theta = (p / projectiles) * twoPi;
+      //       const eid = this.enemyIndex[i] >= 0 ? this.enemyMgr.id[this.enemyIndex[i]] : this.id[i];
+      //       bulletMgr.addBullet({
+      //         x: this.x[i],
+      //         y: this.y[i],
+      //         vx: Math.cos(theta) * speed,
+      //         vy: Math.sin(theta) * speed,
+      //         ownerId: eid,
+      //         damage: 8,
+      //         width: 0.6,
+      //         height: 0.6,
+      //         spriteName: null,
+      //         worldId: this.worldId[i]
+      //       });
+      //     }
+      //   }
+      // }
 
       // TODO: other baseline updates (movement, dash cooldown etc.)
     }

@@ -45,8 +45,8 @@ export default class BehaviorSystem {
     // Type 4: Heavy Infantry - defensive, chases when close, rages when damaged
     this.registerBehaviorTemplate(4, this.createDefensiveHeavyBehavior());
 
-    // Type 5: Cavalry - charges with velocity phases, limited turning when fast
-    this.registerBehaviorTemplate(5, this.createCavalryBehavior());
+    // Type 5: AI Pattern Boss - wander only, no attacks (attacks handled by AIPatternBoss)
+    this.registerBehaviorTemplate(5, this.createWanderOnlyBehavior());
 
     // Type 6: Charging Shooter - charges while shooting rapidly
     this.registerBehaviorTemplate(6, this.createChargingShooterBehavior());
@@ -501,6 +501,19 @@ export default class BehaviorSystem {
     });
 
     return idleState;
+  }
+
+  /**
+   * Create behavior template for Wander-Only (AI Pattern Boss - Type 5)
+   * No attacks - attacks are handled by AIPatternBoss system
+   */
+  createWanderOnlyBehavior() {
+    // Single state that just wanders, no transitions, no attacks
+    const wanderState = new BehaviorState('wander', [
+      new Behaviors.Wander(1.0) // Normal wandering speed
+    ]);
+
+    return wanderState;
   }
 
   /**
