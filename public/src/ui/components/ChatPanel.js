@@ -376,30 +376,23 @@ export class ChatPanel extends UIComponent {
    * @param {Object} data - Message data from server
    */
   receiveChatFromServer(data) {
-    if (!data || !data.message) {
-      console.warn('Received invalid chat data from server');
+    // Server sends { sender, text, senderId, timestamp }
+    const messageText = data.text || data.message;
+    if (!data || !messageText) {
+      console.warn('Received invalid chat data from server:', data);
       return;
     }
-    
-    // Log detailed diagnostic info
-    console.log('Chat source info:', {
-      messageFromClientId: data.clientId,
-      ourClientId: this.gameState.clientId,
-      isSelf: data.isOwnMessage === true,
-      senderName: data.sender,
-      message: data.message
-    });
-    
-    // Create message object from server data - use exact sender name from server
+
+    // Create message object from server data
     const messageObj = {
-      id: data.id,
-      text: data.message,
+      id: data.id || Date.now(),
+      text: messageText,
       sender: data.sender || 'Unknown',
       channel: data.channel || 'All',
       type: data.type || 'player',
       timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
-      clientId: data.clientId, // Keep clientId for styling our own messages
-      isOwnMessage: data.isOwnMessage === true // Flag from server if this is our message
+      clientId: data.senderId || data.clientId,
+      isOwnMessage: data.senderId === this.gameState.clientId
     };
     
     console.log('Received chat message from server:', messageObj);
