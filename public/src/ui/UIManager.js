@@ -538,6 +538,8 @@ let uiManager = null;
 export function initUIManager(gameState) {
   if (!uiManager) {
     uiManager = new UIManager(gameState);
+    // Expose globally for chat message routing
+    window.uiManager = uiManager;
   }
   return uiManager;
 }

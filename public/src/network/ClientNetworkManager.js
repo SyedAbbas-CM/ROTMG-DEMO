@@ -775,33 +775,26 @@ export class ClientNetworkManager {
                 }
         };
         
-        // Add chat message handler only if socket.on is available
-        try {
-            // Use the CHAT_MESSAGE message type constant (90) instead of 'chat' string
-            this.handlers[MessageType.CHAT_MESSAGE] = (data) => {
-                console.log('Received chat message:', data);
-                
-                // Call any registered chat handlers
-                if (this.handlers.chat) {
-                    this.handlers.chat(data);
-                }
-                
-                // Add message to UI if available
-                if (this.game && this.game.uiManager) {
-                    // Format message properly for UI manager
-                    const messageType = data.type || (data.channel === 'system' ? 'system' : 'player');
-                    this.game.uiManager.addChatMessage(
-                        data.message,
-                        messageType,
-                        data.sender || 'Unknown'
-                    );
-                }
-            };
-            
-            console.log('Chat message handler registered for type:', MessageType.CHAT_MESSAGE);
-        } catch (error) {
-            console.error('Error setting up chat message handler:', error);
-        }
+        // Chat message handler - forward to ChatPanel immediately
+        this.handlers[MessageType.CHAT_MESSAGE] = (data) => {
+            const messageText = data.text || data.message;
+
+            // Directly call ChatPanel if available (most reliable)
+            if (window.uiManager?.components?.chatPanel?.receiveChatFromServer) {
+                window.uiManager.components.chatPanel.receiveChatFromServer(data);
+            }
+
+            // Also try game.uiManager path
+            if (this.game?.uiManager?.components?.chatPanel?.receiveChatFromServer) {
+                this.game.uiManager.components.chatPanel.receiveChatFromServer(data);
+            }
+
+            // Legacy: Add to UI manager if available
+            if (this.game?.uiManager?.addChatMessage) {
+                const messageType = data.type || 'player';
+                this.game.uiManager.addChatMessage(messageText, messageType, data.sender || 'Unknown');
+            }
+        };
 
         // Handle authoritative world switch from server
         this.handlers[MessageType.WORLD_SWITCH] = (data) => {
