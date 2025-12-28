@@ -770,8 +770,12 @@ async function handlePlayerRespawn(clientId) {
     worldId: mapId,
     lastUpdate: Date.now(),
     isDead: false,
-    // No death metadata - this is a fresh character
+    positionHistory: new CircularBuffer(10), // Required for lag compensation
+    rtt: 50 // Default RTT
   };
+
+  // Initialize position history with spawn position
+  newPlayer.positionHistory.add(spawnX, spawnY, Date.now());
 
   // Re-add to clients Map with the new player object
   clients.set(clientId, {
