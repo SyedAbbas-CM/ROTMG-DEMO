@@ -1249,20 +1249,29 @@ export class ClientNetworkManager {
     sendShoot(bulletData) {
         // Block shooting if player is dead
         if (window.gameState && window.gameState.character && window.gameState.character.isDead) {
-            console.log('[CLIENT] 🚫 Blocked sendShoot - character is dead');
             return false;
         }
 
-        // SUPER VISIBLE: Change title to prove this function is called
-        document.title = `📤 NETWORK SEND! ${bulletData.x.toFixed(1)}`;
-        // DIAGNOSTIC: Log what we're about to send AND what gameState.character contains
-        console.log(`🔫 [NETWORK SEND] About to send shoot:`, {
-            bulletData,
-            characterPos: {
-                x: window.gameState?.character?.x,
-                y: window.gameState?.character?.y
-            }
-        });
+        // CLIENT-SIDE PREDICTION: Create local bullet immediately for instant feedback
+        const bulletManager = window.bulletManager || this.game?.bulletManager;
+        if (bulletManager && typeof bulletManager.addBullet === 'function') {
+            const localBulletId = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const vx = Math.cos(bulletData.angle) * bulletData.speed;
+            const vy = Math.sin(bulletData.angle) * bulletData.speed;
+
+            bulletManager.addBullet({
+                id: localBulletId,
+                x: bulletData.x,
+                y: bulletData.y,
+                vx: vx,
+                vy: vy,
+                damage: bulletData.damage || 10,
+                ownerId: this.clientId,
+                life: 2.0, // 2 second lifetime
+                isLocal: true
+            });
+        }
+
         return this.send(MessageType.BULLET_CREATE, bulletData);
     }
     
@@ -1381,18 +1390,17 @@ export class ClientNetworkManager {
             console.warn('Cannot send chat message: Not connected');
             return false;
         }
-        
+
         try {
             // Make sure socket exists before using it
             if (!this.socket) {
                 console.error('Cannot send chat message: Socket not initialized');
                 return false;
             }
-            
-            // Use MessageType.CHAT_MESSAGE (90) instead of the string 'chat'
-            // This ensures correct binary packet encoding
-            return this.send(MessageType.CHAT_MESSAGE, {
-                message: chatData.message,
+
+            // Use MessageType.PLAYER_TEXT - server expects { text: "..." }
+            return this.send(MessageType.PLAYER_TEXT, {
+                text: chatData.message,
                 channel: chatData.channel || 'All',
                 timestamp: Date.now()
             });
