@@ -64,11 +64,13 @@ export class MovementValidator {
     const distance = Math.sqrt(dx * dx + dy * dy);
     const timeDelta = (timestamp - playerState.lastTimestamp) / 1000; // seconds
 
-    // Ignore if time delta is too small or negative (clock skew)
-    if (timeDelta <= 0 || timeDelta > 1.0) {
+    // Ignore if time delta is too small (< 16ms / 60fps) or negative (clock skew)
+    // Small timeDelta causes false positives: 0.01 tiles / 0.001s = 10 tiles/sec
+    const MIN_TIME_DELTA = 0.016; // 16ms minimum (~60fps)
+    if (timeDelta <= MIN_TIME_DELTA || timeDelta > 1.0) {
       playerState.lastPosition = { x: newX, y: newY };
       playerState.lastTimestamp = timestamp;
-      return { valid: true, warnings: ['Invalid time delta'] };
+      return { valid: true, warnings: [] }; // Don't warn on normal frame times
     }
 
     // Check for teleportation (instant large distance)
@@ -143,13 +145,8 @@ export class MovementValidator {
     const speedViolationRate = (this.stats.speedViolations / this.stats.totalUpdates * 100).toFixed(2);
     const teleportViolationRate = (this.stats.teleportViolations / this.stats.totalUpdates * 100).toFixed(2);
 
-    console.log('\n========== MOVEMENT VALIDATION STATS ==========');
-    console.log(`Period: ${elapsed.toFixed(1)}s`);
-    console.log(`Total Updates: ${this.stats.totalUpdates}`);
-    console.log(`Speed Violations: ${this.stats.speedViolations} (${speedViolationRate}%)`);
-    console.log(`Teleport Violations: ${this.stats.teleportViolations} (${teleportViolationRate}%)`);
-    console.log(`Active Players: ${this.playerStates.size}`);
-    console.log('==============================================\n');
+    // Only log to file, not console (reduces terminal spam)
+    // console.log stats disabled - use FILE_LOGGER_ENABLED=true to see movement validation stats
 
     if (this.fileLogger) {
       this.fileLogger.info('MOVEMENT_VALIDATOR', 'Periodic stats', {

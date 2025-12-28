@@ -48,22 +48,24 @@ import { LAG_COMPENSATION, MOVEMENT_VALIDATION } from './common/constants.js';
 import { initTileSystem } from './src/assets/initTileSystem.js';
 // ---- World Spawn Configuration ----
 import { worldSpawns, getWorldSpawns } from './config/world-spawns.js';
+// ---- Player Classes & Abilities ----
+import { PlayerClasses, getClassById } from './src/player/PlayerClasses.js';
+import AbilitySystem from './src/player/AbilitySystem.js';
 
 // Debug flags to control logging
 const DEBUG = {
   // Keep everything silent by default – we'll re-enable specific areas when
   // we actually need them for diagnostics.
   mapCreation: false,
-  connections: true,
+  connections: false,  // Disable to reduce connection spam
   enemySpawns: false,
   collisions: false,
   playerPositions: false,
   activeCounts: false,
-  // Keep chunkRequests on so we can confirm the request-throttling fix works
-  chunkRequests: true,
+  chunkRequests: false, // Disable chunk request logging
   chat: false,
   playerMovement: false,
-  bulletEvents: true
+  bulletEvents: false   // Disable bullet event spam
 };
 
 // Expose debug flags globally so helper classes can reference them
@@ -87,6 +89,9 @@ let aiPatternBoss     = null;
 // exactly as it did originally – giving us the "classic" single-world session
 // until we are ready to test portals again.
 const ENABLE_FIXED_MAP_LOADING = false;
+
+// PVP: Allow players to damage each other with bullets
+const PVP_ENABLED = process.env.PVP_ENABLED === 'true';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -212,6 +217,9 @@ const movementValidator = new MovementValidator({
   logInterval: MOVEMENT_VALIDATION.LOG_INTERVAL_MS,
   fileLogger: fileLogger
 });
+
+// Initialize Ability System for player classes
+const abilitySystem = new AbilitySystem();
 
 // Log server startup
 if (fileLogger.enabled) {
@@ -564,7 +572,7 @@ function handleChunkRequest(clientId, data) {
 }
 
 // ---------------------------------------------------------------
-// Helper: Handle player shooting
+// Helper: Handle player shooting with rate limiting
 // ---------------------------------------------------------------
 function handlePlayerShoot(clientId, bulletData) {
   const client = clients.get(clientId);
@@ -572,9 +580,41 @@ function handlePlayerShoot(clientId, bulletData) {
 
   // BLOCK SHOOTING IF PLAYER IS DEAD
   if (client.player && client.player.isDead) {
-    console.log(`[SERVER] 🚫 Blocked shoot from dead player ${clientId}`);
+    return; // Silently block - no spam log
+  }
+
+  const now = Date.now();
+
+  // RATE LIMITING: Check bullet timestamps
+  let timestamps = playerBulletTimestamps.get(clientId);
+  if (!timestamps) {
+    timestamps = [];
+    playerBulletTimestamps.set(clientId, timestamps);
+  }
+
+  // Remove timestamps older than 1 second
+  const oneSecondAgo = now - 1000;
+  while (timestamps.length > 0 && timestamps[0] < oneSecondAgo) {
+    timestamps.shift();
+  }
+
+  // Check rate limit: max bullets per second
+  if (timestamps.length >= BULLET_RATE_LIMIT.MAX_BULLETS_PER_SECOND) {
+    // Rate limited - silently drop the bullet
     return;
   }
+
+  // Check minimum interval between bullets
+  if (timestamps.length > 0) {
+    const lastBulletTime = timestamps[timestamps.length - 1];
+    if (now - lastBulletTime < BULLET_RATE_LIMIT.MIN_BULLET_INTERVAL_MS) {
+      // Too fast - silently drop
+      return;
+    }
+  }
+
+  // Record this bullet timestamp
+  timestamps.push(now);
 
   const { x, y, angle, speed, damage } = bulletData;
   const mapId = client.mapId;
@@ -611,7 +651,7 @@ function handlePlayerShoot(clientId, bulletData) {
   // Add to bullet manager
   const bulletId = ctx.bulletMgr.addBullet(bullet);
 
-  if (DEBUG.bulletEvents || true) { // Always log for debugging
+  if (DEBUG.bulletEvents) {
     // DIAGNOSTIC: Show BOTH client position and actual bullet spawn position
     console.log(`[SERVER BULLET CREATE] ID: ${bulletId}, ClientPos: (${x.toFixed(4)}, ${y.toFixed(4)}), BulletPos: (${bulletX.toFixed(4)}, ${bulletY.toFixed(4)}), Tile: (${Math.floor(bulletX)}, ${Math.floor(bulletY)}), Owner: ${clientId}, Angle: ${angle.toFixed(2)}, Speed: ${speed.toFixed(2)}`);
   }
@@ -865,6 +905,43 @@ function handleUnitCommand(clientId, data) {
 }
 
 // ---------------------------------------------------------------
+// Helper: Handle player ability usage
+// ---------------------------------------------------------------
+function handleUseAbility(clientId, data) {
+  const client = clients.get(clientId);
+  if (!client || !client.player) return;
+
+  const player = client.player;
+  if (player.isDead) return;
+
+  const ability = player.ability;
+  if (!ability) {
+    sendToClient(client.socket, MessageType.ABILITY_RESULT, { success: false, reason: 'no_ability' });
+    return;
+  }
+
+  const mapId = client.mapId || gameState.mapId;
+  const ctx = getWorldCtx(mapId);
+
+  const result = abilitySystem.executeAbility(
+    clientId,
+    ability,
+    player,
+    ctx?.bulletMgr,
+    ctx?.enemyMgr,
+    mapId
+  );
+
+  // Send result back to client
+  sendToClient(client.socket, MessageType.ABILITY_RESULT, result);
+
+  // Broadcast ability effect to nearby players if needed
+  if (result.success) {
+    console.log(`[ABILITY] Player ${clientId} used ${ability.name}: ${JSON.stringify(result)}`);
+  }
+}
+
+// ---------------------------------------------------------------
 // Helper: Handle player chat/text messages
 // ---------------------------------------------------------------
 function handlePlayerText(clientId, data) {
@@ -917,10 +994,15 @@ function handleClientDisconnect(clientId) {
   if (!client) return;
 
   const mapId = client.mapId;
-  console.log(`[SERVER] Client disconnected: ${clientId} from map ${mapId}`);
+  if (DEBUG.connections) {
+    console.log(`[SERVER] Client disconnected: ${clientId} from map ${mapId}`);
+  }
 
   // Remove client from the map
   clients.delete(clientId);
+
+  // Cleanup bullet rate limiting tracking
+  playerBulletTimestamps.delete(clientId);
 
   // Cleanup movement validator tracking
   if (movementValidator) {
@@ -967,7 +1049,7 @@ function getWorldCtx(mapId) {
   if (!worldContexts.has(mapId)) {
     const bulletMgr = new BulletManager(10000);
     const enemyMgr  = new EnemyManager(1000);
-    const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager, lagCompensation, fileLogger);
+    const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager, lagCompensation, fileLogger, { pvpEnabled: PVP_ENABLED });
     const bagMgr    = new BagManager(500);
     
     // Initialize Unit Systems
@@ -1351,6 +1433,14 @@ console.log('[WORLD_CTX] Default world managers ready – bullets:', typeof bull
 const clients = new Map(); // clientId -> { socket, player, lastUpdate, mapId }
 let nextClientId = 1;
 
+// Rate limiting for bullet spam prevention
+const BULLET_RATE_LIMIT = {
+  MAX_BULLETS_PER_SECOND: 10,      // Max 10 bullets per second per player
+  MIN_BULLET_INTERVAL_MS: 100,      // Minimum 100ms between bullets
+  MAX_ACTIVE_BULLETS_PER_PLAYER: 50 // Max 50 active bullets per player
+};
+const playerBulletTimestamps = new Map(); // clientId -> [timestamps]
+
 // ---------------------------------------------------------------------------
 // Simple portal handler – teleports a player standing on a portal object
 function handlePortals() {
@@ -1502,9 +1592,11 @@ wss.on('connection', async (socket, req) => {
     networkLogger.onConnectionOpen(clientId, remoteAddress, 'ws');
   }
   
-  // Parse URL to check for map ID in query parameters
+  // Parse URL to check for map ID and class in query parameters
   const url = new URL(req.url, `http://${req.headers.host}`);
   const requestedMapId = url.searchParams.get('mapId');
+  const requestedClass = url.searchParams.get('class') || 'warrior';
+  const playerClass = getClassById(requestedClass);
   
   // Determine which map to use (requested or default)
   let useMapId = defaultMapId;
@@ -1527,19 +1619,32 @@ wss.on('connection', async (socket, req) => {
 
   console.log(`[SERVER] 🌍 New player ${clientId} spawning at random location: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)})`);
 
-  // Store client info
+  // Store client info with class-based stats
   clients.set(clientId, {
     socket,
     player: {
       id: clientId,
       x: spawnX,
       y: spawnY,
+      rotation: 0,
       inventory: new Array(20).fill(null),
-      health: 1000,
-      maxHealth: 1000,
+      // Class-based stats
+      class: playerClass.id,
+      className: playerClass.name,
+      health: playerClass.stats.health,
+      maxHealth: playerClass.stats.maxHealth,
+      mana: playerClass.stats.mana,
+      maxMana: playerClass.stats.maxMana,
+      damage: playerClass.stats.damage,
+      speed: playerClass.stats.speed,
+      defense: playerClass.stats.defense,
+      ability: playerClass.ability,
+      // World state
       worldId: useMapId,
       lastUpdate: Date.now(),
       isDead: false,
+      isStealthed: false,
+      isShielded: false,
       positionHistory: new CircularBuffer(10), // 300ms history at 30Hz
       rtt: 50 // Default RTT in milliseconds, updated from PING/PONG
     },
@@ -1656,6 +1761,8 @@ wss.on('connection', async (socket, req) => {
           handleUnitSpawn(clientId, packet.data);
         } else if(packet.type === MessageType.UNIT_COMMAND){
           handleUnitCommand(clientId, packet.data);
+        } else if(packet.type === MessageType.USE_ABILITY){
+          handleUseAbility(clientId, packet.data);
         } else {
           handleClientMessage(clientId, message);
         }
@@ -1699,6 +1806,19 @@ function updateGame() {
   const now = Date.now();
   const deltaTime = (now - gameState.lastUpdateTime) / 1000;
   gameState.lastUpdateTime = now;
+
+  // Update ability cooldowns and effects
+  abilitySystem.update(deltaTime);
+
+  // Check for expired effects on players
+  clients.forEach(({ player }, clientId) => {
+    if (player.isStealthed && !abilitySystem.hasEffect(clientId, 'stealth')) {
+      player.isStealthed = false;
+    }
+    if (player.isShielded && !abilitySystem.hasEffect(clientId, 'shield')) {
+      player.isShielded = false;
+    }
+  });
 
   // Log connected clients occasionally
   if (DEBUG.playerPositions && now % 30000 < 50) {
@@ -1746,9 +1866,6 @@ function updateGame() {
 
     // Check collisions and process results
     const collisionResults = ctx.collMgr.checkCollisions(deltaTime, players);
-    if (collisionResults && collisionResults.enemyContactCollisions && collisionResults.enemyContactCollisions.length > 0) {
-      console.log(`[SERVER COLLISION] Processing ${collisionResults.enemyContactCollisions.length} contact collision(s)`);
-    }
 
     // Process enemy contact collisions (damage + knockback)
     if (collisionResults && collisionResults.enemyContactCollisions) {
