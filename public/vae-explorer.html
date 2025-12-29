@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VAE Pattern Explorer</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #fff;
+            font-family: 'Consolas', monospace;
+        }
+        h1 { color: #0f0; margin: 0 0 15px 0; font-size: 20px; }
+        #container { display: flex; gap: 15px; height: calc(100vh - 80px); }
+
+        /* Left: Pattern visualization */
+        #viz-panel {
+            flex: 0 0 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        canvas { background: #000; border: 1px solid #333; }
+        #pattern-canvas { width: 400px; height: 400px; }
+        #bullet-canvas { width: 500px; height: 500px; }
+
+        /* Middle: Latent sliders */
+        #latent-panel {
+            flex: 0 0 350px;
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-y: auto;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+        }
+        .slider-row label {
+            width: 30px;
+            text-align: right;
+            font-size: 11px;
+            color: #888;
+        }
+        .slider-row input[type="range"] {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #333;
+            border-radius: 4px;
+        }
+        .slider-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #0f0;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .slider-row .value {
+            width: 50px;
+            font-size: 11px;
+            color: #0f0;
+        }
+
+        /* Right: Controls & Stats */
+        #control-panel {
+            flex: 1;
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        button {
+            background: #0a0;
+            color: #fff;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        button:hover { background: #0c0; }
+        button.secondary { background: #05a; }
+        button.secondary:hover { background: #07c; }
+        button.danger { background: #a00; }
+        button.danger:hover { background: #c00; }
+
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .stat-box {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #0f0;
+        }
+        .stat-box h3 { margin: 0 0 8px 0; font-size: 12px; color: #888; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 11px; }
+        .stat-grid .label { color: #666; }
+        .stat-grid .value { color: #0f0; text-align: right; }
+
+        #status {
+            padding: 8px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        #status.connected { border-left: 3px solid #0f0; }
+        #status.disconnected { border-left: 3px solid #f00; }
+
+        .channel-preview {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+        .channel-preview canvas {
+            width: 100%;
+            height: 60px;
+        }
+        .channel-label {
+            font-size: 9px;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>VAE Pattern Explorer - Infinite Patterns from 64D Latent Space</h1>
+
+    <div id="container">
+        <!-- Left: Visualization -->
+        <div id="viz-panel">
+            <div>
+                <strong>Pattern Field (32x32x8)</strong>
+                <canvas id="pattern-canvas" width="256" height="256"></canvas>
+            </div>
+            <div>
+                <strong>Bullet Simulation</strong>
+                <canvas id="bullet-canvas" width="500" height="500"></canvas>
+            </div>
+        </div>
+
+        <!-- Middle: Latent Sliders -->
+        <div id="latent-panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <strong>Latent Dimensions (64)</strong>
+                <button onclick="randomizeLatent()" style="padding:5px 10px;font-size:11px;">Randomize</button>
+            </div>
+            <div id="sliders"></div>
+        </div>
+
+        <!-- Right: Controls -->
+        <div id="control-panel">
+            <div id="status" class="disconnected">Connecting to VAE server...</div>
+
+            <div class="btn-row">
+                <button onclick="generatePattern()">Generate</button>
+                <button onclick="randomizeLatent()" class="secondary">Random</button>
+                <button onclick="firePattern()">Fire Bullets</button>
+                <button onclick="clearBullets()" class="danger">Clear</button>
+            </div>
+
+            <div class="btn-row">
+                <button onclick="storeLatent('A')" class="secondary">Store A</button>
+                <button onclick="storeLatent('B')" class="secondary">Store B</button>
+                <button onclick="interpolateAB()">A ↔ B</button>
+            </div>
+
+            <div class="slider-row">
+                <label>Interp:</label>
+                <input type="range" id="interp-slider" min="0" max="1" step="0.01" value="0"
+                       oninput="interpolate(this.value)">
+                <span class="value" id="interp-value">0.00</span>
+            </div>
+
+            <div class="stat-box">
+                <h3>Channel Statistics</h3>
+                <div id="channel-stats" class="stat-grid"></div>
+            </div>
+
+            <div class="stat-box">
+                <h3>Channel Previews</h3>
+                <div class="channel-preview" id="channel-previews"></div>
+            </div>
+
+            <div class="stat-box">
+                <h3>Simulation</h3>
+                <div class="stat-grid">
+                    <span class="label">Bullets:</span>
+                    <span class="value" id="bullet-count">0</span>
+                    <span class="label">FPS:</span>
+                    <span class="value" id="fps">0</span>
+                    <span class="label">Patterns:</span>
+                    <span class="value" id="pattern-count">0</span>
+                </div>
+            </div>
+
+            <div class="stat-box">
+                <h3>Bullet Config</h3>
+                <div class="slider-row">
+                    <label style="width:60px">Threshold:</label>
+                    <input type="range" id="threshold" min="0.05" max="0.5" step="0.05" value="0.2"
+                           oninput="updateConfig()">
+                    <span class="value" id="threshold-val">0.20</span>
+                </div>
+                <div class="slider-row">
+                    <label style="width:60px">Sparsity:</label>
+                    <input type="range" id="sparsity" min="1" max="4" step="1" value="2"
+                           oninput="updateConfig()">
+                    <span class="value" id="sparsity-val">2</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const VAE_SERVER = 'http://localhost:5001';
+        const LATENT_DIM = 64;
+
+        // State
+        let latent = new Array(LATENT_DIM).fill(0);
+        let currentPattern = null;
+        let storedLatents = { A: null, B: null };
+        let patternCount = 0;
+        let serverConnected = false;
+
+        // Canvases
+        const patternCanvas = document.getElementById('pattern-canvas');
+        const patternCtx = patternCanvas.getContext('2d');
+        const bulletCanvas = document.getElementById('bullet-canvas');
+        const bulletCtx = bulletCanvas.getContext('2d');
+
+        // Bullet simulation
+        const bullets = {
+            max: 5000,
+            count: 0,
+            x: new Float32Array(5000),
+            y: new Float32Array(5000),
+            vx: new Float32Array(5000),
+            vy: new Float32Array(5000),
+            ax: new Float32Array(5000),
+            ay: new Float32Array(5000),
+            angularVel: new Float32Array(5000),
+            waveAmp: new Float32Array(5000),
+            waveFreq: new Float32Array(5000),
+            wavePhase: new Float32Array(5000),
+            age: new Float32Array(5000),
+            life: new Float32Array(5000),
+            size: new Float32Array(5000)
+        };
+
+        let config = {
+            spawnThreshold: 0.2,
+            sparsity: 2
+        };
+
+        // Initialize sliders
+        function initSliders() {
+            const container = document.getElementById('sliders');
+            container.innerHTML = '';
+
+            for (let i = 0; i < LATENT_DIM; i++) {
+                const row = document.createElement('div');
+                row.className = 'slider-row';
+                row.innerHTML = `
+                    <label>${i}</label>
+                    <input type="range" min="-3" max="3" step="0.1" value="0"
+                           id="slider-${i}" oninput="updateLatent(${i}, this.value)">
+                    <span class="value" id="val-${i}">0.00</span>
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        function updateLatent(dim, value) {
+            latent[dim] = parseFloat(value);
+            document.getElementById(`val-${dim}`).textContent = parseFloat(value).toFixed(2);
+            generatePattern();
+        }
+
+        function randomizeLatent() {
+            for (let i = 0; i < LATENT_DIM; i++) {
+                const val = (Math.random() * 2 - 1) * 2; // -2 to 2
+                latent[i] = val;
+                document.getElementById(`slider-${i}`).value = val;
+                document.getElementById(`val-${i}`).textContent = val.toFixed(2);
+            }
+            generatePattern();
+        }
+
+        async function generatePattern() {
+            if (!serverConnected) return;
+
+            try {
+                const response = await fetch(`${VAE_SERVER}/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latent: latent })
+                });
+
+                const data = await response.json();
+                currentPattern = data.pattern;
+                patternCount++;
+
+                renderPattern(currentPattern);
+                updateStats(data.stats);
+                document.getElementById('pattern-count').textContent = patternCount;
+            } catch (e) {
+                console.error('Generate failed:', e);
+            }
+        }
+
+        function renderPattern(pattern) {
+            const cellSize = patternCanvas.width / 32;
+            patternCtx.clearRect(0, 0, patternCanvas.width, patternCanvas.height);
+
+            // Render spawn channel with direction arrows
+            for (let y = 0; y < 32; y++) {
+                for (let x = 0; x < 32; x++) {
+                    const spawn = pattern[y][x][0];
+                    const dir = pattern[y][x][1] * Math.PI * 2;
+
+                    // Background intensity
+                    const intensity = Math.floor(spawn * 255);
+                    patternCtx.fillStyle = `rgb(${intensity}, ${Math.floor(intensity * 0.3)}, 0)`;
+                    patternCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+
+                    // Direction arrow for high spawn cells
+                    if (spawn > 0.3) {
+                        const cx = x * cellSize + cellSize / 2;
+                        const cy = y * cellSize + cellSize / 2;
+                        const len = cellSize * 0.4;
+
+                        patternCtx.strokeStyle = '#0ff';
+                        patternCtx.lineWidth = 1;
+                        patternCtx.beginPath();
+                        patternCtx.moveTo(cx, cy);
+                        patternCtx.lineTo(cx + Math.cos(dir) * len, cy + Math.sin(dir) * len);
+                        patternCtx.stroke();
+                    }
+                }
+            }
+
+            // Render channel previews
+            renderChannelPreviews(pattern);
+        }
+
+        function renderChannelPreviews(pattern) {
+            const names = ['spawn', 'dir', 'size', 'speed', 'accel', 'curve', 'wAmp', 'wFreq'];
+            const container = document.getElementById('channel-previews');
+            container.innerHTML = '';
+
+            for (let c = 0; c < 8; c++) {
+                const div = document.createElement('div');
+                const canvas = document.createElement('canvas');
+                canvas.width = 32;
+                canvas.height = 32;
+                const ctx = canvas.getContext('2d');
+
+                for (let y = 0; y < 32; y++) {
+                    for (let x = 0; x < 32; x++) {
+                        const val = pattern[y][x][c];
+                        const v = Math.floor(val * 255);
+                        ctx.fillStyle = `rgb(${v},${v},${v})`;
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+                }
+
+                canvas.style.width = '100%';
+                canvas.style.height = '32px';
+                canvas.style.imageRendering = 'pixelated';
+
+                const label = document.createElement('div');
+                label.className = 'channel-label';
+                label.textContent = names[c];
+
+                div.appendChild(canvas);
+                div.appendChild(label);
+                container.appendChild(div);
+            }
+        }
+
+        function updateStats(stats) {
+            const container = document.getElementById('channel-stats');
+            container.innerHTML = '';
+
+            for (const [name, s] of Object.entries(stats)) {
+                container.innerHTML += `
+                    <span class="label">${name}:</span>
+                    <span class="value">${s.min.toFixed(2)}-${s.max.toFixed(2)}</span>
+                `;
+            }
+        }
+
+        function firePattern() {
+            if (!currentPattern) return;
+
+            const centerX = 250;
+            const centerY = 250;
+            const scale = 8; // pixels per tile
+
+            for (let y = 0; y < 32; y += config.sparsity) {
+                for (let x = 0; x < 32; x += config.sparsity) {
+                    const p = currentPattern[y][x];
+                    const spawn = p[0];
+
+                    if (spawn < config.spawnThreshold) continue;
+                    if (bullets.count >= bullets.max) break;
+
+                    const i = bullets.count++;
+
+                    const dir = p[1] * Math.PI * 2;
+                    const size = 0.2 + p[2] * 1.3;
+                    const speed = 2 + p[3] * 10;
+                    const accel = (p[4] - 0.5) * 6;
+                    const curve = (p[5] - 0.5) * 4;
+                    const waveAmp = p[6] * 1.5;
+                    const waveFreq = p[7] * 4;
+
+                    bullets.x[i] = centerX;
+                    bullets.y[i] = centerY;
+                    bullets.vx[i] = Math.cos(dir) * speed * scale;
+                    bullets.vy[i] = Math.sin(dir) * speed * scale;
+                    bullets.ax[i] = Math.cos(dir) * accel * scale;
+                    bullets.ay[i] = Math.sin(dir) * accel * scale;
+                    bullets.angularVel[i] = curve;
+                    bullets.waveAmp[i] = waveAmp * scale;
+                    bullets.waveFreq[i] = waveFreq;
+                    bullets.wavePhase[i] = Math.random() * Math.PI * 2;
+                    bullets.age[i] = 0;
+                    bullets.life[i] = 5;
+                    bullets.size[i] = size * 3;
+                }
+            }
+        }
+
+        function clearBullets() {
+            bullets.count = 0;
+        }
+
+        function storeLatent(name) {
+            storedLatents[name] = [...latent];
+            console.log(`Stored latent ${name}`);
+        }
+
+        function interpolateAB() {
+            if (!storedLatents.A || !storedLatents.B) {
+                alert('Store both A and B first');
+                return;
+            }
+            document.getElementById('interp-slider').value = 0;
+            interpolate(0);
+        }
+
+        function interpolate(t) {
+            if (!storedLatents.A || !storedLatents.B) return;
+
+            t = parseFloat(t);
+            document.getElementById('interp-value').textContent = t.toFixed(2);
+
+            for (let i = 0; i < LATENT_DIM; i++) {
+                latent[i] = storedLatents.A[i] * (1 - t) + storedLatents.B[i] * t;
+                document.getElementById(`slider-${i}`).value = latent[i];
+                document.getElementById(`val-${i}`).textContent = latent[i].toFixed(2);
+            }
+
+            generatePattern();
+        }
+
+        function updateConfig() {
+            config.spawnThreshold = parseFloat(document.getElementById('threshold').value);
+            config.sparsity = parseInt(document.getElementById('sparsity').value);
+            document.getElementById('threshold-val').textContent = config.spawnThreshold.toFixed(2);
+            document.getElementById('sparsity-val').textContent = config.sparsity;
+        }
+
+        // Bullet update loop
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let lastFpsTime = performance.now();
+
+        function updateBullets() {
+            const now = performance.now();
+            const dt = (now - lastTime) / 1000;
+            lastTime = now;
+
+            frameCount++;
+            if (now - lastFpsTime > 1000) {
+                document.getElementById('fps').textContent = frameCount;
+                frameCount = 0;
+                lastFpsTime = now;
+            }
+
+            // Update bullets
+            let count = bullets.count;
+            for (let i = 0; i < count; i++) {
+                bullets.age[i] += dt;
+
+                // Apply acceleration
+                bullets.vx[i] += bullets.ax[i] * dt;
+                bullets.vy[i] += bullets.ay[i] * dt;
+
+                // Apply angular velocity (curve)
+                if (Math.abs(bullets.angularVel[i]) > 0.01) {
+                    const angle = Math.atan2(bullets.vy[i], bullets.vx[i]);
+                    const speed = Math.sqrt(bullets.vx[i]**2 + bullets.vy[i]**2);
+                    const newAngle = angle + bullets.angularVel[i] * dt;
+                    bullets.vx[i] = Math.cos(newAngle) * speed;
+                    bullets.vy[i] = Math.sin(newAngle) * speed;
+                }
+
+                // Calculate wave offset
+                let waveX = 0, waveY = 0;
+                if (bullets.waveAmp[i] > 0.1) {
+                    const moveAngle = Math.atan2(bullets.vy[i], bullets.vx[i]);
+                    const perpAngle = moveAngle + Math.PI / 2;
+                    const waveVal = Math.sin(bullets.age[i] * bullets.waveFreq[i] * 2 * Math.PI + bullets.wavePhase[i]);
+                    waveX = Math.cos(perpAngle) * waveVal * bullets.waveAmp[i] * dt * 10;
+                    waveY = Math.sin(perpAngle) * waveVal * bullets.waveAmp[i] * dt * 10;
+                }
+
+                // Update position
+                bullets.x[i] += bullets.vx[i] * dt + waveX;
+                bullets.y[i] += bullets.vy[i] * dt + waveY;
+
+                bullets.life[i] -= dt;
+
+                // Remove dead bullets
+                if (bullets.life[i] <= 0 ||
+                    bullets.x[i] < -50 || bullets.x[i] > 550 ||
+                    bullets.y[i] < -50 || bullets.y[i] > 550) {
+                    // Swap remove
+                    const last = count - 1;
+                    if (i !== last) {
+                        bullets.x[i] = bullets.x[last];
+                        bullets.y[i] = bullets.y[last];
+                        bullets.vx[i] = bullets.vx[last];
+                        bullets.vy[i] = bullets.vy[last];
+                        bullets.ax[i] = bullets.ax[last];
+                        bullets.ay[i] = bullets.ay[last];
+                        bullets.angularVel[i] = bullets.angularVel[last];
+                        bullets.waveAmp[i] = bullets.waveAmp[last];
+                        bullets.waveFreq[i] = bullets.waveFreq[last];
+                        bullets.wavePhase[i] = bullets.wavePhase[last];
+                        bullets.age[i] = bullets.age[last];
+                        bullets.life[i] = bullets.life[last];
+                        bullets.size[i] = bullets.size[last];
+                    }
+                    count--;
+                    i--;
+                }
+            }
+            bullets.count = count;
+
+            // Render
+            bulletCtx.fillStyle = '#000';
+            bulletCtx.fillRect(0, 0, 500, 500);
+
+            // Grid
+            bulletCtx.strokeStyle = '#111';
+            for (let i = 0; i <= 500; i += 50) {
+                bulletCtx.beginPath();
+                bulletCtx.moveTo(i, 0);
+                bulletCtx.lineTo(i, 500);
+                bulletCtx.stroke();
+                bulletCtx.beginPath();
+                bulletCtx.moveTo(0, i);
+                bulletCtx.lineTo(500, i);
+                bulletCtx.stroke();
+            }
+
+            // Boss
+            bulletCtx.fillStyle = '#ff0';
+            bulletCtx.beginPath();
+            bulletCtx.arc(250, 250, 8, 0, Math.PI * 2);
+            bulletCtx.fill();
+
+            // Bullets
+            for (let i = 0; i < bullets.count; i++) {
+                const alpha = Math.min(1, bullets.life[i]);
+                bulletCtx.fillStyle = `rgba(255, 50, 50, ${alpha})`;
+                bulletCtx.beginPath();
+                bulletCtx.arc(bullets.x[i], bullets.y[i], bullets.size[i], 0, Math.PI * 2);
+                bulletCtx.fill();
+            }
+
+            document.getElementById('bullet-count').textContent = bullets.count;
+
+            requestAnimationFrame(updateBullets);
+        }
+
+        // Check server connection
+        async function checkServer() {
+            try {
+                const response = await fetch(`${VAE_SERVER}/health`);
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    serverConnected = true;
+                    document.getElementById('status').textContent =
+                        `Connected to VAE Server (latent_dim=${data.latent_dim})`;
+                    document.getElementById('status').className = 'connected';
+
+                    // Generate initial pattern
+                    randomizeLatent();
+                }
+            } catch (e) {
+                document.getElementById('status').textContent =
+                    'VAE Server not running. Start with: python ml/vae_server.py';
+                document.getElementById('status').className = 'disconnected';
+                setTimeout(checkServer, 3000);
+            }
+        }
+
+        // Init
+        initSliders();
+        checkServer();
+        updateBullets();
+    </script>
+</body>
+</html>

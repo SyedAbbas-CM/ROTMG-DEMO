@@ -28,8 +28,15 @@ export default class UnitNetworkAdapter {
     // { cmd:'move'|'attack', unitIds:[], tx, ty }
     const { cmd, unitIds, tx, ty } = data;
     for (const uid of unitIds) {
-      const idx = this.um.indexFromId(uid);
-      if (idx === -1) continue;
+      const idx = this.um.findIndexById ? this.um.findIndexById(uid) : this.um.indexFromId?.(uid);
+      if (idx === -1 || idx === undefined) continue;
+
+      // Validate ownership - only owner can command units
+      const unitOwner = this.um.owner?.[idx];
+      if (unitOwner !== null && unitOwner !== undefined && unitOwner !== clientId) {
+        continue; // Not owned by this player
+      }
+
       switch (cmd) {
         case 'move':   this.sys.issueMove(idx, tx, ty);   break;
         case 'attack': this.sys.issueAttack(idx, tx, ty); break;

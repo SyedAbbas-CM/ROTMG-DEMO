@@ -1,0 +1,51 @@
+{
+  "lastUpdated": "2024-12-27",
+  "features": {
+    "pvp": {
+      "status": "completed",
+      "location": "src/entities/CollisionManager.js:351-415",
+      "config": ".env PVP_ENABLED=true"
+    },
+    "unitControl": {
+      "status": "completed",
+      "files": [
+        "src/units/SoldierManager.js - owner property added",
+        "src/units/UnitNetworkAdaptor.js - ownership validation added",
+        "public/src/game/input.js - drag selection added",
+        "public/src/units/ClientUnitManager.js - owner property added"
+      ]
+    },
+    "classes": {
+      "status": "completed",
+      "files": [
+        "src/player/PlayerClasses.js - 6 classes defined",
+        "src/player/AbilitySystem.js - ability execution",
+        "Server.js - class integration"
+      ],
+      "classes": ["warrior", "archer", "mage", "rogue", "knight", "necromancer"]
+    }
+  },
+  "unitTypes": {
+    "0": "Light Infantry",
+    "1": "Heavy Infantry",
+    "2": "Light Cavalry",
+    "3": "Heavy Cavalry",
+    "4": "Archer",
+    "5": "Crossbowman",
+    "6": "Boss Infantry"
+  },
+  "keyFiles": {
+    "collision": "src/entities/CollisionManager.js",
+    "soldiers": "src/units/SoldierManager.js",
+    "unitSystems": "src/units/UnitSystems.js",
+    "server": "Server.js",
+    "env": ".env",
+    "clientInput": "public/src/game/input.js"
+  },
+  "userChoices": {
+    "pvpMode": "toggle per-server",
+    "unitControl": "RTS-style selection",
+    "classes": "unique abilities",
+    "unitOwnership": "per-player"
+  }
+}

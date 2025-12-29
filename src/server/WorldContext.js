@@ -8,7 +8,8 @@ export function createWorldContextManager({
   logger,
   sendToClient,
   getClients, // () => Map<clientId, { socket, player, mapId }>
-  classes
+  classes,
+  pvpEnabled = false
 }) {
   const {
     BulletManager,
@@ -27,7 +28,7 @@ export function createWorldContextManager({
     if (!worldContexts.has(mapId)) {
       const bulletMgr = new BulletManager(10000);
       const enemyMgr  = new EnemyManager(1000, itemManager);
-      const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager);
+      const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager, null, null, { pvpEnabled });
       const bagMgr    = new BagManager(500);
 
       // Initialize Unit Systems

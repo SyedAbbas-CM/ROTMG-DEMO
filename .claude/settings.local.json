@@ -78,7 +78,20 @@
       "Bash(node-gyp --version)",
       "Bash(npm install:*)",
       "Bash(npx node-gyp:*)",
-      "Bash(nc:*)"
+      "Bash(nc:*)",
+      "Bash(python train_vae_v2.py:*)",
+      "Bash(./venv/bin/python:*)",
+      "Bash(PYTHONUNBUFFERED=1 ./venv/bin/python:*)",
+      "Bash(git -C /Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO log --name-status --pretty=\"\")",
+      "Bash(git -C /Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO status -s)",
+      "Bash(cloudflared tunnel login:*)",
+      "Bash(tar:*)",
+      "Bash(/Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO/deploy.sh:*)",
+      "Bash(cloudflared tunnel create:*)",
+      "Bash(cloudflared tunnel:*)",
+      "Bash(nslookup:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(timeout 90 sshpass:*)"
     ],
     "deny": []
   }

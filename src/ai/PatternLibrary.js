@@ -3,6 +3,10 @@
  *
  * Patterns are generated offline using the ML model and stored as JSON.
  * This avoids runtime ML inference overhead.
+ *
+ * Supports two formats:
+ * - V1: intensity[32][32] + direction[32][32] (2 separate arrays)
+ * - V2: channels[32][32][8] (8 channels per pixel)
  */
 
 import fs from 'fs';
@@ -13,6 +17,7 @@ export class PatternLibrary {
     this.patterns = [];
     this.patternsByStyle = {};
     this.loaded = false;
+    this.version = 1;
   }
 
   /**
@@ -23,13 +28,29 @@ export class PatternLibrary {
     try {
       const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
 
-      this.patterns = data.patterns.map(p => ({
-        id: p.id,
-        latentVector: p.latent_vector,
-        intensity: p.intensity,
-        direction: p.direction,
-        stats: p.stats
-      }));
+      // Detect version
+      this.version = data.version || 1;
+
+      if (this.version >= 2) {
+        // V2 format: channels array with 8 channels
+        this.patterns = data.patterns.map(p => ({
+          id: p.id,
+          name: p.name,
+          channels: p.channels,  // [32][32][8]
+          stats: p.stats
+        }));
+        console.log(`[PatternLibrary] Loaded v2 format (8 channels)`);
+      } else {
+        // V1 format: separate intensity and direction arrays
+        this.patterns = data.patterns.map(p => ({
+          id: p.id,
+          latentVector: p.latent_vector,
+          intensity: p.intensity,
+          direction: p.direction,
+          stats: p.stats
+        }));
+        console.log(`[PatternLibrary] Loaded v1 format (2 channels)`);
+      }
 
       // Categorize by density/style
       this.categorizePatterns();
@@ -56,7 +77,8 @@ export class PatternLibrary {
     };
 
     for (const pattern of this.patterns) {
-      const density = pattern.stats.density_50; // Percentage of pixels > 0.5 intensity
+      // Get density from stats (v1 uses density_50, v2 uses density)
+      const density = pattern.stats?.density_50 || pattern.stats?.density || 0.25;
 
       if (density < 0.15) {
         this.patternsByStyle.sparse.push(pattern);
@@ -139,15 +161,20 @@ export class PatternLibrary {
   }
 
   /**
-   * Convert pattern to 2D array format expected by adapter
+   * Convert pattern to array format expected by adapter
    * @param {Object} pattern - Pattern object from library
-   * @returns {Array} [32][32][2] pattern array
+   * @returns {Array} [32][32][N] pattern array (N=2 for v1, N=8 for v2)
    */
   toPatternArray(pattern) {
+    // V2 format: channels are already in the right format
+    if (pattern.channels) {
+      return pattern.channels;
+    }
+
+    // V1 format: combine intensity and direction into [row][col][2]
     const intensity = pattern.intensity;
     const direction = pattern.direction;
 
-    // Convert to [row][col][channel] format
     const patternArray = [];
 
     for (let row = 0; row < 32; row++) {

@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+*.md
+.claude
+ml/models/*.pth
+ml/__pycache__
+logs
+*.log
+.DS_Store
+tests
+jest.config.js

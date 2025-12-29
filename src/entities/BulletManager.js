@@ -40,6 +40,15 @@ export default class BulletManager {
     this.speedScale = new Float32Array(maxBullets);
     this.speedScale.fill(1);
 
+    // VAE v2 properties: acceleration, curve, wave motion
+    this.ax = new Float32Array(maxBullets);           // X acceleration (tiles/sec^2)
+    this.ay = new Float32Array(maxBullets);           // Y acceleration (tiles/sec^2)
+    this.angularVel = new Float32Array(maxBullets);   // Angular velocity for curved paths (rad/sec)
+    this.waveAmp = new Float32Array(maxBullets);      // Wave amplitude (tiles)
+    this.waveFreq = new Float32Array(maxBullets);     // Wave frequency (Hz)
+    this.wavePhase = new Float32Array(maxBullets);    // Wave phase offset (radians)
+    this.age = new Float32Array(maxBullets);          // Time since spawn (seconds)
+
     // Debug / analytics counters (reset each update)
     this.stats = {
       created: 0,
@@ -86,6 +95,15 @@ export default class BulletManager {
     this.worldId[index] = bulletData.worldId;
     this.speedScale[index] = 1;
 
+    // VAE v2 properties
+    this.ax[index] = bulletData.ax || 0;
+    this.ay[index] = bulletData.ay || 0;
+    this.angularVel[index] = bulletData.angularVel || 0;
+    this.waveAmp[index] = bulletData.waveAmp || 0;
+    this.waveFreq[index] = bulletData.waveFreq || 0;
+    this.wavePhase[index] = bulletData.wavePhase || 0;
+    this.age[index] = 0;
+
     // Determine faction layer
     if (bulletData.faction !== undefined) {
       this.faction[index] = bulletData.faction;
@@ -113,11 +131,37 @@ export default class BulletManager {
     }
     
     for (let i = 0; i < count; i++) {
+      // Update age
+      this.age[i] += deltaTime;
+
+      // Apply acceleration
+      this.vx[i] += this.ax[i] * deltaTime;
+      this.vy[i] += this.ay[i] * deltaTime;
+
+      // Apply angular velocity (curved paths)
+      if (this.angularVel[i] !== 0) {
+        const angle = Math.atan2(this.vy[i], this.vx[i]);
+        const speed = Math.sqrt(this.vx[i] * this.vx[i] + this.vy[i] * this.vy[i]);
+        const newAngle = angle + this.angularVel[i] * deltaTime;
+        this.vx[i] = Math.cos(newAngle) * speed;
+        this.vy[i] = Math.sin(newAngle) * speed;
+      }
+
+      // Calculate wave offset (perpendicular wobble)
+      let waveOffsetX = 0, waveOffsetY = 0;
+      if (this.waveAmp[i] > 0.001) {
+        const moveAngle = Math.atan2(this.vy[i], this.vx[i]);
+        const perpAngle = moveAngle + Math.PI / 2;
+        const waveValue = Math.sin(this.age[i] * this.waveFreq[i] * 2 * Math.PI + this.wavePhase[i]);
+        waveOffsetX = Math.cos(perpAngle) * waveValue * this.waveAmp[i] * deltaTime * 10;
+        waveOffsetY = Math.sin(perpAngle) * waveValue * this.waveAmp[i] * deltaTime * 10;
+      }
+
       // Update position
       const scale = this.speedScale[i] || 1;
-      this.x[i] += this.vx[i] * scale * deltaTime;
-      this.y[i] += this.vy[i] * scale * deltaTime;
-      
+      this.x[i] += this.vx[i] * scale * deltaTime + waveOffsetX;
+      this.y[i] += this.vy[i] * scale * deltaTime + waveOffsetY;
+
       // Decrement lifetime
       this.life[i] -= deltaTime;
 
@@ -165,6 +209,14 @@ export default class BulletManager {
       this.worldId[index] = this.worldId[last];
       this.speedScale[index] = this.speedScale[last];
       this.faction[index] = this.faction[last];
+      // VAE v2 properties
+      this.ax[index] = this.ax[last];
+      this.ay[index] = this.ay[last];
+      this.angularVel[index] = this.angularVel[last];
+      this.waveAmp[index] = this.waveAmp[last];
+      this.waveFreq[index] = this.waveFreq[last];
+      this.wavePhase[index] = this.wavePhase[last];
+      this.age[index] = this.age[last];
     }
 
     this.bulletCount--;

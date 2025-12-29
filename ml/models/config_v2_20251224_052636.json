@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "latent_dim": 64,
+  "channels": 8,
+  "channel_names": [
+    "spawn",
+    "direction",
+    "size",
+    "speed",
+    "accel",
+    "curve",
+    "wave_amp",
+    "wave_freq"
+  ],
+  "timestamp": "20251224_052636",
+  "best_val_loss": 0.030213250414184902,
+  "n_train": 13122,
+  "n_synthetic": 3000
+}

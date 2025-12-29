@@ -1,12 +1,21 @@
 /**
  * PatternToBulletAdapter - Converts AI-generated pattern fields into actual bullet spawns
  *
- * Takes a 32×32×2 pattern from the ML model and converts it into bullet spawns
- * for the BulletManager.
+ * Supports two pattern formats:
  *
- * Pattern format:
- *   [32][32][0] = intensity (0-1): spawn probability/density
- *   [32][32][1] = direction (0-1): maps to 0-2π radians
+ * V1 Format (2 channels): [32][32][2]
+ *   [0] = intensity (0-1): spawn probability
+ *   [1] = direction (0-1): maps to 0-2π radians
+ *
+ * V2 Format (8 channels): [32][32][8]
+ *   [0] = spawn (0-1): spawn probability
+ *   [1] = direction (0-1): maps to 0-2π radians
+ *   [2] = size (0-1): bullet size multiplier
+ *   [3] = speed (0-1): bullet speed multiplier
+ *   [4] = accel (0-1): acceleration (0.5 = none, <0.5 = decel, >0.5 = accel)
+ *   [5] = curve (0-1): angular velocity (0.5 = straight)
+ *   [6] = wave_amp (0-1): wave amplitude
+ *   [7] = wave_freq (0-1): wave frequency
  */
 
 export class PatternToBulletAdapter {
@@ -66,7 +75,7 @@ export class PatternToBulletAdapter {
 
   /**
    * Spawn bullets from a pattern field
-   * @param {Array} pattern - [32][32][2] pattern array from ML model
+   * @param {Array} pattern - [32][32][N] pattern array from ML model (N=2 for v1, N=8 for v2)
    * @param {Object} bossData - {x, y, ownerId, worldId, faction}
    * @param {Object} customConfig - Optional config overrides
    * @returns {number} Number of bullets spawned
@@ -86,18 +95,45 @@ export class PatternToBulletAdapter {
     const gridSize = pattern.length; // Should be 32
     const bulletsToSpawn = [];
 
+    // Detect pattern version (v1=2 channels, v2=8 channels)
+    const numChannels = pattern[0]?.[0]?.length || 2;
+    const isV2 = numChannels >= 8;
+
     // Iterate through pattern grid and collect bullets
     for (let row = 0; row < gridSize; row += config.sparsity) {
       for (let col = 0; col < gridSize; col += config.sparsity) {
-        const intensity = pattern[row][col][0];
-        const directionNorm = pattern[row][col][1];
+        const pixel = pattern[row][col];
 
-        // Skip low-intensity cells
-        if (intensity < config.spawnThreshold) continue;
+        // V2: Read all 8 channels directly
+        // V1: Read 2 channels and derive the rest
+        const spawn = pixel[0];
+        const directionNorm = pixel[1];
+
+        // Skip low spawn probability cells
+        if (spawn < config.spawnThreshold) continue;
+
+        // Read or derive properties based on version
+        let sizeNorm, speedNorm, accelNorm, curveNorm, waveAmpNorm, waveFreqNorm;
+
+        if (isV2) {
+          // V2: Direct from model
+          sizeNorm = pixel[2];
+          speedNorm = pixel[3];
+          accelNorm = pixel[4];
+          curveNorm = pixel[5];
+          waveAmpNorm = pixel[6];
+          waveFreqNorm = pixel[7];
+        } else {
+          // V1: Derive from intensity (legacy behavior)
+          sizeNorm = spawn;
+          speedNorm = 1 - spawn * 0.5;
+          accelNorm = 0.5;  // No acceleration
+          curveNorm = 0.5;  // Straight
+          waveAmpNorm = 0;
+          waveFreqNorm = 0;
+        }
 
         // Map grid position to world offset from boss
-        // Grid center (16, 16) → boss position
-        // Grid edges → ±spawnRadius tiles from boss
         const offsetX = ((col - gridSize / 2) / (gridSize / 2)) * config.spawnRadius;
         const offsetY = ((row - gridSize / 2) / (gridSize / 2)) * config.spawnRadius;
 
@@ -107,43 +143,56 @@ export class PatternToBulletAdapter {
         // Convert direction (0-1) to angle (0-2π)
         const angle = directionNorm * Math.PI * 2;
 
-        // Calculate visual properties from intensity for better pattern visibility
-        // HIGH intensity = LARGE, SLOW, LONG-LASTING (heavy projectiles)
-        // LOW intensity = SMALL, FAST, SHORT-LASTING (light projectiles)
+        // Map normalized values to actual bullet properties
+        // Size: 0.2 to 1.5 tiles
+        const bulletSize = 0.2 + sizeNorm * 1.3;
 
-        // Speed: Inverse relationship with intensity (heavy bullets slower)
-        const speedMultiplier = 1.5 - (intensity * 0.8); // Range: 0.7x to 1.5x
-        const speed = config.baseSpeed * speedMultiplier;
+        // Speed: 2 to 12 tiles/sec
+        const speed = 2 + speedNorm * 10;
 
-        // Size: EXTREME scaling for testing - 25x difference!
-        const sizeMultiplier = intensity < 0.5
-          ? 0.2   // LOW intensity = TINY (1-2 pixels)
-          : 5.0;  // HIGH intensity = HUGE (32 pixels)
-        const bulletWidth = config.bulletWidth * sizeMultiplier;
-        const bulletHeight = config.bulletHeight * sizeMultiplier;
+        // Acceleration: -3 to +3 tiles/sec^2 (0.5 = no accel)
+        const accel = (accelNorm - 0.5) * 6;
 
-        // Lifetime: Longer for high-intensity bullets (makes pattern visible longer)
-        const lifetimeMultiplier = 0.8 + (intensity * 1.4); // Range: 0.8x to 2.2x
-        const lifetime = config.lifetime * lifetimeMultiplier;
+        // Curve: -2 to +2 rad/sec (0.5 = straight)
+        const angularVel = (curveNorm - 0.5) * 4;
+
+        // Wave amplitude: 0 to 1.5 tiles
+        const waveAmp = waveAmpNorm * 1.5;
+
+        // Wave frequency: 0 to 4 Hz
+        const waveFreq = waveFreqNorm * 4;
+
+        // Lifetime based on spawn probability
+        const lifetime = config.lifetime * (0.8 + spawn * 0.8);
 
         // Velocity components
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
 
-        // Create bullet data with varied visual properties
+        // Acceleration components (same direction as velocity)
+        const ax = Math.cos(angle) * accel;
+        const ay = Math.sin(angle) * accel;
+
+        // Create bullet data with all v2 properties
         const bulletData = {
           x: spawnX,
           y: spawnY,
           vx: vx,
           vy: vy,
+          ax: ax,
+          ay: ay,
+          angularVel: angularVel,
+          waveAmp: waveAmp,
+          waveFreq: waveFreq,
+          wavePhase: Math.random() * Math.PI * 2,  // Random phase for variety
           lifetime: lifetime,
-          width: bulletWidth,
-          height: bulletHeight,
-          damage: this.calculateDamage(intensity, config),
+          width: bulletSize,
+          height: bulletSize,
+          damage: this.calculateDamage(spawn, config),
           ownerId: ownerId,
-          spriteName: this.selectSprite(intensity),
+          spriteName: this.selectSprite(spawn),
           worldId: worldId,
-          faction: faction !== undefined ? faction : 0 // Default to enemy faction
+          faction: faction !== undefined ? faction : 0
         };
 
         bulletsToSpawn.push(bulletData);
@@ -153,13 +202,11 @@ export class PatternToBulletAdapter {
 
     // Either queue for sequential spawning or spawn immediately
     if (config.sequentialSpawn && bulletsToSpawn.length > 1) {
-      // Add to queue and start timer
       this.spawnQueue.push(...bulletsToSpawn);
       if (this.queueTimer <= 0) {
-        this.queueTimer = config.bulletSpawnDelay; // Start with first delay
+        this.queueTimer = config.bulletSpawnDelay;
       }
     } else {
-      // Spawn all immediately (original behavior for single bullets)
       bulletsToSpawn.forEach(bulletData => {
         this.bulletManager.addBullet(bulletData);
       });

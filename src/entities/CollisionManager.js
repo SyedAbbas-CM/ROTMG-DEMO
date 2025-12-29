@@ -16,12 +16,15 @@ export default class CollisionManager {
    * @param {Object} lagCompensation - Lag compensation system (optional)
    * @param {Object} fileLogger - File logger for collision events (optional)
    */
-  constructor(bulletManager, enemyManager, mapManager = null, lagCompensation = null, fileLogger = null) {
+  constructor(bulletManager, enemyManager, mapManager = null, lagCompensation = null, fileLogger = null, options = {}) {
     this.bulletManager = bulletManager;
     this.enemyManager = enemyManager;
     this.mapManager = mapManager;
     this.lagCompensation = lagCompensation;
     this.fileLogger = fileLogger;
+
+    // PVP settings
+    this.pvpEnabled = options.pvpEnabled || false;
 
     // Initialize collision validator
     this.collisionValidator = new CollisionValidator({ fileLogger });
@@ -341,6 +344,72 @@ export default class CollisionManager {
 
             // Break the player loop since bullet hit something
             break;
+          }
+        }
+      }
+
+      // PVP: Check player bullets against other players
+      if (this.pvpEnabled) {
+        const isPlayerBullet = typeof bulletOwnerId === 'number' ||
+                               (typeof bulletOwnerId === 'string' && !bulletOwnerId.startsWith('enemy_'));
+
+        if (isPlayerBullet && players && players.length > 0) {
+          for (const player of players) {
+            // Skip self-damage
+            if (player.id === bulletOwnerId) continue;
+
+            // Skip if player is dead or in different world
+            if (!player || player.health <= 0) continue;
+            if (this.bulletManager.worldId[bi] !== player.worldId) continue;
+
+            const playerX = player.x;
+            const playerY = player.y;
+            const playerWidth = player.collisionWidth || 1;
+            const playerHeight = player.collisionHeight || 1;
+            const playerId = player.id;
+
+            // Check if bullet and player collide (AABB)
+            if (this.checkAABBCollision(
+              bulletX, bulletY, bulletWidth, bulletHeight,
+              playerX, playerY, playerWidth, playerHeight
+            )) {
+              const collisionId = `pvp_${bulletId}_${playerId}`;
+              if (this.processedCollisions.has(collisionId)) continue;
+
+              const damage = this.bulletManager.damage ? this.bulletManager.damage[bi] : 10;
+
+              if (this.fileLogger) {
+                this.fileLogger.bulletHit(bulletId, 'player_pvp', playerId, damage, { x: playerX, y: playerY });
+              }
+
+              // Apply damage
+              if (typeof player.takeDamage === 'function') {
+                player.takeDamage(damage);
+              } else {
+                player.health = Math.max(0, player.health - damage);
+              }
+
+              // Check for player death
+              if (player.health <= 0 && !player.isDead) {
+                player.isDead = true;
+                player.deathX = player.x;
+                player.deathY = player.y;
+                player.deathTimestamp = Date.now();
+                player.killedBy = bulletOwnerId;
+
+                if (this.fileLogger) {
+                  this.fileLogger.logCollision('PVP_KILL', {
+                    killerId: bulletOwnerId,
+                    victimId: playerId,
+                    position: { x: player.x, y: player.y }
+                  });
+                }
+              }
+
+              this.bulletManager.markForRemoval(bi);
+              this.processedCollisions.set(collisionId, Date.now());
+              break;
+            }
           }
         }
       }

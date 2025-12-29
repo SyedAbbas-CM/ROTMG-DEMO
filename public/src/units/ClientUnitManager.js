@@ -7,7 +7,7 @@ export default class ClientUnitManager {
     constructor(maxUnits = 10000) {
       this.max = maxUnits;
       this.count = 0;
-  
+
       this.id = new Array(maxUnits);
       this.typeIdx = new Uint8Array(maxUnits);
       this.x = new Float32Array(maxUnits);
@@ -15,7 +15,8 @@ export default class ClientUnitManager {
       this.vx = new Float32Array(maxUnits);
       this.vy = new Float32Array(maxUnits);
       this.hp = new Float32Array(maxUnits);
-  
+      this.owner = new Array(maxUnits); // Player ID who owns this unit
+
       this.id2index = new Map();
     }
   
@@ -39,7 +40,8 @@ export default class ClientUnitManager {
       this.typeIdx[i] = u.type;
       this.x[i] = u.x;  this.y[i] = u.y;
       this.vx[i] = u.vx; this.vy[i] = u.vy;
-      this.hp[i] = u.hp;
+      this.hp[i] = u.health ?? u.hp;
+      this.owner[i] = u.owner;
     }
   
     /** Apply UNIT_REMOVE (array of ids) */
@@ -56,6 +58,7 @@ export default class ClientUnitManager {
           this.vx[idx]      = this.vx[last];
           this.vy[idx]      = this.vy[last];
           this.hp[idx]      = this.hp[last];
+          this.owner[idx]   = this.owner[last];
           this.id2index.set(this.id[idx], idx);
         }
         this.count--;
@@ -75,6 +78,7 @@ export default class ClientUnitManager {
             id: this.id[i],
             x: this.x[i],
             y: this.y[i],
+            owner: this.owner[i],
             distance: Math.sqrt(distSq)
           });
         }

@@ -50,7 +50,10 @@ export default class SoldierManager {
       this.morale      = new Float32Array(maxSoldiers); // 0‑100
       this.stability   = new Float32Array(maxSoldiers); // resistance to knock‑back
       this.state       = new Uint8Array(maxSoldiers);   // 0=idle,1=move,2=attack,3=rout,…
-  
+
+      // ownership tracking for RTS control
+      this.owner       = new Array(maxSoldiers);        // playerId who owns this unit
+
       // book‑keeping map (id → index)
       this.idToIndex   = new Map();
   
@@ -138,7 +141,8 @@ export default class SoldierManager {
       this.morale[idx]    = 100;                // fresh morale
       this.stability[idx] = overrides.stability ?? cfg.stability;
       this.state[idx]     = 0;                  // idle
-  
+      this.owner[idx]     = overrides.owner    ?? null; // playerId who owns this unit
+
       this.idToIndex.set(id, idx);
       return id;
     }
@@ -153,7 +157,7 @@ export default class SoldierManager {
       // overwrite with last
       if (index !== last) {
         for (const key of ['id','type','x','y','vx','vy','ax','ay','health','maxHealth',
-                           'armor','damage','range','mass','morale','stability','state']) {
+                           'armor','damage','range','mass','morale','stability','state','owner']) {
           this[key][index] = this[key][last];
         }
         this.idToIndex.set(this.id[index], index);
@@ -253,6 +257,7 @@ export default class SoldierManager {
           health:    this.health[i],
           morale:    this.morale[i],
           state:     this.state[i],
+          owner:     this.owner[i],
         });
       }
       return arr;

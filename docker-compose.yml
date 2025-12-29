@@ -1,0 +1,24 @@
+services:
+  game:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - ARTIFICIAL_LATENCY_MS=0
+      - LAG_COMPENSATION_ENABLED=true
+      - PVP_ENABLED=true
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  # Cloudflare tunnel - uncomment and add your token after creating tunnel
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   command: tunnel --no-autoupdate run
+  #   environment:
+  #     - TUNNEL_TOKEN=your_tunnel_token_here
+  #   depends_on:
+  #     - game
+  #   restart: unless-stopped

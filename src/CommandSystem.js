@@ -195,12 +195,8 @@ export class CommandSystem {
             const spawnX = playerX + offsetX;
             const spawnY = playerY + offsetY;
             
-            const unitId = worldCtx.soldierMgr.spawn(type, spawnX, spawnY, { team });
+            const unitId = worldCtx.soldierMgr.spawn(type, spawnX, spawnY, { team, owner: clientId });
             if (unitId) {
-                const index = worldCtx.soldierMgr.findIndexById(unitId);
-                if (index !== -1 && worldCtx.soldierMgr.owner) {
-                    worldCtx.soldierMgr.owner[index] = team;
-                }
                 spawned++;
             }
         }

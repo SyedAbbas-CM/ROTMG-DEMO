@@ -83,6 +83,16 @@ let mouseY = 0;
 // RTS command mode state (toggled with Tab key)
 let rtsCommandMode = false;
 
+// Selection box state for drag-to-select
+const selectionBox = {
+    active: false,
+    startX: 0,
+    startY: 0,
+    endX: 0,
+    endY: 0
+};
+window.selectionBox = selectionBox; // Expose for rendering
+
 // Sensitivity and speed settings
 const MOUSE_SENSITIVITY = 0.002;
 const MOVE_SPEED = 6.0; // Very slow movement speed for ROTMG-like feel
@@ -301,6 +311,92 @@ export function initControls() {
         }
     });
 
+    // Drag selection box for RTS unit selection
+    window.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Left click only
+        if (!isRTSCommandMode(e)) return;
+        if (gameState.camera?.viewType === 'first-person') return;
+
+        const targetId = e.target.id;
+        if (targetId !== 'gameCanvas' && targetId !== 'glCanvas') return;
+
+        selectionBox.active = true;
+        selectionBox.startX = e.clientX;
+        selectionBox.startY = e.clientY;
+        selectionBox.endX = e.clientX;
+        selectionBox.endY = e.clientY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (selectionBox.active) {
+            selectionBox.endX = e.clientX;
+            selectionBox.endY = e.clientY;
+        }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+        if (e.button !== 0 || !selectionBox.active) return;
+        selectionBox.active = false;
+
+        // Check if this was a drag (not just a click)
+        const dragThreshold = 5;
+        const dx = Math.abs(selectionBox.endX - selectionBox.startX);
+        const dy = Math.abs(selectionBox.endY - selectionBox.startY);
+
+        if (dx < dragThreshold && dy < dragThreshold) {
+            return; // Let click handler deal with this
+        }
+
+        // Convert screen bounds to world bounds
+        const canvas = document.getElementById('gameCanvas');
+        if (!canvas || !gameState.camera) return;
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const scaleFactor = gameState.camera.getViewScaleFactor?.() || 1;
+
+        const screenMinX = Math.min(selectionBox.startX, selectionBox.endX);
+        const screenMaxX = Math.max(selectionBox.startX, selectionBox.endX);
+        const screenMinY = Math.min(selectionBox.startY, selectionBox.endY);
+        const screenMaxY = Math.max(selectionBox.startY, selectionBox.endY);
+
+        const worldMinX = (screenMinX - centerX) / (TILE_SIZE * scaleFactor) + gameState.camera.position.x;
+        const worldMaxX = (screenMaxX - centerX) / (TILE_SIZE * scaleFactor) + gameState.camera.position.x;
+        const worldMinY = (screenMinY - centerY) / (TILE_SIZE * scaleFactor) + gameState.camera.position.y;
+        const worldMaxY = (screenMaxY - centerY) / (TILE_SIZE * scaleFactor) + gameState.camera.position.y;
+
+        // Select units in bounds (only player-owned)
+        if (gameState.unitManager) {
+            const playerId = gameState.character?.id;
+            const allUnits = [];
+
+            // Get all units and filter by bounds and ownership
+            for (let i = 0; i < gameState.unitManager.count; i++) {
+                const ux = gameState.unitManager.x[i];
+                const uy = gameState.unitManager.y[i];
+                const uid = gameState.unitManager.id[i];
+                const owner = gameState.unitManager.owner?.[i];
+
+                if (ux >= worldMinX && ux <= worldMaxX && uy >= worldMinY && uy <= worldMaxY) {
+                    // Only select if owned by this player (or unowned)
+                    if (owner === null || owner === undefined || owner === playerId) {
+                        allUnits.push(uid);
+                    }
+                }
+            }
+
+            if (e.shiftKey) {
+                // Add to existing selection
+                gameState.selectedUnits = [...new Set([...gameState.selectedUnits, ...allUnits])];
+            } else {
+                // Replace selection
+                gameState.selectedUnits = allUnits;
+            }
+
+            console.log(`Drag-selected ${allUnits.length} units`);
+        }
+    });
+
     // Add mouse click event for shooting (first-person only – top-down is handled by handleMouseClick above)
     window.addEventListener('click', (e) => {
         const targetId = e.target.id;
@@ -495,10 +591,17 @@ function handleMouseClick(event) {
             const clickRadius = 0.5; // Click tolerance in world units
             const nearbyUnits = gameState.unitManager.getUnitsInRadius(worldX, worldY, clickRadius);
 
-            if (nearbyUnits.length > 0) {
+            // Filter to only units owned by this player
+            const playerId = gameState.character?.id;
+            const ownedUnits = nearbyUnits.filter(u => {
+                const owner = u.owner;
+                return owner === null || owner === undefined || owner === playerId;
+            });
+
+            if (ownedUnits.length > 0) {
                 // Sort by distance and select the closest
-                nearbyUnits.sort((a, b) => a.distance - b.distance);
-                const selectedUnit = nearbyUnits[0];
+                ownedUnits.sort((a, b) => a.distance - b.distance);
+                const selectedUnit = ownedUnits[0];
 
                 // Toggle selection (shift = add to selection, normal = replace selection)
                 if (event.shiftKey) {
