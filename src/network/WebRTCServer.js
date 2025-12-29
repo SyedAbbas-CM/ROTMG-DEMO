@@ -53,6 +53,53 @@ function getPlayItConfig() {
     return { host, port };
 }
 
+// Twilio TURN server support
+// Set these environment variables:
+//   TWILIO_ACCOUNT_SID=your_account_sid
+//   TWILIO_AUTH_TOKEN=your_auth_token
+let twilioIceServers = null;
+let twilioIceExpiry = 0;
+
+async function getTwilioIceServers() {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+    if (!accountSid || !authToken) {
+        return null; // Twilio not configured
+    }
+
+    // Cache credentials for 23 hours (they expire in 24h)
+    if (twilioIceServers && Date.now() < twilioIceExpiry) {
+        return twilioIceServers;
+    }
+
+    try {
+        const auth = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+        const response = await fetch(
+            `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Tokens.json`,
+            {
+                method: 'POST',
+                headers: { 'Authorization': `Basic ${auth}` }
+            }
+        );
+
+        if (!response.ok) {
+            console.error('[WebRTC] Twilio token request failed:', response.status);
+            return null;
+        }
+
+        const data = await response.json();
+        twilioIceServers = data.ice_servers;
+        twilioIceExpiry = Date.now() + 23 * 60 * 60 * 1000; // 23 hours
+
+        console.log('[WebRTC] Fetched Twilio TURN credentials, expires in 24h');
+        return twilioIceServers;
+    } catch (error) {
+        console.error('[WebRTC] Error fetching Twilio credentials:', error);
+        return null;
+    }
+}
+
 /**
  * WebRTC peer connection manager for a single client
  */
@@ -69,27 +116,10 @@ class RTCPeer {
         this.publicHost = config.publicHost || null;
         this.publicPort = config.publicPort || 0;
 
-        // ICE servers - STUN for discovery, TURN for relay when direct fails
-        this.iceServers = [
+        // ICE servers - will be populated with Twilio or fallback STUN
+        this.iceServers = config.iceServers || [
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun.cloudflare.com:3478' },
-            // Free TURN servers from FreeTURN.net
-            {
-                urls: 'turn:freestun.net:3478',
-                username: 'free',
-                credential: 'free'
-            },
-            {
-                urls: 'turn:freestun.net:5349',
-                username: 'free',
-                credential: 'free'
-            },
-            {
-                urls: 'turns:freestun.net:5349',
-                username: 'free',
-                credential: 'free'
-            }
+            { urls: 'stun:stun1.l.google.com:19302' }
         ];
     }
 
@@ -313,15 +343,28 @@ export class WebRTCServer {
         // Create or get existing peer
         let peer = this.peers.get(clientId);
         if (!peer) {
+            // Try to get Twilio TURN credentials first
+            const twilioServers = await getTwilioIceServers();
+
             // Pass PlayIt.gg config to peer (read at runtime after dotenv loads)
             const playitConfig = getPlayItConfig();
             if (playitConfig.host && playitConfig.port) {
                 console.log(`[WebRTC] Using PlayIt.gg: ${playitConfig.host}:${playitConfig.port}`);
             }
+
             const config = {
                 publicHost: playitConfig.host,
-                publicPort: playitConfig.port
+                publicPort: playitConfig.port,
+                iceServers: twilioServers || [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
             };
+
+            if (twilioServers) {
+                console.log(`[WebRTC] Using Twilio TURN for client ${clientId}`);
+            }
+
             peer = new RTCPeer(clientId, sendToClient, config);
             peer.onMessage = (data) => {
                 if (this.onMessage) {

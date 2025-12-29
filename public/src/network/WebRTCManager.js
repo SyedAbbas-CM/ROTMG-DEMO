@@ -22,27 +22,11 @@ export class WebRTCManager {
         this.bytesReceived = 0;
 
         // ICE servers for NAT traversal
-        // STUN helps discover public IP, TURN relays traffic when direct connection fails
+        // STUN helps discover public IP
+        // TURN credentials will be provided by server if Twilio is configured
         this.iceServers = [
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun.cloudflare.com:3478' },
-            // Free TURN servers from FreeTURN.net
-            {
-                urls: 'turn:freestun.net:3478',
-                username: 'free',
-                credential: 'free'
-            },
-            {
-                urls: 'turn:freestun.net:5349',
-                username: 'free',
-                credential: 'free'
-            },
-            {
-                urls: 'turns:freestun.net:5349',
-                username: 'free',
-                credential: 'free'
-            }
+            { urls: 'stun:stun1.l.google.com:19302' }
         ];
 
         console.log('[WebRTC] Manager initialized');
@@ -52,18 +36,10 @@ export class WebRTCManager {
      * Initialize WebRTC connection
      * Called after WebSocket connection is established
      *
-     * NOTE: WebRTC is currently disabled because free TURN servers are unreliable.
-     * For UDP support through NAT/tunnel, consider:
-     * - Twilio TURN (paid, has free tier)
-     * - Self-hosted Coturn on a VPS
-     * - Direct server access without tunnel
+     * If TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are set on server,
+     * TURN servers will be available for NAT traversal.
      */
     async initialize() {
-        // Temporarily disable WebRTC - all free TURN servers are down
-        // The game works fine over TCP with position interpolation
-        console.log('[WebRTC] Disabled - using TCP WebSocket with interpolation');
-        return false;
-
         try {
             console.log('[WebRTC] Starting initialization...');
 
