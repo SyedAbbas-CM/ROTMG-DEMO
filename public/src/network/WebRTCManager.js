@@ -26,21 +26,22 @@ export class WebRTCManager {
         this.iceServers = [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
-            // Free TURN servers from OpenRelay (for when direct connection fails)
+            { urls: 'stun:stun.cloudflare.com:3478' },
+            // Free TURN servers from FreeTURN.net
             {
-                urls: 'turn:openrelay.metered.ca:80',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
+                urls: 'turn:freestun.net:3478',
+                username: 'free',
+                credential: 'free'
             },
             {
-                urls: 'turn:openrelay.metered.ca:443',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
+                urls: 'turn:freestun.net:5349',
+                username: 'free',
+                credential: 'free'
             },
             {
-                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
+                urls: 'turns:freestun.net:5349',
+                username: 'free',
+                credential: 'free'
             }
         ];
 
@@ -50,8 +51,19 @@ export class WebRTCManager {
     /**
      * Initialize WebRTC connection
      * Called after WebSocket connection is established
+     *
+     * NOTE: WebRTC is currently disabled because free TURN servers are unreliable.
+     * For UDP support through NAT/tunnel, consider:
+     * - Twilio TURN (paid, has free tier)
+     * - Self-hosted Coturn on a VPS
+     * - Direct server access without tunnel
      */
     async initialize() {
+        // Temporarily disable WebRTC - all free TURN servers are down
+        // The game works fine over TCP with position interpolation
+        console.log('[WebRTC] Disabled - using TCP WebSocket with interpolation');
+        return false;
+
         try {
             console.log('[WebRTC] Starting initialization...');
 

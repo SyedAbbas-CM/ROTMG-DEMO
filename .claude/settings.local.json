@@ -91,7 +91,9 @@
       "Bash(cloudflared tunnel:*)",
       "Bash(nslookup:*)",
       "WebFetch(domain:github.com)",
-      "Bash(timeout 90 sshpass:*)"
+      "Bash(timeout 90 sshpass:*)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:speed.cloudflare.com)"
     ],
     "deny": []
   }

@@ -73,21 +73,22 @@ class RTCPeer {
         this.iceServers = [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
-            // Free TURN servers from OpenRelay
+            { urls: 'stun:stun.cloudflare.com:3478' },
+            // Free TURN servers from FreeTURN.net
             {
-                urls: 'turn:openrelay.metered.ca:80',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
+                urls: 'turn:freestun.net:3478',
+                username: 'free',
+                credential: 'free'
             },
             {
-                urls: 'turn:openrelay.metered.ca:443',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
+                urls: 'turn:freestun.net:5349',
+                username: 'free',
+                credential: 'free'
             },
             {
-                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
+                urls: 'turns:freestun.net:5349',
+                username: 'free',
+                credential: 'free'
             }
         ];
     }
