@@ -453,7 +453,8 @@ console.log("Map save function available. Use window.saveMapData() in the consol
  * ClientNetworkManager
  * Handles WebSocket communication with the game server using binary packet format
  */
-import { BinaryPacket, MessageType } from '/common/protocol.js';
+import { BinaryPacket, MessageType, UDP_MESSAGES } from '/common/protocol.js';
+import { WebRTCManager } from './WebRTCManager.js';
 
 export class ClientNetworkManager {
     /**
@@ -477,7 +478,11 @@ export class ClientNetworkManager {
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 2000; // ms
         this.timeOffset = 0; // Client-server time offset
-        
+
+        // WebRTC for UDP-like transport
+        this.webrtc = null;
+        this.useWebRTC = true; // Enable WebRTC by default
+
         // Store game reference for callbacks
         this.game = game || {};
         
@@ -823,6 +828,21 @@ export class ClientNetworkManager {
             }
         };
 
+        // WebRTC signaling handlers
+        this.handlers[MessageType.RTC_ANSWER] = (data) => {
+            console.log('[WebRTC] Received answer from server');
+            if (this.webrtc) {
+                this.webrtc.handleAnswer(data);
+            }
+        };
+
+        this.handlers[MessageType.RTC_ICE_CANDIDATE] = (data) => {
+            console.log('[WebRTC] Received ICE candidate from server');
+            if (this.webrtc) {
+                this.webrtc.handleIceCandidate(data);
+            }
+        };
+
         // Handle authoritative world switch from server
         this.handlers[MessageType.WORLD_SWITCH] = (data) => {
             console.log(`[NETWORK] WORLD_SWITCH → map ${data.mapId} spawn (${data.spawnX},${data.spawnY})`);
@@ -1022,10 +1042,10 @@ export class ClientNetworkManager {
                     this.connected = true;
                     this.connecting = false;
                     this.reconnectAttempts = 0;
-                    
+
                     // With the WebSocket established we can now attach all message handlers
                     this.setupMessageHandlers();
-                    
+
                     // Send handshake
                     this.sendHandshake();
 
@@ -1035,7 +1055,12 @@ export class ClientNetworkManager {
 
                     // Drain message queue
                     this.drainMessageQueue();
-                    
+
+                    // Initialize WebRTC for UDP-like transport (after short delay to ensure handshake completes)
+                    if (this.useWebRTC) {
+                        setTimeout(() => this.initializeWebRTC(), 500);
+                    }
+
                     resolve();
                 };
                 
@@ -1231,12 +1256,21 @@ export class ClientNetworkManager {
             console.log(`Queued message type ${type} for later sending`);
             return false;
         }
-        
+
         try {
-            // Encode binary packet
+            // Try WebRTC DataChannel for UDP-suitable messages
+            if (this.webrtc && UDP_MESSAGES.has(type)) {
+                const sentViaRTC = this.webrtc.send(type, data);
+                if (sentViaRTC) {
+                    return true; // Successfully sent via UDP
+                }
+                // Fall through to WebSocket if WebRTC failed
+            }
+
+            // Encode binary packet for WebSocket
             const packet = BinaryPacket.encode(type, data);
-            
-            // Send packet
+
+            // Send packet via WebSocket (TCP)
             this.socket.send(packet);
             return true;
         } catch (error) {
@@ -1452,6 +1486,49 @@ export class ClientNetworkManager {
         return this.send(MessageType.PLAYER_RESPAWN, {
             timestamp: Date.now()
         });
+    }
+
+    /**
+     * Initialize WebRTC for UDP-like transport
+     */
+    async initializeWebRTC() {
+        if (!this.useWebRTC) {
+            console.log('[WebRTC] Disabled, using WebSocket only');
+            return;
+        }
+
+        try {
+            console.log('[WebRTC] Initializing...');
+            this.webrtc = new WebRTCManager(this);
+            const success = await this.webrtc.initialize();
+
+            if (success) {
+                console.log('[WebRTC] Initialization started, waiting for connection...');
+            } else {
+                console.warn('[WebRTC] Initialization failed, using WebSocket only');
+                this.webrtc = null;
+            }
+        } catch (error) {
+            console.error('[WebRTC] Error during initialization:', error);
+            this.webrtc = null;
+        }
+    }
+
+    /**
+     * Get WebRTC connection stats
+     */
+    getWebRTCStats() {
+        if (this.webrtc) {
+            return this.webrtc.getStats();
+        }
+        return { isReady: false, reason: 'WebRTC not initialized' };
+    }
+
+    /**
+     * Check if WebRTC DataChannel is ready
+     */
+    isUDPReady() {
+        return this.webrtc?.isReady || false;
     }
 }
 

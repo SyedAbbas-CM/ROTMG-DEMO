@@ -51,6 +51,8 @@ import { worldSpawns, getWorldSpawns } from './config/world-spawns.js';
 // ---- Player Classes & Abilities ----
 import { PlayerClasses, getClassById } from './src/player/PlayerClasses.js';
 import AbilitySystem from './src/player/AbilitySystem.js';
+// ---- WebRTC for UDP-like transport ----
+import { getWebRTCServer } from './src/network/WebRTCServer.js';
 
 // Debug flags to control logging
 const DEBUG = {
@@ -991,6 +993,40 @@ function handleClientMessage(clientId, message) {
 }
 
 // ---------------------------------------------------------------
+// Helper: Handle WebRTC SDP offer from client
+// ---------------------------------------------------------------
+async function handleRTCOffer(clientId, data) {
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  const webrtcServer = getWebRTCServer();
+  if (!webrtcServer.isEnabled()) {
+    console.log(`[WebRTC] Server not available, client ${clientId} will use WebSocket only`);
+    return;
+  }
+
+  // Create a sendToClient function for this client
+  const sendFunc = (type, msgData) => {
+    sendToClient(client.socket, type, msgData);
+  };
+
+  const success = await webrtcServer.handleOffer(clientId, data, sendFunc);
+  if (success) {
+    console.log(`[WebRTC] Client ${clientId}: Offer handled successfully`);
+  }
+}
+
+// ---------------------------------------------------------------
+// Helper: Handle WebRTC ICE candidate from client
+// ---------------------------------------------------------------
+async function handleRTCIceCandidate(clientId, data) {
+  const webrtcServer = getWebRTCServer();
+  if (webrtcServer.isEnabled()) {
+    await webrtcServer.handleIceCandidate(clientId, data);
+  }
+}
+
+// ---------------------------------------------------------------
 // Helper: Handle client disconnect
 // ---------------------------------------------------------------
 function handleClientDisconnect(clientId) {
@@ -1000,6 +1036,12 @@ function handleClientDisconnect(clientId) {
   const mapId = client.mapId;
   if (DEBUG.connections) {
     console.log(`[SERVER] Client disconnected: ${clientId} from map ${mapId}`);
+  }
+
+  // Cleanup WebRTC peer connection
+  const webrtcServer = getWebRTCServer();
+  if (webrtcServer.isEnabled()) {
+    webrtcServer.removeClient(clientId);
   }
 
   // Remove client from the map
@@ -1767,6 +1809,15 @@ wss.on('connection', async (socket, req) => {
           handleUnitCommand(clientId, packet.data);
         } else if(packet.type === MessageType.USE_ABILITY){
           handleUseAbility(clientId, packet.data);
+        } else if(packet.type === MessageType.RTC_OFFER){
+          // WebRTC: Handle SDP offer from client
+          handleRTCOffer(clientId, packet.data);
+        } else if(packet.type === MessageType.RTC_ICE_CANDIDATE){
+          // WebRTC: Handle ICE candidate from client
+          handleRTCIceCandidate(clientId, packet.data);
+        } else if(packet.type === MessageType.RTC_READY){
+          // WebRTC: Client's DataChannel is ready
+          console.log(`[WebRTC] Client ${clientId} DataChannel ready`);
         } else {
           handleClientMessage(clientId, message);
         }

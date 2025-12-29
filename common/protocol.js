@@ -99,7 +99,42 @@ export const MessageType = {
 
   // Units
   UNIT_COMMAND: 100,
-  UNIT_UPDATE: 101
+  UNIT_UPDATE: 101,
+
+  // Abilities
+  USE_ABILITY: 110,
+  ABILITY_RESULT: 111,
+
+  // WebRTC Signaling (for UDP DataChannel)
+  RTC_OFFER: 120,      // Client sends SDP offer to server
+  RTC_ANSWER: 121,     // Server sends SDP answer to client
+  RTC_ICE_CANDIDATE: 122, // ICE candidate exchange (both directions)
+  RTC_READY: 123       // DataChannel is ready for use
 };
+
+// Messages that should go over UDP (DataChannel) when available
+export const UDP_MESSAGES = new Set([
+  41, // MessageType.PLAYER_UPDATE
+  12, // MessageType.PLAYER_UPDATE (duplicate check)
+  21, // MessageType.ENEMY_UPDATE
+  30, // MessageType.BULLET_CREATE
+  31, // MessageType.BULLET_LIST
+  60, // MessageType.WORLD_UPDATE
+  40, // MessageType.COLLISION
+  41, // MessageType.COLLISION_RESULT
+]);
+
+// Messages that must stay on TCP (WebSocket) for reliability
+export const TCP_MESSAGES = new Set([
+  1,  // HANDSHAKE
+  2,  // HANDSHAKE_ACK
+  10, // PLAYER_JOIN
+  11, // PLAYER_LEAVE
+  14, // PLAYER_DEATH
+  15, // PLAYER_RESPAWN
+  35, // INVENTORY_UPDATE
+  90, // CHAT_MESSAGE
+  120, 121, 122, 123 // RTC signaling
+]);
 
 

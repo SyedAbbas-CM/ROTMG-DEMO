@@ -80,8 +80,29 @@ export const MessageType = {
     // Units
     UNIT_COMMAND: 100,
     UNIT_UPDATE: 101,
-    UNIT_SPAWN: 102
+    UNIT_SPAWN: 102,
+
+    // Abilities
+    USE_ABILITY: 110,
+    ABILITY_RESULT: 111,
+
+    // WebRTC Signaling (for UDP DataChannel)
+    RTC_OFFER: 120,
+    RTC_ANSWER: 121,
+    RTC_ICE_CANDIDATE: 122,
+    RTC_READY: 123
 };
+
+// Messages that should go over UDP (DataChannel) when available
+export const UDP_MESSAGES = new Set([
+    12, // PLAYER_UPDATE
+    21, // ENEMY_UPDATE
+    30, // BULLET_CREATE
+    31, // BULLET_LIST
+    60, // WORLD_UPDATE
+    40, // COLLISION
+    41  // COLLISION_RESULT
+]);
 
 // Fallback JavaScript implementation
 class JavaScriptBinaryPacket {
