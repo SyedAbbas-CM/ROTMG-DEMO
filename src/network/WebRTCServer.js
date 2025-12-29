@@ -46,11 +46,11 @@ if (!wrtc) {
 // When using playit.gg, set these environment variables:
 //   PLAYIT_HOST=your-game.at.ply.gg (the public hostname)
 //   PLAYIT_UDP_PORT=12345 (the public UDP port assigned by playit)
-const PLAYIT_HOST = process.env.PLAYIT_HOST || null;
-const PLAYIT_UDP_PORT = parseInt(process.env.PLAYIT_UDP_PORT || '0', 10);
-
-if (PLAYIT_HOST && PLAYIT_UDP_PORT) {
-    console.log(`[WebRTC Server] PlayIt.gg mode: ${PLAYIT_HOST}:${PLAYIT_UDP_PORT}`);
+// NOTE: Read at runtime via getPlayItConfig() to ensure dotenv has loaded
+function getPlayItConfig() {
+    const host = process.env.PLAYIT_HOST || null;
+    const port = parseInt(process.env.PLAYIT_UDP_PORT || '0', 10);
+    return { host, port };
 }
 
 /**
@@ -291,10 +291,14 @@ export class WebRTCServer {
         // Create or get existing peer
         let peer = this.peers.get(clientId);
         if (!peer) {
-            // Pass PlayIt.gg config to peer
+            // Pass PlayIt.gg config to peer (read at runtime after dotenv loads)
+            const playitConfig = getPlayItConfig();
+            if (playitConfig.host && playitConfig.port) {
+                console.log(`[WebRTC] Using PlayIt.gg: ${playitConfig.host}:${playitConfig.port}`);
+            }
             const config = {
-                publicHost: PLAYIT_HOST,
-                publicPort: PLAYIT_UDP_PORT
+                publicHost: playitConfig.host,
+                publicPort: playitConfig.port
             };
             peer = new RTCPeer(clientId, sendToClient, config);
             peer.onMessage = (data) => {
