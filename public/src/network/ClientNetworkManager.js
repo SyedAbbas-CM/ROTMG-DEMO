@@ -455,6 +455,7 @@ console.log("Map save function available. Use window.saveMapData() in the consol
  */
 import { BinaryPacket, MessageType, UDP_MESSAGES } from '/common/protocol.js';
 import { WebRTCManager } from './WebRTCManager.js';
+import { WebTransportManager } from './WebTransportManager.js';
 
 export class ClientNetworkManager {
     /**
@@ -479,9 +480,14 @@ export class ClientNetworkManager {
         this.reconnectDelay = 2000; // ms
         this.timeOffset = 0; // Client-server time offset
 
-        // WebRTC for UDP-like transport
+        // WebRTC for UDP-like transport (legacy, may not work through tunnels)
         this.webrtc = null;
-        this.useWebRTC = true; // Enable WebRTC by default
+        this.useWebRTC = false; // Disable WebRTC by default (use WebTransport instead)
+
+        // WebTransport for true UDP-like transport (works through tunnels)
+        this.webtransport = null;
+        this.useWebTransport = true; // Enable WebTransport by default
+        this.webTransportUrl = null; // Set via config or auto-detect
 
         // Store game reference for callbacks
         this.game = game || {};
@@ -1258,11 +1264,20 @@ export class ClientNetworkManager {
         }
 
         try {
-            // Try WebRTC DataChannel for UDP-suitable messages
-            if (this.webrtc && UDP_MESSAGES.has(type)) {
+            // Try WebTransport for UDP-suitable messages (preferred)
+            if (this.webtransport?.isReady && UDP_MESSAGES.has(type)) {
+                const sentViaWT = this.webtransport.send(type, data);
+                if (sentViaWT) {
+                    return true; // Successfully sent via WebTransport/QUIC
+                }
+                // Fall through to WebRTC or WebSocket if WebTransport failed
+            }
+
+            // Try WebRTC DataChannel for UDP-suitable messages (fallback)
+            if (this.webrtc?.isReady && UDP_MESSAGES.has(type)) {
                 const sentViaRTC = this.webrtc.send(type, data);
                 if (sentViaRTC) {
-                    return true; // Successfully sent via UDP
+                    return true; // Successfully sent via WebRTC
                 }
                 // Fall through to WebSocket if WebRTC failed
             }
@@ -1528,7 +1543,75 @@ export class ClientNetworkManager {
      * Check if WebRTC DataChannel is ready
      */
     isUDPReady() {
-        return this.webrtc?.isReady || false;
+        return this.webtransport?.isReady || this.webrtc?.isReady || false;
+    }
+
+    /**
+     * Initialize WebTransport for UDP-like transport
+     * @param {string} url - Optional WebTransport server URL
+     */
+    async initializeWebTransport(url = null) {
+        if (!this.useWebTransport) {
+            console.log('[WebTransport] Disabled, using WebSocket only');
+            return;
+        }
+
+        // Check browser support
+        if (typeof WebTransport === 'undefined') {
+            console.warn('[WebTransport] Not supported in this browser, falling back to WebSocket');
+            return;
+        }
+
+        try {
+            console.log('[WebTransport] Initializing...');
+            this.webtransport = new WebTransportManager(this);
+
+            // Determine WebTransport URL
+            // Priority: 1. Passed URL, 2. Config, 3. Auto-detect from WebSocket URL
+            let wtUrl = url || this.webTransportUrl;
+
+            if (!wtUrl) {
+                // Auto-detect: replace wss:// with https:// and use port 4433
+                // e.g., wss://eternalconquests.com -> https://quic.eternalconquests.com:4433/game
+                const wsUrl = new URL(this.serverUrl.replace('ws://', 'http://').replace('wss://', 'https://'));
+                wtUrl = `https://quic.${wsUrl.hostname}:4433/game`;
+                console.log(`[WebTransport] Auto-detected URL: ${wtUrl}`);
+            }
+
+            const success = await this.webtransport.initialize(wtUrl);
+
+            if (success) {
+                console.log('[WebTransport] Connected successfully!');
+            } else {
+                console.warn('[WebTransport] Connection failed, using WebSocket only');
+                this.webtransport = null;
+            }
+        } catch (error) {
+            console.error('[WebTransport] Error during initialization:', error);
+            this.webtransport = null;
+        }
+    }
+
+    /**
+     * Get WebTransport connection stats
+     */
+    getWebTransportStats() {
+        if (this.webtransport) {
+            return this.webtransport.getStats();
+        }
+        return { isReady: false, reason: 'WebTransport not initialized' };
+    }
+
+    /**
+     * Get combined UDP transport stats
+     */
+    getUDPStats() {
+        return {
+            webtransport: this.getWebTransportStats(),
+            webrtc: this.getWebRTCStats(),
+            activeTransport: this.webtransport?.isReady ? 'WebTransport' :
+                             this.webrtc?.isReady ? 'WebRTC' : 'WebSocket'
+        };
     }
 }
 

@@ -53,6 +53,8 @@ import { PlayerClasses, getClassById } from './src/player/PlayerClasses.js';
 import AbilitySystem from './src/player/AbilitySystem.js';
 // ---- WebRTC for UDP-like transport ----
 import { getWebRTCServer } from './src/network/WebRTCServer.js';
+// ---- WebTransport for true UDP transport (QUIC) ----
+import { getWebTransportServer } from './src/network/WebTransportServer.js';
 
 // Debug flags to control logging
 const DEBUG = {
@@ -989,6 +991,50 @@ function handlePlayerText(clientId, data) {
 function handleClientMessage(clientId, message) {
   if (DEBUG.messages) {
     console.log(`[NET] Unhandled message from client ${clientId}:`, message);
+  }
+}
+
+// ---------------------------------------------------------------
+// Helper: Route incoming packet by type (shared by WebSocket/WebTransport)
+// ---------------------------------------------------------------
+function routePacket(clientId, type, data) {
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  if (type === MessageType.PING) {
+    if (data && data.timestamp) {
+      const rtt = Date.now() - data.timestamp;
+      if (client.player) {
+        client.player.rtt = client.player.rtt * 0.8 + rtt * 0.2;
+      }
+    }
+    sendToClient(client.socket, MessageType.PONG, data);
+  } else if (type === MessageType.MOVE_ITEM) {
+    processMoveItem(clientId, data);
+  } else if (type === MessageType.PICKUP_ITEM) {
+    processPickupMessage(clientId, data);
+  } else if (type === MessageType.PLAYER_TEXT) {
+    handlePlayerText(clientId, data);
+  } else if (type === MessageType.CHUNK_REQUEST) {
+    handleChunkRequest(clientId, data);
+  } else if (type === MessageType.BULLET_CREATE) {
+    handlePlayerShoot(clientId, data);
+  } else if (type === MessageType.PLAYER_UPDATE) {
+    handlePlayerUpdate(clientId, data);
+  } else if (type === MessageType.PLAYER_RESPAWN) {
+    handlePlayerRespawn(clientId);
+  } else if (type === MessageType.UNIT_SPAWN) {
+    handleUnitSpawn(clientId, data);
+  } else if (type === MessageType.UNIT_COMMAND) {
+    handleUnitCommand(clientId, data);
+  } else if (type === MessageType.USE_ABILITY) {
+    handleUseAbility(clientId, data);
+  } else if (type === MessageType.RTC_OFFER) {
+    handleRTCOffer(clientId, data);
+  } else if (type === MessageType.RTC_ICE_CANDIDATE) {
+    handleRTCIceCandidate(clientId, data);
+  } else if (type === MessageType.RTC_READY) {
+    console.log(`[Transport] Client ${clientId} UDP transport ready`);
   }
 }
 
@@ -2245,6 +2291,37 @@ function tryListen(port, attemptsLeft = 5) {
       }
     } catch (err) {
       console.error('[SERVER] Failed to initialize boss AI:', err);
+    }
+
+    // Initialize WebTransport server for UDP-like transport
+    try {
+      const webTransportServer = getWebTransportServer();
+      if (webTransportServer.enabled) {
+        const wtStarted = await webTransportServer.start();
+        if (wtStarted) {
+          console.log('[SERVER] WebTransport server started on port', webTransportServer.port);
+
+          // Set up message handler to route to game logic
+          webTransportServer.onMessage = (clientId, type, data) => {
+            // Route WebTransport messages through same handlers as WebSocket
+            routePacket(clientId, type, data);
+          };
+
+          webTransportServer.onConnect = (clientId, session) => {
+            console.log(`[WebTransport] Client ${clientId} connected`);
+          };
+
+          webTransportServer.onDisconnect = (clientId) => {
+            console.log(`[WebTransport] Client ${clientId} disconnected`);
+          };
+        } else {
+          console.log('[SERVER] WebTransport server failed to start (check certificates)');
+        }
+      } else {
+        console.log('[SERVER] WebTransport disabled (set WEBTRANSPORT_ENABLED=true to enable)');
+      }
+    } catch (err) {
+      console.error('[SERVER] WebTransport initialization error:', err.message);
     }
 
     // Remove error listener; server is good.
