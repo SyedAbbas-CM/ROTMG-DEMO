@@ -13,8 +13,10 @@ export class ClientBulletManager {
     
     // Structure of Arrays for performance
     this.id = new Array(maxBullets);        // Unique bullet IDs
-    this.x = new Float32Array(maxBullets);  // X position
-    this.y = new Float32Array(maxBullets);  // Y position
+    this.x = new Float32Array(maxBullets);  // X position (rendered)
+    this.y = new Float32Array(maxBullets);  // Y position (rendered)
+    this.targetX = new Float32Array(maxBullets);  // Target X from server (for interpolation)
+    this.targetY = new Float32Array(maxBullets);  // Target Y from server (for interpolation)
     this.vx = new Float32Array(maxBullets); // X velocity
     this.vy = new Float32Array(maxBullets); // Y velocity
     this.life = new Float32Array(maxBullets); // Remaining life in seconds
@@ -23,6 +25,9 @@ export class ClientBulletManager {
     this.ownerId = new Array(maxBullets);   // Who fired this bullet
     this.damage = new Float32Array(maxBullets); // Damage value
     this.faction = new Uint8Array(maxBullets); // Faction layer (0=enemy, 1-12=player factions)
+
+    // Interpolation settings
+    this.interpolationSpeed = 15.0; // How fast to blend towards server position (higher = faster snap)
 
     // World association so client can filter/collide correctly
     this.worldId = new Array(maxBullets);
@@ -66,6 +71,8 @@ export class ClientBulletManager {
     this.id[index] = bulletId;
     this.x[index] = bulletData.x;
     this.y[index] = bulletData.y;
+    this.targetX[index] = bulletData.x;  // Initialize target to current position
+    this.targetY[index] = bulletData.y;
     this.vx[index] = bulletData.vx;
     this.vy[index] = bulletData.vy;
     this.life[index] = bulletData.lifetime || 1.0; // Default 1 second (10 tiles at 10 tiles/sec)
@@ -128,9 +135,14 @@ export class ClientBulletManager {
     for (let i = 0; i < count; i++) {
       const lifeBefore = this.life[i];
 
-      // Update position
-      this.x[i] += this.vx[i] * deltaTime;
-      this.y[i] += this.vy[i] * deltaTime;
+      // Update target position based on velocity (server prediction)
+      this.targetX[i] += this.vx[i] * deltaTime;
+      this.targetY[i] += this.vy[i] * deltaTime;
+
+      // Smoothly interpolate actual position towards target (reduces jitter)
+      const interpFactor = Math.min(1.0, this.interpolationSpeed * deltaTime);
+      this.x[i] += (this.targetX[i] - this.x[i]) * interpFactor;
+      this.y[i] += (this.targetY[i] - this.y[i]) * interpFactor;
 
       // Decrement lifetime
       this.life[i] -= deltaTime;
@@ -296,20 +308,21 @@ export class ClientBulletManager {
       const index = this.findIndexById(bullet.id);
 
       if (index !== -1) {
-        // DIAGNOSTIC: Log position changes
-        const oldX = this.x[index];
-        const oldY = this.y[index];
-        const deltaX = bullet.x - oldX;
-        const deltaY = bullet.y - oldY;
-        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) { // Large jump
-          console.warn(`[CLIENT BULLET JUMP] Bullet ${bullet.id} jumped ${deltaX.toFixed(2)} tiles in X (from ${oldX.toFixed(2)} to ${bullet.x.toFixed(2)})`);
-        }
-
-        // Update existing bullet
-        this.x[index] = bullet.x;
-        this.y[index] = bullet.y;
+        // Update existing bullet - use interpolation to prevent jitter
+        // Set TARGET position from server, actual position will interpolate towards it
+        this.targetX[index] = bullet.x;
+        this.targetY[index] = bullet.y;
         this.vx[index] = bullet.vx;
         this.vy[index] = bullet.vy;
+
+        // If this is the first update or bullet jumped too far (>10 tiles), snap immediately
+        const deltaX = bullet.x - this.x[index];
+        const deltaY = bullet.y - this.y[index];
+        const distSq = deltaX * deltaX + deltaY * deltaY;
+        if (distSq > 100) { // > 10 tiles, snap immediately
+          this.x[index] = bullet.x;
+          this.y[index] = bullet.y;
+        }
         this.life[index] = bullet.life || bullet.lifetime || 3.0;
         this.width[index] = bullet.width || 5;
         this.height[index] = bullet.height || 5;
