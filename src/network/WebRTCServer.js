@@ -17,13 +17,29 @@ try {
 }
 
 // Try to load wrtc package (required for Node.js WebRTC)
+// Try multiple forks - some have better prebuilt binary support
 let wrtc = null;
-try {
-    wrtc = await import('wrtc');
-    console.log('[WebRTC Server] wrtc package loaded successfully');
-} catch (error) {
-    console.warn('[WebRTC Server] wrtc package not available - WebRTC disabled');
-    console.warn('[WebRTC Server] Install with: npm install wrtc');
+const wrtcPackages = [
+    '@roamhq/wrtc',  // Most actively maintained, has prebuilt binaries
+    '@koush/wrtc',    // Another maintained fork
+    'wrtc'            // Original package (often needs compilation)
+];
+
+for (const packageName of wrtcPackages) {
+    try {
+        wrtc = await import(packageName);
+        // Handle default export
+        if (wrtc.default) wrtc = wrtc.default;
+        console.log(`[WebRTC Server] Loaded ${packageName} successfully`);
+        break;
+    } catch {
+        // Try next package
+    }
+}
+
+if (!wrtc) {
+    console.warn('[WebRTC Server] No wrtc package available - WebRTC disabled');
+    console.warn('[WebRTC Server] Install with: npm install @roamhq/wrtc');
 }
 
 /**
