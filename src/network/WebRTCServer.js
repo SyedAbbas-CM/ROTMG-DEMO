@@ -69,10 +69,26 @@ class RTCPeer {
         this.publicHost = config.publicHost || null;
         this.publicPort = config.publicPort || 0;
 
-        // ICE servers
+        // ICE servers - STUN for discovery, TURN for relay when direct fails
         this.iceServers = [
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
+            { urls: 'stun:stun1.l.google.com:19302' },
+            // Free TURN servers from OpenRelay
+            {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            }
         ];
     }
 

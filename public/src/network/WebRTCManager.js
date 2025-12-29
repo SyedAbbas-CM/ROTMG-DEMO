@@ -22,9 +22,26 @@ export class WebRTCManager {
         this.bytesReceived = 0;
 
         // ICE servers for NAT traversal
+        // STUN helps discover public IP, TURN relays traffic when direct connection fails
         this.iceServers = [
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
+            { urls: 'stun:stun1.l.google.com:19302' },
+            // Free TURN servers from OpenRelay (for when direct connection fails)
+            {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            }
         ];
 
         console.log('[WebRTC] Manager initialized');
