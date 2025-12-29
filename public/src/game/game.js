@@ -63,26 +63,19 @@ const OVERRIDE_PORT = localStorage.getItem('DEV_SERVER_PORT');
 // If the page itself is served from the same host:port as the WebSocket server we can reuse location.port
 const PAGE_PORT = location.port && location.port !== '' ? location.port : null;
 
-// PlayIt.gg configuration - direct TCP+UDP tunnel
-const PLAYIT_WS_URL = 'ws://log-tanzania.gl.at.ply.gg:10615';
-
-// For HTTPS on standard port (tunnel) OR known production domains
-const IS_CLOUDFLARE_TUNNEL = (location.protocol === 'https:' && !location.port) ||
+// For HTTPS on standard port (tunnel) OR known production domains, don't add any port suffix
+// WebSocket always goes through Cloudflare (wss://), PlayIt is only for WebRTC UDP
+const IS_TUNNEL = (location.protocol === 'https:' && !location.port) ||
+    location.hostname.includes('eternalconquests.com') ||
     location.hostname.includes('trycloudflare.com');
-
-// Use PlayIt.gg for production (eternalconquests.com serves page, playit handles WebSocket)
-const USE_PLAYIT = location.hostname.includes('eternalconquests.com') ||
-    localStorage.getItem('USE_PLAYIT') === 'true';
 
 const SERVER_PORT = OVERRIDE_PORT || PAGE_PORT || DEFAULT_SERVER_PORT;
 
-const SERVER_URL = USE_PLAYIT
-    ? PLAYIT_WS_URL
-    : IS_CLOUDFLARE_TUNNEL
-        ? `wss://${location.hostname}`
-        : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:${SERVER_PORT}`;
+const SERVER_URL = IS_TUNNEL
+    ? `wss://${location.hostname}`
+    : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:${SERVER_PORT}`;
 
-console.log('[NETWORK] USE_PLAYIT:', USE_PLAYIT, 'SERVER_URL:', SERVER_URL);
+console.log('[NETWORK] IS_TUNNEL:', IS_TUNNEL, 'SERVER_URL:', SERVER_URL);
 
 // Collision statistics
 const collisionStats = {
