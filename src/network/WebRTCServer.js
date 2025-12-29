@@ -42,17 +42,32 @@ if (!wrtc) {
     console.warn('[WebRTC Server] Install with: npm install @roamhq/wrtc');
 }
 
+// PlayIt.gg or custom tunnel configuration
+// When using playit.gg, set these environment variables:
+//   PLAYIT_HOST=your-game.at.ply.gg (the public hostname)
+//   PLAYIT_UDP_PORT=12345 (the public UDP port assigned by playit)
+const PLAYIT_HOST = process.env.PLAYIT_HOST || null;
+const PLAYIT_UDP_PORT = parseInt(process.env.PLAYIT_UDP_PORT || '0', 10);
+
+if (PLAYIT_HOST && PLAYIT_UDP_PORT) {
+    console.log(`[WebRTC Server] PlayIt.gg mode: ${PLAYIT_HOST}:${PLAYIT_UDP_PORT}`);
+}
+
 /**
  * WebRTC peer connection manager for a single client
  */
 class RTCPeer {
-    constructor(clientId, sendToClient) {
+    constructor(clientId, sendToClient, config = {}) {
         this.clientId = clientId;
         this.sendToClient = sendToClient; // Function to send via WebSocket
         this.peerConnection = null;
         this.dataChannel = null;
         this.isReady = false;
         this.pendingCandidates = [];
+
+        // PlayIt.gg public address for ICE candidates
+        this.publicHost = config.publicHost || null;
+        this.publicPort = config.publicPort || 0;
 
         // ICE servers
         this.iceServers = [
@@ -123,8 +138,31 @@ class RTCPeer {
         // ICE candidate generated - send to client
         this.peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
+                let candidateStr = event.candidate.candidate;
+
+                // If using PlayIt.gg, replace local IP with public address
+                // ICE candidate format: "candidate:... typ host ..." or "candidate:... typ srflx ..."
+                if (this.publicHost && this.publicPort && candidateStr.includes(' udp ')) {
+                    // Replace the IP and port in the candidate string
+                    // Format: candidate:foundation component protocol priority ip port typ type
+                    const parts = candidateStr.split(' ');
+                    if (parts.length >= 5) {
+                        parts[4] = this.publicHost; // Replace IP
+                        parts[5] = String(this.publicPort); // Replace port
+                        // Change type to 'srflx' (server reflexive) since it's a public address
+                        const typIndex = parts.indexOf('typ');
+                        if (typIndex !== -1 && parts[typIndex + 1] === 'host') {
+                            parts[typIndex + 1] = 'srflx';
+                            // Add raddr and rport for srflx candidates
+                            parts.push('raddr', '0.0.0.0', 'rport', '0');
+                        }
+                        candidateStr = parts.join(' ');
+                        console.log(`[WebRTC] Rewritten ICE candidate for PlayIt: ${candidateStr.substring(0, 80)}...`);
+                    }
+                }
+
                 this.sendToClient(MessageType.RTC_ICE_CANDIDATE, {
-                    candidate: event.candidate.candidate,
+                    candidate: candidateStr,
                     sdpMid: event.candidate.sdpMid,
                     sdpMLineIndex: event.candidate.sdpMLineIndex
                 });
@@ -253,7 +291,12 @@ export class WebRTCServer {
         // Create or get existing peer
         let peer = this.peers.get(clientId);
         if (!peer) {
-            peer = new RTCPeer(clientId, sendToClient);
+            // Pass PlayIt.gg config to peer
+            const config = {
+                publicHost: PLAYIT_HOST,
+                publicPort: PLAYIT_UDP_PORT
+            };
+            peer = new RTCPeer(clientId, sendToClient, config);
             peer.onMessage = (data) => {
                 if (this.onMessage) {
                     this.onMessage(clientId, data);
