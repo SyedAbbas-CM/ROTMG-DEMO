@@ -136,9 +136,23 @@ class RTCPeer {
             console.log(`[WebRTC] Client ${this.clientId}: Handling offer`);
 
             // Create peer connection
-            this.peerConnection = new wrtc.RTCPeerConnection({
+            // Use portRange to bind to specific port that PlayIt forwards to
+            const rtcConfig = {
                 iceServers: this.iceServers
-            });
+            };
+
+            // If using PlayIt, bind WebRTC to the local port PlayIt forwards to
+            // PlayIt forwards external:10615 -> localhost:3000 (both TCP and UDP)
+            // TCP 3000 = HTTP server, UDP 3000 = WebRTC
+            if (this.publicHost && this.publicPort) {
+                rtcConfig.portRange = {
+                    min: 3000,  // Bind to port 3000 (UDP)
+                    max: 3000   // Same port - PlayIt forwards here
+                };
+                console.log(`[WebRTC] Binding to UDP port 3000 for PlayIt tunnel`);
+            }
+
+            this.peerConnection = new wrtc.RTCPeerConnection(rtcConfig);
 
             this.setupPeerConnectionHandlers();
 
