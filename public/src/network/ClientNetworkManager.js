@@ -470,6 +470,9 @@ export class ClientNetworkManager {
         this.messageQueue = [];
         this.lastPingTime = 0;
         this.pingInterval = null;
+        this.latency = 0;        // Current latency in ms
+        this.avgLatency = 0;     // Rolling average latency
+        this.latencyHistory = []; // Last 10 latency samples
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 2000; // ms
@@ -767,12 +770,36 @@ export class ClientNetworkManager {
         
         // Handle pong messages for latency calculation
         this.handlers[MessageType.PONG] = (data) => {
-            const latency = Date.now() - this.lastPingTime;
-                console.log(`Server ping: ${latency}ms`);
-                // Track server tick for reconciliation if present
-                if (typeof this.game?.onServerTick === 'function' && data?.serverTick) {
-                    this.game.onServerTick(data.serverTick);
-                }
+            this.latency = Date.now() - this.lastPingTime;
+
+            // Track rolling average (last 10 samples)
+            this.latencyHistory.push(this.latency);
+            if (this.latencyHistory.length > 10) {
+                this.latencyHistory.shift();
+            }
+            this.avgLatency = Math.round(
+                this.latencyHistory.reduce((a, b) => a + b, 0) / this.latencyHistory.length
+            );
+
+            // Update UI ping display
+            const pingEl = document.getElementById('pingDisplay');
+            if (pingEl) {
+                pingEl.textContent = `${this.avgLatency}ms`;
+                // Color code: green < 100ms, yellow < 200ms, red >= 200ms
+                pingEl.style.color = this.avgLatency < 100 ? '#0f0' :
+                                     this.avgLatency < 200 ? '#ff0' : '#f00';
+            }
+
+            // Also update connection status element if it exists
+            const statusEl = document.getElementById('connectionStatus');
+            if (statusEl && this.connected) {
+                statusEl.textContent = `Connected (${this.avgLatency}ms)`;
+            }
+
+            // Track server tick for reconciliation if present
+            if (typeof this.game?.onServerTick === 'function' && data?.serverTick) {
+                this.game.onServerTick(data.serverTick);
+            }
         };
         
         // Chat message handler - forward to ChatPanel immediately
