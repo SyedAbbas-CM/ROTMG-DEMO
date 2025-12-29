@@ -171,6 +171,11 @@ class RTCPeer {
 
         // Connection state changes
         this.peerConnection.onconnectionstatechange = () => {
+            // Null check - peerConnection may be closed before callback fires
+            if (!this.peerConnection) {
+                console.log(`[WebRTC] Client ${this.clientId}: Connection closed`);
+                return;
+            }
             console.log(`[WebRTC] Client ${this.clientId}: Connection state:`,
                 this.peerConnection.connectionState);
 
