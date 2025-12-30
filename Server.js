@@ -10,7 +10,7 @@ import fs from 'fs';
 import { MapManager } from './src/world/MapManager.js';
 import OVERWORLD_CONFIG from './src/world/OverworldConfig.js';
 import { SetPieceManager } from './src/world/SetPieceManager.js';
-import { BinaryPacket, MessageType, ProtocolStats } from './common/protocol-native.js';
+import { BinaryPacket, MessageType, ProtocolStats, UDP_MESSAGES } from './common/protocol-native.js';
 import BulletManager from './src/entities/BulletManager.js';
 import EnemyManager from './src/entities/EnemyManager.js';
 import CollisionManager from './src/entities/CollisionManager.js';
@@ -94,8 +94,8 @@ let aiPatternBoss     = null;
 // until we are ready to test portals again.
 const ENABLE_FIXED_MAP_LOADING = false;
 
-// PVP: Allow players to damage each other with bullets
-const PVP_ENABLED = process.env.PVP_ENABLED === 'true';
+// PVP: Allow players to damage each other with bullets (enabled by default)
+const PVP_ENABLED = process.env.PVP_ENABLED !== 'false';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -431,23 +431,45 @@ globalThis.itemManager = itemManager;
 const worldContexts = new Map(); // mapId → { bulletMgr, enemyMgr, collisionMgr, bagMgr }
 
 // Utility: safely send a binary packet to one client
+// Routes UDP-suitable messages through WebTransport when available
 function sendToClient(socket, type, data = {}) {
   // Skip if socket is closed or undefined
   if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
+  const clientId = socket.clientId;
+  const client = clientId ? clients.get(clientId) : null;
+
+  // Check if this message type should use UDP and client has WebTransport
+  const useWebTransport = UDP_MESSAGES.has(type) &&
+                          client?.webTransportSession?.isReady;
+
   const doSend = () => {
     try {
+      if (useWebTransport) {
+        // Send via WebTransport (UDP-like)
+        const success = client.webTransportSession.send(type, data);
+        if (success) {
+          // Log outgoing message
+          if (networkLogger.enabled && clientId) {
+            networkLogger.onMessageSent(clientId, type, 0, 'UDP');
+          }
+          return;
+        }
+        // Fall through to WebSocket if WebTransport send failed
+      }
+
+      // Send via WebSocket (TCP)
       const encoded = BinaryPacket.encode(type, data);
       socket.send(encoded);
 
       // Log outgoing message
-      if (networkLogger.enabled && socket.clientId) {
-        networkLogger.onMessageSent(socket.clientId, type, encoded.byteLength || encoded.length || 0);
+      if (networkLogger.enabled && clientId) {
+        networkLogger.onMessageSent(clientId, type, encoded.byteLength || encoded.length || 0);
       }
     } catch (err) {
       console.error('[NET] Failed to send packet', type, err);
-      if (networkLogger.enabled && socket.clientId) {
-        networkLogger.onMessageError(socket.clientId, err);
+      if (networkLogger.enabled && clientId) {
+        networkLogger.onMessageError(clientId, err);
       }
     }
   };
@@ -2216,7 +2238,7 @@ function tryListen(port, attemptsLeft = 5) {
     }
   };
 
-  const onListening = () => {
+  const onListening = async () => {
     const actualPort = server.address().port;
     console.log(`[SERVER] Running on port ${actualPort}`);
     console.log(`[SERVER] Protocol: ${ProtocolStats.implementation}`);
@@ -2302,17 +2324,60 @@ function tryListen(port, attemptsLeft = 5) {
           console.log('[SERVER] WebTransport server started on port', webTransportServer.port);
 
           // Set up message handler to route to game logic
-          webTransportServer.onMessage = (clientId, type, data) => {
-            // Route WebTransport messages through same handlers as WebSocket
-            routePacket(clientId, type, data);
+          webTransportServer.onMessage = (wtSessionId, type, data) => {
+            // Handle WT_LINK specially - links WebTransport session to WebSocket client
+            if (type === MessageType.WT_LINK) {
+              const wsClientId = data.clientId;
+              const client = clients.get(wsClientId);
+              if (client) {
+                // Store WebTransport session reference on the client
+                const wtSession = webTransportServer.sessions.get(wtSessionId);
+                if (wtSession) {
+                  client.webTransportSession = wtSession;
+                  client.webTransportId = wtSessionId;
+                  console.log(`[WebTransport] Linked WT session ${wtSessionId} to WS client ${wsClientId}`);
+                  // Send acknowledgement via WebTransport
+                  wtSession.send(MessageType.WT_LINK_ACK, { success: true, clientId: wsClientId });
+                }
+              } else {
+                console.warn(`[WebTransport] WT_LINK failed: client ${wsClientId} not found`);
+              }
+              return;
+            }
+
+            // For other messages, try to find the linked WebSocket client
+            // and route through normal game logic
+            let wsClientId = null;
+            for (const [cid, client] of clients) {
+              if (client.webTransportId === wtSessionId) {
+                wsClientId = cid;
+                break;
+              }
+            }
+
+            if (wsClientId) {
+              routePacket(wsClientId, type, data);
+            } else {
+              // Fallback: route with WT session ID (won't find client, but logs the attempt)
+              routePacket(wtSessionId, type, data);
+            }
           };
 
-          webTransportServer.onConnect = (clientId, session) => {
-            console.log(`[WebTransport] Client ${clientId} connected`);
+          webTransportServer.onConnect = (wtSessionId, session) => {
+            console.log(`[WebTransport] Session ${wtSessionId} connected, awaiting WT_LINK`);
           };
 
-          webTransportServer.onDisconnect = (clientId) => {
-            console.log(`[WebTransport] Client ${clientId} disconnected`);
+          webTransportServer.onDisconnect = (wtSessionId) => {
+            console.log(`[WebTransport] Session ${wtSessionId} disconnected`);
+            // Clean up WebTransport reference from client
+            for (const [cid, client] of clients) {
+              if (client.webTransportId === wtSessionId) {
+                client.webTransportSession = null;
+                client.webTransportId = null;
+                console.log(`[WebTransport] Unlinked from client ${cid}`);
+                break;
+              }
+            }
           };
         } else {
           console.log('[SERVER] WebTransport server failed to start (check certificates)');

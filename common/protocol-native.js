@@ -90,7 +90,11 @@ export const MessageType = {
     RTC_OFFER: 120,
     RTC_ANSWER: 121,
     RTC_ICE_CANDIDATE: 122,
-    RTC_READY: 123
+    RTC_READY: 123,
+
+    // WebTransport Session Linking
+    WT_LINK: 124,
+    WT_LINK_ACK: 125
 };
 
 // Messages that should go over UDP (DataChannel) when available

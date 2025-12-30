@@ -71,8 +71,22 @@ export class WebTransportManager {
             // Update UI
             this.updateConnectionStatus('Connected (QUIC/UDP)');
 
-            // Notify server
-            this.networkManager.send(MessageType.RTC_READY, { ready: true, protocol: 'webtransport' });
+            // Link WebTransport session to WebSocket client by sending clientId
+            const clientId = this.networkManager.getClientId();
+            if (clientId) {
+                console.log(`[WebTransport] Linking to WebSocket client: ${clientId}`);
+                this.send(MessageType.WT_LINK, { clientId });
+            } else {
+                console.warn('[WebTransport] No clientId available yet, will link on next update');
+                // Retry linking after a short delay
+                setTimeout(() => {
+                    const cid = this.networkManager.getClientId();
+                    if (cid && this.isReady) {
+                        console.log(`[WebTransport] Delayed link to client: ${cid}`);
+                        this.send(MessageType.WT_LINK, { clientId: cid });
+                    }
+                }, 500);
+            }
 
             return true;
         } catch (error) {

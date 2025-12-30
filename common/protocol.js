@@ -109,7 +109,11 @@ export const MessageType = {
   RTC_OFFER: 120,      // Client sends SDP offer to server
   RTC_ANSWER: 121,     // Server sends SDP answer to client
   RTC_ICE_CANDIDATE: 122, // ICE candidate exchange (both directions)
-  RTC_READY: 123       // DataChannel is ready for use
+  RTC_READY: 123,      // DataChannel is ready for use
+
+  // WebTransport Session Linking
+  WT_LINK: 124,        // Client sends WebSocket clientId via WebTransport to link sessions
+  WT_LINK_ACK: 125     // Server confirms WebTransport session is linked
 };
 
 // Messages that should go over UDP (DataChannel) when available
