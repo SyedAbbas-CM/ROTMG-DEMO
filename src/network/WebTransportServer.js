@@ -13,16 +13,29 @@
 // - WEBTRANSPORT_KEY=/path/to/key.pem
 // - WEBTRANSPORT_HOST=quic.eternalconquests.com (public hostname)
 
-let Http3Server, WebTransport;
+let Http3Server, quicheLoaded;
 let webtransportAvailable = false;
 
 // Try to load WebTransport packages
 try {
     const wt = await import('@fails-components/webtransport');
-    const http3 = await import('@fails-components/webtransport-transport-http3-quiche');
 
-    Http3Server = http3.Http3Server;
-    WebTransport = wt.WebTransport;
+    console.log('[WebTransport] Package exports:', Object.keys(wt));
+    console.log('[WebTransport] Http3Server from import:', typeof wt.Http3Server);
+
+    Http3Server = wt.Http3Server;
+    quicheLoaded = wt.quicheLoaded;
+
+    console.log('[WebTransport] Http3Server assigned:', typeof Http3Server);
+
+    // Wait for quiche native library to load
+    if (quicheLoaded) {
+        await quicheLoaded;
+        console.log('[WebTransport] quiche native library loaded');
+    } else {
+        console.log('[WebTransport] No quicheLoaded promise (using bundled quiche)');
+    }
+
     webtransportAvailable = true;
     console.log('[WebTransport] @fails-components/webtransport loaded successfully');
 } catch (error) {
@@ -295,8 +308,17 @@ export class WebTransportServer {
         }
 
         try {
-            const cert = fs.readFileSync(this.certPath);
-            const key = fs.readFileSync(this.keyPath);
+            const cert = fs.readFileSync(this.certPath, 'utf8');
+            const key = fs.readFileSync(this.keyPath, 'utf8');
+
+            // Debug: Check if Http3Server is available
+            console.log('[WebTransport Server] Http3Server type:', typeof Http3Server);
+            console.log('[WebTransport Server] webtransportAvailable:', webtransportAvailable);
+
+            if (!Http3Server) {
+                console.error('[WebTransport Server] Http3Server is undefined!');
+                return false;
+            }
 
             this.server = new Http3Server({
                 port: this.port,
@@ -306,13 +328,13 @@ export class WebTransportServer {
                 privKey: key
             });
 
-            // Handle incoming sessions
-            this.server.startServer();
+            // Start the server
+            await this.server.startServer();
+            console.log(`[WebTransport Server] Started on UDP port ${this.port}`);
 
             // Listen for WebTransport sessions
             this.handleSessions();
 
-            console.log(`[WebTransport Server] Started on UDP port ${this.port}`);
             console.log(`[WebTransport Server] Connect URL: https://${this.host}:${this.port}/game`);
             return true;
         } catch (error) {
@@ -341,11 +363,9 @@ export class WebTransportServer {
         acceptLoop();
     }
 
-    async handleNewSession(sessionRequest) {
+    async handleNewSession(session) {
         try {
-            // Accept the session
-            const session = await sessionRequest.accept();
-
+            // Session is already accepted from the stream
             // Generate client ID (could be passed from WebSocket handshake)
             const clientId = `wt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
