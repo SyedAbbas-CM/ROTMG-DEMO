@@ -184,6 +184,8 @@ export class ClientBulletManager {
       this.id[index] = this.id[lastIndex];
       this.x[index] = this.x[lastIndex];
       this.y[index] = this.y[lastIndex];
+      this.targetX[index] = this.targetX[lastIndex];  // FIX: Copy interpolation targets
+      this.targetY[index] = this.targetY[lastIndex];  // FIX: Copy interpolation targets
       this.vx[index] = this.vx[lastIndex];
       this.vy[index] = this.vy[lastIndex];
       this.life[index] = this.life[lastIndex];
@@ -195,7 +197,7 @@ export class ClientBulletManager {
       this.worldId[index] = this.worldId[lastIndex];
       this.sprite[index] = this.sprite[lastIndex];
       this.spriteName[index] = this.spriteName[lastIndex];
-      
+
       // Update index in mapping
       this.idToIndex.set(this.id[index], index);
     }
