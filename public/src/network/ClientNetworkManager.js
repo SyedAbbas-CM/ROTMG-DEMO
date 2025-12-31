@@ -456,6 +456,7 @@ console.log("Map save function available. Use window.saveMapData() in the consol
 import { BinaryPacket, MessageType, UDP_MESSAGES } from '/common/protocol.js';
 import { WebRTCManager } from './WebRTCManager.js';
 import { WebTransportManager } from './WebTransportManager.js';
+import { decodeWorldDelta } from './BinaryProtocol.js';
 
 export class ClientNetworkManager {
     /**
@@ -719,7 +720,35 @@ export class ClientNetworkManager {
                 }
             }
         };
-        
+
+        // Binary protocol handler for optimized world updates (5-10x smaller packets)
+        this.handlers[MessageType.BINARY_WORLD_DELTA] = (data) => {
+            try {
+                // Data is already an ArrayBuffer from WebTransport
+                const delta = decodeWorldDelta(data);
+                if (delta && this.game.updateWorld) {
+                    // Convert delta format to match existing updateWorld signature
+                    this.game.updateWorld(
+                        delta.enemies,
+                        delta.bullets,
+                        delta.players,
+                        [], // objects not in binary delta yet
+                        []  // units not in binary delta yet
+                    );
+                    // Handle removed entities
+                    if (delta.removed && delta.removed.length > 0) {
+                        for (const id of delta.removed) {
+                            if (this.game.bulletManager) {
+                                this.game.bulletManager.removeBulletById(id);
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('[BinaryProtocol] Decode error:', err);
+            }
+        };
+
         this.handlers[MessageType.PLAYER_JOIN] = (data) => {
             console.log(`Player joined: ${data.player ? data.player.id : 'unknown'}`);
             if (this.game.addPlayer && data.player) {
@@ -1065,6 +1094,11 @@ export class ClientNetworkManager {
                     // Initialize WebRTC for UDP-like transport (after short delay to ensure handshake completes)
                     if (this.useWebRTC) {
                         setTimeout(() => this.initializeWebRTC(), 500);
+                    }
+
+                    // Initialize WebTransport for QUIC/UDP transport
+                    if (this.useWebTransport) {
+                        setTimeout(() => this.initializeWebTransport(), 1000);
                     }
 
                     resolve();
@@ -1571,10 +1605,11 @@ export class ClientNetworkManager {
             let wtUrl = url || this.webTransportUrl;
 
             if (!wtUrl) {
-                // Auto-detect: replace wss:// with https:// and use port 4433
-                // e.g., wss://eternalconquests.com -> https://quic.eternalconquests.com:4433/game
+                // Auto-detect: replace wss:// with https:// and use PlayIt UDP port
+                // e.g., wss://eternalconquests.com -> https://quic.eternalconquests.com:10615/game
+                // PlayIt tunnels external port 10615 -> local port 4433
                 const wsUrl = new URL(this.serverUrl.replace('ws://', 'http://').replace('wss://', 'https://'));
-                wtUrl = `https://quic.${wsUrl.hostname}:4433/game`;
+                wtUrl = `https://quic.${wsUrl.hostname}:10615/game`;
                 console.log(`[WebTransport] Auto-detected URL: ${wtUrl}`);
             }
 

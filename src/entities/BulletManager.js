@@ -305,6 +305,8 @@ export default class BulletManager {
    */
   getBulletsData(filterWorldId = null) {
     const bullets = [];
+    // Truncate helper - reduces JSON size by ~30%
+    const t = (v) => Math.round(v * 100) / 100;
 
     for (let i = 0; i < this.bulletCount; i++) {
       // Skip bullets marked for removal (life <= 0)
@@ -316,13 +318,13 @@ export default class BulletManager {
 
       bullets.push({
         id: this.id[i],
-        x: this.x[i],
-        y: this.y[i],
-        vx: this.vx[i],
-        vy: this.vy[i],
-        width: this.width[i],
-        height: this.height[i],
-        life: this.life[i],
+        x: t(this.x[i]),
+        y: t(this.y[i]),
+        vx: t(this.vx[i]),
+        vy: t(this.vy[i]),
+        width: t(this.width[i]),
+        height: t(this.height[i]),
+        life: t(this.life[i]),
         damage: this.damage[i],
         ownerId: this.ownerId[i],
         spriteName: this.spriteName[i],

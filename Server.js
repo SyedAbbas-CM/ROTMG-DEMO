@@ -55,6 +55,19 @@ import AbilitySystem from './src/player/AbilitySystem.js';
 import { getWebRTCServer } from './src/network/WebRTCServer.js';
 // ---- WebTransport for true UDP transport (QUIC) ----
 import { getWebTransportServer } from './src/network/WebTransportServer.js';
+// ---- Binary Protocol for optimized network updates ----
+import {
+  BinaryWriter,
+  DeltaTracker,
+  encodeBullet,
+  encodeEnemy,
+  encodePlayer,
+  encodeWorldDelta,
+  DeltaFlags,
+  registerSprite,
+  getEntityId,
+  calculateSavings
+} from './common/BinaryProtocol.js';
 
 // Debug flags to control logging
 const DEBUG = {
@@ -1165,18 +1178,21 @@ function getWorldCtx(mapId) {
     const enemyMgr  = new EnemyManager(1000);
     const collMgr   = new CollisionManager(bulletMgr, enemyMgr, mapManager, lagCompensation, fileLogger, { pvpEnabled: PVP_ENABLED });
     const bagMgr    = new BagManager(500);
-    
+
     // Initialize Unit Systems
     const soldierMgr = new SoldierManager(2000); // Support 2000 units per world
     const unitSystems = new UnitSystems(soldierMgr, mapManager);
     const unitNetAdapter = new UnitNetworkAdapter(wss, soldierMgr, unitSystems);
+
+    // Delta tracking for binary protocol optimization
+    const deltaTracker = new DeltaTracker();
 
     enemyMgr._bagManager = bagMgr; // inject for drops
 
     // Note: Initial unit spawning will happen after gameState is initialized
 
     logger.info('worldCtx',`Created managers for world ${mapId} including unit systems`);
-    worldContexts.set(mapId, { bulletMgr, enemyMgr, collMgr, bagMgr, soldierMgr, unitSystems, unitNetAdapter });
+    worldContexts.set(mapId, { bulletMgr, enemyMgr, collMgr, bagMgr, soldierMgr, unitSystems, unitNetAdapter, deltaTracker });
   }
   return worldContexts.get(mapId);
 }
@@ -2157,8 +2173,6 @@ function broadcastWorldUpdates() {
         payload.bulletStats = { ...ctx.bulletMgr.stats };
       }
 
-      // Bullet debug logs removed - too spammy (collision fix verified ✓)
-
       // Check for player death and send death message
       if (c.player && c.player.isDead && !c.player.deathMessageSent) {
         c.player.deathMessageSent = true;
@@ -2171,14 +2185,35 @@ function broadcastWorldUpdates() {
         console.log(`[SERVER] 📤 Sent PLAYER_DEATH message to client ${cid}`);
       }
 
-      sendToClient(c.socket, MessageType.WORLD_UPDATE, payload);
+      // Try binary protocol for WebTransport clients (5-10x smaller)
+      if (c.webTransportSession?.isReady && c.useBinaryProtocol) {
+        try {
+          const binaryPayload = encodeWorldDelta(
+            playersObj,
+            visibleEnemies.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
+            visibleBullets.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
+            ctx.deltaTracker.getAndClearRemoved(),
+            now
+          );
+          c.webTransportSession.send(MessageType.BINARY_WORLD_DELTA, binaryPayload);
+          // Track binary bandwidth savings
+          if (networkLogger && Math.random() < 0.01) {
+            const jsonSize = JSON.stringify(payload).length;
+            const savings = calculateSavings(jsonSize, binaryPayload.byteLength);
+            console.log(`[BINARY] Saved ${savings.percentage}% (${savings.savings} bytes) for client ${cid}`);
+          }
+        } catch (err) {
+          // Fall back to JSON on binary encoding error
+          sendToClient(c.socket, MessageType.WORLD_UPDATE, payload);
+        }
+      } else {
+        // Standard JSON for WebSocket clients
+        sendToClient(c.socket, MessageType.WORLD_UPDATE, payload);
+      }
     });
 
-    // Also send player list in standardized wrapped shape
-    idSet.forEach(cid => {
-      const c = clients.get(cid);
-      if (c) sendToClient(c.socket, MessageType.PLAYER_LIST, { players: playersObj });
-    });
+    // REMOVED: Redundant PLAYER_LIST - players already included in WORLD_UPDATE
+    // Saves ~50-75 KB/s per client
 
     // Reset bullet stats counters once per frame for this world
     if (ctx.bulletMgr.stats) {

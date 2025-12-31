@@ -113,19 +113,28 @@ export const MessageType = {
 
   // WebTransport Session Linking
   WT_LINK: 124,        // Client sends WebSocket clientId via WebTransport to link sessions
-  WT_LINK_ACK: 125     // Server confirms WebTransport session is linked
+  WT_LINK_ACK: 125,    // Server confirms WebTransport session is linked
+
+  // Binary Protocol (high-performance delta updates)
+  BINARY_WORLD_DELTA: 130,   // Binary-encoded world delta update
+  BINARY_ENTITY_CREATE: 131, // Binary-encoded entity creation
+  BINARY_ENTITY_REMOVE: 132, // Binary-encoded entity removal
+  BINARY_SYNC_REQUEST: 133,  // Client requests full binary sync
+  BINARY_FULL_SYNC: 134      // Server sends full state in binary
 };
 
 // Messages that should go over UDP (DataChannel) when available
 export const UDP_MESSAGES = new Set([
-  41, // MessageType.PLAYER_UPDATE
-  12, // MessageType.PLAYER_UPDATE (duplicate check)
+  12, // MessageType.PLAYER_UPDATE
   21, // MessageType.ENEMY_UPDATE
   30, // MessageType.BULLET_CREATE
   31, // MessageType.BULLET_LIST
   60, // MessageType.WORLD_UPDATE
   40, // MessageType.COLLISION
   41, // MessageType.COLLISION_RESULT
+  130, // MessageType.BINARY_WORLD_DELTA (high-performance binary updates)
+  131, // MessageType.BINARY_ENTITY_CREATE
+  132, // MessageType.BINARY_ENTITY_REMOVE
 ]);
 
 // Messages that must stay on TCP (WebSocket) for reliability

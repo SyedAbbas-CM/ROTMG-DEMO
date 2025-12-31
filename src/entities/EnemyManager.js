@@ -585,27 +585,29 @@ export default class EnemyManager {
    */
   getEnemiesData(filterWorldId=null) {
     const enemies = [];
-    
+    // Truncate helper - reduces JSON size by ~30%
+    const t = (v) => Math.round(v * 100) / 100;
+
     for (let i = 0; i < this.enemyCount; i++) {
       if (filterWorldId && this.worldId[i] !== filterWorldId) continue;
       enemies.push({
         id: this.id[i],
-        x: this.x[i],
-        y: this.y[i],
-        width: this.width[i],
-        height: this.height[i],
+        x: t(this.x[i]),
+        y: t(this.y[i]),
+        width: t(this.width[i]),
+        height: t(this.height[i]),
         type: this.type[i],
         spriteName: this.enemyTypes[this.type[i]]?.spriteName || null,
         health: this.health[i],
         maxHealth: this.maxHealth[i],
-        renderScale: this.renderScale[i],
+        renderScale: t(this.renderScale[i]),
         isFlashing: this.isFlashing[i],
         isDying: this.isDying[i],
         deathStage: this.isDying[i] ? Math.floor((1 - this.deathTimer[i] / 0.5) * 4) : 0,
         worldId: this.worldId[i]
       });
     }
-    
+
     return enemies;
   }
 
