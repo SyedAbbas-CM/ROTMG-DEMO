@@ -451,6 +451,9 @@ export function decodePlayer(reader) {
  * Per enemy: 8-18 bytes
  * Per player: 6-20 bytes
  */
+// Debug counter for encoding
+let encodeWorldDeltaDebugCount = 0;
+
 export function encodeWorldDelta(players, enemies, bullets, removedIds, timestamp) {
   const writer = new BinaryWriter(8192);
 
@@ -477,13 +480,34 @@ export function encodeWorldDelta(players, enemies, bullets, removedIds, timestam
     encodeEnemy(writer, enemy, DeltaFlags.POSITION | DeltaFlags.HEALTH);
   }
 
+  // Debug: Log bullet encoding details
+  encodeWorldDeltaDebugCount++;
+  const shouldLog = encodeWorldDeltaDebugCount <= 3 || encodeWorldDeltaDebugCount % 100 === 0;
+  const bulletStartOffset = writer.getSize();
+
   // Bullets (position only delta - velocity sent on create)
   writer.writeUint16(bullets.length);
-  for (const bullet of bullets) {
+  for (let i = 0; i < bullets.length; i++) {
+    const bullet = bullets[i];
+    // Debug: Log first few bullets
+    if (shouldLog && i < 2 && bullets.length > 0) {
+      console.log(`[BINARY-TX] Bullet #${i}: id=${bullet.id}, x=${bullet.x?.toFixed(2)}, y=${bullet.y?.toFixed(2)}, fixedX=${toFixedPoint(bullet.x)}, fixedY=${toFixedPoint(bullet.y)}`);
+    }
     encodeBullet(writer, bullet, DeltaFlags.POSITION);
   }
 
-  return writer.getBuffer();
+  const buffer = writer.getBuffer();
+
+  // Debug: Log raw bytes for bullets section
+  if (shouldLog && bullets.length > 0) {
+    const bytes = new Uint8Array(buffer);
+    const bulletSectionStart = bulletStartOffset;
+    const bulletSectionEnd = Math.min(bulletSectionStart + 30, bytes.length);
+    const hexBytes = Array.from(bytes.slice(bulletSectionStart, bulletSectionEnd)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    console.log(`[BINARY-TX] #${encodeWorldDeltaDebugCount} Encoded ${bullets.length} bullets, buffer size ${buffer.byteLength}, bullet section (offset ${bulletStartOffset}): ${hexBytes}`);
+  }
+
+  return buffer;
 }
 
 export function decodeWorldDelta(buffer) {

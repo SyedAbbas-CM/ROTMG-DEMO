@@ -93,7 +93,26 @@
       "WebFetch(domain:github.com)",
       "Bash(timeout 90 sshpass:*)",
       "WebFetch(domain:gist.github.com)",
-      "WebFetch(domain:speed.cloudflare.com)"
+      "WebFetch(domain:speed.cloudflare.com)",
+      "WebFetch(domain:blog.gedas.dev)",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@94.130.106.5 \"cd /opt/ROTMG-DEMO && git pull origin main\")",
+      "Bash(/Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO/src/network/WebRTCServer.js )",
+      "Bash(/Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO/public/src/network/WebTransportManager.js )",
+      "Bash(/Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO/public/src/network/ClientNetworkManager.js )",
+      "Bash(/Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO/Server.js )",
+      "Bash(newadmin@192.168.0.202:\"C:/ROTMG-DEMO/\")",
+      "Bash(certbot plugins:*)",
+      "Bash(sudo certbot certonly:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:eternalconquests.com)",
+      "Bash(dig:*)",
+      "Bash(host:*)",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@94.130.106.5 \"ls -la /opt/ROTMG-DEMO/public/assets/atlases/ | head -15\")",
+      "Bash(openssl s_client:*)",
+      "Bash(openssl x509:*)",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@94.130.106.5 \"netstat -tulpn | grep -E ''4433|10615'' ; ps aux | grep -E ''playit|node'' | grep -v grep\")",
+      "Bash(brew list:*)",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@94.130.106.5 \"cd /opt/ROTMG-DEMO && git pull origin main && pm2 restart all\")"
     ],
     "deny": []
   }

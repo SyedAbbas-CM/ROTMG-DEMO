@@ -56,3 +56,7 @@ Thumbs.db
 
 /Rotmg-Core-FIles/
 /extract_files/
+# Secrets - API keys, tokens
+.secrets
+*.pem
+certs/

@@ -398,6 +398,14 @@ export function decodePlayer(reader) {
 export function decodeWorldDelta(buffer) {
   const reader = new BinaryReader(buffer);
 
+  // Debug: Log raw buffer info
+  if (!decodeWorldDelta._bufferLogged) {
+    decodeWorldDelta._bufferLogged = true;
+    const bytes = new Uint8Array(buffer);
+    const hexFirst20 = Array.from(bytes.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    console.log(`[BINARY] Buffer info: byteLength=${buffer.byteLength}, first 20 bytes: ${hexFirst20}`);
+  }
+
   const type = reader.readUint8();
   if (type !== BinaryPacketType.WORLD_DELTA) {
     console.error(`[BinaryProtocol] Invalid packet type: ${type}, expected ${BinaryPacketType.WORLD_DELTA}`);
@@ -430,11 +438,45 @@ export function decodeWorldDelta(buffer) {
     enemies.push(decodeEnemy(reader));
   }
 
+  // Debug: Log offset before bullets
+  const bulletStartOffset = reader.offset;
+
   // Bullets
   const bulletCount = reader.readUint16();
   const bullets = [];
+
+  // Debug: Log detailed info about bullet decoding
+  if (!decodeWorldDelta._bulletDebugCount) decodeWorldDelta._bulletDebugCount = 0;
+  decodeWorldDelta._bulletDebugCount++;
+  const shouldLogBullets = decodeWorldDelta._bulletDebugCount <= 3 || decodeWorldDelta._bulletDebugCount % 50 === 0;
+
+  if (shouldLogBullets && bulletCount > 0) {
+    console.log(`[BINARY] #${decodeWorldDelta._bulletDebugCount} Decoding ${bulletCount} bullets at offset ${bulletStartOffset}, buffer size ${buffer.byteLength}`);
+  }
+
   for (let i = 0; i < bulletCount; i++) {
-    bullets.push(decodeBullet(reader));
+    const bulletStartOff = reader.offset;
+    const bullet = decodeBullet(reader);
+
+    // Debug: Check for invalid positions
+    if (isNaN(bullet.x) || isNaN(bullet.y) || !isFinite(bullet.x) || !isFinite(bullet.y)) {
+      // Log raw bytes around this bullet
+      const bytes = new Uint8Array(buffer);
+      const start = Math.max(0, bulletStartOff - 4);
+      const end = Math.min(bytes.length, reader.offset + 4);
+      const rawBytes = Array.from(bytes.slice(start, end)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+      console.error(`[BINARY] CORRUPT BULLET #${i}/${bulletCount}: x=${bullet.x}, y=${bullet.y}, id=${bullet.id}`);
+      console.error(`[BINARY] Raw bytes around bullet (offset ${bulletStartOff}): ${rawBytes}`);
+      console.error(`[BINARY] Reader offset after decode: ${reader.offset}, buffer size: ${buffer.byteLength}`);
+    }
+    bullets.push(bullet);
+  }
+
+  // Debug first decode
+  if (!decodeWorldDelta._debugged && bullets.length > 0) {
+    decodeWorldDelta._debugged = true;
+    console.log(`[BINARY] First bullet decoded: x=${bullets[0].x}, y=${bullets[0].y}, id=${bullets[0].id}`);
+    console.log(`[BINARY] Final reader offset: ${reader.offset}, buffer size: ${buffer.byteLength}`);
   }
 
   return { timestamp, removed, players, enemies, bullets };
