@@ -69,13 +69,14 @@ export class ClientBulletManager {
 
     // Store bullet properties
     this.id[index] = bulletId;
-    this.x[index] = bulletData.x;
-    this.y[index] = bulletData.y;
-    this.targetX[index] = bulletData.x;  // Initialize target to current position
-    this.targetY[index] = bulletData.y;
-    this.vx[index] = bulletData.vx;
-    this.vy[index] = bulletData.vy;
-    this.life[index] = bulletData.lifetime || 1.0; // Default 1 second (10 tiles at 10 tiles/sec)
+    this.x[index] = bulletData.x || 0;
+    this.y[index] = bulletData.y || 0;
+    this.targetX[index] = bulletData.x || 0;  // Initialize target to current position
+    this.targetY[index] = bulletData.y || 0;
+    // CRITICAL: Default to 0 if velocity not provided (binary protocol may omit)
+    this.vx[index] = bulletData.vx || 0;
+    this.vy[index] = bulletData.vy || 0;
+    this.life[index] = bulletData.life || bulletData.lifetime || 2.0; // Default 2 seconds
     // CRITICAL FIX: Match server bullet size (0.6 tiles, not 5 pixels)
     // Server uses 0.6 tiles (60% of tile), client must match for consistent hitboxes
     this.width[index] = bulletData.width || 0.6;
@@ -314,8 +315,9 @@ export class ClientBulletManager {
         // Set TARGET position from server, actual position will interpolate towards it
         this.targetX[index] = bullet.x;
         this.targetY[index] = bullet.y;
-        this.vx[index] = bullet.vx;
-        this.vy[index] = bullet.vy;
+        // Only update velocity if provided (binary protocol may only send position)
+        if (bullet.vx !== undefined) this.vx[index] = bullet.vx;
+        if (bullet.vy !== undefined) this.vy[index] = bullet.vy;
 
         // If this is the first update or bullet jumped too far (>10 tiles), snap immediately
         const deltaX = bullet.x - this.x[index];
@@ -325,12 +327,14 @@ export class ClientBulletManager {
           this.x[index] = bullet.x;
           this.y[index] = bullet.y;
         }
-        this.life[index] = bullet.life || bullet.lifetime || 3.0;
-        this.width[index] = bullet.width || 5;
-        this.height[index] = bullet.height || 5;
-        this.damage[index] = bullet.damage || 10;
-        this.ownerId[index] = bullet.ownerId;
-        this.worldId[index] = bullet.worldId;
+        if (bullet.life !== undefined || bullet.lifetime !== undefined) {
+          this.life[index] = bullet.life || bullet.lifetime || 3.0;
+        }
+        if (bullet.width !== undefined) this.width[index] = bullet.width;
+        if (bullet.height !== undefined) this.height[index] = bullet.height;
+        if (bullet.damage !== undefined) this.damage[index] = bullet.damage;
+        if (bullet.ownerId !== undefined) this.ownerId[index] = bullet.ownerId;
+        if (bullet.worldId !== undefined) this.worldId[index] = bullet.worldId;
         if (bullet.spriteName) {
           this.spriteName[index] = bullet.spriteName;
         }
