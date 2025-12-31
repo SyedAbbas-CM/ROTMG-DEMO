@@ -572,15 +572,34 @@ export function renderBullets() {
   }
 
   for (let i = 0; i < bm.bulletCount; i++) {
+    // DEFENSIVE: Skip bullets with NaN/Infinity positions to prevent render crash
+    const bulletX = bm.x[i];
+    const bulletY = bm.y[i];
+    if (!isFinite(bulletX) || !isFinite(bulletY)) {
+      // Log once per bullet ID to identify the source
+      if (!renderBullets._nanWarned) renderBullets._nanWarned = new Set();
+      const bulletId = bm.id[i];
+      if (!renderBullets._nanWarned.has(bulletId)) {
+        renderBullets._nanWarned.add(bulletId);
+        console.error(`[RENDER] Skipping bullet with invalid position: id=${bulletId}, x=${bulletX}, y=${bulletY}, vx=${bm.vx[i]}, vy=${bm.vy[i]}, targetX=${bm.targetX[i]}, targetY=${bm.targetY[i]}`);
+      }
+      continue;
+    }
+
     // world → screen
     let sx, sy;
     if (useCam) {
       ({ x: sx, y: sy } = gameState.camera.worldToScreen(
-        bm.x[i], bm.y[i], W, H, TILE_SIZE
+        bulletX, bulletY, W, H, TILE_SIZE
       ));
     } else {
-      sx = (bm.x[i] - gameState.camera.position.x) * TILE_SIZE * viewScale + W/2;
-      sy = (bm.y[i] - gameState.camera.position.y) * TILE_SIZE * viewScale + H/2;
+      sx = (bulletX - gameState.camera.position.x) * TILE_SIZE * viewScale + W/2;
+      sy = (bulletY - gameState.camera.position.y) * TILE_SIZE * viewScale + H/2;
+    }
+
+    // DEFENSIVE: Also check screen coordinates
+    if (!isFinite(sx) || !isFinite(sy)) {
+      continue;
     }
 
     // VISUAL SIZE: Make bullets appear 50% larger than their collision size

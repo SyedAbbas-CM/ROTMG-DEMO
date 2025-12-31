@@ -136,9 +136,30 @@ export class ClientBulletManager {
     for (let i = 0; i < count; i++) {
       const lifeBefore = this.life[i];
 
+      // DEFENSIVE: Skip if velocity is NaN (would corrupt position)
+      const vx = this.vx[i];
+      const vy = this.vy[i];
+      if (!isFinite(vx) || !isFinite(vy)) {
+        // Log once and remove the corrupted bullet
+        console.error(`[BULLET] Removing bullet with NaN velocity: id=${this.id[i]}, vx=${vx}, vy=${vy}`);
+        this.swapRemove(i);
+        count--;
+        i--;
+        continue;
+      }
+
       // Update target position based on velocity (server prediction)
-      this.targetX[i] += this.vx[i] * deltaTime;
-      this.targetY[i] += this.vy[i] * deltaTime;
+      this.targetX[i] += vx * deltaTime;
+      this.targetY[i] += vy * deltaTime;
+
+      // DEFENSIVE: Check if target became NaN somehow
+      if (!isFinite(this.targetX[i]) || !isFinite(this.targetY[i])) {
+        console.error(`[BULLET] Target became NaN: id=${this.id[i]}, targetX=${this.targetX[i]}, targetY=${this.targetY[i]}`);
+        this.swapRemove(i);
+        count--;
+        i--;
+        continue;
+      }
 
       // Smoothly interpolate actual position towards target (reduces jitter)
       const interpFactor = Math.min(1.0, this.interpolationSpeed * deltaTime);
