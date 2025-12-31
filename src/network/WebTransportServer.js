@@ -55,6 +55,13 @@ try {
     MessageType = protocol.MessageType;
 }
 
+// Import client binary protocol decoder
+import {
+    ClientBinaryType,
+    decodeClientBinaryMessage,
+    isClientBinaryMessage
+} from '../../common/BinaryProtocol.js';
+
 import fs from 'fs';
 import path from 'path';
 
@@ -193,10 +200,41 @@ class WebTransportSession {
 
     /**
      * Process incoming binary data
+     * Handles both JSON-based BinaryPacket and raw client binary protocol
      */
     handleIncomingData(data) {
         try {
             const buffer = data.buffer || data;
+
+            // Check if this is a raw client binary message (type 0x01-0x04)
+            if (isClientBinaryMessage(buffer)) {
+                const decoded = decodeClientBinaryMessage(buffer);
+                if (decoded && this.onMessage) {
+                    // Map ClientBinaryType to MessageType for routing
+                    let messageType;
+                    switch (decoded.type) {
+                        case ClientBinaryType.PLAYER_UPDATE:
+                            messageType = MessageType.PLAYER_UPDATE;
+                            break;
+                        case ClientBinaryType.BULLET_CREATE:
+                            messageType = MessageType.BULLET_CREATE;
+                            break;
+                        case ClientBinaryType.PING:
+                            messageType = MessageType.PING;
+                            break;
+                        case ClientBinaryType.USE_ABILITY:
+                            messageType = MessageType.USE_ABILITY;
+                            break;
+                        default:
+                            console.warn(`[WebTransport] Unknown client binary type: ${decoded.type}`);
+                            return;
+                    }
+                    this.onMessage(this.clientId, messageType, decoded.data);
+                }
+                return;
+            }
+
+            // Fall back to JSON-based BinaryPacket decode
             const packet = BinaryPacket.decode(buffer);
 
             if (this.onMessage) {

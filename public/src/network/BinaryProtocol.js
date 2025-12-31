@@ -1,6 +1,6 @@
 // public/src/network/BinaryProtocol.js
-// Client-side binary protocol decoder for high-performance game updates
-// Mirrors server-side common/BinaryProtocol.js
+// Client-side binary protocol for high-performance game communication
+// Handles both encoding (client→server) and decoding (server→client)
 
 // Sprite registry (synchronized from server on handshake)
 const spriteById = [];
@@ -19,6 +19,10 @@ export function getSpriteName(id) {
   return spriteById[id] || null;
 }
 
+export function getSpriteId(name) {
+  return spriteRegistry.get(name) || 0;
+}
+
 export function registerEntity(id, stringId) {
   entityById[id] = stringId;
   entityRegistry.set(stringId, id);
@@ -28,15 +32,175 @@ export function getEntityStringId(numId) {
   return entityById[numId] || `entity_${numId}`;
 }
 
+export function getEntityNumId(stringId) {
+  if (!entityRegistry.has(stringId)) {
+    const newId = entityById.length || 1;
+    entityById[newId] = stringId;
+    entityRegistry.set(stringId, newId);
+  }
+  return entityRegistry.get(stringId);
+}
+
 // Fixed-point conversion (0.01 precision)
 const FIXED_POINT_SCALE = 100;
+
+function toFixedPoint(value) {
+  return Math.round(value * FIXED_POINT_SCALE);
+}
 
 function fromFixedPoint(value) {
   return value / FIXED_POINT_SCALE;
 }
 
+function toVelocity(value) {
+  return Math.max(-127, Math.min(127, Math.round(value * 10)));
+}
+
 function fromVelocity(value) {
   return value / 10;
+}
+
+// Angle conversion (0-65535 = 0-2*PI)
+function toAngle(radians) {
+  const normalized = ((radians % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  return Math.round((normalized / (Math.PI * 2)) * 65535);
+}
+
+function fromAngle(value) {
+  return (value / 65535) * Math.PI * 2;
+}
+
+/**
+ * BinaryWriter - efficient buffer writing for client→server messages
+ */
+export class BinaryWriter {
+  constructor(initialSize = 64) {
+    this.buffer = new ArrayBuffer(initialSize);
+    this.view = new DataView(this.buffer);
+    this.offset = 0;
+  }
+
+  ensureCapacity(bytes) {
+    if (this.offset + bytes > this.buffer.byteLength) {
+      const newSize = Math.max(this.buffer.byteLength * 2, this.offset + bytes);
+      const newBuffer = new ArrayBuffer(newSize);
+      new Uint8Array(newBuffer).set(new Uint8Array(this.buffer));
+      this.buffer = newBuffer;
+      this.view = new DataView(this.buffer);
+    }
+  }
+
+  writeUint8(value) {
+    this.ensureCapacity(1);
+    this.view.setUint8(this.offset++, value);
+  }
+
+  writeInt8(value) {
+    this.ensureCapacity(1);
+    this.view.setInt8(this.offset++, value);
+  }
+
+  writeUint16(value) {
+    this.ensureCapacity(2);
+    this.view.setUint16(this.offset, value, true);
+    this.offset += 2;
+  }
+
+  writeInt16(value) {
+    this.ensureCapacity(2);
+    this.view.setInt16(this.offset, value, true);
+    this.offset += 2;
+  }
+
+  writeUint32(value) {
+    this.ensureCapacity(4);
+    this.view.setUint32(this.offset, value, true);
+    this.offset += 4;
+  }
+
+  writePosition(x, y) {
+    this.writeInt16(toFixedPoint(x));
+    this.writeInt16(toFixedPoint(y));
+  }
+
+  writeVelocity(vx, vy) {
+    this.writeInt8(toVelocity(vx));
+    this.writeInt8(toVelocity(vy));
+  }
+
+  writeAngle(radians) {
+    this.writeUint16(toAngle(radians));
+  }
+
+  getBuffer() {
+    return this.buffer.slice(0, this.offset);
+  }
+
+  getUint8Array() {
+    return new Uint8Array(this.buffer, 0, this.offset);
+  }
+}
+
+/**
+ * Client input message types (client→server binary)
+ */
+export const ClientBinaryType = {
+  PLAYER_UPDATE: 0x01,    // Position + velocity + angle
+  BULLET_CREATE: 0x02,    // Fire bullet
+  PING: 0x03,             // Latency check
+  USE_ABILITY: 0x04,      // Ability usage
+};
+
+/**
+ * Encode PLAYER_UPDATE for binary transmission
+ * Format: [type:1][x:2][y:2][vx:1][vy:1][angle:2] = 9 bytes
+ * vs JSON: ~60 bytes
+ */
+export function encodePlayerUpdate(x, y, vx, vy, angle) {
+  const writer = new BinaryWriter(16);
+  writer.writeUint8(ClientBinaryType.PLAYER_UPDATE);
+  writer.writePosition(x, y);
+  writer.writeVelocity(vx || 0, vy || 0);
+  writer.writeAngle(angle || 0);
+  return writer.getBuffer();
+}
+
+/**
+ * Encode BULLET_CREATE for binary transmission
+ * Format: [type:1][x:2][y:2][angle:2][speed:1][damage:1] = 9 bytes
+ * vs JSON: ~80 bytes
+ */
+export function encodeBulletCreate(x, y, angle, speed, damage) {
+  const writer = new BinaryWriter(16);
+  writer.writeUint8(ClientBinaryType.BULLET_CREATE);
+  writer.writePosition(x, y);
+  writer.writeAngle(angle);
+  writer.writeUint8(Math.min(255, Math.round(speed * 10))); // 0.1 precision, max 25.5
+  writer.writeUint8(damage || 10);
+  return writer.getBuffer();
+}
+
+/**
+ * Encode PING for binary transmission
+ * Format: [type:1][timestamp:4] = 5 bytes
+ */
+export function encodePing(timestamp) {
+  const writer = new BinaryWriter(8);
+  writer.writeUint8(ClientBinaryType.PING);
+  writer.writeUint32(timestamp);
+  return writer.getBuffer();
+}
+
+/**
+ * Encode USE_ABILITY for binary transmission
+ * Format: [type:1][abilityId:1][targetX:2][targetY:2] = 6 bytes
+ */
+export function encodeUseAbility(abilityId, targetX, targetY) {
+  const writer = new BinaryWriter(8);
+  writer.writeUint8(ClientBinaryType.USE_ABILITY);
+  writer.writeUint8(abilityId);
+  writer.writePosition(targetX, targetY);
+  return writer.getBuffer();
 }
 
 /**

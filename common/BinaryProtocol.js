@@ -623,6 +623,137 @@ export class DeltaTracker {
   }
 }
 
+// ==============================================================================
+// CLIENT → SERVER BINARY PROTOCOL (Input messages)
+// ==============================================================================
+
+/**
+ * Client binary message types (first byte of payload)
+ */
+export const ClientBinaryType = {
+  PLAYER_UPDATE: 0x01,    // Position + velocity + angle
+  BULLET_CREATE: 0x02,    // Fire bullet
+  PING: 0x03,             // Latency check
+  USE_ABILITY: 0x04,      // Ability usage
+};
+
+/**
+ * Angle conversion (0-65535 = 0-2*PI)
+ */
+function fromAngle(value) {
+  return (value / 65535) * Math.PI * 2;
+}
+
+/**
+ * Decode client PLAYER_UPDATE
+ * Format: [type:1][x:2][y:2][vx:1][vy:1][angle:2] = 9 bytes
+ */
+export function decodeClientPlayerUpdate(reader) {
+  const pos = reader.readPosition();
+  const vel = reader.readVelocity();
+  const angle = fromAngle(reader.readUint16());
+
+  return {
+    x: pos.x,
+    y: pos.y,
+    vx: vel.vx,
+    vy: vel.vy,
+    angle: angle,
+    rotation: angle // Alias for compatibility
+  };
+}
+
+/**
+ * Decode client BULLET_CREATE
+ * Format: [type:1][x:2][y:2][angle:2][speed:1][damage:1] = 9 bytes
+ */
+export function decodeClientBulletCreate(reader) {
+  const pos = reader.readPosition();
+  const angle = fromAngle(reader.readUint16());
+  const speed = reader.readUint8() / 10; // 0.1 precision
+  const damage = reader.readUint8();
+
+  return {
+    x: pos.x,
+    y: pos.y,
+    angle: angle,
+    speed: speed,
+    damage: damage
+  };
+}
+
+/**
+ * Decode client PING
+ * Format: [type:1][timestamp:4] = 5 bytes
+ */
+export function decodeClientPing(reader) {
+  const timestamp = reader.readUint32();
+  return { time: timestamp };
+}
+
+/**
+ * Decode client USE_ABILITY
+ * Format: [type:1][abilityId:1][targetX:2][targetY:2] = 6 bytes
+ */
+export function decodeClientUseAbility(reader) {
+  const abilityId = reader.readUint8();
+  const pos = reader.readPosition();
+
+  return {
+    abilityId: abilityId,
+    targetX: pos.x,
+    targetY: pos.y
+  };
+}
+
+/**
+ * Decode a client binary message
+ * @param {ArrayBuffer} buffer - Raw binary data from client
+ * @returns {{ type: number, data: Object } | null}
+ */
+export function decodeClientBinaryMessage(buffer) {
+  if (!buffer || buffer.byteLength < 1) {
+    return null;
+  }
+
+  const reader = new BinaryReader(buffer);
+  const type = reader.readUint8();
+
+  try {
+    switch (type) {
+      case ClientBinaryType.PLAYER_UPDATE:
+        return { type, data: decodeClientPlayerUpdate(reader) };
+
+      case ClientBinaryType.BULLET_CREATE:
+        return { type, data: decodeClientBulletCreate(reader) };
+
+      case ClientBinaryType.PING:
+        return { type, data: decodeClientPing(reader) };
+
+      case ClientBinaryType.USE_ABILITY:
+        return { type, data: decodeClientUseAbility(reader) };
+
+      default:
+        console.warn(`[BinaryProtocol] Unknown client binary type: ${type}`);
+        return null;
+    }
+  } catch (error) {
+    console.error(`[BinaryProtocol] Decode error for type ${type}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Check if buffer looks like a client binary message
+ * (First byte is a valid ClientBinaryType)
+ */
+export function isClientBinaryMessage(buffer) {
+  if (!buffer || buffer.byteLength < 1) return false;
+  const view = new DataView(buffer);
+  const firstByte = view.getUint8(0);
+  return firstByte >= 0x01 && firstByte <= 0x04;
+}
+
 /**
  * Calculate size comparison between JSON and binary
  */
@@ -653,4 +784,12 @@ export default {
   EntityType,
   DeltaFlags,
   calculateSavings,
+  // Client binary protocol
+  ClientBinaryType,
+  decodeClientBinaryMessage,
+  isClientBinaryMessage,
+  decodeClientPlayerUpdate,
+  decodeClientBulletCreate,
+  decodeClientPing,
+  decodeClientUseAbility,
 };

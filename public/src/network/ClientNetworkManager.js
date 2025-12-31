@@ -456,7 +456,13 @@ console.log("Map save function available. Use window.saveMapData() in the consol
 import { BinaryPacket, MessageType, UDP_MESSAGES } from '/common/protocol.js';
 import { WebRTCManager } from './WebRTCManager.js';
 import { WebTransportManager } from './WebTransportManager.js';
-import { decodeWorldDelta } from './BinaryProtocol.js';
+import {
+    decodeWorldDelta,
+    encodePlayerUpdate,
+    encodeBulletCreate,
+    encodePing,
+    ClientBinaryType
+} from './BinaryProtocol.js';
 
 export class ClientNetworkManager {
     /**
@@ -1300,9 +1306,39 @@ export class ClientNetworkManager {
         try {
             // Try WebTransport for UDP-suitable messages (preferred)
             if (this.webtransport?.isReady && UDP_MESSAGES.has(type)) {
-                const sentViaWT = this.webtransport.send(type, data);
-                if (sentViaWT) {
-                    return true; // Successfully sent via WebTransport/QUIC
+                // Use true binary encoding for PLAYER_UPDATE and BULLET_CREATE
+                // These are the highest-frequency messages, binary saves ~85% bandwidth
+                let binaryPayload = null;
+
+                if (type === MessageType.PLAYER_UPDATE) {
+                    binaryPayload = encodePlayerUpdate(
+                        data.x, data.y,
+                        data.vx || 0, data.vy || 0,
+                        data.angle || data.rotation || 0
+                    );
+                } else if (type === MessageType.BULLET_CREATE) {
+                    binaryPayload = encodeBulletCreate(
+                        data.x, data.y,
+                        data.angle,
+                        data.speed,
+                        data.damage || 10
+                    );
+                } else if (type === MessageType.PING) {
+                    binaryPayload = encodePing(data.time || Date.now());
+                }
+
+                if (binaryPayload) {
+                    // Send raw binary via WebTransport (type is embedded in payload)
+                    const sentViaWT = this.webtransport.sendBinary(binaryPayload);
+                    if (sentViaWT) {
+                        return true;
+                    }
+                } else {
+                    // Fall back to JSON-based send for other message types
+                    const sentViaWT = this.webtransport.send(type, data);
+                    if (sentViaWT) {
+                        return true;
+                    }
                 }
                 // Fall through to WebRTC or WebSocket if WebTransport failed
             }

@@ -260,6 +260,58 @@ export class WebTransportManager {
     }
 
     /**
+     * Send raw binary data (no BinaryPacket wrapper)
+     * Used for client→server binary protocol (type embedded in payload)
+     * @param {ArrayBuffer} buffer - Raw binary payload
+     * @returns {boolean} True if sent successfully
+     */
+    sendBinary(buffer) {
+        if (!this.isReady || !this.transport) {
+            return false;
+        }
+
+        try {
+            // Use datagrams for small messages (< MTU)
+            if (this.transport.datagrams?.writable && buffer.byteLength < 1200) {
+                const writer = this.transport.datagrams.writable.getWriter();
+                writer.write(new Uint8Array(buffer));
+                writer.releaseLock();
+
+                this.messagesSent++;
+                this.bytesSent += buffer.byteLength;
+                this.datagramsUsed++;
+                return true;
+            }
+
+            // Fall back to stream for larger messages
+            return this.sendBinaryViaStream(buffer);
+        } catch (error) {
+            console.error('[WebTransport] SendBinary error:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Send raw binary via stream
+     */
+    async sendBinaryViaStream(buffer) {
+        try {
+            const stream = await this.transport.createUnidirectionalStream();
+            const writer = stream.getWriter();
+            await writer.write(new Uint8Array(buffer));
+            await writer.close();
+
+            this.messagesSent++;
+            this.bytesSent += buffer.byteLength;
+            this.streamsUsed++;
+            return true;
+        } catch (error) {
+            console.error('[WebTransport] Binary stream send error:', error);
+            return false;
+        }
+    }
+
+    /**
      * Send large message via unidirectional stream
      */
     async sendViaStream(packet) {
