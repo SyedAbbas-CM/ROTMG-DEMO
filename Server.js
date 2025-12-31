@@ -2370,9 +2370,10 @@ function tryListen(port, attemptsLeft = 5) {
                 if (wtSession) {
                   client.webTransportSession = wtSession;
                   client.webTransportId = wtSessionId;
-                  console.log(`[WebTransport] Linked WT session ${wtSessionId} to WS client ${wsClientId}`);
+                  client.useBinaryProtocol = true; // Enable binary protocol for this client
+                  console.log(`[WebTransport] Linked WT session ${wtSessionId} to WS client ${wsClientId} (binary protocol enabled)`);
                   // Send acknowledgement via WebTransport
-                  wtSession.send(MessageType.WT_LINK_ACK, { success: true, clientId: wsClientId });
+                  wtSession.send(MessageType.WT_LINK_ACK, { success: true, clientId: wsClientId, binaryProtocol: true });
                 }
               } else {
                 console.warn(`[WebTransport] WT_LINK failed: client ${wsClientId} not found`);
