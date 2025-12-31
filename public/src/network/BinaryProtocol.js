@@ -230,48 +230,87 @@ export const DeltaFlags = {
  */
 export class BinaryReader {
   constructor(buffer) {
-    this.buffer = buffer instanceof ArrayBuffer ? buffer : buffer.buffer;
+    // Validate buffer
+    if (!buffer) {
+      console.error('[BinaryReader] FATAL: null/undefined buffer passed to constructor');
+      this.buffer = new ArrayBuffer(0);
+    } else if (buffer instanceof ArrayBuffer) {
+      this.buffer = buffer;
+    } else if (buffer.buffer instanceof ArrayBuffer) {
+      // It's a TypedArray view - need to handle byteOffset!
+      const typedArray = buffer;
+      // Create a new ArrayBuffer with just our data (not the whole underlying buffer)
+      this.buffer = typedArray.buffer.slice(typedArray.byteOffset, typedArray.byteOffset + typedArray.byteLength);
+      console.warn(`[BinaryReader] Received TypedArray instead of ArrayBuffer, sliced to ${this.buffer.byteLength} bytes`);
+    } else {
+      console.error('[BinaryReader] FATAL: Invalid buffer type:', typeof buffer, buffer);
+      this.buffer = new ArrayBuffer(0);
+    }
+
     this.view = new DataView(this.buffer);
     this.offset = 0;
+    this.bufferSize = this.buffer.byteLength;
+  }
+
+  // Validate read before attempting
+  _validateRead(bytes, operation) {
+    if (this.offset + bytes > this.bufferSize) {
+      console.error(`[BinaryReader] OVERFLOW: ${operation} needs ${bytes} bytes at offset ${this.offset}, but buffer only has ${this.bufferSize} bytes`);
+      return false;
+    }
+    return true;
   }
 
   readUint8() {
+    if (!this._validateRead(1, 'readUint8')) return 0;
     return this.view.getUint8(this.offset++);
   }
 
   readInt8() {
+    if (!this._validateRead(1, 'readInt8')) return 0;
     return this.view.getInt8(this.offset++);
   }
 
   readUint16() {
+    if (!this._validateRead(2, 'readUint16')) return 0;
     const val = this.view.getUint16(this.offset, true);
     this.offset += 2;
     return val;
   }
 
   readInt16() {
+    if (!this._validateRead(2, 'readInt16')) return 0;
     const val = this.view.getInt16(this.offset, true);
     this.offset += 2;
     return val;
   }
 
   readUint32() {
+    if (!this._validateRead(4, 'readUint32')) return 0;
     const val = this.view.getUint32(this.offset, true);
     this.offset += 4;
     return val;
   }
 
   readFloat32() {
+    if (!this._validateRead(4, 'readFloat32')) return 0;
     const val = this.view.getFloat32(this.offset, true);
     this.offset += 4;
     return val;
   }
 
   readPosition() {
-    return {
-      x: fromFixedPoint(this.readInt16()),
-      y: fromFixedPoint(this.readInt16())
-    };
+    const rawX = this.readInt16();
+    const rawY = this.readInt16();
+    const x = fromFixedPoint(rawX);
+    const y = fromFixedPoint(rawY);
+
+    // Validate result
+    if (!isFinite(x) || !isFinite(y)) {
+      console.error(`[BinaryReader] BAD POSITION: rawX=${rawX}, rawY=${rawY}, x=${x}, y=${y}, offset=${this.offset - 4}`);
+    }
+
+    return { x, y };
   }
 
   readVelocity() {

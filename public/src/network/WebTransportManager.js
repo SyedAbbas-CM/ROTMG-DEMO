@@ -228,15 +228,42 @@ export class WebTransportManager {
      */
     handleMessage(buffer) {
         try {
+            // Validate buffer
+            if (!buffer || buffer.byteLength === 0) {
+                console.error('[WebTransport] Empty or null buffer received');
+                return;
+            }
+
+            // Ensure we have an ArrayBuffer (not TypedArray view)
+            let arrayBuffer = buffer;
+            if (!(buffer instanceof ArrayBuffer)) {
+                if (buffer.buffer instanceof ArrayBuffer) {
+                    // It's a TypedArray - extract the correct portion
+                    arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+                    console.warn(`[WebTransport] handleMessage received TypedArray, converted to ${arrayBuffer.byteLength} byte ArrayBuffer`);
+                } else {
+                    console.error('[WebTransport] Invalid buffer type:', typeof buffer);
+                    return;
+                }
+            }
+
             // Check first byte to determine packet type
-            const view = new DataView(buffer);
+            const view = new DataView(arrayBuffer);
             const firstByte = view.getUint8(0);
+
+            // Debug: Log buffer info on first message
+            if (!this._firstMessageLogged) {
+                this._firstMessageLogged = true;
+                const bytes = new Uint8Array(arrayBuffer);
+                const hexFirst10 = Array.from(bytes.slice(0, 10)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                console.log(`[WebTransport] First message: ${arrayBuffer.byteLength} bytes, first 10: ${hexFirst10}`);
+            }
 
             // Raw binary WORLD_DELTA starts with 0x10 (BinaryPacketType.WORLD_DELTA)
             if (firstByte === 0x10) {
                 // Route directly to BINARY_WORLD_DELTA handler with raw buffer
                 if (this.networkManager.handlers[MessageType.BINARY_WORLD_DELTA]) {
-                    this.networkManager.handlers[MessageType.BINARY_WORLD_DELTA](buffer);
+                    this.networkManager.handlers[MessageType.BINARY_WORLD_DELTA](arrayBuffer);
                 }
                 return;
             }
@@ -248,7 +275,7 @@ export class WebTransportManager {
             }
 
             // Otherwise, try JSON-wrapped BinaryPacket decode
-            const packet = BinaryPacket.decode(buffer);
+            const packet = BinaryPacket.decode(arrayBuffer);
 
             // Forward to network manager's handler
             if (this.networkManager.handlers[packet.type]) {
