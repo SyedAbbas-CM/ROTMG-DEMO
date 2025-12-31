@@ -71,6 +71,9 @@ export class WebTransportManager {
             // Update UI
             this.updateConnectionStatus('Connected (QUIC/UDP)');
 
+            // Debug: Log successful connection
+            console.log(`[WebTransport] CONNECTION READY - Binary protocol enabled, datagrams: ${this.transport.datagrams?.writable ? 'YES' : 'NO'}`);
+
             // Link WebTransport session to WebSocket client by sending clientId
             const clientId = this.networkManager.getClientId();
             if (clientId) {
@@ -267,6 +270,11 @@ export class WebTransportManager {
      */
     sendBinary(buffer) {
         if (!this.isReady || !this.transport) {
+            // Debug: Log why we're not ready
+            if (!this._notReadyLogged || Date.now() - this._notReadyLogged > 10000) {
+                this._notReadyLogged = Date.now();
+                console.warn(`[WebTransport] sendBinary failed: isReady=${this.isReady}, transport=${!!this.transport}`);
+            }
             return false;
         }
 
@@ -280,6 +288,12 @@ export class WebTransportManager {
                 this.messagesSent++;
                 this.bytesSent += buffer.byteLength;
                 this.datagramsUsed++;
+
+                // Debug: Log first binary send
+                if (!this._firstBinarySent) {
+                    this._firstBinarySent = true;
+                    console.log(`[WebTransport] First binary datagram sent: ${buffer.byteLength} bytes`);
+                }
                 return true;
             }
 

@@ -1316,6 +1316,11 @@ export class ClientNetworkManager {
                         data.vx || 0, data.vy || 0,
                         data.angle || data.rotation || 0
                     );
+                    // Debug: Log binary usage (throttled)
+                    if (!this._lastBinaryLog || Date.now() - this._lastBinaryLog > 5000) {
+                        this._lastBinaryLog = Date.now();
+                        console.log(`[BINARY] PLAYER_UPDATE sent via WebTransport: ${binaryPayload.byteLength} bytes (vs ~60 JSON)`);
+                    }
                 } else if (type === MessageType.BULLET_CREATE) {
                     binaryPayload = encodeBulletCreate(
                         data.x, data.y,
@@ -1323,6 +1328,7 @@ export class ClientNetworkManager {
                         data.speed,
                         data.damage || 10
                     );
+                    console.log(`[BINARY] BULLET_CREATE sent via WebTransport: ${binaryPayload.byteLength} bytes (vs ~80 JSON)`);
                 } else if (type === MessageType.PING) {
                     binaryPayload = encodePing(data.time || Date.now());
                 }

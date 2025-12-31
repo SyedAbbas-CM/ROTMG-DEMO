@@ -212,23 +212,37 @@ class WebTransportSession {
                 if (decoded && this.onMessage) {
                     // Map ClientBinaryType to MessageType for routing
                     let messageType;
+                    let typeName;
                     switch (decoded.type) {
                         case ClientBinaryType.PLAYER_UPDATE:
                             messageType = MessageType.PLAYER_UPDATE;
+                            typeName = 'PLAYER_UPDATE';
                             break;
                         case ClientBinaryType.BULLET_CREATE:
                             messageType = MessageType.BULLET_CREATE;
+                            typeName = 'BULLET_CREATE';
                             break;
                         case ClientBinaryType.PING:
                             messageType = MessageType.PING;
+                            typeName = 'PING';
                             break;
                         case ClientBinaryType.USE_ABILITY:
                             messageType = MessageType.USE_ABILITY;
+                            typeName = 'USE_ABILITY';
                             break;
                         default:
                             console.warn(`[WebTransport] Unknown client binary type: ${decoded.type}`);
                             return;
                     }
+
+                    // Debug logging (throttled for PLAYER_UPDATE)
+                    if (!this._lastBinaryLog) this._lastBinaryLog = {};
+                    const now = Date.now();
+                    if (typeName !== 'PLAYER_UPDATE' || !this._lastBinaryLog[typeName] || now - this._lastBinaryLog[typeName] > 5000) {
+                        this._lastBinaryLog[typeName] = now;
+                        console.log(`[BINARY-RX] Client ${this.clientId}: ${typeName} decoded (${buffer.byteLength} bytes)`);
+                    }
+
                     this.onMessage(this.clientId, messageType, decoded.data);
                 }
                 return;
