@@ -93,7 +93,9 @@ export class WebTransportManager {
 
             return true;
         } catch (error) {
-            console.error('[WebTransport] Connection failed:', error);
+            console.error('%c[WebTransport] CONNECTION FAILED', 'color: #f00; font-weight: bold');
+            console.error('[WebTransport] Error:', error.message || error);
+            console.error('[WebTransport] URL was:', url);
             this.isReady = false;
 
             // Try to reconnect
@@ -102,7 +104,7 @@ export class WebTransportManager {
                 console.log(`[WebTransport] Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${this.reconnectDelay}ms`);
                 setTimeout(() => this.initialize(url), this.reconnectDelay);
             } else {
-                console.warn('[WebTransport] Max reconnect attempts reached, using WebSocket only');
+                console.warn('%c[WebTransport] GIVING UP - using WebSocket only (binary protocol disabled)', 'color: #f90; font-weight: bold');
             }
 
             return false;

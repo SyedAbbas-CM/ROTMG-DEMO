@@ -515,6 +515,24 @@ export class ClientNetworkManager {
         });
         
         console.log("ClientNetworkManager initialized with server URL:", serverUrl);
+
+        // Debug: Expose network status globally
+        window.getNetworkStatus = () => {
+            const wtStats = this.webtransport?.getStats() || { isReady: false };
+            console.log('=== NETWORK STATUS ===');
+            console.log('WebSocket connected:', this.connected);
+            console.log('WebTransport ready:', wtStats.isReady);
+            console.log('WebTransport stats:', wtStats);
+            console.log('Binary messages sent:', this._binaryCount || 0);
+            console.log('Active transport:', this.webtransport?.isReady ? 'WebTransport (BINARY)' : 'WebSocket (JSON)');
+            console.log('======================');
+            return {
+                wsConnected: this.connected,
+                wtReady: wtStats.isReady,
+                binaryCount: this._binaryCount || 0,
+                transport: this.webtransport?.isReady ? 'WebTransport' : 'WebSocket'
+            };
+        };
     }
     
     /**
@@ -1316,10 +1334,12 @@ export class ClientNetworkManager {
                         data.vx || 0, data.vy || 0,
                         data.angle || data.rotation || 0
                     );
-                    // Debug: Log binary usage (throttled)
-                    if (!this._lastBinaryLog || Date.now() - this._lastBinaryLog > 5000) {
+                    // Debug: Log binary usage (first 10, then every 5 sec)
+                    if (!this._binaryCount) this._binaryCount = 0;
+                    this._binaryCount++;
+                    if (this._binaryCount <= 10 || (!this._lastBinaryLog || Date.now() - this._lastBinaryLog > 5000)) {
                         this._lastBinaryLog = Date.now();
-                        console.log(`[BINARY] PLAYER_UPDATE sent via WebTransport: ${binaryPayload.byteLength} bytes (vs ~60 JSON)`);
+                        console.log(`%c[BINARY] PLAYER_UPDATE #${this._binaryCount} via WebTransport: ${binaryPayload.byteLength} bytes (vs ~60 JSON)`, 'color: #0f0; font-weight: bold');
                     }
                 } else if (type === MessageType.BULLET_CREATE) {
                     binaryPayload = encodeBulletCreate(
@@ -1360,6 +1380,12 @@ export class ClientNetworkManager {
 
             // Encode binary packet for WebSocket
             const packet = BinaryPacket.encode(type, data);
+
+            // Debug: Log when high-frequency messages fall back to WebSocket
+            if ((type === MessageType.PLAYER_UPDATE || type === MessageType.BULLET_CREATE) && !this._wsFallbackLogged) {
+                this._wsFallbackLogged = true;
+                console.warn('%c[FALLBACK] Using WebSocket (JSON) for game messages - WebTransport not connected', 'color: #f90; font-weight: bold');
+            }
 
             // Send packet via WebSocket (TCP)
             this.socket.send(packet);
