@@ -519,19 +519,38 @@ export class ClientNetworkManager {
         // Debug: Expose network status globally
         window.getNetworkStatus = () => {
             const wtStats = this.webtransport?.getStats() || { isReady: false };
-            console.log('=== NETWORK STATUS ===');
-            console.log('WebSocket connected:', this.connected);
-            console.log('WebTransport ready:', wtStats.isReady);
-            console.log('WebTransport stats:', wtStats);
-            console.log('Binary messages sent:', this._binaryCount || 0);
-            console.log('Active transport:', this.webtransport?.isReady ? 'WebTransport (BINARY)' : 'WebSocket (JSON)');
-            console.log('======================');
-            return {
+            const status = {
                 wsConnected: this.connected,
                 wtReady: wtStats.isReady,
                 binaryCount: this._binaryCount || 0,
-                transport: this.webtransport?.isReady ? 'WebTransport' : 'WebSocket'
+                transport: this.webtransport?.isReady ? 'WebTransport' : 'WebSocket',
+                wtStats: wtStats
             };
+
+            // Visual summary
+            const isBinary = status.wtReady && status.binaryCount > 0;
+            console.log('%c╔════════════════════════════════════╗', 'color: #0ff');
+            console.log('%c║     [NETWORK] STATUS REPORT        ║', 'color: #0ff; font-weight: bold');
+            console.log('%c╠════════════════════════════════════╣', 'color: #0ff');
+            console.log(`%c║ WebSocket: ${status.wsConnected ? '✓ CONNECTED' : '✗ DISCONNECTED'}`, status.wsConnected ? 'color: #0f0' : 'color: #f00');
+            console.log(`%c║ WebTransport: ${status.wtReady ? '✓ READY' : '✗ NOT READY'}`, status.wtReady ? 'color: #0f0' : 'color: #f90');
+            console.log(`%c║ Binary Protocol: ${isBinary ? '✓ ACTIVE (' + status.binaryCount + ' msgs)' : '✗ INACTIVE'}`, isBinary ? 'color: #0f0; font-weight: bold' : 'color: #f00');
+            console.log(`%c║ Transport: ${status.transport}`, 'color: #fff');
+            console.log('%c╚════════════════════════════════════╝', 'color: #0ff');
+
+            if (!status.wtReady) {
+                console.log('%c[NETWORK] WebTransport not connected - binary protocol disabled', 'color: #f90');
+                console.log('%c[NETWORK] All messages using JSON over WebSocket', 'color: #f90');
+            }
+
+            return status;
+        };
+
+        // Also expose quick binary check
+        window.isBinaryActive = () => {
+            const active = this.webtransport?.isReady && (this._binaryCount || 0) > 0;
+            console.log(`%c[BINARY] Protocol ${active ? 'ACTIVE' : 'INACTIVE'} (${this._binaryCount || 0} messages sent)`, active ? 'color: #0f0; font-weight: bold' : 'color: #f00');
+            return active;
         };
     }
     

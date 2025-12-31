@@ -1,4 +1,7 @@
 // public/src/game/game.js
+// MUST BE FIRST - filters console output to show only BINARY/NETWORK logs
+import '../utils/disableConsoleLogs.js';
+
 import { spriteManager } from '../assets/spriteManager.js'; 
 // Expose for modules that expect a global handle (e.g. ClientEnemyManager)
 if (typeof window !== 'undefined') {
@@ -33,7 +36,6 @@ import { EntityAnimator } from '../entities/EntityAnimator.js';
 import { PlayerManager } from '../entities/PlayerManager.js';
 import { initCoordinateUtils } from '../utils/coordinateUtils.js';
 import { initLogger, setLogLevel, LOG_LEVELS } from '../utils/logger.js';
-import '../utils/disableConsoleLogs.js'; // Disable console logs to reduce logs.txt spam
 import { setupDebugTools } from '../utils/debugTools.js';
 import { spriteDatabase } from '../assets/SpriteDatabase.js';
 import { tileDatabase } from '../assets/TileDatabase.js';
