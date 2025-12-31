@@ -2195,14 +2195,16 @@ function broadcastWorldUpdates() {
             ctx.deltaTracker.getAndClearRemoved(),
             now
           );
-          c.webTransportSession.send(MessageType.BINARY_WORLD_DELTA, binaryPayload);
-          // Track binary bandwidth savings
+          // Use sendBinary() for raw binary - NOT send() which wraps in JSON
+          c.webTransportSession.sendBinary(binaryPayload);
+          // Track binary bandwidth savings (1% sample rate)
           if (networkLogger && Math.random() < 0.01) {
             const jsonSize = JSON.stringify(payload).length;
             const savings = calculateSavings(jsonSize, binaryPayload.byteLength);
-            console.log(`[BINARY] Saved ${savings.percentage}% (${savings.savings} bytes) for client ${cid}`);
+            console.log(`[BINARY-TX] Client ${cid}: ${binaryPayload.byteLength} bytes (${savings.percentage}% smaller than JSON)`);
           }
         } catch (err) {
+          console.error(`[BINARY] Encode error for client ${cid}:`, err);
           // Fall back to JSON on binary encoding error
           sendToClient(c.socket, MessageType.WORLD_UPDATE, payload);
         }

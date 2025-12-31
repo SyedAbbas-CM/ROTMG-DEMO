@@ -216,9 +216,30 @@ export class WebTransportManager {
 
     /**
      * Handle incoming binary message
+     * Supports both raw binary (WORLD_DELTA) and JSON-wrapped packets
      */
     handleMessage(buffer) {
         try {
+            // Check first byte to determine packet type
+            const view = new DataView(buffer);
+            const firstByte = view.getUint8(0);
+
+            // Raw binary WORLD_DELTA starts with 0x10 (BinaryPacketType.WORLD_DELTA)
+            if (firstByte === 0x10) {
+                // Route directly to BINARY_WORLD_DELTA handler with raw buffer
+                if (this.networkManager.handlers[MessageType.BINARY_WORLD_DELTA]) {
+                    this.networkManager.handlers[MessageType.BINARY_WORLD_DELTA](buffer);
+                }
+                return;
+            }
+
+            // Client binary messages (0x01-0x04) shouldn't come from server, but handle just in case
+            if (firstByte >= 0x01 && firstByte <= 0x04) {
+                console.warn('[WebTransport] Received client-type binary message from server:', firstByte);
+                return;
+            }
+
+            // Otherwise, try JSON-wrapped BinaryPacket decode
             const packet = BinaryPacket.decode(buffer);
 
             // Forward to network manager's handler

@@ -769,6 +769,14 @@ export class ClientNetworkManager {
             try {
                 // Data is already an ArrayBuffer from WebTransport
                 const delta = decodeWorldDelta(data);
+
+                // Debug: Log incoming binary world updates
+                if (!this._binaryRxCount) this._binaryRxCount = 0;
+                this._binaryRxCount++;
+                if (this._binaryRxCount <= 5 || this._binaryRxCount % 100 === 0) {
+                    console.log(`[BINARY] RX WORLD_DELTA #${this._binaryRxCount}: ${delta?.bullets?.length || 0} bullets, ${delta?.enemies?.length || 0} enemies, ${Object.keys(delta?.players || {}).length} players`);
+                }
+
                 if (delta && this.game.updateWorld) {
                     // Convert delta format to match existing updateWorld signature
                     this.game.updateWorld(
@@ -788,7 +796,7 @@ export class ClientNetworkManager {
                     }
                 }
             } catch (err) {
-                console.error('[BinaryProtocol] Decode error:', err);
+                console.error('[BINARY] Decode error:', err);
             }
         };
 

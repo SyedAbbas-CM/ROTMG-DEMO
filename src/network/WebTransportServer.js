@@ -260,7 +260,7 @@ class WebTransportSession {
     }
 
     /**
-     * Send message to client
+     * Send message to client (JSON-based protocol)
      * Uses datagrams for small messages (UDP-like), streams for large ones
      */
     send(type, data) {
@@ -281,6 +281,45 @@ class WebTransportSession {
             return this.sendViaStream(packet);
         } catch (error) {
             console.error(`[WebTransport] Client ${this.clientId}: Send error:`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Send raw binary data (no JSON wrapping)
+     * Used for BINARY_WORLD_DELTA and other true binary messages
+     */
+    sendBinary(buffer) {
+        if (!this.isReady) return false;
+
+        try {
+            const data = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
+
+            // Use datagrams for small messages (< 1200 bytes for MTU safety)
+            if (this.datagramsSupported && data.byteLength < 1200) {
+                const writer = this.session.datagrams.writable.getWriter();
+                writer.write(data);
+                writer.releaseLock();
+                return true;
+            }
+
+            // Use unidirectional stream for larger messages
+            return this.sendBinaryViaStream(data);
+        } catch (error) {
+            console.error(`[WebTransport] Client ${this.clientId}: SendBinary error:`, error);
+            return false;
+        }
+    }
+
+    async sendBinaryViaStream(data) {
+        try {
+            const stream = await this.session.createUnidirectionalStream();
+            const writer = stream.getWriter();
+            await writer.write(data);
+            await writer.close();
+            return true;
+        } catch (error) {
+            console.error(`[WebTransport] Client ${this.clientId}: Binary stream send error:`, error);
             return false;
         }
     }
