@@ -150,7 +150,11 @@ export class WebTransportManager {
 
                 this.messagesReceived++;
                 this.bytesReceived += value.byteLength;
-                this.handleMessage(value.buffer);
+
+                // CRITICAL: value.buffer might be a larger shared buffer
+                // We need to slice out just our data portion
+                const buffer = value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
+                this.handleMessage(buffer);
             }
         } catch (error) {
             if (error.name !== 'AbortError') {
@@ -194,7 +198,10 @@ export class WebTransportManager {
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
-                chunks.push(value);
+                // Copy the chunk data to avoid shared buffer issues
+                const copy = new Uint8Array(value.byteLength);
+                copy.set(value);
+                chunks.push(copy);
             }
 
             // Combine chunks
@@ -202,12 +209,13 @@ export class WebTransportManager {
             const combined = new Uint8Array(totalLength);
             let offset = 0;
             for (const chunk of chunks) {
-                combined.set(new Uint8Array(chunk.buffer || chunk), offset);
+                combined.set(chunk, offset);
                 offset += chunk.byteLength;
             }
 
             this.messagesReceived++;
             this.bytesReceived += totalLength;
+            // combined is a fresh array, its .buffer is exactly the right size
             this.handleMessage(combined.buffer);
         } catch (error) {
             console.error('[WebTransport] Stream read error:', error);
