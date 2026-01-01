@@ -325,6 +325,16 @@ export function renderEnemies() {
 
       const spriteDB = window.spriteDatabase;
 
+      // DEBUG: Log boss sprite info (throttled)
+      if (enemy.renderScale >= 6 || enemy.id?.includes('boss')) {
+        if (!renderEnemies._bossDebugCount) renderEnemies._bossDebugCount = 0;
+        renderEnemies._bossDebugCount++;
+        if (renderEnemies._bossDebugCount <= 3 || renderEnemies._bossDebugCount % 100 === 0) {
+          const hasSprite = spriteDB?.hasSprite?.(enemy.spriteName);
+          console.log(`[BOSS SPRITE] id=${enemy.id}, spriteName=${enemy.spriteName}, hasSprite=${hasSprite}, renderScale=${enemy.renderScale}, spriteDB=${!!spriteDB}`);
+        }
+      }
+
       // If we have spriteName and sprite database, draw using it with submersion
       if (enemy.spriteName && spriteDB && spriteDB.hasSprite(enemy.spriteName)) {
         // For spriteDB rendering, we need to use canvas clipping for submersion
