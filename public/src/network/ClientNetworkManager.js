@@ -762,6 +762,11 @@ export class ClientNetworkManager {
                 window.gameState.character.maxHealth = data.localPlayer.maxHealth || 1000;
                 window.gameState.character.isDead = data.localPlayer.isDead || false;
 
+                // DEBUG: Log health changes
+                if (oldHealth !== data.localPlayer.health) {
+                    console.log(`[HEALTH DEBUG] Server health update: ${oldHealth} -> ${data.localPlayer.health}`);
+                }
+
                 // Update UI if health changed
                 if (oldHealth !== data.localPlayer.health && window.gameUI?.updateHealth) {
                     window.gameUI.updateHealth(data.localPlayer.health, data.localPlayer.maxHealth || 1000);
