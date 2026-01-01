@@ -6,6 +6,18 @@
 const spriteById = [];
 const spriteRegistry = new Map();
 
+// Pre-register all known enemy sprites in deterministic order
+// MUST match the order in common/BinaryProtocol.js on the server
+const KNOWN_SPRITES = [
+  'Light_Infantry',
+  'Archer',
+  'Light_Cavalry',
+  'Heavy_Cavalry',
+  'Heavy_Infantry',
+  'Mega_Cavalry',
+  // Add more as needed - MUST match server list
+];
+
 // Entity ID registry (synchronized from server)
 const entityById = [];
 const entityRegistry = new Map();
@@ -14,6 +26,9 @@ export function registerSprite(id, name) {
   spriteById[id] = name;
   spriteRegistry.set(name, id);
 }
+
+// Initialize known sprites on module load (matching server IDs)
+KNOWN_SPRITES.forEach((name, id) => registerSprite(id, name));
 
 export function getSpriteName(id) {
   return spriteById[id] || null;
@@ -305,9 +320,10 @@ export class BinaryReader {
     const x = fromFixedPoint(rawX);
     const y = fromFixedPoint(rawY);
 
-    // Validate result
+    // Validate result - return safe defaults if NaN
     if (!isFinite(x) || !isFinite(y)) {
       console.error(`[BinaryReader] BAD POSITION: rawX=${rawX}, rawY=${rawY}, x=${x}, y=${y}, offset=${this.offset - 4}`);
+      return { x: 0, y: 0, invalid: true };
     }
 
     return { x, y };
@@ -344,14 +360,24 @@ export function decodeBullet(reader) {
 
   if (deltaFlags & DeltaFlags.POSITION) {
     const pos = reader.readPosition();
+    if (pos.invalid) {
+      bullet._invalid = true; // Mark for filtering
+    }
     bullet.x = pos.x;
     bullet.y = pos.y;
   }
 
   if (deltaFlags & DeltaFlags.VELOCITY) {
     const vel = reader.readVelocity();
-    bullet.vx = vel.vx;
-    bullet.vy = vel.vy;
+    // Validate velocity
+    if (!isFinite(vel.vx) || !isFinite(vel.vy)) {
+      console.error(`[BinaryReader] BAD VELOCITY for bullet ${id}: vx=${vel.vx}, vy=${vel.vy}`);
+      bullet.vx = 0;
+      bullet.vy = 0;
+    } else {
+      bullet.vx = vel.vx;
+      bullet.vy = vel.vy;
+    }
   }
 
   if (deltaFlags & DeltaFlags.STATE) {
@@ -376,6 +402,9 @@ export function decodeEnemy(reader) {
 
   if (deltaFlags & DeltaFlags.POSITION) {
     const pos = reader.readPosition();
+    if (pos.invalid) {
+      enemy._invalid = true; // Mark for filtering
+    }
     enemy.x = pos.x;
     enemy.y = pos.y;
   }
@@ -391,6 +420,7 @@ export function decodeEnemy(reader) {
     const stateFlags = reader.readUint8();
     enemy.isDying = !!(stateFlags & 0x01);
     enemy.isFlashing = !!(stateFlags & 0x02);
+    enemy.renderScale = reader.readUint8() || 2;
   }
 
   return enemy;
@@ -407,6 +437,9 @@ export function decodePlayer(reader) {
 
   if (deltaFlags & DeltaFlags.POSITION) {
     const pos = reader.readPosition();
+    if (pos.invalid) {
+      player._invalid = true;
+    }
     player.x = pos.x;
     player.y = pos.y;
   }
@@ -465,6 +498,11 @@ export function decodeWorldDelta(buffer) {
   const players = {};
   for (let i = 0; i < playerCount; i++) {
     const player = decodePlayer(reader);
+    // Skip invalid players
+    if (player._invalid || !isFinite(player.x) || !isFinite(player.y)) {
+      console.error(`[BINARY] SKIPPING INVALID PLAYER: id=${player.id}, x=${player.x}, y=${player.y}`);
+      continue;
+    }
     if (player.id) {
       players[player.id] = player;
     }
@@ -474,7 +512,13 @@ export function decodeWorldDelta(buffer) {
   const enemyCount = reader.readUint16();
   const enemies = [];
   for (let i = 0; i < enemyCount; i++) {
-    enemies.push(decodeEnemy(reader));
+    const enemy = decodeEnemy(reader);
+    // Filter out invalid enemies (NaN positions or marked invalid)
+    if (enemy._invalid || !isFinite(enemy.x) || !isFinite(enemy.y)) {
+      console.error(`[BINARY] SKIPPING INVALID ENEMY: id=${enemy.id}, x=${enemy.x}, y=${enemy.y}`);
+      continue;
+    }
+    enemies.push(enemy);
   }
 
   // Debug: Log offset before bullets
@@ -497,16 +541,19 @@ export function decodeWorldDelta(buffer) {
     const bulletStartOff = reader.offset;
     const bullet = decodeBullet(reader);
 
-    // Debug: Check for invalid positions
-    if (isNaN(bullet.x) || isNaN(bullet.y) || !isFinite(bullet.x) || !isFinite(bullet.y)) {
-      // Log raw bytes around this bullet
-      const bytes = new Uint8Array(buffer);
-      const start = Math.max(0, bulletStartOff - 4);
-      const end = Math.min(bytes.length, reader.offset + 4);
-      const rawBytes = Array.from(bytes.slice(start, end)).map(b => b.toString(16).padStart(2, '0')).join(' ');
-      console.error(`[BINARY] CORRUPT BULLET #${i}/${bulletCount}: x=${bullet.x}, y=${bullet.y}, id=${bullet.id}`);
-      console.error(`[BINARY] Raw bytes around bullet (offset ${bulletStartOff}): ${rawBytes}`);
-      console.error(`[BINARY] Reader offset after decode: ${reader.offset}, buffer size: ${buffer.byteLength}`);
+    // Filter out invalid bullets (NaN positions or marked invalid)
+    if (bullet._invalid || isNaN(bullet.x) || isNaN(bullet.y) || !isFinite(bullet.x) || !isFinite(bullet.y)) {
+      // Log raw bytes around this bullet (throttled)
+      if (!decodeWorldDelta._invalidCount) decodeWorldDelta._invalidCount = 0;
+      decodeWorldDelta._invalidCount++;
+      if (decodeWorldDelta._invalidCount <= 5 || decodeWorldDelta._invalidCount % 100 === 0) {
+        const bytes = new Uint8Array(buffer);
+        const start = Math.max(0, bulletStartOff - 4);
+        const end = Math.min(bytes.length, reader.offset + 4);
+        const rawBytes = Array.from(bytes.slice(start, end)).map(b => b.toString(16).padStart(2, '0')).join(' ');
+        console.error(`[BINARY] SKIPPING INVALID BULLET #${decodeWorldDelta._invalidCount}: x=${bullet.x}, y=${bullet.y}, id=${bullet.id}`);
+      }
+      continue; // Skip this bullet - don't add to array
     }
     bullets.push(bullet);
   }

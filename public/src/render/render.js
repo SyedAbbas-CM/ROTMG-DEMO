@@ -255,14 +255,20 @@ export function renderEnemies() {
   // Render each enemy
   enemies.forEach(enemy => {
     try {
+      // DEFENSIVE: Skip enemies with NaN/Infinity positions to prevent render crash
+      if (!isFinite(enemy.x) || !isFinite(enemy.y)) {
+        console.error(`[RENDER] Skipping enemy with invalid position: id=${enemy.id}, x=${enemy.x}, y=${enemy.y}`);
+        return;
+      }
+
       // Use tile size scaling instead of collision width to control sprite size
       const baseScale = enemy.renderScale || 2; // tiles wide/high
       const width = TILE_SIZE * baseScale * viewScaleFactor;
       const height = TILE_SIZE * baseScale * viewScaleFactor;
-      
+
       // FIXED: Use camera's worldToScreen method for consistent coordinate transformation
       let screenX, screenY;
-      
+
       if (useCamera) {
         // Use camera's consistent transformation method
         const screenPos = gameState.camera.worldToScreen(
@@ -279,7 +285,12 @@ export function renderEnemies() {
         screenX = (enemy.x - gameState.camera.position.x) * TILE_SIZE * viewScaleFactor + screenWidth / 2;
         screenY = (enemy.y - gameState.camera.position.y) * TILE_SIZE * viewScaleFactor + screenHeight / 2;
       }
-      
+
+      // DEFENSIVE: Also check screen coordinates for NaN
+      if (!isFinite(screenX) || !isFinite(screenY)) {
+        return;
+      }
+
       // Skip if off screen (with buffer)
       const buffer = width;
       if (screenX < -buffer || screenX > screenWidth + buffer ||
@@ -606,8 +617,10 @@ export function renderBullets() {
     // Collision is 0.6 tiles, but visual is 0.6 * 1.5 = 0.9 tiles for better visibility
     const BULLET_VISUAL_SCALE = viewType === 'strategic' ? 0.5 : 1.5; // Smaller in strategic view, larger in normal view
     const minPx = 3;
-    const baseW = bm.width[i] || 8; // Get collision width in tile units
-    const baseH = bm.height[i] || 8; // Get collision height in tile units
+    // CRITICAL: Default to 0.6 tiles, NOT 8! (8 tiles = ~144px = WAY too large)
+    // Use sensible bounds: bullets should be 0.3-2.0 tiles, anything outside is invalid
+    const baseW = (bm.width[i] > 0.1 && bm.width[i] < 5) ? bm.width[i] : 0.6;
+    const baseH = (bm.height[i] > 0.1 && bm.height[i] < 5) ? bm.height[i] : 0.6;
     const drawW = Math.max(baseW * TILE_SIZE * BULLET_VISUAL_SCALE, minPx); // Scale up visual size
     const drawH = Math.max(baseH * TILE_SIZE * BULLET_VISUAL_SCALE, minPx); // Scale up visual size
 
@@ -638,6 +651,11 @@ export function renderBullets() {
     }
 
     // fallback glow circle
+    // FINAL SAFETY: Validate all gradient parameters before creating
+    if (!isFinite(drawW) || drawW <= 0) {
+      console.error(`[RENDER] Invalid drawW for bullet: id=${bm.id[i]}, drawW=${drawW}, width=${bm.width[i]}`);
+      continue;
+    }
     const isLocal = bm.ownerId[i] === gameState.character?.id;
     const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, drawW);
     if (isLocal) {
@@ -722,15 +740,43 @@ export function renderGame() {
     console.error("Error rendering game view:", error);
   }
   
-  // Draw entities
-  renderBullets();
-  renderEnemies();
-  renderUnits();
-  renderPlayers();
-  renderCharacter();
-  
+  // Draw entities - wrap each in try-catch to prevent one bad entity from crashing everything
+  try {
+    renderBullets();
+  } catch (error) {
+    console.error("[RENDER] renderBullets crashed:", error);
+  }
+
+  try {
+    renderEnemies();
+  } catch (error) {
+    console.error("[RENDER] renderEnemies crashed:", error);
+  }
+
+  try {
+    renderUnits();
+  } catch (error) {
+    console.error("[RENDER] renderUnits crashed:", error);
+  }
+
+  try {
+    renderPlayers();
+  } catch (error) {
+    console.error("[RENDER] renderPlayers crashed:", error);
+  }
+
+  try {
+    renderCharacter();
+  } catch (error) {
+    console.error("[RENDER] renderCharacter crashed:", error);
+  }
+
   // Draw UI elements
-  renderUI();
+  try {
+    renderUI();
+  } catch (error) {
+    console.error("[RENDER] renderUI crashed:", error);
+  }
   
   // Run coordinate system test if debug mode is enabled
   if (gameState.camera && gameState.camera.debugMode) {
