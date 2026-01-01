@@ -59,12 +59,20 @@ export class ClientBulletManager {
       return null;
     }
 
+    // CRITICAL: Validate position before adding - reject NaN bullets
+    const x = bulletData.x ?? 0;
+    const y = bulletData.y ?? 0;
+    if (!isFinite(x) || !isFinite(y)) {
+      console.error(`[ClientBulletManager] REJECTED bullet with NaN position: id=${bulletData.id}, x=${x}, y=${y}`);
+      return null;
+    }
+
     const index = this.bulletCount++;
     const bulletId = bulletData.id || `local_${Date.now()}_${index}`;
 
     // DIAGNOSTIC: Log enemy bullets being added
     if (typeof bulletData.ownerId === 'string' && bulletData.ownerId.startsWith('enemy_')) {
-      console.log(`✅ [ENEMY BULLET ADD] ID: ${bulletId}, Owner: ${bulletData.ownerId}, Pos: (${bulletData.x.toFixed(2)}, ${bulletData.y.toFixed(2)})`);
+      console.log(`✅ [ENEMY BULLET ADD] ID: ${bulletId}, Owner: ${bulletData.ownerId}, Pos: (${x.toFixed(2)}, ${y.toFixed(2)})`);
     }
 
     // Store bullet properties
@@ -332,13 +340,19 @@ export class ClientBulletManager {
       const index = this.findIndexById(bullet.id);
 
       if (index !== -1) {
+        // CRITICAL: Validate position before updating - skip NaN values
+        if (!isFinite(bullet.x) || !isFinite(bullet.y)) {
+          console.error(`[ClientBulletManager] SKIPPING update with NaN position: id=${bullet.id}, x=${bullet.x}, y=${bullet.y}`);
+          continue;
+        }
+
         // Update existing bullet - use interpolation to prevent jitter
         // Set TARGET position from server, actual position will interpolate towards it
         this.targetX[index] = bullet.x;
         this.targetY[index] = bullet.y;
         // Only update velocity if provided (binary protocol may only send position)
-        if (bullet.vx !== undefined) this.vx[index] = bullet.vx;
-        if (bullet.vy !== undefined) this.vy[index] = bullet.vy;
+        if (bullet.vx !== undefined && isFinite(bullet.vx)) this.vx[index] = bullet.vx;
+        if (bullet.vy !== undefined && isFinite(bullet.vy)) this.vy[index] = bullet.vy;
 
         // If this is the first update or bullet jumped too far (>10 tiles), snap immediately
         const deltaX = bullet.x - this.x[index];
@@ -366,7 +380,14 @@ export class ClientBulletManager {
         }
       } else {
         // Try to reconcile with a locally predicted bullet (same owner & close position)
-        if (bullet.ownerId === window.gameState?.character?.id) {
+        // CRITICAL: Handle both ID formats - server may send "entity_X" but character.id is numeric
+        const localId = window.gameState?.character?.id;
+        const localIdStr = String(localId);
+        const localIdEntity = localIdStr.startsWith('entity_') ? localIdStr : `entity_${localIdStr}`;
+        const bulletOwnerStr = String(bullet.ownerId);
+        const isOwnBullet = localId && (bulletOwnerStr === localIdStr || bulletOwnerStr === localIdEntity);
+
+        if (isOwnBullet) {
           let bestIdx = -1;
           let bestDistSq = Infinity;
           for (const localId of this.localBullets) {
@@ -401,9 +422,14 @@ export class ClientBulletManager {
 
             this.idToIndex.set(bullet.id, bestIdx);
             continue; // reconciled, skip normal add
+          } else {
+            // No matching local bullet found, but this is still our bullet
+            // Skip adding it - we already have client-side prediction for it
+            // The server bullet is a duplicate
+            continue;
           }
         }
-        // Add new bullet if no reconciliation happened
+        // Add new bullet if it's not ours (enemy/other player bullet)
         this.addBullet(bullet);
       }
     }
