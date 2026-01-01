@@ -34,15 +34,60 @@ export class PlayerManager {
         this.players = new Map(); // Map of player ID to player data
         this.localPlayerId = options.localPlayerId || null;
         this.maxPlayers = options.maxPlayers || 100;
-        
+
+        // Cache both ID formats for efficient comparison
+        this._localPlayerIdStr = null;
+        this._localPlayerIdEntity = null;
+
         // Animation tracking for other players
         this.playerAnimators = new Map(); // Map of player ID to animator
-        
+
         // Debug
         this.debug = false; // Disable debug
-        
+
         // Debug visualization - makes other players more obvious
         this.visualDebug = false; // Disable visual debug
+    }
+
+    /**
+     * Check if a player ID matches the local player (handles entity_X and X formats)
+     */
+    _isLocalPlayer(id) {
+        const idStr = String(id);
+
+        // Check against cached local player IDs
+        if (this.localPlayerId) {
+            if (idStr === this._localPlayerIdStr || idStr === this._localPlayerIdEntity) {
+                return true;
+            }
+        }
+
+        // FALLBACK: Also check against live gameState values to handle race conditions
+        // This catches cases where setLocalPlayerId hasn't been called yet
+        const charId = window.gameState?.character?.id;
+        const netId = window.networkManager?.clientId;
+
+        if (charId) {
+            const charIdStr = String(charId);
+            const charIdEntity = charIdStr.startsWith('entity_') ? charIdStr : `entity_${charIdStr}`;
+            if (idStr === charIdStr || idStr === charIdEntity) {
+                // Also update cached values for future checks
+                if (!this.localPlayerId) this.setLocalPlayerId(charId);
+                return true;
+            }
+        }
+
+        if (netId) {
+            const netIdStr = String(netId);
+            const netIdEntity = netIdStr.startsWith('entity_') ? netIdStr : `entity_${netIdStr}`;
+            if (idStr === netIdStr || idStr === netIdEntity) {
+                // Also update cached values for future checks
+                if (!this.localPlayerId) this.setLocalPlayerId(netId);
+                return true;
+            }
+        }
+
+        return false;
     }
     
     /**
@@ -77,7 +122,8 @@ export class PlayerManager {
         // Process each player
         for (const [id, data] of Object.entries(playersData)) {
             // Handle filtering of local player and ensuring player is valid
-            if (id === this.localPlayerId) {
+            // Use _isLocalPlayer to handle both ID formats (X and entity_X)
+            if (this._isLocalPlayer(id)) {
                 throttledLog('skip-local', `Skipping local player ID: ${id}`, null, 5000);
                 continue;
             }
@@ -161,8 +207,8 @@ export class PlayerManager {
         
         // Update each player's animation
         for (const [playerId, player] of this.players.entries()) {
-            // Skip local player
-            if (playerId === this.localPlayerId) continue;
+            // Skip local player (handles both ID formats)
+            if (this._isLocalPlayer(playerId)) continue;
             
             // Skip if no animator
             const animator = this.playerAnimators.get(playerId);
@@ -246,29 +292,23 @@ export class PlayerManager {
      */
     getPlayersForRender() {
         const allPlayers = Array.from(this.players.values());
-        
-        // Enhanced filter logic with more checks
+
+        // Enhanced filter logic - skip local player (handles both ID formats)
         const playersToRender = allPlayers.filter(player => {
             // Skip players without an ID (shouldn't happen but check anyway)
             if (!player.id) {
                 return true;
             }
-            
-            // Convert both IDs to strings for comparison (in case of type mismatch)
-            const playerId = String(player.id);
-            const localId = this.localPlayerId ? String(this.localPlayerId) : null;
-            
-            // Skip the local player - this is the key filtering logic
-            const isLocalPlayer = localId && playerId === localId;
-            
-            if (isLocalPlayer) {
+
+            // Skip the local player using helper that handles both ID formats
+            if (this._isLocalPlayer(player.id)) {
                 return false;
             }
-            
+
             // Keep this player for rendering
             return true;
         });
-        
+
         return playersToRender;
     }
     
@@ -278,6 +318,13 @@ export class PlayerManager {
      */
     setLocalPlayerId(clientId) {
         this.localPlayerId = clientId;
+        // Cache both ID formats for efficient comparison
+        // Binary protocol uses entity_X format, but clientId might be just X
+        this._localPlayerIdStr = String(clientId);
+        this._localPlayerIdEntity = this._localPlayerIdStr.startsWith('entity_')
+            ? this._localPlayerIdStr
+            : `entity_${this._localPlayerIdStr}`;
+        console.log(`[PlayerManager] setLocalPlayerId: ${clientId}, formats: ${this._localPlayerIdStr}, ${this._localPlayerIdEntity}`);
     }
     
     /**
@@ -513,8 +560,8 @@ export class PlayerManager {
         const useCamera = gameState.camera && typeof gameState.camera.worldToScreen === 'function';
         
         for (const player of this.players.values()) {
-            // Skip local player
-            if (player.id === this.localPlayerId) continue;
+            // Skip local player (handles both ID formats)
+            if (this._isLocalPlayer(player.id)) continue;
             
             try {
                 // Use player's actual dimensions with proper scaling
