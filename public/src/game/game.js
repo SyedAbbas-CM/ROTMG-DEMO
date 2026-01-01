@@ -657,23 +657,32 @@ function initializeGameState() {
         
         // Player management methods
         setPlayers: (players) => {
-            if (players && typeof players === 'object' && localPlayer) {
-                // Create a copy of the data without the local player
-                const filteredPlayers = { ...players };
-                
-                // Remove local player from the data if it exists
-                if (filteredPlayers[localPlayer.id]) {
-                    delete filteredPlayers[localPlayer.id];
-                }
-                
-                // Update players with the filtered data
-                if (typeof updatePlayers === 'function') {
-                    updatePlayers(filteredPlayers);
-                }
-            } else {
-                // If something's wrong with the data, use it as is
-                if (typeof updatePlayers === 'function') {
-                    updatePlayers(players);
+            if (players && typeof players === 'object') {
+                // Get local player ID from multiple sources to handle race conditions
+                const localId = localPlayer?.id || gameState.character?.id || networkManager?.clientId;
+                if (localId) {
+                    // Create a copy of the data without the local player
+                    const filteredPlayers = { ...players };
+                    const localPlayerId = String(localId);
+                    const entityLocalPlayerId = localPlayerId.startsWith('entity_') ? localPlayerId : `entity_${localPlayerId}`;
+
+                    // Remove local player using BOTH ID formats
+                    Object.keys(filteredPlayers).forEach(pid => {
+                        const pidStr = String(pid);
+                        if (pidStr === localPlayerId || pidStr === entityLocalPlayerId) {
+                            delete filteredPlayers[pid];
+                        }
+                    });
+
+                    // Update players with the filtered data
+                    if (typeof updatePlayers === 'function') {
+                        updatePlayers(filteredPlayers);
+                    }
+                } else {
+                    // No local ID yet, pass through
+                    if (typeof updatePlayers === 'function') {
+                        updatePlayers(players);
+                    }
                 }
             }
         },

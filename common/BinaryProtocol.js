@@ -14,6 +14,18 @@ const spriteRegistry = new Map();
 const spriteById = [];
 let nextSpriteId = 0;
 
+// Pre-register all known enemy sprites in deterministic order
+// This ensures server and client have matching sprite IDs
+const KNOWN_SPRITES = [
+  'Light_Infantry',
+  'Archer',
+  'Light_Cavalry',
+  'Heavy_Cavalry',
+  'Heavy_Infantry',
+  'Mega_Cavalry',
+  // Add more as needed
+];
+
 export function registerSprite(name) {
   if (!spriteRegistry.has(name)) {
     spriteRegistry.set(name, nextSpriteId);
@@ -22,6 +34,9 @@ export function registerSprite(name) {
   }
   return spriteRegistry.get(name);
 }
+
+// Initialize known sprites on module load
+KNOWN_SPRITES.forEach(name => registerSprite(name));
 
 export function getSpriteId(name) {
   if (!name) return 0;
@@ -60,6 +75,10 @@ export function getEntityStringId(numId) {
 const FIXED_POINT_SCALE = 100;
 
 export function toFixedPoint(value) {
+  // Handle undefined/NaN - default to 0
+  if (value === undefined || value === null || !isFinite(value)) {
+    return 0;
+  }
   return Math.round(value * FIXED_POINT_SCALE);
 }
 
@@ -69,6 +88,10 @@ export function fromFixedPoint(value) {
 
 // Velocity conversion (0.1 precision, int8)
 export function toVelocity(value) {
+  // Handle undefined/NaN - default to 0
+  if (value === undefined || value === null || !isFinite(value)) {
+    return 0;
+  }
   return Math.max(-127, Math.min(127, Math.round(value * 10)));
 }
 
@@ -345,12 +368,21 @@ export function encodeEnemy(writer, enemy, deltaFlags = DeltaFlags.ALL) {
   }
 
   if (deltaFlags & DeltaFlags.STATE) {
+    const spriteId = getSpriteId(enemy.spriteName);
+    // Debug: Log enemy sprite encoding (throttled)
+    if (!encodeEnemy._debugCount) encodeEnemy._debugCount = 0;
+    encodeEnemy._debugCount++;
+    if (encodeEnemy._debugCount <= 5 || encodeEnemy._debugCount % 500 === 0) {
+      console.log(`[BINARY-TX] Enemy STATE: id=${enemy.id}, spriteName="${enemy.spriteName}" -> spriteId=${spriteId}, renderScale=${enemy.renderScale || 2}`);
+    }
     writer.writeSprite(enemy.spriteName);
     writer.writeUint8(enemy.type ? getSpriteId(enemy.type) : 0);
     writer.writeUint8(
       (enemy.isDying ? 0x01 : 0) |
       (enemy.isFlashing ? 0x02 : 0)
     );
+    // Send renderScale as uint8 (1-255, default 2)
+    writer.writeUint8(enemy.renderScale || 2);
   }
 }
 
@@ -377,6 +409,7 @@ export function decodeEnemy(reader) {
     const stateFlags = reader.readUint8();
     enemy.isDying = !!(stateFlags & 0x01);
     enemy.isFlashing = !!(stateFlags & 0x02);
+    enemy.renderScale = reader.readUint8() || 2;
   }
 
   return enemy;
@@ -474,10 +507,11 @@ export function encodeWorldDelta(players, enemies, bullets, removedIds, timestam
     encodePlayer(writer, player, DeltaFlags.POSITION | DeltaFlags.HEALTH);
   }
 
-  // Enemies (position + health delta)
+  // Enemies (position + health + state for sprite info)
   writer.writeUint16(enemies.length);
   for (const enemy of enemies) {
-    encodeEnemy(writer, enemy, DeltaFlags.POSITION | DeltaFlags.HEALTH);
+    // Include STATE flag so client receives spriteName for rendering
+    encodeEnemy(writer, enemy, DeltaFlags.POSITION | DeltaFlags.HEALTH | DeltaFlags.STATE);
   }
 
   // Debug: Log bullet encoding details
