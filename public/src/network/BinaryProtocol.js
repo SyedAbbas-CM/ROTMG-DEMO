@@ -421,6 +421,12 @@ export function decodeEnemy(reader) {
     enemy.isDying = !!(stateFlags & 0x01);
     enemy.isFlashing = !!(stateFlags & 0x02);
     enemy.renderScale = reader.readUint8() || 2;
+    // Debug: Log enemy state info (throttled)
+    if (!decodeEnemy._debugCount) decodeEnemy._debugCount = 0;
+    decodeEnemy._debugCount++;
+    if (decodeEnemy._debugCount <= 5 || decodeEnemy._debugCount % 100 === 0) {
+      console.log(`[BINARY] Enemy STATE: id=${enemy.id}, spriteName=${enemy.spriteName}, renderScale=${enemy.renderScale}, flags=0x${deltaFlags.toString(16)}`);
+    }
   }
 
   return enemy;

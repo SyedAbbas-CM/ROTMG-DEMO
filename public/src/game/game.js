@@ -722,13 +722,18 @@ function initializeGameState() {
             }
             
             // Filter out local player from world updates to avoid ghost sprites
-            if (localPlayer) {
+            // CRITICAL: Try multiple sources for local player ID to handle race conditions
+            const localId = localPlayer?.id || gameState.character?.id || networkManager?.clientId;
+            if (localId) {
                 const filteredPlayers = { ...players };
-                const localPlayerId = String(localPlayer.id);
+                // Binary protocol uses entity_X format, but localPlayer.id might be just X
+                const localPlayerId = String(localId);
+                const entityLocalPlayerId = localPlayerId.startsWith('entity_') ? localPlayerId : `entity_${localPlayerId}`;
 
                 // CRITICAL FIX: Extract server health BEFORE deleting local player
                 // The server is authoritative for health, so we need to apply it!
-                const serverPlayer = players[localPlayerId];
+                // Try both ID formats
+                const serverPlayer = players[localPlayerId] || players[entityLocalPlayerId];
                 if (serverPlayer && typeof serverPlayer.health === 'number') {
                     // Update local player health from server
                     const oldHealth = gameState.character.health;
@@ -745,9 +750,10 @@ function initializeGameState() {
                     }
                 }
 
-                // Remove local player from updates
+                // Remove local player from updates - check BOTH ID formats
                 Object.keys(filteredPlayers).forEach(playerId => {
-                    if (String(playerId) === localPlayerId) {
+                    const pid = String(playerId);
+                    if (pid === localPlayerId || pid === entityLocalPlayerId) {
                         delete filteredPlayers[playerId];
                     }
                 });
