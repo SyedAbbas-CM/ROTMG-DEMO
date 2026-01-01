@@ -739,27 +739,10 @@ function initializeGameState() {
                 const localPlayerId = String(localId);
                 const entityLocalPlayerId = localPlayerId.startsWith('entity_') ? localPlayerId : `entity_${localPlayerId}`;
 
-                // CRITICAL FIX: Extract server health BEFORE deleting local player
-                // The server is authoritative for health, so we need to apply it!
-                // Try both ID formats
-                const serverPlayer = players[localPlayerId] || players[entityLocalPlayerId];
-                if (serverPlayer && typeof serverPlayer.health === 'number') {
-                    // Update local player health from server
-                    const oldHealth = gameState.character.health;
-                    gameState.character.health = serverPlayer.health;
+                // NOTE: Health sync is now handled by ClientNetworkManager via localPlayer field
+                // Server no longer sends local player in players object (prevents ghost player)
 
-                    // Also sync maxHealth from server to fix HP bar display
-                    if (typeof serverPlayer.maxHealth === 'number') {
-                        gameState.character.maxHealth = serverPlayer.maxHealth;
-                    }
-
-                    // Update UI if health changed
-                    if (oldHealth !== serverPlayer.health && window.gameUI && typeof window.gameUI.updateHealth === 'function') {
-                        window.gameUI.updateHealth(gameState.character.health, gameState.character.maxHealth || 100);
-                    }
-                }
-
-                // Remove local player from updates - check BOTH ID formats
+                // Remove local player from updates (defensive - server should already filter)
                 Object.keys(filteredPlayers).forEach(playerId => {
                     const pid = String(playerId);
                     if (pid === localPlayerId || pid === entityLocalPlayerId) {

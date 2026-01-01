@@ -463,6 +463,7 @@ import {
     encodePing,
     ClientBinaryType
 } from './BinaryProtocol.js';
+import { Player } from '../entities/player.js';
 
 export class ClientNetworkManager {
     /**
@@ -754,6 +755,19 @@ export class ClientNetworkManager {
               // }
             }
 
+            // Apply local player health from server (authoritative for damage)
+            if (data.localPlayer && window.gameState?.character) {
+                const oldHealth = window.gameState.character.health;
+                window.gameState.character.health = data.localPlayer.health;
+                window.gameState.character.maxHealth = data.localPlayer.maxHealth || 1000;
+                window.gameState.character.isDead = data.localPlayer.isDead || false;
+
+                // Update UI if health changed
+                if (oldHealth !== data.localPlayer.health && window.gameUI?.updateHealth) {
+                    window.gameUI.updateHealth(data.localPlayer.health, data.localPlayer.maxHealth || 1000);
+                }
+            }
+
             if (this.game.updateWorld) {
                 // Check if players is nested inside a 'players' property (from server inconsistency)
                 const players = data.players?.players || data.players;
@@ -1038,41 +1052,41 @@ export class ClientNetworkManager {
 
         // Handle player respawn response from server
         this.handlers[MessageType.PLAYER_RESPAWN] = (data) => {
-            console.log('[CLIENT] 🔄 Player respawn confirmed by server:', data);
+            console.log('[CLIENT] Player respawn confirmed by server:', data);
 
-            // COMPLETELY RECREATE the character at the new position
-            if (window.gameState && window.gameState.character) {
-                const oldPos = { x: window.gameState.character.x, y: window.gameState.character.y };
-                console.log(`[CLIENT] 💀 Destroying old character at (${oldPos.x.toFixed(2)}, ${oldPos.y.toFixed(2)})`);
+            if (!window.gameState) {
+                console.error('[CLIENT] Cannot respawn: gameState not found!');
+                return;
+            }
 
-                // Store character class reference for recreation
-                const PlayerClass = window.gameState.character.constructor;
-                const characterId = window.gameState.character.id;
+            // Get character ID from existing character or from client ID
+            const characterId = window.gameState.character?.id || this.clientId || data.id || 'player_1';
 
-                // Destroy old character completely
-                delete window.gameState.character;
+            // Log old position if character exists
+            if (window.gameState.character) {
+                console.log(`[CLIENT] Destroying old character at (${window.gameState.character.x?.toFixed(2)}, ${window.gameState.character.y?.toFixed(2)})`);
+            }
 
-                // Create brand new character object at respawn location
-                window.gameState.character = new PlayerClass({
-                    id: characterId,
-                    x: data.x,
-                    y: data.y,
-                    health: data.health,
-                    maxHealth: 100,
-                    isDead: false
-                });
+            // Destroy old character completely
+            delete window.gameState.character;
 
-                console.log(`[CLIENT] ✨ Created NEW character at (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
-                console.log(`[CLIENT] 📍 Verifying new character position: (${window.gameState.character.x.toFixed(2)}, ${window.gameState.character.y.toFixed(2)})`);
+            // Create brand new character object at respawn location using imported Player class
+            window.gameState.character = new Player({
+                id: characterId,
+                x: data.x,
+                y: data.y,
+                health: data.health || 100,
+                maxHealth: data.maxHealth || 100,
+                isDead: false
+            });
 
-                // Update camera position to follow respawned character
-                if (window.gameState.camera) {
-                    window.gameState.camera.position.x = data.x;
-                    window.gameState.camera.position.y = data.y;
-                    console.log(`[CLIENT] 📷 Camera repositioned to: (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
-                }
-            } else {
-                console.error('[CLIENT] ❌ Cannot respawn: gameState.character not found!');
+            console.log(`[CLIENT] Created NEW character at (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
+
+            // Update camera position to follow respawned character
+            if (window.gameState.camera) {
+                window.gameState.camera.position.x = data.x;
+                window.gameState.camera.position.y = data.y;
+                console.log(`[CLIENT] Camera repositioned to: (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
             }
 
             // Hide death screen

@@ -2158,13 +2158,21 @@ function broadcastWorldUpdates() {
         return (dx * dx + dy * dy) <= UPDATE_RADIUS_SQ;
       });
 
-      // CRITICAL: Filter out local player to prevent ghost/duplicate player bug
-      // Each client should NOT receive their own player data - they control it locally
+      // CRITICAL: Filter out local player POSITION to prevent ghost/duplicate player bug
+      // But we MUST send health updates - server is authoritative for damage!
       const playersForThisClient = { ...playersObj };
       delete playersForThisClient[cid];
 
+      // Include local player health separately (server-authoritative)
+      const localPlayerHealth = {
+        health: c.player.health,
+        maxHealth: c.player.maxHealth || 1000,
+        isDead: c.player.isDead || false
+      };
+
       const payload = {
         players: playersForThisClient,
+        localPlayer: localPlayerHealth,  // Separate health update for self
         enemies: visibleEnemies.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         bullets: visibleBullets.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         units: visibleUnits.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
@@ -2208,6 +2216,10 @@ function broadcastWorldUpdates() {
           );
           // Use sendBinary() for raw binary - NOT send() which wraps in JSON
           c.webTransportSession.sendBinary(binaryPayload);
+
+          // Also send local player health via JSON (server-authoritative for damage)
+          // Binary protocol doesn't include localPlayer yet, so send separately
+          c.webTransportSession.send(MessageType.WORLD_UPDATE, { localPlayer: localPlayerHealth });
           // Track binary bandwidth savings (1% sample rate)
           if (networkLogger && Math.random() < 0.01) {
             const jsonSize = JSON.stringify(payload).length;
