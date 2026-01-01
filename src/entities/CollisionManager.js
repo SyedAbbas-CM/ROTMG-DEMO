@@ -268,6 +268,12 @@ export default class CollisionManager {
 
       // NEW: Check enemy bullets against players
       const isEnemyBullet = typeof bulletOwnerId === 'string' && bulletOwnerId.startsWith('enemy_');
+
+      // DEBUG: Log bullet info for first few bullets each frame
+      if (bi < 3 && players && players.length > 0) {
+        console.log(`[COLLISION DEBUG] Bullet ${bi}: ownerId=${bulletOwnerId} isEnemy=${isEnemyBullet} worldId=${this.bulletManager.worldId[bi]} playerWorldId=${players[0]?.worldId}`);
+      }
+
       if (isEnemyBullet && players && players.length > 0) {
         for (const player of players) {
           // Skip if player is dead or in different world
