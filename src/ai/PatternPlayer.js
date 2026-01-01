@@ -128,6 +128,11 @@ export class PatternPlayer {
 
     const { x: bossX, y: bossY, ownerId, worldId, faction } = this.bossData;
 
+    // DEBUG: Log ownerId once per pattern play
+    if (this.eventIndex === 0) {
+      console.log(`[PatternPlayer DEBUG] Spawning bullets with ownerId=${ownerId} worldId=${worldId}`);
+    }
+
     // Apply rotation offset to base angle
     const baseAngle = event.angle + this.rotationOffset;
 
