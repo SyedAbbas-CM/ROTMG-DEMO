@@ -519,15 +519,16 @@ export function encodeWorldDelta(players, enemies, bullets, removedIds, timestam
   const shouldLog = encodeWorldDeltaDebugCount <= 3 || encodeWorldDeltaDebugCount % 100 === 0;
   const bulletStartOffset = writer.getSize();
 
-  // Bullets (position + velocity for smooth client-side prediction)
+  // Bullets (position + velocity + state for reconciliation with client-predicted bullets)
+  // STATE flag includes ownerId which is CRITICAL for client to identify own bullets
   writer.writeUint16(bullets.length);
   for (let i = 0; i < bullets.length; i++) {
     const bullet = bullets[i];
     // Debug: Log first few bullets
     if (shouldLog && i < 2 && bullets.length > 0) {
-      console.log(`[BINARY-TX] Bullet #${i}: id=${bullet.id}, x=${bullet.x?.toFixed(2)}, y=${bullet.y?.toFixed(2)}, vx=${bullet.vx?.toFixed(2)}, vy=${bullet.vy?.toFixed(2)}`);
+      console.log(`[BINARY-TX] Bullet #${i}: id=${bullet.id}, ownerId=${bullet.ownerId}, x=${bullet.x?.toFixed(2)}, y=${bullet.y?.toFixed(2)}, vx=${bullet.vx?.toFixed(2)}, vy=${bullet.vy?.toFixed(2)}`);
     }
-    encodeBullet(writer, bullet, DeltaFlags.POSITION | DeltaFlags.VELOCITY);
+    encodeBullet(writer, bullet, DeltaFlags.POSITION | DeltaFlags.VELOCITY | DeltaFlags.STATE);
   }
 
   const buffer = writer.getBuffer();

@@ -1152,10 +1152,10 @@ function sendInitialState(socket, clientId) {
 
   const mapId = client.mapId;
 
-  // Players currently in that world
+  // Players currently in that world (EXCLUDE the client themselves to prevent ghost player)
   const players = {};
   clients.forEach((c, id) => {
-    if (c.mapId === mapId) players[id] = c.player;
+    if (c.mapId === mapId && id !== clientId) players[id] = c.player;
   });
 
   const ctx = getWorldCtx(mapId);
@@ -2158,8 +2158,13 @@ function broadcastWorldUpdates() {
         return (dx * dx + dy * dy) <= UPDATE_RADIUS_SQ;
       });
 
+      // CRITICAL: Filter out local player to prevent ghost/duplicate player bug
+      // Each client should NOT receive their own player data - they control it locally
+      const playersForThisClient = { ...playersObj };
+      delete playersForThisClient[cid];
+
       const payload = {
-        players: playersObj,
+        players: playersForThisClient,
         enemies: visibleEnemies.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         bullets: visibleBullets.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
         units: visibleUnits.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
@@ -2188,11 +2193,17 @@ function broadcastWorldUpdates() {
       // Try binary protocol for WebTransport clients (5-10x smaller)
       if (c.webTransportSession?.isReady && c.useBinaryProtocol) {
         try {
+          // Combine removed IDs from deltaTracker and bulletManager
+          const removedFromDelta = ctx.deltaTracker.getAndClearRemoved();
+          const removedBullets = ctx.bulletMgr.getAndClearRemovedBullets ?
+            ctx.bulletMgr.getAndClearRemovedBullets() : [];
+          const allRemoved = [...removedFromDelta, ...removedBullets];
+
           const binaryPayload = encodeWorldDelta(
-            playersObj,
+            playersForThisClient,
             visibleEnemies.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
             visibleBullets.slice(0, NETWORK_SETTINGS.MAX_ENTITIES_PER_PACKET),
-            ctx.deltaTracker.getAndClearRemoved(),
+            allRemoved,
             now
           );
           // Use sendBinary() for raw binary - NOT send() which wraps in JSON
@@ -2343,10 +2354,29 @@ function tryListen(port, attemptsLeft = 5) {
         strategicEnabled: llmConfig.strategicEnabled
       });
 
-      // Spawn test boss with AI patterns
-      if (bossManager && mainMapCtx?.enemyMgr) {
-        const bossId = bossManager.spawnBoss('enemy_8', 50, 50, gameState.mapId);
-        console.log('[SERVER] AI Pattern Boss spawned at (50, 50):', bossId);
+      // Spawn 4 AI Pattern Bosses with different configs
+      if (bossManager && mainMapCtx?.enemyMgr && aiPatternBoss) {
+        // Boss 1: Bloom Guardian (Easy) - Near spawn
+        bossManager.spawnBoss('enemy_8', 30, 30, gameState.mapId);
+        aiPatternBoss.setBossConfig(0, 'bloom_guardian');
+
+        // Boss 2: Storm Caller (Medium) - East
+        bossManager.spawnBoss('enemy_8', 80, 30, gameState.mapId);
+        aiPatternBoss.setBossConfig(1, 'storm_caller');
+
+        // Boss 3: Void Burst (Hard) - South
+        bossManager.spawnBoss('enemy_8', 30, 80, gameState.mapId);
+        aiPatternBoss.setBossConfig(2, 'void_burst');
+
+        // Boss 4: Serpent King (Expert) - Southeast
+        bossManager.spawnBoss('enemy_8', 80, 80, gameState.mapId);
+        aiPatternBoss.setBossConfig(3, 'serpent_king');
+
+        console.log('[SERVER] Spawned 4 AI Pattern Bosses:');
+        console.log('  - Bloom Guardian (Easy) at (30, 30)');
+        console.log('  - Storm Caller (Medium) at (80, 30)');
+        console.log('  - Void Burst (Hard) at (30, 80)');
+        console.log('  - Serpent King (Expert) at (80, 80)');
       }
     } catch (err) {
       console.error('[SERVER] Failed to initialize boss AI:', err);
