@@ -11,15 +11,263 @@
     h1{text-align:center;margin-bottom:10px;font-size:28px;color:#0f9}
     button{padding:14px;font-size:18px;font-weight:bold;border:none;border-radius:6px;cursor:pointer;background:#222;color:#eee;transition:background .2s}
     button:hover{background:#0f9;color:#000}
+
+    /* User info display */
+    #user-info{
+      text-align:center;
+      padding:10px;
+      margin-bottom:10px;
+      background:#1a1a1a;
+      border-radius:6px;
+      font-size:14px;
+    }
+    #user-info .name{color:#0f9;font-weight:bold}
+    #user-info .email{color:#888;font-size:12px}
+    #user-info .logout{color:#f55;cursor:pointer;font-size:12px;margin-top:6px;display:inline-block}
+    #user-info .logout:hover{text-decoration:underline}
+
+    /* Popup overlay */
+    #login-overlay{
+      position:fixed;
+      top:0;left:0;right:0;bottom:0;
+      background:rgba(0,0,0,0.8);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      z-index:1000;
+    }
+    #login-overlay.hidden{display:none}
+
+    .popup{
+      background:#1e1e2e;
+      border:2px solid #0f9;
+      border-radius:10px;
+      padding:30px;
+      width:320px;
+    }
+    .popup h2{
+      margin:0 0 20px;
+      text-align:center;
+      color:#0f9;
+      font-size:22px;
+    }
+    .popup .form-group{
+      margin-bottom:16px;
+    }
+    .popup label{
+      display:block;
+      color:#aaa;
+      font-size:12px;
+      text-transform:uppercase;
+      margin-bottom:6px;
+    }
+    .popup input{
+      width:100%;
+      padding:10px 12px;
+      font-size:15px;
+      background:#111;
+      border:1px solid #444;
+      border-radius:4px;
+      color:#fff;
+      outline:none;
+    }
+    .popup input:focus{border-color:#0f9}
+    .popup .class-select{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    .popup .class-btn{
+      flex:1 1 calc(50% - 3px);
+      padding:8px;
+      font-size:13px;
+      background:#222;
+      border:1px solid #444;
+      border-radius:4px;
+      color:#ccc;
+      cursor:pointer;
+      text-align:center;
+    }
+    .popup .class-btn:hover{border-color:#0f9}
+    .popup .class-btn.selected{border-color:#0f9;background:#0f92a;color:#0f9}
+    .popup .submit-btn{
+      width:100%;
+      margin-top:10px;
+      padding:12px;
+      font-size:16px;
+      font-weight:bold;
+      background:#0f9;
+      border:none;
+      border-radius:4px;
+      color:#000;
+      cursor:pointer;
+    }
+    .popup .submit-btn:hover{background:#0d8}
+    .popup .cancel-btn{
+      width:100%;
+      margin-top:8px;
+      padding:10px;
+      font-size:14px;
+      background:transparent;
+      border:1px solid #444;
+      border-radius:4px;
+      color:#888;
+      cursor:pointer;
+    }
+    .popup .cancel-btn:hover{border-color:#888;color:#ccc}
+    .popup .error{color:#f55;font-size:13px;text-align:center;margin-top:10px}
   </style>
 </head>
 <body>
   <div id="menu">
     <h1>RotMG Demo</h1>
-    <button onclick="location.href='game.html'">Play Game</button>
+
+    <!-- User info (shown when logged in) -->
+    <div id="user-info" style="display:none">
+      <div class="name"></div>
+      <div class="email"></div>
+      <span class="logout" onclick="logout()">Logout</span>
+    </div>
+
+    <button id="play-btn">Play Game</button>
     <button onclick="location.href='tools/sprite-editor.html'">Sprite Editor</button>
     <button onclick="location.href='tools/map-editor.html'">Map Editor</button>
     <button onclick="location.href='editor/behavior-designer.html'">Behavior Designer</button>
   </div>
+
+  <!-- Login popup overlay -->
+  <div id="login-overlay" class="hidden">
+    <div class="popup">
+      <h2>Enter Game</h2>
+      <div class="form-group">
+        <label>Player Name</label>
+        <input type="text" id="player-name" placeholder="Your name" maxlength="20">
+      </div>
+      <div class="form-group">
+        <label>Email (optional)</label>
+        <input type="email" id="player-email" placeholder="your@email.com">
+      </div>
+      <div class="form-group">
+        <label>Class</label>
+        <div class="class-select">
+          <div class="class-btn selected" data-class="warrior">Warrior</div>
+          <div class="class-btn" data-class="archer">Archer</div>
+          <div class="class-btn" data-class="wizard">Wizard</div>
+          <div class="class-btn" data-class="rogue">Rogue</div>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitLogin()">Play</button>
+      <button class="cancel-btn" onclick="hideLoginPopup()">Cancel</button>
+      <div class="error" id="login-error"></div>
+    </div>
+  </div>
+
+  <script>
+    // Check for saved credentials on load
+    document.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('rotmg_player');
+      if (saved) {
+        const player = JSON.parse(saved);
+        showUserInfo(player);
+      }
+    });
+
+    // Show user info panel
+    function showUserInfo(player) {
+      const info = document.getElementById('user-info');
+      info.querySelector('.name').textContent = player.name;
+      info.querySelector('.email').textContent = player.email || 'No email';
+      info.style.display = 'block';
+    }
+
+    // Hide user info
+    function hideUserInfo() {
+      document.getElementById('user-info').style.display = 'none';
+    }
+
+    // Show login popup
+    function showLoginPopup() {
+      document.getElementById('login-overlay').classList.remove('hidden');
+      document.getElementById('player-name').focus();
+    }
+
+    // Hide login popup
+    function hideLoginPopup() {
+      document.getElementById('login-overlay').classList.add('hidden');
+      document.getElementById('login-error').textContent = '';
+    }
+
+    // Logout
+    function logout() {
+      localStorage.removeItem('rotmg_player');
+      hideUserInfo();
+    }
+
+    // Class selection
+    document.querySelectorAll('.class-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+    });
+
+    // Submit login
+    function submitLogin() {
+      const name = document.getElementById('player-name').value.trim();
+      const email = document.getElementById('player-email').value.trim();
+      const selectedClass = document.querySelector('.class-btn.selected').dataset.class;
+
+      if (!name) {
+        document.getElementById('login-error').textContent = 'Please enter a name';
+        return;
+      }
+
+      if (name.length < 2) {
+        document.getElementById('login-error').textContent = 'Name must be at least 2 characters';
+        return;
+      }
+
+      // Save to localStorage
+      const player = { name, email, class: selectedClass };
+      localStorage.setItem('rotmg_player', JSON.stringify(player));
+
+      // Go to game
+      goToGame(player);
+    }
+
+    // Go to game with credentials
+    function goToGame(player) {
+      const params = new URLSearchParams();
+      params.set('name', player.name);
+      if (player.email) params.set('email', player.email);
+      params.set('class', player.class);
+      location.href = 'game.html?' + params.toString();
+    }
+
+    // Play button click
+    document.getElementById('play-btn').addEventListener('click', () => {
+      const saved = localStorage.getItem('rotmg_player');
+      if (saved) {
+        // Already logged in, go to game
+        goToGame(JSON.parse(saved));
+      } else {
+        // Show login popup
+        showLoginPopup();
+      }
+    });
+
+    // Enter key submits form
+    document.getElementById('player-name').addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitLogin();
+    });
+    document.getElementById('player-email').addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitLogin();
+    });
+
+    // Escape closes popup
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') hideLoginPopup();
+    });
+  </script>
 </body>
-</html> 
+</html>

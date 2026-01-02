@@ -73,11 +73,31 @@ const IS_TUNNEL = (location.protocol === 'https:' && !location.port) ||
 
 const SERVER_PORT = OVERRIDE_PORT || PAGE_PORT || DEFAULT_SERVER_PORT;
 
-const SERVER_URL = IS_TUNNEL
+// Build base server URL
+const BASE_SERVER_URL = IS_TUNNEL
     ? `wss://${location.hostname}`
     : `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:${SERVER_PORT}`;
 
+// Get player credentials from URL params (passed from menu.html)
+const urlParams = new URLSearchParams(window.location.search);
+const playerName = urlParams.get('name');
+const playerEmail = urlParams.get('email');
+const playerClass = urlParams.get('class') || 'warrior';
+
+// Build connection URL with credentials
+function buildServerUrl() {
+    const params = new URLSearchParams();
+    if (playerName) params.set('name', playerName);
+    if (playerEmail) params.set('email', playerEmail);
+    params.set('class', playerClass);
+    const queryStr = params.toString();
+    return queryStr ? `${BASE_SERVER_URL}?${queryStr}` : BASE_SERVER_URL;
+}
+
+const SERVER_URL = buildServerUrl();
+
 console.log('[NETWORK] IS_TUNNEL:', IS_TUNNEL, 'SERVER_URL:', SERVER_URL);
+console.log('[NETWORK] Player:', playerName || 'Anonymous', '| Class:', playerClass);
 
 // Collision statistics
 const collisionStats = {

@@ -152,6 +152,37 @@
         window.updateConnectionStatus = updateConnectionStatus;
         window.updatePlayerStatus = (s)=>{ const el=document.getElementById('playerStatus'); if(el) el.textContent=s; };
 
+        // Check for player credentials - redirect to menu if missing
+        const urlParams = new URLSearchParams(window.location.search);
+        const playerName = urlParams.get('name');
+        const playerClass = urlParams.get('class') || 'warrior';
+
+        // If no player name, check localStorage or redirect to menu
+        if (!playerName) {
+            const saved = localStorage.getItem('rotmg_player');
+            if (saved) {
+                // Redirect with saved credentials
+                const player = JSON.parse(saved);
+                const params = new URLSearchParams();
+                params.set('name', player.name);
+                if (player.email) params.set('email', player.email);
+                params.set('class', player.class || 'warrior');
+                window.location.href = 'game.html?' + params.toString();
+            } else {
+                // No credentials at all, go to menu
+                window.location.href = 'menu.html';
+            }
+        }
+
+        // Display player name in status area
+        if (playerName) {
+            const statusEl = document.getElementById('playerStatus');
+            if (statusEl) {
+                statusEl.textContent = playerName + ' (' + playerClass + ')';
+                statusEl.style.display = 'block';
+            }
+        }
+
         // Handle respawn button click
         window.handleRespawn = function() {
             console.log('[CLIENT] Respawn button clicked');
