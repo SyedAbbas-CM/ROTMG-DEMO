@@ -48,6 +48,8 @@ import { LAG_COMPENSATION, MOVEMENT_VALIDATION } from './common/constants.js';
 import { initTileSystem } from './src/assets/initTileSystem.js';
 // ---- World Spawn Configuration ----
 import { worldSpawns, getWorldSpawns } from './config/world-spawns.js';
+// ---- Database for player persistence ----
+import { initDatabase, getDatabase } from './src/database/Database.js';
 // ---- Player Classes & Abilities ----
 import { PlayerClasses, getClassById } from './src/player/PlayerClasses.js';
 import AbilitySystem from './src/player/AbilitySystem.js';
@@ -237,6 +239,17 @@ const movementValidator = new MovementValidator({
 
 // Initialize Ability System for player classes
 const abilitySystem = new AbilitySystem();
+
+// Initialize Database for player persistence
+let gameDatabase = null;
+try {
+  gameDatabase = initDatabase();
+  const dbStats = gameDatabase.getStats();
+  console.log(`[Database] Ready - ${dbStats.players} players, ${dbStats.characters} characters`);
+} catch (err) {
+  console.error('[Database] Failed to initialize:', err.message);
+  console.warn('[Database] Running without persistence - player data will not be saved');
+}
 
 // Log server startup
 if (fileLogger.enabled) {
@@ -1121,6 +1134,30 @@ function handleClientDisconnect(clientId) {
   if (!client) return;
 
   const mapId = client.mapId;
+  const player = client.player;
+
+  // Save player data to database before disconnecting
+  if (gameDatabase && player.dbCharacterId) {
+    try {
+      gameDatabase.updateCharacter(player.dbCharacterId, {
+        x: player.x,
+        y: player.y,
+        world_id: player.worldId,
+        health: player.health,
+        max_health: player.maxHealth,
+        mana: player.mana,
+        max_mana: player.maxMana,
+        level: player.level,
+        experience: player.experience,
+        fame: player.fame,
+        is_dead: player.isDead ? 1 : 0
+      });
+      console.log(`[Database] 💾 Saved character ${player.dbCharacterId} for ${player.playerName}`);
+    } catch (err) {
+      console.error(`[Database] Failed to save character:`, err.message);
+    }
+  }
+
   if (DEBUG.connections) {
     console.log(`[SERVER] Client disconnected: ${clientId} from map ${mapId}`);
   }
@@ -1727,12 +1764,50 @@ wss.on('connection', async (socket, req) => {
     const remoteAddress = req.socket.remoteAddress || 'unknown';
     networkLogger.onConnectionOpen(clientId, remoteAddress, 'ws');
   }
-  
-  // Parse URL to check for map ID and class in query parameters
+
+  // Parse URL to check for map ID, class, and player info in query parameters
   const url = new URL(req.url, `http://${req.headers.host}`);
   const requestedMapId = url.searchParams.get('mapId');
   const requestedClass = url.searchParams.get('class') || 'warrior';
+  const playerName = url.searchParams.get('name');
+  const playerEmail = url.searchParams.get('email');
+  const characterId = url.searchParams.get('characterId');
   const playerClass = getClassById(requestedClass);
+
+  // Database-backed player/character handling
+  let dbPlayer = null;
+  let dbCharacter = null;
+
+  if (gameDatabase && playerName) {
+    // Try to find existing player or create new one
+    dbPlayer = gameDatabase.getPlayerByName(playerName);
+    if (!dbPlayer) {
+      dbPlayer = gameDatabase.createPlayer(playerName, playerEmail);
+      console.log(`[SERVER] 📝 New player registered: ${playerName}`);
+    } else {
+      gameDatabase.updateLastLogin(dbPlayer.id);
+      console.log(`[SERVER] 👋 Player logged in: ${playerName}`);
+    }
+
+    if (dbPlayer) {
+      // Try to load existing character or create new one
+      if (characterId) {
+        dbCharacter = gameDatabase.getCharacterById(parseInt(characterId));
+      }
+      if (!dbCharacter) {
+        // Get most recently played character, or create new one
+        const characters = gameDatabase.getCharactersByPlayerId(dbPlayer.id);
+        if (characters.length > 0) {
+          dbCharacter = characters[0]; // Most recent
+          console.log(`[SERVER] 🎮 Loaded character: ${dbCharacter.name} (${dbCharacter.class})`);
+        } else {
+          // Create new character with player name
+          dbCharacter = gameDatabase.createCharacter(dbPlayer.id, playerName, requestedClass);
+          console.log(`[SERVER] ✨ Created new character: ${dbCharacter.name}`);
+        }
+      }
+    }
+  }
   
   // Determine which map to use (requested or default)
   let useMapId = defaultMapId;
@@ -1749,13 +1824,27 @@ wss.on('connection', async (socket, req) => {
     console.log(`Client ${clientId} connected without map request, using default map: ${defaultMapId}`);
   }
 
-  // Generate random spawn location
-  const metaForSpawn = mapManager.getMapMetadata(useMapId) || { width: 2560, height: 2560 };
-  const { x: spawnX, y: spawnY } = generateRandomSpawnLocation(metaForSpawn, mapManager);
+  // Determine spawn location - use saved position if available, otherwise random
+  let spawnX, spawnY;
+  if (dbCharacter && dbCharacter.x && dbCharacter.y && !dbCharacter.is_dead) {
+    // Use saved position from database
+    spawnX = dbCharacter.x;
+    spawnY = dbCharacter.y;
+    useMapId = dbCharacter.world_id || useMapId;
+    console.log(`[SERVER] 📍 Player ${clientId} resuming at saved position: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)})`);
+  } else {
+    // Generate random spawn location
+    const metaForSpawn = mapManager.getMapMetadata(useMapId) || { width: 2560, height: 2560 };
+    const spawn = generateRandomSpawnLocation(metaForSpawn, mapManager);
+    spawnX = spawn.x;
+    spawnY = spawn.y;
+    console.log(`[SERVER] 🌍 New player ${clientId} spawning at random location: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)})`);
+  }
 
-  console.log(`[SERVER] 🌍 New player ${clientId} spawning at random location: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)})`);
+  // Use character data from database if available, otherwise use class defaults
+  const useClass = dbCharacter ? getClassById(dbCharacter.class) : playerClass;
 
-  // Store client info with class-based stats
+  // Store client info with class-based stats (or loaded from database)
   clients.set(clientId, {
     socket,
     player: {
@@ -1764,17 +1853,24 @@ wss.on('connection', async (socket, req) => {
       y: spawnY,
       rotation: 0,
       inventory: new Array(20).fill(null),
-      // Class-based stats
-      class: playerClass.id,
-      className: playerClass.name,
-      health: playerClass.stats.health,
-      maxHealth: playerClass.stats.maxHealth,
-      mana: playerClass.stats.mana,
-      maxMana: playerClass.stats.maxMana,
-      damage: playerClass.stats.damage,
-      speed: playerClass.stats.speed,
-      defense: playerClass.stats.defense,
-      ability: playerClass.ability,
+      // Stats - use database character if available
+      class: dbCharacter?.class || useClass.id,
+      className: dbCharacter?.class || useClass.name,
+      health: dbCharacter?.health || useClass.stats.health,
+      maxHealth: dbCharacter?.max_health || useClass.stats.maxHealth,
+      mana: dbCharacter?.mana || useClass.stats.mana,
+      maxMana: dbCharacter?.max_mana || useClass.stats.maxMana,
+      damage: dbCharacter?.attack || useClass.stats.damage,
+      speed: dbCharacter?.speed || useClass.stats.speed,
+      defense: dbCharacter?.defense || useClass.stats.defense,
+      ability: useClass.ability,
+      level: dbCharacter?.level || 1,
+      experience: dbCharacter?.experience || 0,
+      fame: dbCharacter?.fame || 0,
+      // Database references
+      dbPlayerId: dbPlayer?.id || null,
+      dbCharacterId: dbCharacter?.id || null,
+      playerName: playerName || `Player_${clientId}`,
       // World state
       worldId: useMapId,
       lastUpdate: Date.now(),
