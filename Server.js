@@ -798,14 +798,20 @@ async function handlePlayerRespawn(clientId) {
 
   console.log(`[SERVER] 🌍 Respawning at random location: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)}) in world ${mapId}`);
 
+  // Get player's class for correct stats (preserve from before death, or default to warrior)
+  const playerClassName = oldClient?.player?.class || 'warrior';
+  const playerClass = getClassById(playerClassName);
+
   // MMO-STYLE: Create a completely NEW player object (like a fresh login)
   const newPlayer = {
     id: clientId,
     x: spawnX,
     y: spawnY,
     inventory: new Array(20).fill(null),
-    health: 1000,
-    maxHealth: 1000,
+    health: playerClass.stats.health,
+    maxHealth: playerClass.stats.maxHealth,
+    class: playerClass.id,
+    className: playerClass.name,
     worldId: mapId,
     lastUpdate: Date.now(),
     isDead: false,
@@ -824,14 +830,14 @@ async function handlePlayerRespawn(clientId) {
     lastUpdate: Date.now()
   });
 
-  console.log(`[SERVER] ✨ Created NEW player ${clientId} at (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)}) with 1000 HP`);
+  console.log(`[SERVER] ✨ Created NEW player ${clientId} at (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)}) with ${playerClass.stats.health} HP`);
 
   // Send confirmation to client with new character data
   sendToClient(socket, MessageType.PLAYER_RESPAWN, {
     x: spawnX,
     y: spawnY,
-    health: 1000,
-    maxHealth: 1000,
+    health: playerClass.stats.health,
+    maxHealth: playerClass.stats.maxHealth,
     timestamp: Date.now(),
     clientId: clientId
   });

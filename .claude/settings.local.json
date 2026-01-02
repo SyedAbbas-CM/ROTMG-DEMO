@@ -112,7 +112,13 @@
       "Bash(openssl x509:*)",
       "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@94.130.106.5 \"netstat -tulpn | grep -E ''4433|10615'' ; ps aux | grep -E ''playit|node'' | grep -v grep\")",
       "Bash(brew list:*)",
-      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@94.130.106.5 \"cd /opt/ROTMG-DEMO && git pull origin main && pm2 restart all\")"
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@94.130.106.5 \"cd /opt/ROTMG-DEMO && git pull origin main && pm2 restart all\")",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 root@94.130.106.5 \"cd /opt/ROTMG-DEMO && git pull origin main && pm2 restart all\")",
+      "Bash(./deploy.sh:*)",
+      "Bash(timeout 20 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"cd C:\\ROTMG-DEMO && C:\\node-v22.12.0-win-x64\\node.exe Server.js 2>&1\")",
+      "Bash(git log:*)",
+      "Bash(timeout 30 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 newadmin@192.168.0.202 \"echo ''Connected!'' && cd C:/ROTMG-DEMO && dir\")",
+      "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"tasklist | findstr node\")"
     ],
     "deny": []
   }

@@ -1,9 +1,25 @@
 #!/bin/bash
-# Quick deploy script for ROTMG server to Windows laptop
+# =============================================================================
+# ROTMG Server Deploy Script
+# =============================================================================
+# Target: Windows Laptop at 192.168.0.202
+# Server Directory: C:\ROTMG-DEMO
+#
+# WARNING: NEVER DEPLOY THESE FILES (they contain server-specific settings):
+#   - .env (WebTransport ports, cert paths)
+#   - certs/ (SSL certificates for QUIC)
+#
+# If you accidentally overwrote .env, run: ./deploy.sh restore-env
+# Backup location on server: C:\ROTMG-BACKUP\
+#
+# See SERVER_SETUP.md for full documentation.
+# =============================================================================
 
 REMOTE="newadmin@192.168.0.202"
 PASS="12345"
-REMOTE_DIR="C:/Users/newadmin/rotmg-server"
+REMOTE_DIR="C:/ROTMG-DEMO"
+BACKUP_DIR="C:/ROTMG-BACKUP"
+NODE_PATH="C:\\node-v22.12.0-win-x64\\node.exe"
 
 # Colors
 RED='\033[0;31m'
@@ -20,21 +36,25 @@ case "${1:-help}" in
         echo -e "${GREEN}Client deployed! Just refresh browser.${NC}"
         ;;
     server)
-        echo -e "${GREEN}Deploying server files...${NC}"
+        echo -e "${GREEN}Deploying server files (preserving .env)...${NC}"
         sshpass -p "$PASS" scp -o StrictHostKeyChecking=no Server.js "$REMOTE:$REMOTE_DIR/"
-        sshpass -p "$PASS" scp -o StrictHostKeyChecking=no .env "$REMOTE:$REMOTE_DIR/"
+        # NOTE: .env is NOT deployed to preserve server-specific settings (WebTransport certs, ports)
         sshpass -p "$PASS" scp -r -o StrictHostKeyChecking=no src/* "$REMOTE:$REMOTE_DIR/src/" 2>/dev/null
         sshpass -p "$PASS" scp -r -o StrictHostKeyChecking=no common/* "$REMOTE:$REMOTE_DIR/common/"
         sshpass -p "$PASS" scp -r -o StrictHostKeyChecking=no server/* "$REMOTE:$REMOTE_DIR/server/" 2>/dev/null
         echo -e "${YELLOW}Restarting server...${NC}"
-        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "taskkill /IM node.exe /F 2>nul & schtasks /Run /TN GameServer"
+        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "taskkill /IM node.exe /F 2>nul"
+        sleep 2
+        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "wmic process call create \"cmd /c cd /d $REMOTE_DIR && $NODE_PATH Server.js\""
         sleep 3
         echo -e "${GREEN}Server deployed and restarted!${NC}"
         ;;
     restart)
         echo -e "${YELLOW}Restarting server...${NC}"
-        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "taskkill /IM node.exe /F 2>nul & schtasks /Run /TN GameServer"
+        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "taskkill /IM node.exe /F 2>nul"
         sleep 2
+        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "wmic process call create \"cmd /c cd /d $REMOTE_DIR && $NODE_PATH Server.js\""
+        sleep 5
         $0 status
         ;;
     logs)
@@ -58,12 +78,16 @@ case "${1:-help}" in
         echo -e "${GREEN}https://$URL${NC}"
         ;;
     all)
-        echo -e "${GREEN}Full deploy (excluding node_modules)...${NC}"
-        tar --exclude='node_modules' --exclude='.git' --exclude='ml/models/*.pth' --exclude='ml/__pycache__' --exclude='logs/*.log' -cf - . | \
+        echo -e "${GREEN}Full deploy (excluding node_modules, .env, certs)...${NC}"
+        # IMPORTANT: Excludes .env and certs/ to preserve server-specific WebTransport settings
+        tar --exclude='node_modules' --exclude='.git' --exclude='.env' --exclude='certs' \
+            --exclude='ml/models/*.pth' --exclude='ml/__pycache__' --exclude='logs/*.log' -cf - . | \
             sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "cd $REMOTE_DIR && tar -xf -"
         echo -e "${YELLOW}Restarting server...${NC}"
-        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "taskkill /IM node.exe /F 2>nul & schtasks /Run /TN GameServer"
-        sleep 3
+        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "taskkill /IM node.exe /F 2>nul"
+        sleep 2
+        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "wmic process call create \"cmd /c cd /d $REMOTE_DIR && $NODE_PATH Server.js\""
+        sleep 5
         $0 status
         ;;
     start-tunnel)
@@ -72,24 +96,46 @@ case "${1:-help}" in
         sleep 5
         $0 tunnel
         ;;
+    restore-env)
+        echo -e "${YELLOW}Restoring .env from backup...${NC}"
+        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "copy $BACKUP_DIR\\.env.backup $REMOTE_DIR\\.env /Y"
+        echo -e "${GREEN}.env restored from C:\\ROTMG-BACKUP\\.env.backup${NC}"
+        echo -e "${YELLOW}Restarting server to apply changes...${NC}"
+        $0 restart
+        ;;
+    backup-env)
+        echo -e "${YELLOW}Creating backup of current .env...${NC}"
+        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "mkdir $BACKUP_DIR 2>nul & copy $REMOTE_DIR\\.env $BACKUP_DIR\\.env.backup /Y"
+        echo -e "${GREEN}Backup saved to C:\\ROTMG-BACKUP\\.env.backup${NC}"
+        ;;
+    show-env)
+        echo -e "${GREEN}Current server .env:${NC}"
+        sshpass -p "$PASS" ssh -o StrictHostKeyChecking=no "$REMOTE" "type $REMOTE_DIR\\.env"
+        ;;
     *)
         echo "Usage: ./deploy.sh <command>"
         echo ""
-        echo "Commands:"
+        echo -e "${GREEN}Deploy Commands:${NC}"
         echo "  client       - Deploy only public/ folder (no restart needed)"
-        echo "  server       - Deploy server files and restart"
+        echo "  server       - Deploy server files and restart (preserves .env)"
+        echo "  all          - Full deploy and restart (excludes .env, certs)"
+        echo ""
+        echo -e "${GREEN}Server Commands:${NC}"
         echo "  restart      - Just restart the server"
+        echo "  status       - Check if node and cloudflared are running"
         echo "  logs         - Show latest 50 lines of server logs"
         echo "  logs-follow  - Tail logs continuously"
-        echo "  status       - Check if node and cloudflared are running"
+        echo ""
+        echo -e "${GREEN}Tunnel Commands:${NC}"
         echo "  tunnel       - Get current tunnel URL"
         echo "  start-tunnel - Start the Cloudflare tunnel"
-        echo "  all          - Full deploy and restart"
         echo ""
-        echo "Quick workflow:"
-        echo "  1. Make changes locally"
-        echo "  2. ./deploy.sh client   # For frontend-only changes"
-        echo "  3. ./deploy.sh server   # For backend changes"
-        echo "  4. Refresh browser"
+        echo -e "${YELLOW}Recovery Commands:${NC}"
+        echo "  restore-env  - Restore .env from backup (if you broke it)"
+        echo "  backup-env   - Create new backup of current .env"
+        echo "  show-env     - Display current server .env contents"
+        echo ""
+        echo -e "${RED}WARNING: .env and certs/ are NEVER deployed to preserve WebTransport settings.${NC}"
+        echo "See SERVER_SETUP.md for full documentation."
         ;;
 esac

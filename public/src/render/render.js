@@ -666,7 +666,10 @@ export function renderBullets() {
       console.error(`[RENDER] Invalid drawW for bullet: id=${bm.id[i]}, drawW=${drawW}, width=${bm.width[i]}`);
       continue;
     }
-    const isLocal = bm.ownerId[i] === gameState.character?.id;
+    // Normalize IDs for comparison - server sends "entity_X" but character.id may be numeric
+    const localId = String(gameState.character?.id || '').replace(/^entity_/, '');
+    const bulletOwner = String(bm.ownerId[i] || '').replace(/^entity_/, '');
+    const isLocal = localId && (localId === bulletOwner);
     const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, drawW);
     if (isLocal) {
       grad.addColorStop(0, 'rgb(255,255,120)');

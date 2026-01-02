@@ -61,9 +61,9 @@ export class Player {
       this.isMoving = false;
       this.moveDirection = { x: 0, y: 0 };
       
-      // Combat (defaults match server: 1000 HP)
-      this.health = options.health !== undefined ? options.health : 1000;
-      this.maxHealth = options.maxHealth || 1000;
+      // Combat (defaults match class HP, usually 200 - server sends actual value)
+      this.health = options.health !== undefined ? options.health : 200;
+      this.maxHealth = options.maxHealth || 200;
       this.damage = options.damage || 10;
       this.projectileSpeed = options.projectileSpeed || 200;
       this.shootCooldown = options.shootCooldown || 0.5; // Seconds

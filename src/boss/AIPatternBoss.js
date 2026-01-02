@@ -1,15 +1,14 @@
 /**
  * AIPatternBoss - Enhanced boss with ML-generated bullet patterns
  *
- * Now uses PatternCompiler + PatternPlayer for proper bullet hell emergence:
- * - Grid is compiled to timed burst events
- * - Bursts emit over time (flower bloom, spiral unfold, sweep)
- * - Not "one bullet at a time" drip feed
+ * Uses PatternCompiler + PatternPlayer for proper bullet hell emergence.
+ * Now supports per-boss configurations via BossConfigs.
  */
 
 import { PatternCompiler } from '../ai/PatternCompiler.js';
 import { PatternPlayer, PatternQueue } from '../ai/PatternPlayer.js';
 import { PatternLibrary } from '../ai/PatternLibrary.js';
+import { BossConfigs } from './BossConfigs.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -21,13 +20,9 @@ export class AIPatternBoss {
     this.bossManager = bossManager;
     this.bulletManager = bulletManager;
 
-    // Pattern library (loads pre-generated patterns)
+    // Pattern library
     this.patternLibrary = new PatternLibrary();
-
-    // NEW: Compiler converts grid → timed events
     this.patternCompiler = new PatternCompiler();
-
-    // NEW: Queue manages multiple patterns playing simultaneously
     this.patternQueue = new PatternQueue(bulletManager);
 
     // Load patterns
@@ -42,78 +37,90 @@ export class AIPatternBoss {
       this.aiEnabled = true;
     }
 
-    // AI attack cooldowns (per boss)
+    // Per-boss state
+    this.bossConfigs = new Array(bossManager.maxBosses).fill(null);  // Config name per boss
     this.aiAttackCooldown = new Float32Array(bossManager.maxBosses).fill(0);
-    this.aiAttackInterval = 3.0; // Fire pattern every 3 seconds (patterns take ~2s to play)
-
-    // Phase timing (per boss)
-    this.phaseTimer = new Float32Array(bossManager.maxBosses).fill(0);
-    this.phaseInterval = 8.0; // 8 seconds per phase (longer to let patterns play out)
-
-    // Pattern style rotation for variety
-    this.styleRotation = ['flower', 'spiral', 'sweep', 'burst', 'wave'];
     this.styleIndex = new Uint8Array(bossManager.maxBosses).fill(0);
-
-    // Track last pattern to avoid repetition
     this.lastPatternIds = new Array(bossManager.maxBosses).fill(-1);
+
+    // Default config for bosses without explicit config
+    this.defaultConfigName = 'bloom_guardian';
+  }
+
+  /**
+   * Assign a config to a boss
+   * @param {number} bossIndex - Index in BossManager
+   * @param {string} configName - Key from BossConfigs (e.g., 'bloom_guardian')
+   */
+  setBossConfig(bossIndex, configName) {
+    if (!BossConfigs[configName]) {
+      console.warn(`[AIPatternBoss] Unknown config: ${configName}, using default`);
+      configName = this.defaultConfigName;
+    }
+    this.bossConfigs[bossIndex] = configName;
+    console.log(`[AIPatternBoss] Boss ${bossIndex} set to config: ${configName}`);
+  }
+
+  /**
+   * Get the config for a boss
+   */
+  getConfig(bossIndex) {
+    const configName = this.bossConfigs[bossIndex] || this.defaultConfigName;
+    return BossConfigs[configName] || BossConfigs[this.defaultConfigName];
   }
 
   /**
    * Update AI pattern attacks
-   * @param {number} dt - Delta time in seconds
    */
   update(dt) {
     if (!this.aiEnabled) return;
 
-    // Update all active pattern players
     this.patternQueue.update(dt);
 
     const bossCount = this.bossManager.bossCount;
 
     for (let i = 0; i < bossCount; i++) {
-      // Update phase timer
-      this.phaseTimer[i] += dt;
-      if (this.phaseTimer[i] >= this.phaseInterval) {
-        this.phaseTimer[i] = 0;
-        this.bossManager.phase[i] = (this.bossManager.phase[i] + 1) % 3;
-        console.log(`[AIPatternBoss] Boss ${i} entered phase ${this.bossManager.phase[i]}`);
-      }
+      const config = this.getConfig(i);
+      const hp = this.bossManager.hp[i];
 
-      // Update attack cooldown
+      // Determine attack interval (normal or rage mode)
+      const isRage = hp < 0.3 && config.rageMode;
+      const attackInterval = isRage
+        ? config.rageMode.attackInterval
+        : config.attackInterval;
+
       this.aiAttackCooldown[i] -= dt;
 
       if (this.aiAttackCooldown[i] <= 0) {
         this.fireAIPattern(i);
-        this.aiAttackCooldown[i] = this.aiAttackInterval;
+        this.aiAttackCooldown[i] = attackInterval;
       }
     }
   }
 
   /**
    * Fire an AI pattern for a specific boss
-   * @param {number} bossIndex - Index in BossManager arrays
    */
   fireAIPattern(bossIndex) {
-    const phase = this.bossManager.phase[bossIndex];
+    const config = this.getConfig(bossIndex);
     const hp = this.bossManager.hp[bossIndex];
     const worldId = this.bossManager.worldId[bossIndex];
+    const isRage = hp < 0.3 && config.rageMode;
 
-    // Get pattern for phase
+    // Get pattern
+    const phase = this.bossManager.phase[bossIndex];
     let pattern = this.patternLibrary.getPatternForPhase(phase + 1);
 
-    // Avoid repeating same pattern
     if (pattern && pattern.id === this.lastPatternIds[bossIndex]) {
       pattern = this.patternLibrary.getPatternForPhase(phase + 1);
     }
 
     if (!pattern) {
-      console.warn(`[AIPatternBoss] No pattern available for boss ${bossIndex}`);
+      console.warn(`[AIPatternBoss] No pattern for boss ${bossIndex}`);
       return;
     }
 
     this.lastPatternIds[bossIndex] = pattern.id;
-
-    // Convert to array format
     const patternArray = this.patternLibrary.toPatternArray(pattern);
 
     // Boss data
@@ -125,70 +132,77 @@ export class AIPatternBoss {
     const bossData = {
       x: this.bossManager.x[bossIndex],
       y: this.bossManager.y[bossIndex],
-      ownerId: ownerId,
-      worldId: worldId,
+      ownerId,
+      worldId,
       faction: 0
     };
 
-    // Choose compilation style based on phase and HP
-    let style = this.styleRotation[this.styleIndex[bossIndex]];
-    this.styleIndex[bossIndex] = (this.styleIndex[bossIndex] + 1) % this.styleRotation.length;
+    // Choose style from config rotation
+    const styles = config.styles;
+    const style = styles[this.styleIndex[bossIndex] % styles.length];
+    this.styleIndex[bossIndex] = (this.styleIndex[bossIndex] + 1) % styles.length;
 
-    // Rage mode at low HP
-    let compileOpts = {};
-    let playerConfig = { lifetime: 5.0, damage: 12 };
+    // Get compile options (normal or rage)
+    const compileOpts = isRage
+      ? { ...config.compileOpts, ...config.rageMode.compileOpts }
+      : config.compileOpts;
 
-    if (hp < 0.3) {
-      // Rage: faster, denser, rotating
-      style = 'burst';
-      compileOpts = {
-        bulletsPerEvent: 10,
-        maxEvents: 12,
-        duration: 1.0,
-      };
-      playerConfig.rotationSpeed = 0.3;
-      playerConfig.damage = 18;
-    } else if (hp < 0.6) {
-      // Mid: moderate increase
-      compileOpts = {
-        bulletsPerEvent: 8,
-        maxEvents: 18,
-        duration: 2.0,
-      };
-      playerConfig.damage = 14;
+    // Get player config (normal or rage)
+    const playerConfig = isRage
+      ? { ...config.playerConfig, ...config.rageMode.playerConfig }
+      : config.playerConfig;
+
+    // Compile pattern
+    const events = this.patternCompiler.compile(patternArray, {
+      ...compileOpts,
+      timeMode: compileOpts.timeMode || this.getTimeModeForStyle(style),
+    });
+
+    // Apply bullet overrides if present
+    if (config.bulletOverrides) {
+      for (const event of events) {
+        if (config.bulletOverrides.waveAmpMultiplier) {
+          event.waveAmp *= config.bulletOverrides.waveAmpMultiplier;
+        }
+        if (config.bulletOverrides.curveMultiplier) {
+          event.angularVel *= config.bulletOverrides.curveMultiplier;
+        }
+      }
     }
 
-    // COMPILE: Convert grid to timed events
-    const events = this.patternCompiler.compileWithStyle(patternArray, style);
-
-    // Override with HP-based config if set
-    const finalEvents = Object.keys(compileOpts).length > 0
-      ? this.patternCompiler.compile(patternArray, compileOpts)
-      : events;
-
-    // PLAY: Start the pattern
-    const player = this.patternQueue.queue(finalEvents, bossData, playerConfig);
+    // Play pattern
+    const player = this.patternQueue.queue(events, bossData, playerConfig);
 
     if (player) {
-      const totalBullets = finalEvents.reduce((sum, e) => sum + e.count, 0);
-      const duration = finalEvents.length > 0 ? finalEvents[finalEvents.length - 1].t : 0;
-      console.log(`[AIPatternBoss] Boss ${bossIndex} (HP: ${(hp*100).toFixed(0)}%, Phase: ${phase}) ` +
-                  `fired pattern ${pattern.id} style=${style} → ${finalEvents.length} bursts, ` +
-                  `~${totalBullets} bullets over ${duration.toFixed(1)}s`);
+      const totalBullets = events.reduce((sum, e) => sum + e.count, 0);
+      const duration = events.length > 0 ? events[events.length - 1].t : 0;
+      const configName = this.bossConfigs[bossIndex] || this.defaultConfigName;
+      console.log(`[AIPatternBoss] ${config.name} (Boss ${bossIndex}, HP: ${(hp*100).toFixed(0)}%${isRage ? ' RAGE' : ''}) ` +
+                  `→ ${style} pattern, ${events.length} bursts, ~${totalBullets} bullets over ${duration.toFixed(1)}s`);
     }
   }
 
   /**
-   * Manually trigger pattern with specific style
-   * @param {number} bossIndex - Boss index
-   * @param {string} style - "flower", "spiral", "sweep", "burst", "wave"
+   * Get default timeMode for a style
    */
-  triggerPattern(bossIndex, style = 'flower') {
-    if (!this.aiEnabled) {
-      console.warn('[AIPatternBoss] AI patterns not loaded');
-      return 0;
-    }
+  getTimeModeForStyle(style) {
+    const modes = {
+      flower: 'spiral',
+      spiral: 'spiral',
+      sweep: 'angle',
+      burst: 'radius',
+      wave: 'brightness',
+    };
+    return modes[style] || 'spiral';
+  }
 
+  /**
+   * Manually trigger pattern
+   */
+  triggerPattern(bossIndex, style = null) {
+    if (!this.aiEnabled) return 0;
+
+    const config = this.getConfig(bossIndex);
     const pattern = this.patternLibrary.getRandomPattern();
     if (!pattern) return 0;
 
@@ -202,36 +216,30 @@ export class AIPatternBoss {
     const bossData = {
       x: this.bossManager.x[bossIndex],
       y: this.bossManager.y[bossIndex],
-      ownerId: ownerId,
+      ownerId,
       worldId: this.bossManager.worldId[bossIndex],
       faction: 0
     };
 
-    const events = this.patternCompiler.compileWithStyle(patternArray, style);
-    const player = this.patternQueue.queue(events, bossData);
+    const useStyle = style || config.styles[0];
+    const events = this.patternCompiler.compileWithStyle(patternArray, useStyle);
+    this.patternQueue.queue(events, bossData, config.playerConfig);
 
     return events.reduce((sum, e) => sum + e.count, 0);
   }
 
   /**
-   * Adjust AI attack frequency
-   * @param {number} interval - Seconds between AI attacks
+   * Set attack interval for a boss
    */
-  setAttackInterval(interval) {
-    this.aiAttackInterval = interval;
-    console.log(`[AIPatternBoss] AI attack interval set to ${interval}s`);
+  setAttackInterval(bossIndex, interval) {
+    const config = this.getConfig(bossIndex);
+    config.attackInterval = interval;
   }
 
-  /**
-   * Get number of patterns currently playing
-   */
   getActivePatternsCount() {
     return this.patternQueue.getActiveCount();
   }
 
-  /**
-   * Stop all playing patterns
-   */
   stopAllPatterns() {
     this.patternQueue.stopAll();
   }

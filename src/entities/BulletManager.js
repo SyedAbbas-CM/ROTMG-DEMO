@@ -49,6 +49,9 @@ export default class BulletManager {
     this.wavePhase = new Float32Array(maxBullets);    // Wave phase offset (radians)
     this.age = new Float32Array(maxBullets);          // Time since spawn (seconds)
 
+    // Track removed bullets for network sync
+    this.removedBullets = new Set();
+
     // Debug / analytics counters (reset each update)
     this.stats = {
       created: 0,
@@ -191,6 +194,12 @@ export default class BulletManager {
    * @param {number} index - Index of bullet to remove
    */
   swapRemove(index) {
+    // Track the removed bullet ID for network sync
+    const removedId = this.id[index];
+    if (removedId) {
+      this.removedBullets.add(removedId);
+    }
+
     const last = this.bulletCount - 1;
 
     if (index !== last) {
@@ -220,6 +229,16 @@ export default class BulletManager {
     }
 
     this.bulletCount--;
+  }
+
+  /**
+   * Get and clear removed bullet IDs for network sync
+   * @returns {Array} Array of removed bullet IDs
+   */
+  getAndClearRemovedBullets() {
+    const removed = Array.from(this.removedBullets);
+    this.removedBullets.clear();
+    return removed;
   }
   
   /**
