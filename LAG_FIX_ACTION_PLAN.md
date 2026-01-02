@@ -250,9 +250,9 @@ sudo tc qdisc add dev lo root netem delay 100ms
 ```
 
 ### Remote Testing (Real-world)
-1. Deploy to Hetzner (Germany) + test from US West Coast (~150ms)
-2. Deploy to AWS Tokyo + test from Europe (~200-250ms)
-3. Use VPN to simulate distance
+1. Deploy to Windows laptop via PlayIt.gg tunnel + test from external network
+2. Use VPN to simulate distance/latency
+3. Test from different geographic locations via friends/testers
 
 ### Load Testing
 1. Run 10 concurrent clients with different latencies
