@@ -327,6 +327,20 @@ class GameDatabase {
         this._run("UPDATE characters SET is_dead = 1, last_played = datetime('now') WHERE id = ?", [characterId]);
     }
 
+    /**
+     * Delete character permanently (permadeath)
+     * Also deletes associated inventory and equipment
+     */
+    deleteCharacter(characterId) {
+        // Delete inventory first (foreign key)
+        this._run('DELETE FROM inventory WHERE character_id = ?', [characterId]);
+        // Delete equipment
+        this._run('DELETE FROM equipment WHERE character_id = ?', [characterId]);
+        // Delete character
+        this._run('DELETE FROM characters WHERE id = ?', [characterId]);
+        console.log(`[Database] Deleted character ${characterId} and all items`);
+    }
+
     // ==================== INVENTORY OPERATIONS ====================
 
     /**

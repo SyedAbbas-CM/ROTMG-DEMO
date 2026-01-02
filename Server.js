@@ -2142,7 +2142,7 @@ function updateGame() {
         if (player.health <= 0 && !player.isDead) {
           player.isDead = true;
           console.log(`[CONTACT DAMAGE] Player ${player.id} killed by enemy contact!`);
-          // TODO: Spawn grave, handle death properly
+          // Character deletion handled centrally in broadcastWorldUpdates when PLAYER_DEATH is sent
         }
       }
     }
@@ -2294,6 +2294,18 @@ function broadcastWorldUpdates() {
       // Check for player death and send death message
       if (c.player && c.player.isDead && !c.player.deathMessageSent) {
         c.player.deathMessageSent = true;
+
+        // Delete character from database (permadeath) - only once when death is first detected
+        if (gameDatabase && c.player.dbCharacterId) {
+          try {
+            gameDatabase.deleteCharacter(c.player.dbCharacterId);
+            console.log(`[Database] 💀 Character ${c.player.dbCharacterId} deleted (${c.player.playerName} died)`);
+            c.player.dbCharacterId = null; // Prevent double deletion
+          } catch (err) {
+            console.error(`[Database] Failed to delete character:`, err.message);
+          }
+        }
+
         sendToClient(c.socket, MessageType.PLAYER_DEATH, {
           playerId: cid,
           deathX: c.player.deathX,
