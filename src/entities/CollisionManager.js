@@ -269,11 +269,6 @@ export default class CollisionManager {
       // NEW: Check enemy bullets against players
       const isEnemyBullet = typeof bulletOwnerId === 'string' && bulletOwnerId.startsWith('enemy_');
 
-      // DEBUG: Log bullet info for first few bullets each frame
-      if (bi < 3 && players && players.length > 0) {
-        console.log(`[COLLISION DEBUG] Bullet ${bi}: ownerId=${bulletOwnerId} isEnemy=${isEnemyBullet} worldId=${this.bulletManager.worldId[bi]} playerWorldId=${players[0]?.worldId}`);
-      }
-
       if (isEnemyBullet && players && players.length > 0) {
         for (const player of players) {
           // Skip if player is dead or in different world
@@ -285,6 +280,13 @@ export default class CollisionManager {
           const playerWidth = player.collisionWidth || 1;
           const playerHeight = player.collisionHeight || 1;
           const playerId = player.id;
+
+          // DEBUG: Log positions for first few bullets (sample every 30 frames)
+          if (bi === 0 && !this._posLogCount) this._posLogCount = 0;
+          if (bi === 0 && this._posLogCount++ % 30 === 0) {
+            const dist = Math.sqrt((bulletX - playerX) ** 2 + (bulletY - playerY) ** 2);
+            console.log(`[COLLISION POS] Bullet(${bulletX.toFixed(1)},${bulletY.toFixed(1)}) sz=${bulletWidth.toFixed(2)} Player(${playerX.toFixed(1)},${playerY.toFixed(1)}) sz=${playerWidth} dist=${dist.toFixed(1)}`);
+          }
 
           // Check if bullet and player collide (AABB)
           if (this.checkAABBCollision(
@@ -299,6 +301,9 @@ export default class CollisionManager {
 
             // Apply damage to player
             const damage = this.bulletManager.damage ? this.bulletManager.damage[bi] : 10;
+
+            // DEBUG: Log collision hit
+            console.log(`[COLLISION HIT] Bullet ${bulletId} hit player ${playerId}! Damage: ${damage}, Health: ${player.health} -> ${player.health - damage}`);
 
             if (this.fileLogger) {
               this.fileLogger.bulletHit(bulletId, 'player', playerId, damage, { x: playerX, y: playerY });
