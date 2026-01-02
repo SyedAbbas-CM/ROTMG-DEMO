@@ -240,16 +240,19 @@ const movementValidator = new MovementValidator({
 // Initialize Ability System for player classes
 const abilitySystem = new AbilitySystem();
 
-// Initialize Database for player persistence
+// Initialize Database for player persistence (async)
 let gameDatabase = null;
-try {
-  gameDatabase = initDatabase();
-  const dbStats = gameDatabase.getStats();
-  console.log(`[Database] Ready - ${dbStats.players} players, ${dbStats.characters} characters`);
-} catch (err) {
-  console.error('[Database] Failed to initialize:', err.message);
-  console.warn('[Database] Running without persistence - player data will not be saved');
-}
+
+(async () => {
+  try {
+    gameDatabase = await initDatabase();
+    const dbStats = gameDatabase.getStats();
+    console.log(`[Database] Ready - ${dbStats.players} players, ${dbStats.characters} characters`);
+  } catch (err) {
+    console.error('[Database] Failed to initialize:', err.message);
+    console.warn('[Database] Running without persistence - player data will not be saved');
+  }
+})();
 
 // Log server startup
 if (fileLogger.enabled) {

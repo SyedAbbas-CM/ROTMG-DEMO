@@ -1,9 +1,9 @@
 /**
  * Database.js - SQLite database for player persistence
- * Stores: players, characters, inventory, items
+ * Uses sql.js (pure JS SQLite) for cross-platform compatibility
  */
 
-import Database from 'better-sqlite3';
+import initSqlJs from 'sql.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -17,24 +17,46 @@ const DB_PATH = path.join(__dirname, '../../data/game.db');
 class GameDatabase {
     constructor() {
         this.db = null;
+        this.SQL = null;
     }
 
     /**
      * Initialize database connection and create tables
      */
-    init() {
+    async init() {
         // Ensure data directory exists
         const dataDir = path.dirname(DB_PATH);
         if (!fs.existsSync(dataDir)) {
             fs.mkdirSync(dataDir, { recursive: true });
         }
 
-        this.db = new Database(DB_PATH);
-        this.db.pragma('journal_mode = WAL'); // Better performance
+        // Initialize SQL.js
+        this.SQL = await initSqlJs();
+
+        // Load existing database or create new one
+        if (fs.existsSync(DB_PATH)) {
+            const fileBuffer = fs.readFileSync(DB_PATH);
+            this.db = new this.SQL.Database(fileBuffer);
+            console.log('[Database] Loaded existing database');
+        } else {
+            this.db = new this.SQL.Database();
+            console.log('[Database] Created new database');
+        }
 
         this.createTables();
+        this.save(); // Save initial structure
         console.log('[Database] Initialized at', DB_PATH);
         return this;
+    }
+
+    /**
+     * Save database to disk
+     */
+    save() {
+        if (!this.db) return;
+        const data = this.db.export();
+        const buffer = Buffer.from(data);
+        fs.writeFileSync(DB_PATH, buffer);
     }
 
     /**
@@ -42,7 +64,7 @@ class GameDatabase {
      */
     createTables() {
         // Players table - account info
-        this.db.exec(`
+        this.db.run(`
             CREATE TABLE IF NOT EXISTS players (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL UNIQUE,
@@ -56,7 +78,7 @@ class GameDatabase {
         `);
 
         // Characters table - each player can have multiple characters
-        this.db.exec(`
+        this.db.run(`
             CREATE TABLE IF NOT EXISTS characters (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 player_id INTEGER NOT NULL,
@@ -86,7 +108,7 @@ class GameDatabase {
         `);
 
         // Inventory table - items per character
-        this.db.exec(`
+        this.db.run(`
             CREATE TABLE IF NOT EXISTS inventory (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 character_id INTEGER NOT NULL,
@@ -101,7 +123,7 @@ class GameDatabase {
         `);
 
         // Equipment table - equipped items
-        this.db.exec(`
+        this.db.run(`
             CREATE TABLE IF NOT EXISTS equipment (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 character_id INTEGER NOT NULL,
@@ -115,14 +137,47 @@ class GameDatabase {
         `);
 
         // Create indexes for faster lookups
-        this.db.exec(`
-            CREATE INDEX IF NOT EXISTS idx_characters_player ON characters(player_id);
-            CREATE INDEX IF NOT EXISTS idx_inventory_character ON inventory(character_id);
-            CREATE INDEX IF NOT EXISTS idx_equipment_character ON equipment(character_id);
-            CREATE INDEX IF NOT EXISTS idx_players_email ON players(email);
-        `);
+        this.db.run(`CREATE INDEX IF NOT EXISTS idx_characters_player ON characters(player_id)`);
+        this.db.run(`CREATE INDEX IF NOT EXISTS idx_inventory_character ON inventory(character_id)`);
+        this.db.run(`CREATE INDEX IF NOT EXISTS idx_equipment_character ON equipment(character_id)`);
+        this.db.run(`CREATE INDEX IF NOT EXISTS idx_players_email ON players(email)`);
 
         console.log('[Database] Tables created/verified');
+    }
+
+    // Helper to run query and get first result as object
+    _get(sql, params = []) {
+        const stmt = this.db.prepare(sql);
+        stmt.bind(params);
+        if (stmt.step()) {
+            const row = stmt.getAsObject();
+            stmt.free();
+            return row;
+        }
+        stmt.free();
+        return null;
+    }
+
+    // Helper to run query and get all results
+    _all(sql, params = []) {
+        const results = [];
+        const stmt = this.db.prepare(sql);
+        stmt.bind(params);
+        while (stmt.step()) {
+            results.push(stmt.getAsObject());
+        }
+        stmt.free();
+        return results;
+    }
+
+    // Helper to run a query that modifies data
+    _run(sql, params = []) {
+        this.db.run(sql, params);
+        this.save(); // Auto-save after modifications
+        return {
+            lastInsertRowid: this.db.exec("SELECT last_insert_rowid()")[0]?.values[0][0] || 0,
+            changes: this.db.getRowsModified()
+        };
     }
 
     // ==================== PLAYER OPERATIONS ====================
@@ -131,13 +186,11 @@ class GameDatabase {
      * Create a new player account
      */
     createPlayer(name, email, passwordHash = null) {
-        const stmt = this.db.prepare(`
-            INSERT INTO players (name, email, password_hash, last_login)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-        `);
-
         try {
-            const result = stmt.run(name, email, passwordHash);
+            const result = this._run(
+                `INSERT INTO players (name, email, password_hash, last_login) VALUES (?, ?, ?, datetime('now'))`,
+                [name, email, passwordHash]
+            );
             console.log(`[Database] Created player: ${name} (ID: ${result.lastInsertRowid})`);
             return { id: result.lastInsertRowid, name, email };
         } catch (err) {
@@ -153,32 +206,28 @@ class GameDatabase {
      * Get player by name
      */
     getPlayerByName(name) {
-        const stmt = this.db.prepare('SELECT * FROM players WHERE name = ?');
-        return stmt.get(name);
+        return this._get('SELECT * FROM players WHERE name = ?', [name]);
     }
 
     /**
      * Get player by email
      */
     getPlayerByEmail(email) {
-        const stmt = this.db.prepare('SELECT * FROM players WHERE email = ?');
-        return stmt.get(email);
+        return this._get('SELECT * FROM players WHERE email = ?', [email]);
     }
 
     /**
      * Get player by ID
      */
     getPlayerById(id) {
-        const stmt = this.db.prepare('SELECT * FROM players WHERE id = ?');
-        return stmt.get(id);
+        return this._get('SELECT * FROM players WHERE id = ?', [id]);
     }
 
     /**
      * Update player's last login time
      */
     updateLastLogin(playerId) {
-        const stmt = this.db.prepare('UPDATE players SET last_login = CURRENT_TIMESTAMP WHERE id = ?');
-        stmt.run(playerId);
+        this._run("UPDATE players SET last_login = datetime('now') WHERE id = ?", [playerId]);
     }
 
     // ==================== CHARACTER OPERATIONS ====================
@@ -187,24 +236,21 @@ class GameDatabase {
      * Create a new character for a player
      */
     createCharacter(playerId, name, characterClass = 'warrior') {
-        // Get class defaults
         const classDefaults = this.getClassDefaults(characterClass);
 
-        const stmt = this.db.prepare(`
+        const result = this._run(`
             INSERT INTO characters (
                 player_id, name, class, health, max_health, mana, max_mana,
                 attack, defense, speed, dexterity, vitality, wisdom, last_played
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        `);
-
-        const result = stmt.run(
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        `, [
             playerId, name, characterClass,
             classDefaults.health, classDefaults.maxHealth,
             classDefaults.mana, classDefaults.maxMana,
             classDefaults.attack, classDefaults.defense,
             classDefaults.speed, classDefaults.dexterity,
             classDefaults.vitality, classDefaults.wisdom
-        );
+        ]);
 
         console.log(`[Database] Created character: ${name} (${characterClass}) for player ${playerId}`);
         return this.getCharacterById(result.lastInsertRowid);
@@ -229,16 +275,14 @@ class GameDatabase {
      * Get character by ID
      */
     getCharacterById(id) {
-        const stmt = this.db.prepare('SELECT * FROM characters WHERE id = ?');
-        return stmt.get(id);
+        return this._get('SELECT * FROM characters WHERE id = ?', [id]);
     }
 
     /**
      * Get all characters for a player
      */
     getCharactersByPlayerId(playerId) {
-        const stmt = this.db.prepare('SELECT * FROM characters WHERE player_id = ? ORDER BY last_played DESC');
-        return stmt.all(playerId);
+        return this._all('SELECT * FROM characters WHERE player_id = ? ORDER BY last_played DESC', [playerId]);
     }
 
     /**
@@ -261,11 +305,10 @@ class GameDatabase {
 
         if (fields.length === 0) return false;
 
-        fields.push('last_played = CURRENT_TIMESTAMP');
+        fields.push("last_played = datetime('now')");
         values.push(characterId);
 
-        const stmt = this.db.prepare(`UPDATE characters SET ${fields.join(', ')} WHERE id = ?`);
-        stmt.run(...values);
+        this._run(`UPDATE characters SET ${fields.join(', ')} WHERE id = ?`, values);
         return true;
     }
 
@@ -273,16 +316,15 @@ class GameDatabase {
      * Save character position (called frequently)
      */
     saveCharacterPosition(characterId, x, y, worldId) {
-        const stmt = this.db.prepare('UPDATE characters SET x = ?, y = ?, world_id = ?, last_played = CURRENT_TIMESTAMP WHERE id = ?');
-        stmt.run(x, y, worldId, characterId);
+        this._run("UPDATE characters SET x = ?, y = ?, world_id = ?, last_played = datetime('now') WHERE id = ?",
+            [x, y, worldId, characterId]);
     }
 
     /**
      * Mark character as dead
      */
     killCharacter(characterId) {
-        const stmt = this.db.prepare('UPDATE characters SET is_dead = 1, last_played = CURRENT_TIMESTAMP WHERE id = ?');
-        stmt.run(characterId);
+        this._run("UPDATE characters SET is_dead = 1, last_played = datetime('now') WHERE id = ?", [characterId]);
     }
 
     // ==================== INVENTORY OPERATIONS ====================
@@ -291,54 +333,48 @@ class GameDatabase {
      * Get character's inventory
      */
     getInventory(characterId) {
-        const stmt = this.db.prepare('SELECT * FROM inventory WHERE character_id = ? ORDER BY slot');
-        return stmt.all(characterId);
+        return this._all('SELECT * FROM inventory WHERE character_id = ? ORDER BY slot', [characterId]);
     }
 
     /**
      * Set item in inventory slot
      */
     setInventorySlot(characterId, slot, itemId, quantity = 1, tier = 0, enchantments = null) {
-        const stmt = this.db.prepare(`
+        this._run(`
             INSERT OR REPLACE INTO inventory (character_id, slot, item_id, quantity, tier, enchantments)
             VALUES (?, ?, ?, ?, ?, ?)
-        `);
-        stmt.run(characterId, slot, itemId, quantity, tier, enchantments ? JSON.stringify(enchantments) : null);
+        `, [characterId, slot, itemId, quantity, tier, enchantments ? JSON.stringify(enchantments) : null]);
     }
 
     /**
      * Clear inventory slot
      */
     clearInventorySlot(characterId, slot) {
-        const stmt = this.db.prepare('DELETE FROM inventory WHERE character_id = ? AND slot = ?');
-        stmt.run(characterId, slot);
+        this._run('DELETE FROM inventory WHERE character_id = ? AND slot = ?', [characterId, slot]);
     }
 
     /**
      * Get equipped items
      */
     getEquipment(characterId) {
-        const stmt = this.db.prepare('SELECT * FROM equipment WHERE character_id = ?');
-        return stmt.all(characterId);
+        return this._all('SELECT * FROM equipment WHERE character_id = ?', [characterId]);
     }
 
     /**
      * Equip item
      */
     equipItem(characterId, slot, itemId, tier = 0, enchantments = null) {
-        const stmt = this.db.prepare(`
+        this._run(`
             INSERT OR REPLACE INTO equipment (character_id, slot, item_id, tier, enchantments)
             VALUES (?, ?, ?, ?, ?)
-        `);
-        stmt.run(characterId, slot, itemId, tier, enchantments ? JSON.stringify(enchantments) : null);
+        `, [characterId, slot, itemId, tier, enchantments ? JSON.stringify(enchantments) : null]);
     }
 
     /**
      * Unequip item from slot
      */
     unequipItem(characterId, slot) {
-        const stmt = this.db.prepare('DELETE FROM equipment WHERE character_id = ? AND slot = ?');
-        stmt.run(characterId, slot);
+        this._run('DELETE FROM equipment WHERE character_id = ? AND slot = ?', [characterId, slot]);
     }
 
     // ==================== UTILITY ====================
@@ -348,6 +384,7 @@ class GameDatabase {
      */
     close() {
         if (this.db) {
+            this.save();
             this.db.close();
             console.log('[Database] Connection closed');
         }
@@ -357,11 +394,11 @@ class GameDatabase {
      * Get database stats
      */
     getStats() {
-        const players = this.db.prepare('SELECT COUNT(*) as count FROM players').get();
-        const characters = this.db.prepare('SELECT COUNT(*) as count FROM characters').get();
+        const players = this._get('SELECT COUNT(*) as count FROM players');
+        const characters = this._get('SELECT COUNT(*) as count FROM characters');
         return {
-            players: players.count,
-            characters: characters.count
+            players: players?.count || 0,
+            characters: characters?.count || 0
         };
     }
 }
@@ -369,10 +406,10 @@ class GameDatabase {
 // Singleton instance
 let dbInstance = null;
 
-export function initDatabase() {
+export async function initDatabase() {
     if (!dbInstance) {
         dbInstance = new GameDatabase();
-        dbInstance.init();
+        await dbInstance.init();
     }
     return dbInstance;
 }
