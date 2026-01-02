@@ -118,7 +118,8 @@
       "Bash(timeout 20 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"cd C:\\ROTMG-DEMO && C:\\node-v22.12.0-win-x64\\node.exe Server.js 2>&1\")",
       "Bash(git log:*)",
       "Bash(timeout 30 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 newadmin@192.168.0.202 \"echo ''Connected!'' && cd C:/ROTMG-DEMO && dir\")",
-      "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"tasklist | findstr node\")"
+      "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"tasklist | findstr node\")",
+      "Bash(timeout 30 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"cd C:\\ROTMG-DEMO && git pull origin main\")"
     ],
     "deny": []
   }

@@ -349,6 +349,7 @@ export async function initGame() {
         // Initialize GameUI
         console.log('Initializing Game UI...');
         gameUI = initUIManager(gameState);
+        window.gameUI = gameUI; // Expose globally for health updates from network
 
         // Connect to the server
         try {

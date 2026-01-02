@@ -1469,25 +1469,8 @@ export class ClientNetworkManager {
             return false;
         }
 
-        // CLIENT-SIDE PREDICTION: Create local bullet immediately for instant feedback
-        const bulletManager = window.bulletManager || this.game?.bulletManager;
-        if (bulletManager && typeof bulletManager.addBullet === 'function') {
-            const localBulletId = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            const vx = Math.cos(bulletData.angle) * bulletData.speed;
-            const vy = Math.sin(bulletData.angle) * bulletData.speed;
-
-            bulletManager.addBullet({
-                id: localBulletId,
-                x: bulletData.x,
-                y: bulletData.y,
-                vx: vx,
-                vy: vy,
-                damage: bulletData.damage || 10,
-                ownerId: this.clientId,
-                life: 2.0, // 2 second lifetime
-                isLocal: true
-            });
-        }
+        // NOTE: Local bullet is already created by gameManager.firePlayerBullet() before calling this
+        // Do NOT create another local bullet here - that causes duplicates
 
         return this.send(MessageType.BULLET_CREATE, bulletData);
     }
