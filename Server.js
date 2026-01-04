@@ -2817,6 +2817,42 @@ function tryListen(port, attemptsLeft = 5) {
 
 tryListen(START_PORT);
 
+// ---- CRASH LOGGING ----
+// Log uncaught exceptions to file before crashing
+process.on('uncaughtException', (err, origin) => {
+  const crashLog = `
+================== CRASH REPORT ==================
+Time: ${new Date().toISOString()}
+Origin: ${origin}
+Error: ${err.message}
+Stack: ${err.stack}
+==================================================
+`;
+  console.error('[FATAL] Uncaught Exception:', err);
+  try {
+    fs.appendFileSync('C:/ROTMG-DEMO/crash.log', crashLog);
+  } catch (e) {
+    console.error('Failed to write crash log:', e);
+  }
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  const crashLog = `
+================== UNHANDLED REJECTION ==================
+Time: ${new Date().toISOString()}
+Reason: ${reason}
+Stack: ${reason?.stack || 'No stack'}
+=========================================================
+`;
+  console.error('[FATAL] Unhandled Rejection:', reason);
+  try {
+    fs.appendFileSync('C:/ROTMG-DEMO/crash.log', crashLog);
+  } catch (e) {
+    console.error('Failed to write crash log:', e);
+  }
+});
+
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   console.log('\nShutting down server...');
