@@ -1082,7 +1082,9 @@ export class ClientNetworkManager {
                 y: data.y,
                 health: data.health || 100,
                 maxHealth: data.maxHealth || 100,
-                isDead: false
+                isDead: false,
+                class: data.class || window.gameState.character?.class || 'warrior',
+                spriteRow: data.spriteRow ?? window.gameState.character?.spriteRow ?? 0
             });
 
             console.log(`[CLIENT] Created NEW character at (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);

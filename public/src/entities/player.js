@@ -72,15 +72,19 @@ export class Player {
       // Visual
       this.spriteX = options.spriteX || 0;
       this.spriteY = options.spriteY || 0;
-      
+
+      // Class and sprite info
+      this.class = options.class || 'warrior';
+      this.spriteRow = options.spriteRow ?? 0;
+
       // State
       this.isDead = false;
-      
+
       // Network properties
       this.isLocal = options.isLocal !== undefined ? options.isLocal : true;
       this.lastUpdate = Date.now();
-      
-      // Initialize the animator
+
+      // Initialize the animator with class-based sprite row
       this.animator = new EntityAnimator({
         defaultState: 'idle',
         frameCount: 4,
@@ -89,8 +93,22 @@ export class Player {
         attackCooldownTime: this.shootCooldown,
         spriteWidth: TILE_SIZE,
         spriteHeight: TILE_SIZE,
-        spriteSheet: 'character_sprites'
+        spriteSheet: 'character_sprites',
+        characterIndex: this.spriteRow  // Use class-based sprite row
       });
+    }
+
+    /**
+     * Update player class and sprite
+     * @param {string} newClass - New class ID
+     * @param {number} spriteRow - New sprite row
+     */
+    setClass(newClass, spriteRow) {
+      this.class = newClass;
+      this.spriteRow = spriteRow;
+      if (this.animator) {
+        this.animator.characterIndex = spriteRow;
+      }
     }
     
     /**

@@ -635,7 +635,7 @@ export default class CollisionManager {
 
     // Calculate damage
     const damage = this.bulletManager.damage ?
-      this.bulletManager.damage[bulletIndex] : 10; // Default damage
+      this.bulletManager.damage[bulletIndex] : 10;
 
     // Apply damage to enemy (may return an object)
     const dmgResult = this.enemyManager.applyDamage(enemyIndex, damage);
@@ -647,11 +647,10 @@ export default class CollisionManager {
       this.fileLogger.bulletHit(bulletId, 'enemy', enemyId, damage, { healthBefore: enemyHealthBefore, healthAfter: remainingHealth });
     }
 
-    // Remove bullet and register
+    // Remove bullet
     if (this.bulletManager.markForRemoval) {
       this.bulletManager.markForRemoval(bulletIndex);
     } else if (this.bulletManager.life) {
-      // Alternative removal method
       this.bulletManager.life[bulletIndex] = 0;
     }
 
@@ -659,7 +658,7 @@ export default class CollisionManager {
       this.bulletManager.registerRemoval('entityHit');
     }
 
-    // Handle enemy death if needed
+    // Handle enemy death
     let enemyKilled = false;
     if (remainingHealth <= 0) {
       enemyKilled = true;

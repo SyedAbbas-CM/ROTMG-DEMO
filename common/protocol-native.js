@@ -54,6 +54,9 @@ export const MessageType = {
     PICKUP_DENIED: 37,
     MOVE_ITEM: 38,
     MOVE_DENIED: 39,
+    EQUIP_ITEM: 42,      // Client->Server: equip item from inventory slot
+    UNEQUIP_ITEM: 43,    // Client->Server: unequip item to inventory
+    EQUIPMENT_UPDATE: 44, // Server->Client: equipment changed
 
     // Collisions
     COLLISION: 40,

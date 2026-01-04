@@ -100,7 +100,7 @@ export default class AbilitySystem {
     // Start cooldown
     this.startCooldown(playerId, ability.id, ability.cooldown);
 
-    // Execute effect
+    // Execute ability effect
     switch (ability.effect) {
       case 'charge':
         return this.executeCharge(player, bulletMgr, worldId, ability);

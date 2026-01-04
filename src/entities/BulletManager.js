@@ -49,6 +49,21 @@ export default class BulletManager {
     this.wavePhase = new Float32Array(maxBullets);    // Wave phase offset (radians)
     this.age = new Float32Array(maxBullets);          // Time since spawn (seconds)
 
+    // Item effect properties
+    this.piercing = new Uint8Array(maxBullets);       // Piercing count (0 = not piercing)
+    this.pierceCount = new Uint8Array(maxBullets);    // Remaining pierce hits
+    this.explosive = new Uint8Array(maxBullets);      // Explosive flag
+    this.explosionRadius = new Float32Array(maxBullets); // Explosion radius
+    this.explosionDamage = new Float32Array(maxBullets); // Explosion damage multiplier
+    this.chain = new Uint8Array(maxBullets);          // Chain lightning flag
+    this.chainCount = new Uint8Array(maxBullets);     // Chain jump count
+    this.chainRange = new Float32Array(maxBullets);   // Chain range
+    this.homing = new Uint8Array(maxBullets);         // Homing flag
+    this.homingStrength = new Float32Array(maxBullets); // Homing turn rate
+    this.statusEffects = new Array(maxBullets);       // Array of status effects to apply
+    this.weaponId = new Array(maxBullets);            // Source weapon ID for effect processing
+    this.color = new Array(maxBullets);               // Projectile color
+
     // Track removed bullets for network sync
     this.removedBullets = new Set();
 
@@ -106,6 +121,21 @@ export default class BulletManager {
     this.waveFreq[index] = bulletData.waveFreq || 0;
     this.wavePhase[index] = bulletData.wavePhase || 0;
     this.age[index] = 0;
+
+    // Item effect properties
+    this.piercing[index] = bulletData.piercing ? 1 : 0;
+    this.pierceCount[index] = bulletData.pierceCount || 0;
+    this.explosive[index] = bulletData.explosive ? 1 : 0;
+    this.explosionRadius[index] = bulletData.explosionRadius || 2;
+    this.explosionDamage[index] = bulletData.explosionDamage || 0.5;
+    this.chain[index] = bulletData.chain ? 1 : 0;
+    this.chainCount[index] = bulletData.chainCount || 0;
+    this.chainRange[index] = bulletData.chainRange || 3;
+    this.homing[index] = bulletData.homing ? 1 : 0;
+    this.homingStrength[index] = bulletData.homingStrength || 2;
+    this.statusEffects[index] = bulletData.statusEffects || null;
+    this.weaponId[index] = bulletData.weaponId || null;
+    this.color[index] = bulletData.color || '#ffffff';
 
     // Determine faction layer
     if (bulletData.faction !== undefined) {

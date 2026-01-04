@@ -145,10 +145,16 @@ export class PlayerManager {
             
             // Get existing player or create new one
             let player = this.players.get(id);
-            
+
             if (player) {
                 // Update existing player with our new method
                 this.updatePlayerData(player, data);
+
+                // Check if class/sprite changed
+                if (data.spriteRow !== undefined && player.spriteRow !== data.spriteRow) {
+                    player.spriteRow = data.spriteRow;
+                    this.updatePlayerSpriteRow(id, data.spriteRow);
+                }
             } else {
                 // Create new player
                 player = {
@@ -162,23 +168,26 @@ export class PlayerManager {
                     rotation: data.rotation || 0,
                     health: data.health !== undefined ? data.health : 100,
                     maxHealth: data.maxHealth || 100,
-                    name: data.name || `Player ${id}`,
+                    name: data.name || data.playerName || `Player ${id}`,
                     width: data.width || 10,
                     height: data.height || 10,
                     lastUpdate: Date.now(),
                     lastPositionUpdate: Date.now(),
                     lastServerUpdate: Date.now(),
                     vx: 0,
-                    vy: 0
+                    vy: 0,
+                    // Class and sprite info
+                    class: data.class || 'warrior',
+                    spriteRow: data.spriteRow ?? 0
                 };
-                
+
                 // Add to players map
                 this.players.set(id, player);
-                
-                // Initialize animator
-                this.createAnimatorForPlayer(id);
-                
-                throttledLog('new-player', `Added new player: ${id} at (${data.x.toFixed(1)}, ${data.y.toFixed(1)})`);
+
+                // Initialize animator with correct sprite row for class
+                this.createAnimatorForPlayer(id, player.spriteRow);
+
+                throttledLog('new-player', `Added new player: ${id} (${player.class}) at (${data.x.toFixed(1)}, ${data.y.toFixed(1)})`);
             }
         }
         
@@ -730,15 +739,31 @@ export class PlayerManager {
     /**
      * Create an animator for a player
      * @param {string} playerId - Player ID
+     * @param {number} spriteRow - Sprite row for the player's class (0=warrior, 1=archer, etc.)
      */
-    createAnimatorForPlayer(playerId) {
+    createAnimatorForPlayer(playerId, spriteRow = 0) {
         this.playerAnimators.set(playerId, new EntityAnimator({
             defaultState: 'idle',
             frameCount: 4,
             frameDuration: 0.15,
             spriteWidth: TILE_SIZE,
             spriteHeight: TILE_SIZE,
-            spriteSheet: 'character_sprites'
+            spriteSheet: 'character_sprites',
+            characterIndex: spriteRow  // Use class-based sprite row
         }));
+    }
+
+    /**
+     * Update animator for a player's class change
+     * @param {string} playerId - Player ID
+     * @param {number} spriteRow - New sprite row
+     */
+    updatePlayerSpriteRow(playerId, spriteRow) {
+        const animator = this.playerAnimators.get(playerId);
+        if (animator) {
+            animator.characterIndex = spriteRow;
+        } else {
+            this.createAnimatorForPlayer(playerId, spriteRow);
+        }
     }
 } 

@@ -7,28 +7,28 @@ import { TILE_SIZE, SCALE } from '../constants/constants.js';
 import { Camera } from '../camera.js';
 import { createLogger, LOG_LEVELS, setGlobalLogLevel } from '../utils/logger.js';
 import { MessageType } from '../shared/messages.js';
+import { getClassWeapon, calculateProjectiles, canShoot as canShootWeapon } from '../items/ClassWeapons.js';
 
-// INLINED handleShoot - BYPASS CACHE COMPLETELY
+// Track last shot time for rate limiting
+let lastShotTime = 0;
+
+// Class-based shooting with weapon patterns
 function handleShoot(targetX, targetY) {
-    // SUPER VISIBLE DIAGNOSTIC - Can't be cached!
-    // document.title = `🔥 INLINED! ${Date.now()}`;
-    // console.error("🔥🔥🔥 === INLINED handleShoot called ===", {
-    //     timestamp: new Date().toISOString(),
-    //     targetX,
-    //     targetY,
-    //     playerX: gameState.character?.x,
-    //     playerY: gameState.character?.y
-    // });
-
     // Get networkManager from window
     const networkManager = window.networkManager || window.gameState?.networkManager;
 
     if (!gameState.character || !networkManager) {
-        console.error("❌ Cannot shoot: character or network manager not available", {
-            hasCharacter: !!gameState.character,
-            hasNetworkManager: !!networkManager
-        });
+        console.error("Cannot shoot: character or network manager not available");
         return;
+    }
+
+    // Get the player's class and weapon
+    const playerClass = gameState.character.className || gameState.character.class || 'warrior';
+    const weapon = getClassWeapon(playerClass);
+
+    // Check rate of fire limit
+    if (!canShootWeapon(lastShotTime, weapon)) {
+        return; // Still on cooldown
     }
 
     // Calculate bullet direction
@@ -43,30 +43,55 @@ function handleShoot(targetX, targetY) {
         return;
     }
 
-    // Normalize direction and set bullet speed
-    const bulletSpeed = 10;
-    const vx = (dx / distance) * bulletSpeed;
-    const vy = (dy / distance) * bulletSpeed;
+    // Calculate angle to target
+    const angle = Math.atan2(dy, dx);
 
-    // Convert to angle/speed
-    const angle = Math.atan2(vy, vx);
-    const speed = Math.sqrt(vx * vx + vy * vy);
+    // Update last shot time
+    lastShotTime = Date.now();
 
-    // Log shoot request
-    // console.error(`🔥 [INLINED SHOOT] Pos: (${playerX.toFixed(4)}, ${playerY.toFixed(4)}), Angle: ${angle.toFixed(2)}, Speed: ${speed.toFixed(2)}, Target: (${targetX.toFixed(2)}, ${targetY.toFixed(2)})`);
+    // Calculate all projectiles based on weapon pattern
+    const projectiles = calculateProjectiles(weapon, playerX, playerY, angle);
 
+    // Send each projectile to the server
     if (typeof networkManager.sendShoot === 'function') {
-        // console.error('🔥 [INLINED] About to call networkManager.sendShoot()');
-        networkManager.sendShoot({
-            x: playerX,
-            y: playerY,
-            angle,
-            speed,
-            damage: 10
-        });
-        // console.error('🔥 [INLINED] networkManager.sendShoot() completed');
-    } else {
-        // console.error('❌ networkManager.sendShoot is not a function!', typeof networkManager.sendShoot);
+        for (const bullet of projectiles) {
+            // Skip delayed bullets for now (burst pattern) - could implement with setTimeout
+            if (bullet.delay > 0) {
+                setTimeout(() => {
+                    networkManager.sendShoot({
+                        x: bullet.x,
+                        y: bullet.y,
+                        angle: bullet.angle,
+                        speed: bullet.speed,
+                        damage: bullet.damage,
+                        lifetime: bullet.lifetime,
+                        width: bullet.width,
+                        height: bullet.height,
+                        color: bullet.color,
+                        spriteRow: bullet.spriteRow,
+                        waveAmp: bullet.waveAmp,
+                        waveFreq: bullet.waveFreq,
+                        angularVel: bullet.angularVel
+                    });
+                }, bullet.delay);
+            } else {
+                networkManager.sendShoot({
+                    x: bullet.x,
+                    y: bullet.y,
+                    angle: bullet.angle,
+                    speed: bullet.speed,
+                    damage: bullet.damage,
+                    lifetime: bullet.lifetime,
+                    width: bullet.width,
+                    height: bullet.height,
+                    color: bullet.color,
+                    spriteRow: bullet.spriteRow,
+                    waveAmp: bullet.waveAmp,
+                    waveFreq: bullet.waveFreq,
+                    angularVel: bullet.angularVel
+                });
+            }
+        }
     }
 }
 

@@ -84,6 +84,22 @@ const playerName = urlParams.get('name');
 const playerEmail = urlParams.get('email');
 const playerClass = urlParams.get('class') || 'warrior';
 
+// Map class names to sprite rows (matches server PlayerClasses.js)
+const CLASS_SPRITE_ROWS = {
+    warrior: 0,
+    archer: 1,
+    mage: 2,
+    wizard: 2,  // alias (same sprite as mage)
+    rogue: 3,
+    knight: 4,
+    necromancer: 5,
+    priest: 5   // shares sprite row with necromancer for now
+};
+
+function getClassSpriteRow(className) {
+    return CLASS_SPRITE_ROWS[className?.toLowerCase()] ?? 0;
+}
+
 // Build connection URL with credentials
 function buildServerUrl() {
     const params = new URLSearchParams();
@@ -596,8 +612,13 @@ function initializeGameState() {
     console.log('[initializeGameState] Starting game state initialization...');
     // Create local player with complete properties
     console.log('[initializeGameState] Creating local player...');
+
+    // Get sprite row for selected class
+    const spriteRow = getClassSpriteRow(playerClass);
+    console.log(`[initializeGameState] Class: ${playerClass}, SpriteRow: ${spriteRow}`);
+
     localPlayer = new Player({
-        name: 'Player',
+        name: playerName || 'Player',
         x: 2, // spawn slightly more to the left
         y: 35, // spawn much lower on the map
         width: 1,
@@ -607,7 +628,9 @@ function initializeGameState() {
         damage: 10,
         shootCooldown: 0.1,
         sprite: 'character_sprites_sprite_1',
-        renderScale: 10
+        renderScale: 10,
+        class: playerClass,
+        spriteRow: spriteRow
     });
     
     console.log("Created local player:", localPlayer);

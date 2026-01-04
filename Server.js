@@ -571,6 +571,100 @@ function processMoveItem(clientId,data){
   sendToClient(client.socket,MessageType.INVENTORY_UPDATE,{inventory:inv});
 }
 
+// ---------------------------------------------------------------
+// Helper: Process equip item request
+// ---------------------------------------------------------------
+function processEquipItem(clientId, data) {
+  const { inventorySlot, equipSlot } = data;
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  const player = client.player;
+  const inv = player.inventory;
+  if (!inv || inventorySlot < 0 || inventorySlot >= inv.length) {
+    sendToClient(client.socket, MessageType.MOVE_DENIED, { reason: 'bad_slot' });
+    return;
+  }
+
+  const item = inv[inventorySlot];
+  if (!item) {
+    sendToClient(client.socket, MessageType.MOVE_DENIED, { reason: 'no_item' });
+    return;
+  }
+
+  // Determine which slot based on item type
+  const slotMap = {
+    sword: 'weapon', bow: 'weapon', staff: 'weapon', wand: 'weapon', dagger: 'weapon',
+    armor: 'armor', robe: 'armor', leather: 'armor',
+    ring: 'ring',
+    spell: 'ability', quiver: 'ability', cloak: 'ability', shield: 'ability', skull: 'ability'
+  };
+
+  const targetSlot = equipSlot || slotMap[item.type] || 'weapon';
+
+  // Equip the item using our helper function
+  equipItemToPlayer(player, targetSlot, item);
+
+  // Clear the inventory slot
+  inv[inventorySlot] = null;
+
+  // Send updates to client
+  sendToClient(client.socket, MessageType.INVENTORY_UPDATE, { inventory: inv });
+  sendToClient(client.socket, MessageType.EQUIPMENT_UPDATE, {
+    equipment: player.equipment,
+    stats: {
+      damage: player.damage,
+      defense: player.defense,
+      speed: player.speed
+    }
+  });
+
+  console.log(`[EQUIP] ${player.playerName} equipped ${item.name || item.type} to ${targetSlot}`);
+}
+
+// ---------------------------------------------------------------
+// Helper: Process unequip item request
+// ---------------------------------------------------------------
+function processUnequipItem(clientId, data) {
+  const { equipSlot } = data;
+  const client = clients.get(clientId);
+  if (!client) return;
+
+  const player = client.player;
+  if (!player.equipment || !player.equipment[equipSlot]) {
+    sendToClient(client.socket, MessageType.MOVE_DENIED, { reason: 'not_equipped' });
+    return;
+  }
+
+  // Find empty inventory slot
+  const inv = player.inventory || (player.inventory = new Array(20).fill(null));
+  const emptySlot = inv.findIndex(i => i === null);
+  if (emptySlot === -1) {
+    sendToClient(client.socket, MessageType.MOVE_DENIED, { reason: 'inventory_full' });
+    return;
+  }
+
+  // Move item to inventory
+  inv[emptySlot] = player.equipment[equipSlot];
+  player.equipment[equipSlot] = null;
+
+  // Recalculate stats
+  recalculatePlayerStats(player);
+
+  // Send updates to client
+  sendToClient(client.socket, MessageType.INVENTORY_UPDATE, { inventory: inv });
+  sendToClient(client.socket, MessageType.EQUIPMENT_UPDATE, {
+    equipment: player.equipment,
+    stats: {
+      damage: player.damage,
+      defense: player.defense,
+      speed: player.speed
+    }
+  });
+
+  console.log(`[UNEQUIP] ${player.playerName} unequipped from ${equipSlot}`);
+}
+
 // Helper to broadcast to all clients in world
 function broadcastToWorld(mapId, type, payload){
   clients.forEach((c)=>{
@@ -627,6 +721,95 @@ function handleChunkRequest(clientId, data) {
 }
 
 // ---------------------------------------------------------------
+// Helper: Calculate player's total attack damage (base + equipment)
+// ---------------------------------------------------------------
+function getPlayerAttackDamage(player) {
+  let totalDamage = player.baseDamage || player.damage || 10;
+
+  // Add weapon damage bonus
+  if (player.equipment?.weapon?.damage) {
+    totalDamage += player.equipment.weapon.damage;
+  }
+
+  // Add any attack stat bonuses from equipment
+  if (player.equipment?.weapon?.stats?.attack) {
+    totalDamage += player.equipment.weapon.stats.attack;
+  }
+  if (player.equipment?.ring?.stats?.attack) {
+    totalDamage += player.equipment.ring.stats.attack;
+  }
+
+  return totalDamage;
+}
+
+// ---------------------------------------------------------------
+// Helper: Calculate player's total defense (base + equipment)
+// ---------------------------------------------------------------
+function getPlayerDefense(player) {
+  let totalDefense = player.baseDefense || player.defense || 0;
+
+  // Add armor defense bonus
+  if (player.equipment?.armor?.defense) {
+    totalDefense += player.equipment.armor.defense;
+  }
+
+  // Add any defense stat bonuses from equipment
+  if (player.equipment?.armor?.stats?.defense) {
+    totalDefense += player.equipment.armor.stats.defense;
+  }
+  if (player.equipment?.ring?.stats?.defense) {
+    totalDefense += player.equipment.ring.stats.defense;
+  }
+
+  return totalDefense;
+}
+
+// ---------------------------------------------------------------
+// Helper: Recalculate player stats from equipment
+// ---------------------------------------------------------------
+function recalculatePlayerStats(player) {
+  player.damage = getPlayerAttackDamage(player);
+  player.defense = getPlayerDefense(player);
+
+  // Speed bonuses
+  let speedBonus = 0;
+  if (player.equipment?.ring?.stats?.speed) {
+    speedBonus += player.equipment.ring.stats.speed;
+  }
+  player.speed = (player.baseSpeed || 5) + speedBonus;
+
+  console.log(`[STATS] Player ${player.playerName}: DMG=${player.damage}, DEF=${player.defense}, SPD=${player.speed}`);
+}
+
+// ---------------------------------------------------------------
+// Helper: Equip item to player slot
+// ---------------------------------------------------------------
+function equipItemToPlayer(player, slot, item) {
+  if (!player.equipment) {
+    player.equipment = { weapon: null, armor: null, ability: null, ring: null };
+  }
+
+  // Unequip current item (return to inventory if space)
+  const currentItem = player.equipment[slot];
+  if (currentItem) {
+    // Try to add to inventory
+    const emptySlot = player.inventory.findIndex(i => i === null);
+    if (emptySlot !== -1) {
+      player.inventory[emptySlot] = currentItem;
+    }
+    // If no space, item is lost
+  }
+
+  // Equip new item
+  player.equipment[slot] = item;
+
+  // Recalculate stats
+  recalculatePlayerStats(player);
+
+  return true;
+}
+
+// ---------------------------------------------------------------
 // Helper: Handle player shooting with rate limiting
 // ---------------------------------------------------------------
 function handlePlayerShoot(clientId, bulletData) {
@@ -671,7 +854,7 @@ function handlePlayerShoot(clientId, bulletData) {
   // Record this bullet timestamp
   timestamps.push(now);
 
-  const { x, y, angle, speed, damage } = bulletData;
+  const { x, y, angle, speed, lifetime, width, height, color, spriteRow, waveAmp, waveFreq, angularVel } = bulletData;
   const mapId = client.mapId;
 
   // Get world context
@@ -681,34 +864,46 @@ function handlePlayerShoot(clientId, bulletData) {
     return;
   }
 
-  // Create bullet owned by player
+  // Calculate bullet damage from player's attack stat (base + equipment)
+  const bulletDamage = getPlayerAttackDamage(client.player);
+
+  // Validate and clamp client-provided values (anti-cheat)
+  const validSpeed = Math.max(5, Math.min(20, speed || 10));
+  const validLifetime = Math.max(0.1, Math.min(2.0, lifetime || 1.0));
+  const validWidth = Math.max(0.3, Math.min(1.5, width || 0.6));
+  const validHeight = Math.max(0.3, Math.min(1.5, height || 0.6));
+
   // Spawn bullet slightly offset from player position to prevent immediate boundary collision
-  const BULLET_SPAWN_OFFSET = 0.4; // Spawn 0.4 tiles ahead of player
-  // CRITICAL FIX: Trust client-provided position instead of stale server player position
-  // Using (x || client.player.x) caused 3-tile position discrepancy due to network latency
+  const BULLET_SPAWN_OFFSET = 0.4;
   const bulletX = x + Math.cos(angle) * BULLET_SPAWN_OFFSET;
   const bulletY = y + Math.sin(angle) * BULLET_SPAWN_OFFSET;
 
+  // Server creates authoritative bullet with client visual hints
   const bullet = {
     id: `bullet_${Date.now()}_${clientId}_${Math.random()}`,
     x: bulletX,
     y: bulletY,
-    vx: Math.cos(angle) * speed,
-    vy: Math.sin(angle) * speed,
-    damage: damage || 10,
+    vx: Math.cos(angle) * validSpeed,
+    vy: Math.sin(angle) * validSpeed,
+    damage: bulletDamage,
     ownerId: clientId,
     worldId: mapId,
-    width: 0.6,   // TILE UNITS: 60% of a tile (slightly larger for better hit detection)
-    height: 0.6,  // TILE UNITS: 60% of a tile (slightly larger for better hit detection)
-    lifetime: 1.0 // 1 second = 10 tile range (speed 10 tiles/sec * 1.0s)
+    width: validWidth,
+    height: validHeight,
+    lifetime: validLifetime,
+    // Visual properties (don't affect gameplay, passed through)
+    color: color || '#ffffff',
+    spriteRow: spriteRow || 0,
+    // Motion modifiers (clamped for anti-cheat)
+    waveAmp: Math.max(0, Math.min(2, waveAmp || 0)),
+    waveFreq: Math.max(0, Math.min(10, waveFreq || 0)),
+    angularVel: Math.max(-5, Math.min(5, angularVel || 0))
   };
 
-  // Add to bullet manager
   const bulletId = ctx.bulletMgr.addBullet(bullet);
 
   if (DEBUG.bulletEvents) {
-    // DIAGNOSTIC: Show BOTH client position and actual bullet spawn position
-    console.log(`[SERVER BULLET CREATE] ID: ${bulletId}, ClientPos: (${x.toFixed(4)}, ${y.toFixed(4)}), BulletPos: (${bulletX.toFixed(4)}, ${bulletY.toFixed(4)}), Tile: (${Math.floor(bulletX)}, ${Math.floor(bulletY)}), Owner: ${clientId}, Angle: ${angle.toFixed(2)}, Speed: ${speed.toFixed(2)}`);
+    console.log(`[SERVER BULLET] ID: ${bulletId}, Pos: (${bulletX.toFixed(2)}, ${bulletY.toFixed(2)}), Owner: ${clientId}`);
   }
 }
 
@@ -1070,6 +1265,10 @@ function routePacket(clientId, type, data) {
     processMoveItem(clientId, data);
   } else if (type === MessageType.PICKUP_ITEM) {
     processPickupMessage(clientId, data);
+  } else if (type === MessageType.EQUIP_ITEM) {
+    processEquipItem(clientId, data);
+  } else if (type === MessageType.UNEQUIP_ITEM) {
+    processUnequipItem(clientId, data);
   } else if (type === MessageType.PLAYER_TEXT) {
     handlePlayerText(clientId, data);
   } else if (type === MessageType.CHUNK_REQUEST) {
@@ -1610,10 +1809,11 @@ const clients = new Map(); // clientId -> { socket, player, lastUpdate, mapId }
 let nextClientId = 1;
 
 // Rate limiting for bullet spam prevention
+// Increased limits to support multi-projectile weapon patterns (knight fires 3, wizard fires 3)
 const BULLET_RATE_LIMIT = {
-  MAX_BULLETS_PER_SECOND: 10,      // Max 10 bullets per second per player
-  MIN_BULLET_INTERVAL_MS: 100,      // Minimum 100ms between bullets
-  MAX_ACTIVE_BULLETS_PER_PLAYER: 50 // Max 50 active bullets per player
+  MAX_BULLETS_PER_SECOND: 20,       // Max 20 bullets per second per player (allows 3-bullet patterns at 6/sec)
+  MIN_BULLET_INTERVAL_MS: 10,       // Low interval allows burst patterns (multiple bullets per click)
+  MAX_ACTIVE_BULLETS_PER_PLAYER: 100 // Max 100 active bullets per player
 };
 const playerBulletTimestamps = new Map(); // clientId -> [timestamps]
 
@@ -1856,13 +2056,28 @@ wss.on('connection', async (socket, req) => {
       y: spawnY,
       rotation: 0,
       inventory: new Array(20).fill(null),
+      // Equipment slots: weapon, armor, ability, ring
+      equipment: {
+        weapon: null,  // { itemId, damage, stats }
+        armor: null,   // { itemId, defense, stats }
+        ability: null, // { itemId, stats }
+        ring: null     // { itemId, stats }
+      },
       // Stats - use database character if available
       class: dbCharacter?.class || useClass.id,
       className: dbCharacter?.class || useClass.name,
+      // Sprite info for class
+      spriteRow: useClass.sprite?.row ?? 0,
+      spriteSheet: useClass.sprite?.sheet || 'characters',
+      // Base stats
       health: dbCharacter?.health || useClass.stats.health,
       maxHealth: dbCharacter?.max_health || useClass.stats.maxHealth,
       mana: dbCharacter?.mana || useClass.stats.mana,
       maxMana: dbCharacter?.max_mana || useClass.stats.maxMana,
+      baseDamage: dbCharacter?.attack || useClass.stats.damage,
+      baseSpeed: dbCharacter?.speed || useClass.stats.speed,
+      baseDefense: dbCharacter?.defense || useClass.stats.defense,
+      // Computed stats (base + equipment bonuses)
       damage: dbCharacter?.attack || useClass.stats.damage,
       speed: dbCharacter?.speed || useClass.stats.speed,
       defense: dbCharacter?.defense || useClass.stats.defense,
@@ -1982,6 +2197,10 @@ wss.on('connection', async (socket, req) => {
           processMoveItem(clientId, packet.data);
         } else if(packet.type === MessageType.PICKUP_ITEM){
           processPickupMessage(clientId, packet.data);
+        } else if(packet.type === MessageType.EQUIP_ITEM){
+          processEquipItem(clientId, packet.data);
+        } else if(packet.type === MessageType.UNEQUIP_ITEM){
+          processUnequipItem(clientId, packet.data);
         } else if(packet.type === MessageType.PLAYER_TEXT){
           handlePlayerText(clientId, packet.data);
         } else if(packet.type === MessageType.CHUNK_REQUEST){
