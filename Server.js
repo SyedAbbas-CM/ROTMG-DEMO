@@ -1981,6 +1981,8 @@ wss.on('connection', async (socket, req) => {
   let dbPlayer = null;
   let dbCharacter = null;
 
+  console.log(`[SERVER] 🔍 Connection params: name=${playerName}, email=${playerEmail}, class=${requestedClass}, dbReady=${!!gameDatabase}`);
+
   if (gameDatabase && playerName) {
     // Try to find existing player or create new one
     dbPlayer = gameDatabase.getPlayerByName(playerName);
