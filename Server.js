@@ -2006,7 +2006,11 @@ wss.on('connection', async (socket, req) => {
         } else {
           // Create new character with player name
           dbCharacter = gameDatabase.createCharacter(dbPlayer.id, playerName, requestedClass);
-          console.log(`[SERVER] ✨ Created new character: ${dbCharacter.name}`);
+          if (dbCharacter) {
+            console.log(`[SERVER] ✨ Created new character: ${dbCharacter.name}`);
+          } else {
+            console.error(`[SERVER] ❌ Failed to create character for player ${playerName}`);
+          }
         }
       }
     }

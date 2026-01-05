@@ -252,7 +252,11 @@ class GameDatabase {
             classDefaults.vitality, classDefaults.wisdom
         ]);
 
-        console.log(`[Database] Created character: ${name} (${characterClass}) for player ${playerId}`);
+        if (!result || !result.lastInsertRowid) {
+            console.error(`[Database] Failed to insert character for player ${playerId}`);
+            return null;
+        }
+        console.log(`[Database] Created character: ${name} (${characterClass}) for player ${playerId}, id=${result.lastInsertRowid}`);
         return this.getCharacterById(result.lastInsertRowid);
     }
 
