@@ -55,20 +55,55 @@ const entityRegistry = new Map();
 const entityById = [];
 let nextEntityId = 1; // 0 reserved for "no entity"
 
+// Track entity ID overflow state
+let entityIdOverflowed = false;
+
 export function getEntityId(stringId) {
   if (!stringId) return 0;
   if (!entityRegistry.has(stringId)) {
+    // SAFETY: Don't wrap around - log error instead of creating collisions
+    if (nextEntityId > 65535) {
+      if (!entityIdOverflowed) {
+        entityIdOverflowed = true;
+        console.error(`[BinaryProtocol] CRITICAL: Entity ID overflow! Max 65535 unique entities reached.`);
+        console.error(`[BinaryProtocol] Registry size: ${entityRegistry.size}, trying to add: ${stringId}`);
+      }
+      // Return 0 (sentinel for "no entity") instead of causing ID collision
+      return 0;
+    }
     entityRegistry.set(stringId, nextEntityId);
     entityById[nextEntityId] = stringId;
     nextEntityId++;
-    // Wrap around at 65535
-    if (nextEntityId > 65535) nextEntityId = 1;
   }
   return entityRegistry.get(stringId);
 }
 
 export function getEntityStringId(numId) {
   return entityById[numId] || null;
+}
+
+/**
+ * Remove entity from registry (call when entity is destroyed)
+ * This prevents unbounded registry growth
+ */
+export function removeEntityId(stringId) {
+  const numId = entityRegistry.get(stringId);
+  if (numId !== undefined) {
+    entityRegistry.delete(stringId);
+    // Note: We don't reuse IDs to prevent stale reference issues
+    // entityById[numId] remains for lookups but will be garbage collected
+  }
+}
+
+/**
+ * Get registry stats for debugging
+ */
+export function getEntityRegistryStats() {
+  return {
+    registrySize: entityRegistry.size,
+    nextId: nextEntityId,
+    overflowed: entityIdOverflowed
+  };
 }
 
 // Fixed-point conversion (0.01 precision)
@@ -226,52 +261,71 @@ export class BinaryWriter {
 }
 
 /**
- * BinaryReader - efficient buffer reading
+ * BinaryReader - efficient buffer reading with bounds checking
  */
 export class BinaryReader {
   constructor(buffer) {
     this.buffer = buffer;
     this.view = new DataView(buffer);
     this.offset = 0;
+    this.bufferSize = buffer.byteLength;
+  }
+
+  // Validate read before attempting - prevents buffer overflow crashes
+  _validateRead(bytes, operation) {
+    if (this.offset + bytes > this.bufferSize) {
+      console.error(`[BinaryReader] OVERFLOW: ${operation} needs ${bytes} bytes at offset ${this.offset}, buffer only has ${this.bufferSize} bytes`);
+      return false;
+    }
+    return true;
   }
 
   readUint8() {
+    if (!this._validateRead(1, 'readUint8')) return 0;
     return this.view.getUint8(this.offset++);
   }
 
   readInt8() {
+    if (!this._validateRead(1, 'readInt8')) return 0;
     return this.view.getInt8(this.offset++);
   }
 
   readUint16() {
+    if (!this._validateRead(2, 'readUint16')) return 0;
     const val = this.view.getUint16(this.offset, true);
     this.offset += 2;
     return val;
   }
 
   readInt16() {
+    if (!this._validateRead(2, 'readInt16')) return 0;
     const val = this.view.getInt16(this.offset, true);
     this.offset += 2;
     return val;
   }
 
   readUint32() {
+    if (!this._validateRead(4, 'readUint32')) return 0;
     const val = this.view.getUint32(this.offset, true);
     this.offset += 4;
     return val;
   }
 
   readFloat32() {
+    if (!this._validateRead(4, 'readFloat32')) return 0;
     const val = this.view.getFloat32(this.offset, true);
     this.offset += 4;
     return val;
   }
 
   readPosition() {
-    return {
-      x: fromFixedPoint(this.readInt16()),
-      y: fromFixedPoint(this.readInt16())
-    };
+    const x = fromFixedPoint(this.readInt16());
+    const y = fromFixedPoint(this.readInt16());
+    // Validate result
+    if (!isFinite(x) || !isFinite(y)) {
+      return { x: 0, y: 0, invalid: true };
+    }
+    return { x, y };
   }
 
   readVelocity() {
@@ -545,6 +599,12 @@ export function encodeWorldDelta(players, enemies, bullets, removedIds, timestam
   return buffer;
 }
 
+// Sanity limits to prevent corrupted data from causing DoS
+const MAX_PLAYERS_PER_PACKET = 100;
+const MAX_ENEMIES_PER_PACKET = 500;
+const MAX_BULLETS_PER_PACKET = 1000;
+const MAX_REMOVED_PER_PACKET = 200;
+
 export function decodeWorldDelta(buffer) {
   const reader = new BinaryReader(buffer);
 
@@ -555,33 +615,61 @@ export function decodeWorldDelta(buffer) {
 
   const timestamp = reader.readUint32();
 
-  // Removed entities
+  // Removed entities - with sanity check
   const removedCount = reader.readUint16();
+  if (removedCount > MAX_REMOVED_PER_PACKET) {
+    console.error(`[BinaryProtocol] CORRUPTED: removedCount=${removedCount} exceeds max ${MAX_REMOVED_PER_PACKET}`);
+    return { timestamp, removed: [], players: {}, enemies: [], bullets: [] };
+  }
   const removed = [];
   for (let i = 0; i < removedCount; i++) {
+    if (!reader.hasMore()) break;
     removed.push(reader.readEntityId());
   }
 
-  // Players
+  // Players - with sanity check
   const playerCount = reader.readUint16();
+  if (playerCount > MAX_PLAYERS_PER_PACKET) {
+    console.error(`[BinaryProtocol] CORRUPTED: playerCount=${playerCount} exceeds max ${MAX_PLAYERS_PER_PACKET}`);
+    return { timestamp, removed, players: {}, enemies: [], bullets: [] };
+  }
   const players = {};
   for (let i = 0; i < playerCount; i++) {
+    if (!reader.hasMore()) break;
     const player = decodePlayer(reader);
-    players[player.id] = player;
+    if (player && player.id) {
+      players[player.id] = player;
+    }
   }
 
-  // Enemies
+  // Enemies - with sanity check
   const enemyCount = reader.readUint16();
+  if (enemyCount > MAX_ENEMIES_PER_PACKET) {
+    console.error(`[BinaryProtocol] CORRUPTED: enemyCount=${enemyCount} exceeds max ${MAX_ENEMIES_PER_PACKET}`);
+    return { timestamp, removed, players, enemies: [], bullets: [] };
+  }
   const enemies = [];
   for (let i = 0; i < enemyCount; i++) {
-    enemies.push(decodeEnemy(reader));
+    if (!reader.hasMore()) break;
+    const enemy = decodeEnemy(reader);
+    if (enemy && isFinite(enemy.x) && isFinite(enemy.y)) {
+      enemies.push(enemy);
+    }
   }
 
-  // Bullets
+  // Bullets - with sanity check
   const bulletCount = reader.readUint16();
+  if (bulletCount > MAX_BULLETS_PER_PACKET) {
+    console.error(`[BinaryProtocol] CORRUPTED: bulletCount=${bulletCount} exceeds max ${MAX_BULLETS_PER_PACKET}`);
+    return { timestamp, removed, players, enemies, bullets: [] };
+  }
   const bullets = [];
   for (let i = 0; i < bulletCount; i++) {
-    bullets.push(decodeBullet(reader));
+    if (!reader.hasMore()) break;
+    const bullet = decodeBullet(reader);
+    if (bullet && isFinite(bullet.x) && isFinite(bullet.y)) {
+      bullets.push(bullet);
+    }
   }
 
   return { timestamp, removed, players, enemies, bullets };

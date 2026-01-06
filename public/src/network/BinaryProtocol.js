@@ -470,6 +470,12 @@ export function decodePlayer(reader) {
   return player;
 }
 
+// Sanity limits to prevent corruption from spawning hundreds of entities
+const MAX_PLAYERS_PER_PACKET = 100;
+const MAX_ENEMIES_PER_PACKET = 500;
+const MAX_BULLETS_PER_PACKET = 1000;
+const MAX_REMOVED_PER_PACKET = 200;
+
 /**
  * Decode a complete world delta update
  */
@@ -492,15 +498,23 @@ export function decodeWorldDelta(buffer) {
 
   const timestamp = reader.readUint32();
 
-  // Removed entities
+  // Removed entities - with sanity check
   const removedCount = reader.readUint16();
+  if (removedCount > MAX_REMOVED_PER_PACKET) {
+    console.error(`[BINARY] CORRUPTED: removedCount=${removedCount} exceeds max ${MAX_REMOVED_PER_PACKET}, aborting decode`);
+    return null;
+  }
   const removed = [];
   for (let i = 0; i < removedCount; i++) {
     removed.push(reader.readEntityId());
   }
 
-  // Players
+  // Players - with sanity check to prevent duplicate player bug
   const playerCount = reader.readUint16();
+  if (playerCount > MAX_PLAYERS_PER_PACKET) {
+    console.error(`[BINARY] CORRUPTED: playerCount=${playerCount} exceeds max ${MAX_PLAYERS_PER_PACKET}, aborting decode`);
+    return null;
+  }
   const players = {};
   for (let i = 0; i < playerCount; i++) {
     const player = decodePlayer(reader);
@@ -514,8 +528,12 @@ export function decodeWorldDelta(buffer) {
     }
   }
 
-  // Enemies
+  // Enemies - with sanity check
   const enemyCount = reader.readUint16();
+  if (enemyCount > MAX_ENEMIES_PER_PACKET) {
+    console.error(`[BINARY] CORRUPTED: enemyCount=${enemyCount} exceeds max ${MAX_ENEMIES_PER_PACKET}, aborting decode`);
+    return null;
+  }
   const enemies = [];
   for (let i = 0; i < enemyCount; i++) {
     const enemy = decodeEnemy(reader);
@@ -530,8 +548,12 @@ export function decodeWorldDelta(buffer) {
   // Debug: Log offset before bullets
   const bulletStartOffset = reader.offset;
 
-  // Bullets
+  // Bullets - with sanity check
   const bulletCount = reader.readUint16();
+  if (bulletCount > MAX_BULLETS_PER_PACKET) {
+    console.error(`[BINARY] CORRUPTED: bulletCount=${bulletCount} exceeds max ${MAX_BULLETS_PER_PACKET}, aborting decode`);
+    return null;
+  }
   const bullets = [];
 
   // Debug: Log detailed info about bullet decoding

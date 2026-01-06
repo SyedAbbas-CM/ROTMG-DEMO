@@ -1982,26 +1982,32 @@ wss.on('connection', async (socket, req) => {
   let dbCharacter = null;
 
   console.log(`[SERVER] 🔍 Connection params: name=${playerName}, email=${playerEmail}, class=${requestedClass}, dbReady=${!!gameDatabase}`);
+  console.log(`[SERVER] 🔍 Full URL: ${req.url}`);
 
   if (gameDatabase && playerName) {
+    console.log(`[SERVER] 💾 Database is ready, processing player: ${playerName}`);
     // Try to find existing player or create new one
     dbPlayer = gameDatabase.getPlayerByName(playerName);
+    console.log(`[SERVER] 💾 getPlayerByName result:`, dbPlayer);
     if (!dbPlayer) {
       dbPlayer = gameDatabase.createPlayer(playerName, playerEmail);
-      console.log(`[SERVER] 📝 New player registered: ${playerName}`);
+      console.log(`[SERVER] 📝 New player registered: ${playerName}, result:`, dbPlayer);
     } else {
       gameDatabase.updateLastLogin(dbPlayer.id);
-      console.log(`[SERVER] 👋 Player logged in: ${playerName}`);
+      console.log(`[SERVER] 👋 Player logged in: ${playerName} (ID: ${dbPlayer.id})`);
     }
 
+    // Now load or create character for this player
     if (dbPlayer) {
       // Try to load existing character or create new one
       if (characterId) {
         dbCharacter = gameDatabase.getCharacterById(parseInt(characterId));
+        console.log(`[SERVER] 💾 getCharacterById(${characterId}) result:`, dbCharacter);
       }
       if (!dbCharacter) {
         // Get most recently played character, or create new one
         const characters = gameDatabase.getCharactersByPlayerId(dbPlayer.id);
+        console.log(`[SERVER] 💾 getCharactersByPlayerId(${dbPlayer.id}) found ${characters.length} characters`);
         if (characters.length > 0) {
           dbCharacter = characters[0]; // Most recent
           console.log(`[SERVER] 🎮 Loaded character: ${dbCharacter.name} (${dbCharacter.class})`);
@@ -2016,6 +2022,8 @@ wss.on('connection', async (socket, req) => {
         }
       }
     }
+  } else {
+    console.log(`[SERVER] ⚠️ Skipping database: gameDatabase=${!!gameDatabase}, playerName=${playerName}`);
   }
   
   // Determine which map to use (requested or default)

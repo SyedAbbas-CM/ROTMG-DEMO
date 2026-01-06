@@ -115,12 +115,21 @@ export function getWorldSpawns(worldId) {
 }
 
 /**
- * Get all available enemy types
- * Note: Add your custom enemies here after creating them in the behavior designer
+ * Get all available enemy types (from public/assets/entities/enemies.json)
+ * To add new enemies, edit enemies.json and restart the server.
  */
 export const availableEnemies = [
-  { id: 'goblin', name: 'Goblin', hp: 30, description: 'Basic chase enemy' },
-  { id: 'charging_shooter', name: 'Charging Shooter', hp: 80, description: 'Charges while shooting' },
-  // Add your custom enemies here:
-  // { id: 'my_custom_enemy', name: 'My Enemy', hp: 100, description: 'My custom enemy' },
+  // Infantry Units
+  { id: 'goblin', name: 'Light Infantry', hp: 120, description: 'Basic melee unit, moderate damage' },
+  { id: 'heavy_knight', name: 'Heavy Infantry', hp: 800, description: 'Tanky melee unit with axe attacks' },
+
+  // Ranged Units
+  { id: 'archer', name: 'Archer', hp: 60, description: 'Long range, high single-shot damage' },
+
+  // Cavalry Units
+  { id: 'red_demon', name: 'Light Cavalry', hp: 500, description: 'Fast, multi-projectile attacks' },
+  { id: 'heavy_cavalry', name: 'Heavy Cavalry', hp: 900, description: 'Heavily armored, devastating charge' },
+
+  // Boss
+  { id: 'enemy_8', name: 'AI Pattern Boss', hp: 5000, description: 'Large boss, uses ML patterns' },
 ];

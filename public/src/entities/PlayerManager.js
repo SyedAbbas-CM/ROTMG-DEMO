@@ -115,7 +115,19 @@ export class PlayerManager {
      */
     updatePlayers(playersData) {
         if (!playersData) return;
-        
+
+        // SAFEGUARD: Detect and reject player spam from corrupted binary data
+        // This prevents the "100-200 duplicate players" bug
+        const newPlayerCount = Object.keys(playersData).length;
+        const existingCount = this.players.size;
+        const MAX_NEW_PLAYERS_PER_UPDATE = 20;
+
+        // If we suddenly get way more players than expected, reject the update
+        if (newPlayerCount > existingCount + MAX_NEW_PLAYERS_PER_UPDATE && existingCount < 50) {
+            console.error(`[PlayerManager] SPAM DETECTED: Got ${newPlayerCount} players but only had ${existingCount}. Rejecting update.`);
+            return;
+        }
+
         // Track players in current update for cleanup
         const updatedPlayers = new Set();
         

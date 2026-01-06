@@ -11,8 +11,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Database file location
-const DB_PATH = path.join(__dirname, '../../data/game.db');
+// Database file location - use process.cwd() for reliability on Windows
+const DB_PATH = path.join(process.cwd(), 'data', 'game.db');
+
+console.log(`[Database] DB_PATH resolved to: ${DB_PATH}`);
 
 class GameDatabase {
     constructor() {
@@ -186,14 +188,21 @@ class GameDatabase {
      * Create a new player account
      */
     createPlayer(name, email, passwordHash = null) {
+        console.log(`[Database] createPlayer called: name=${name}, email=${email}`);
         try {
             const result = this._run(
                 `INSERT INTO players (name, email, password_hash, last_login) VALUES (?, ?, ?, datetime('now'))`,
                 [name, email, passwordHash]
             );
-            console.log(`[Database] Created player: ${name} (ID: ${result.lastInsertRowid})`);
+            console.log(`[Database] ✅ Created player: ${name} (ID: ${result.lastInsertRowid})`);
+
+            // Verify the insert worked
+            const verify = this.getPlayerByName(name);
+            console.log(`[Database] Verify after insert:`, verify);
+
             return { id: result.lastInsertRowid, name, email };
         } catch (err) {
+            console.error(`[Database] createPlayer error:`, err.message);
             if (err.message.includes('UNIQUE constraint')) {
                 console.log(`[Database] Player ${name} or email ${email} already exists`);
                 return null;
