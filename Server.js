@@ -2635,7 +2635,7 @@ setInterval(() => {
 }, 30000); // Changed from 5000 to 30000 (30 seconds)
 
 // Server listen
-const START_PORT = Number(process.env.PORT) || 4000;
+const START_PORT = Number(process.env.PORT) || 3000;
 
 function tryListen(port, attemptsLeft = 5) {
   const onError = (err) => {
