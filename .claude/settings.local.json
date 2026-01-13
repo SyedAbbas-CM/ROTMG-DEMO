@@ -114,7 +114,11 @@
       "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"tasklist | findstr node\")",
       "Bash(timeout 30 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"cd C:\\ROTMG-DEMO && git pull origin main\")",
       "Bash(npm uninstall:*)",
-      "Bash(timeout 10 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 newadmin@192.168.0.202 \"echo Connected\")"
+      "Bash(timeout 10 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 newadmin@192.168.0.202 \"echo Connected\")",
+      "Bash(timeout 10 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 newadmin@192.168.0.202 \"echo Connected && tasklist | findstr -i ''node playit cloudflare'' && netstat -an | findstr '':3000''\")",
+      "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"echo Connected && tasklist | findstr -i ''node playit cloudflare'' && netstat -an | findstr '':4000''\")",
+      "Bash(xargs -I{} sh -c 'echo \"\"\"\"=== {} ===\"\"\"\" && grep -l \"\"\"\"red_skull\\|Black_Knight\\|dark_lord\"\"\"\" {} 2>/dev/null')",
+      "Bash(timeout 15 node:*)"
     ],
     "deny": []
   }

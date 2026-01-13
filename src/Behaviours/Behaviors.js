@@ -7,6 +7,7 @@ import { Behavior } from './BehaviorState.js';
 
 /**
  * Wander behavior - random movement in an area
+ * Uses SoA arrays: wanderDirX, wanderDirY, wanderTimer
  */
 export class Wander extends Behavior {
   /**
@@ -18,47 +19,48 @@ export class Wander extends Behavior {
     this.speed = speed;
     this.duration = duration;
   }
-  
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
-    // Initialize direction if needed
-    if (!stateData.wanderDir) {
-      stateData.wanderDir = { 
-        x: Math.random() * 2 - 1, 
-        y: Math.random() * 2 - 1 
-      };
-      stateData.wanderTimer = 0;
+
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
+    // Use SoA arrays from behaviorSystem
+    const bs = behaviorSystem;
+
+    // Initialize direction if needed (check if both components are 0)
+    if (bs.wanderDirX[index] === 0 && bs.wanderDirY[index] === 0) {
+      bs.wanderDirX[index] = Math.random() * 2 - 1;
+      bs.wanderDirY[index] = Math.random() * 2 - 1;
+      bs.wanderTimer[index] = 0;
     }
-    
+
     // Update timer
-    stateData.wanderTimer += deltaTime;
-    
+    bs.wanderTimer[index] += deltaTime;
+
     // Change direction if needed
-    if (stateData.wanderTimer >= this.duration) {
-      stateData.wanderDir = { 
-        x: Math.random() * 2 - 1, 
-        y: Math.random() * 2 - 1 
-      };
-      stateData.wanderTimer = 0;
+    if (bs.wanderTimer[index] >= this.duration) {
+      bs.wanderDirX[index] = Math.random() * 2 - 1;
+      bs.wanderDirY[index] = Math.random() * 2 - 1;
+      bs.wanderTimer[index] = 0;
     }
-    
+
     // Normalize direction
     const length = Math.sqrt(
-      stateData.wanderDir.x * stateData.wanderDir.x + 
-      stateData.wanderDir.y * stateData.wanderDir.y
+      bs.wanderDirX[index] * bs.wanderDirX[index] +
+      bs.wanderDirY[index] * bs.wanderDirY[index]
     );
-    
+
+    let dirX = bs.wanderDirX[index];
+    let dirY = bs.wanderDirY[index];
     if (length > 0) {
-      stateData.wanderDir.x /= length;
-      stateData.wanderDir.y /= length;
+      dirX /= length;
+      dirY /= length;
     }
-    
+
     // Calculate move amount based on enemy's base move speed
     const moveSpeed = enemyManager.moveSpeed[index] * this.speed;
     const moveAmount = moveSpeed * deltaTime;
-    
+
     // Apply movement
-    enemyManager.x[index] += stateData.wanderDir.x * moveAmount;
-    enemyManager.y[index] += stateData.wanderDir.y * moveAmount;
+    enemyManager.x[index] += dirX * moveAmount;
+    enemyManager.y[index] += dirY * moveAmount;
   }
 }
 
@@ -76,28 +78,28 @@ export class Chase extends Behavior {
     this.minDistance = minDistance;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target) return;
-    
+
     // Calculate direction to target
     const dx = target.x - enemyManager.x[index];
     const dy = target.y - enemyManager.y[index];
     const distanceSquared = dx * dx + dy * dy;
-    
+
     // Skip if already at min distance
     if (distanceSquared <= this.minDistance * this.minDistance) {
       return;
     }
-    
+
     // Normalize direction
     const distance = Math.sqrt(distanceSquared);
     const dirX = dx / distance;
     const dirY = dy / distance;
-    
+
     // Calculate move amount based on enemy's base move speed
     const moveSpeed = enemyManager.moveSpeed[index] * this.speed;
     const moveAmount = moveSpeed * deltaTime;
-    
+
     // Apply movement
     enemyManager.x[index] += dirX * moveAmount;
     enemyManager.y[index] += dirY * moveAmount;
@@ -117,20 +119,20 @@ export class RunAway extends Behavior {
     this.speed = speed;
     this.maxDistance = maxDistance;
   }
-  
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target) return;
-    
+
     // Calculate direction from target (reversed)
     const dx = enemyManager.x[index] - target.x;
     const dy = enemyManager.y[index] - target.y;
     const distanceSquared = dx * dx + dy * dy;
-    
+
     // Skip if already at max distance
     if (distanceSquared >= this.maxDistance * this.maxDistance) {
       return;
     }
-    
+
     // Normalize direction
     const distance = Math.sqrt(distanceSquared);
     const dirX = dx / distance;
@@ -189,7 +191,7 @@ export class CavalryCharge extends Behavior {
     this.deceleration = deceleration;
   }
 
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target) return;
 
     // Initialize ability state machine
@@ -390,7 +392,7 @@ export class DirectionalShoot extends Behavior {
     this.maxAngle = maxAngle;
   }
 
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target || !bulletManager) return;
 
     // Skip if enemy can't shoot
@@ -533,7 +535,7 @@ export class Orbit extends Behavior {
     this.orbitClockwise = orbitClockwise;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize orbit state
     if (!stateData.orbitState) {
       const orbitDir = this.orbitClockwise === null ?
@@ -618,7 +620,7 @@ export class Swirl extends Behavior {
     this.targeted = targeted;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize swirl state
     if (!stateData.swirlState) {
       stateData.swirlState = {
@@ -734,7 +736,7 @@ export class Grenade extends Behavior {
     this.color = color;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize cooldown state
     if (!stateData.grenadeCooldown) {
       stateData.grenadeCooldown = 0;
@@ -814,7 +816,7 @@ export class Shoot extends Behavior {
     this.inaccuracy = inaccuracy;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target || !bulletManager) return;
     
     // Skip if enemy can't shoot
@@ -924,7 +926,7 @@ export class Charge extends Behavior {
     this.cooldown = cooldown;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target) return;
 
     // Initialize state data if needed
@@ -1000,7 +1002,7 @@ export class Flash extends Behavior {
     this.cooldown = cooldown;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize state data if needed
     if (!stateData.flashState) {
       stateData.flashState = 'idle';
@@ -1068,7 +1070,7 @@ export class Follow extends Behavior {
     this.stopDistance = stopDistance;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target) return;
     
     // Initialize state data
@@ -1140,7 +1142,7 @@ export class MoveLine extends Behavior {
     this.direction = direction * Math.PI / 180; // Convert to radians
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Check for paralysis
     if (enemyManager.paralyzed && enemyManager.paralyzed[index]) {
       return;
@@ -1175,7 +1177,7 @@ export class MoveTo extends Behavior {
     this.targetY = y;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Check for paralysis
     if (enemyManager.paralyzed && enemyManager.paralyzed[index]) {
       return;
@@ -1230,7 +1232,7 @@ export class StayAbove extends Behavior {
     this.altitude = altitude;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Check for paralysis
     if (enemyManager.paralyzed && enemyManager.paralyzed[index]) {
       return;
@@ -1281,7 +1283,7 @@ export class OldSwirl extends Behavior {
     this.useTargetAsCenter = useTargetAsCenter;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize state data
     if (!stateData.swirlState) {
       stateData.swirlState = {
@@ -1319,7 +1321,7 @@ export class BackAndForth extends Behavior {
     this.distance = distance;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize state data
     if (!stateData.backForthState) {
       stateData.backForthState = {
@@ -1385,7 +1387,7 @@ export class Grenade2 extends Behavior {
     this.effectSprite = effectSprite;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target || !bulletManager) return;
     
     // Skip if on cooldown
@@ -1447,7 +1449,7 @@ export class HealSelf extends Behavior {
     this.range = range;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize heal state
     if (!stateData.healState) {
       stateData.healState = {
@@ -1516,7 +1518,7 @@ export class Spawn extends Behavior {
     this.range = range;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize spawn state
     if (!stateData.spawnState) {
       stateData.spawnState = {
@@ -1585,7 +1587,7 @@ export class MoveLineDistance extends Behavior {
     this.direction = direction;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize state
     if (!stateData.moveLineState) {
       stateData.moveLineState = {
@@ -1636,7 +1638,7 @@ export class MoveToExact extends Behavior {
     this.speed = speed;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     const dx = this.targetX - enemyManager.x[index];
     const dy = this.targetY - enemyManager.y[index];
     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -1675,7 +1677,7 @@ export class StayAboveAltitude extends Behavior {
     this.speed = speed;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target) return;
     
     const dx = target.x - enemyManager.x[index];
@@ -1711,7 +1713,7 @@ export class StayBack extends Behavior {
     this.speed = speed;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target) return;
     
     const dx = target.x - enemyManager.x[index];
@@ -1757,7 +1759,7 @@ export class StayCloseToSpawn extends Behavior {
     this.speed = speed;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize spawn position if needed
     if (!stateData.spawnPos) {
       stateData.spawnPos = {
@@ -1799,7 +1801,7 @@ export class ReturnToSpawn extends Behavior {
     this.once = once;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize spawn position if needed
     if (!stateData.spawnReturn) {
       stateData.spawnReturn = {
@@ -1849,7 +1851,7 @@ export class Buzz extends Behavior {
     this.speed = speed;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize buzz state
     if (!stateData.buzzState) {
       stateData.buzzState = {
@@ -1911,7 +1913,7 @@ export class Aoe extends Behavior {
     this.cooldownMultiplier = cooldownMultiplier;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target || !bulletManager) return;
     
     // Skip if on cooldown
@@ -1962,7 +1964,7 @@ export class TalismanAttack extends Behavior {
     this.talismanType = talismanType;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target || !bulletManager) return;
     
     // Skip if on cooldown
@@ -2017,7 +2019,7 @@ export class InvisiToss extends Behavior {
     this.projectileCount = projectileCount;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     if (!target || !bulletManager) return;
     
     // Skip if on cooldown
@@ -2092,7 +2094,7 @@ export class SpawnGroup extends Behavior {
     this.range = range;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize spawn state
     if (!stateData.groupSpawnState) {
       stateData.groupSpawnState = {
@@ -2199,7 +2201,7 @@ export class RelativeSpawn extends Behavior {
     this.cooldownMultiplier = cooldownMultiplier;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize spawn state
     if (!stateData.relativeSpawnState) {
       stateData.relativeSpawnState = {
@@ -2273,7 +2275,7 @@ export class HealGroup extends Behavior {
     this.healType = healType;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize heal state
     if (!stateData.groupHealState) {
       stateData.groupHealState = {
@@ -2359,7 +2361,7 @@ export class HealEntity extends Behavior {
     this.cooldownMultiplier = cooldownMultiplier;
   }
   
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Initialize heal state
     if (!stateData.entityHealState) {
       stateData.entityHealState = {

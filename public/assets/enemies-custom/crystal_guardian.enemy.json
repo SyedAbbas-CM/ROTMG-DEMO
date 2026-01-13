@@ -1,0 +1,49 @@
+{
+  "id": "crystal_guardian",
+  "name": "Crystal Guardian",
+  "sprite": "chars:heavy_knight",
+  "hp": 1500,
+  "speed": 5,
+  "attack": {
+    "damage": 25,
+    "range": 10,
+    "cooldown": 2000,
+    "projectileCount": 8,
+    "spread": 45,
+    "speed": 15
+  },
+  "states": {
+    "dormant": {
+      "behaviours": [],
+      "transitions": [
+        { "type": "playerWithin", "range": 8, "target": "phase1" }
+      ]
+    },
+    "phase1": {
+      "behaviours": [
+        { "type": "wander", "params": { "speed": 0.3, "duration": 3 } },
+        { "type": "shoot", "params": { "cooldownMultiplier": 1, "projectileCount": 4, "spread": 1.57 } }
+      ],
+      "transitions": [
+        { "type": "healthBelow", "threshold": 0.5, "target": "phase2" },
+        { "type": "timed", "time": 15, "target": "dormant" }
+      ]
+    },
+    "phase2": {
+      "behaviours": [
+        { "type": "follow", "params": { "speed": 1.2, "acquireRange": 15, "stopDistance": 4 } },
+        { "type": "shoot", "params": { "cooldownMultiplier": 0.5, "projectileCount": 8, "spread": 0.785 } }
+      ],
+      "transitions": [
+        { "type": "healthBelow", "threshold": 0.2, "target": "rage" }
+      ]
+    },
+    "rage": {
+      "behaviours": [
+        { "type": "follow", "params": { "speed": 2.0, "acquireRange": 20, "stopDistance": 2 } },
+        { "type": "shoot", "params": { "cooldownMultiplier": 0.25, "projectileCount": 12, "spread": 0.523 } }
+      ],
+      "transitions": []
+    }
+  }
+}

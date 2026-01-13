@@ -69,8 +69,45 @@ See "Firewall Rules" section below.
 | WebTransport | UDP | 4433 | quic.eternalconquests.com:10615 | PlayIt.gg |
 
 ### Scheduled Tasks (Auto-Start on Boot)
-- `CloudflareTunnel` - Starts cloudflared.exe
-- `GameServer` - Starts Node.js server
+- `ROTMGServerStartup` - Runs `C:\ROTMG-DEMO\start_all.bat` on login
+
+### Auto-Start Script: `C:\ROTMG-DEMO\start_all.bat`
+```batch
+@echo off
+echo Starting ROTMG Server Services...
+
+:: Start PlayIt tunnel (if not already running)
+tasklist /FI "IMAGENAME eq playit.exe" | find /I "playit.exe" >nul
+if errorlevel 1 (
+    echo Starting PlayIt...
+    start "" "C:\Users\newadmin\playit.exe"
+    timeout /t 3 /nobreak >nul
+) else (
+    echo PlayIt already running
+)
+
+:: Start Cloudflared tunnel (if not already running)
+tasklist /FI "IMAGENAME eq cloudflared.exe" | find /I "cloudflared.exe" >nul
+if errorlevel 1 (
+    echo Starting Cloudflared...
+    start "" "C:\Users\newadmin\cloudflared.exe" tunnel run
+    timeout /t 3 /nobreak >nul
+) else (
+    echo Cloudflared already running
+)
+
+:: Start Node server (if not already running)
+tasklist /FI "IMAGENAME eq node.exe" | find /I "node.exe" >nul
+if errorlevel 1 (
+    echo Starting Node server...
+    cd /d C:\ROTMG-DEMO
+    start "" "C:\node-v22.12.0-win-x64\node.exe" Server.js
+) else (
+    echo Node server already running
+)
+
+echo All services started!
+```
 
 ### Firewall Rules (CRITICAL for WebTransport)
 ```
@@ -130,6 +167,28 @@ These require a native binary that must be downloaded from GitHub releases.
 ---
 
 ## Recovery Procedures
+
+### Quick Recovery After Laptop Restart
+
+If domain shows Error 1033 or 502, services may be down. Check and restart:
+
+```bash
+# Check what's running
+sshpass -p "12345" ssh newadmin@192.168.0.202 "tasklist | findstr -i \"node playit cloudflared\""
+
+# Start cloudflared (if not running)
+sshpass -p "12345" ssh newadmin@192.168.0.202 "wmic process call create \"C:\\Users\\newadmin\\cloudflared.exe tunnel run\""
+
+# Start node server (if not running)
+sshpass -p "12345" ssh newadmin@192.168.0.202 "wmic process call create \"cmd /c cd /d C:\\ROTMG-DEMO && C:\\node-v22.12.0-win-x64\\node.exe Server.js\""
+
+# Verify domain works
+curl -s -o /dev/null -w "%{http_code}" https://eternalconquests.com/
+```
+
+**Note**: The `start_all.bat` script works when run locally on the laptop but the `start` command doesn't work reliably over SSH. Use `wmic process call create` for remote starts.
+
+The scheduled task `ROTMGServerStartup` auto-starts everything on login (works because it runs locally, not over SSH).
 
 ### WebTransport Recovery (After Accidental npm install)
 
@@ -292,6 +351,68 @@ PLAYIT_UDP_PORT=10615
 ---
 
 ## Past Issues & Solutions
+
+### January 13, 2026: WebTransport QUIC_NETWORK_IDLE_TIMEOUT
+
+**Symptom**: Browser showed `ERR_QUIC_PROTOCOL_ERROR.QUIC_NETWORK_IDLE_TIMEOUT` with `num_undecryptable_packets: 0`
+
+**What We Investigated (but wasn't the problem):**
+1. PlayIt tunnel config - Dashboard showed correct setup (127.0.0.1:4433, TCP+UDP)
+2. DNS resolution - `quic.eternalconquests.com` correctly resolved to PlayIt IP (147.185.221.20)
+3. PlayIt service status - Was running and connected ("agent has 1 tunnels")
+4. Certificate validity - Certs existed at `C:\ROTMG-DEMO\certs\`
+5. Port binding - `netstat` showed UDP 4433 was listening
+6. Scheduled task config - Services were actually running
+
+**The Key Clue**: `num_undecryptable_packets: 0` meant NO packets were reaching the server at all, not a crypto/cert issue.
+
+**The Actual Problem**: Windows Firewall was blocking incoming UDP traffic on port 4433. No firewall rules existed specifically for port 4433 (only for the Node.exe executable, which may not have been enough).
+
+**The Fix**:
+```batch
+netsh advfirewall firewall add rule name="ROTMG WebTransport UDP" dir=in action=allow protocol=UDP localport=4433
+netsh advfirewall firewall add rule name="ROTMG WebTransport TCP" dir=in action=allow protocol=TCP localport=4433
+```
+
+**Why It Was Confusing**:
+- PlayIt dashboard showed traffic (it was receiving packets externally)
+- The tunnel config looked perfect
+- UDP port was "listening" locally but firewall silently dropped incoming packets from localhost (PlayIt forwards as localhost)
+- We spent time checking DNS, certs, PlayIt config - none were the issue
+
+**Lesson Learned**: When debugging "no packets received" issues, check Windows Firewall rules FIRST. Add explicit port-based rules, not just executable-based rules.
+
+---
+
+### January 10, 2026: Laptop Restart - Cloudflared Not Running
+
+**Symptom**: Domain `eternalconquests.com` returned Cloudflare Error 1033 (Argo Tunnel error)
+
+**What Happened**:
+1. Laptop restarted (sleep/power cycle)
+2. PlayIt auto-started via Windows Services (was configured correctly)
+3. Node server auto-started via scheduled task
+4. **Cloudflared did NOT auto-start** - no scheduled task existed
+
+**Initial Wrong Assumptions**:
+- Thought port was wrong (changed 4000 to 3000, then back)
+- Thought PlayIt tunnel was the issue
+- Tried restarting PlayIt multiple times
+
+**Root Cause**: `cloudflared.exe` was not configured to auto-start. It was only running from a previous manual session.
+
+**Fix Applied**:
+```bash
+# SSH and manually start cloudflared
+sshpass -p "12345" ssh newadmin@192.168.0.202 "C:\Users\newadmin\cloudflared.exe tunnel run"
+```
+
+**Permanent Fix**: Created `C:\ROTMG-DEMO\start_all.bat` that starts all services (see Auto-Start section below)
+
+**Lesson Learned**: After laptop restart, check ALL three services:
+1. `node.exe` - Game server
+2. `playit.exe` - UDP tunnel for WebTransport
+3. `cloudflared.exe` - TCP tunnel for WebSocket
 
 ### January 2026: npm install Broke WebTransport
 **Cause**: Ran `npm install` which deleted manually-installed `@fails-components` packages

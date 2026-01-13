@@ -1,0 +1,41 @@
+{
+  "id": "skeleton_minion",
+  "name": "Skeleton Minion",
+  "sprite": "skeleton",
+  "hp": 40,
+  "speed": 3,
+  "width": 1,
+  "height": 1,
+  "renderScale": 3,
+  "contactDamage": 10,
+  "knockbackForce": 2,
+  "attack": {
+    "damage": 8,
+    "range": 6,
+    "cooldown": 2000,
+    "projectileCount": 1,
+    "spread": 0,
+    "speed": 6,
+    "lifetime": 1200
+  },
+  "initialState": "chase",
+  "states": {
+    "chase": {
+      "behaviours": [
+        { "type": "chase", "speed": 1.0, "minDistance": 3 },
+        { "type": "shoot", "cooldownMultiplier": 1.0 }
+      ],
+      "transitions": [
+        { "type": "noPlayerWithin", "range": 20, "target": "wander" }
+      ]
+    },
+    "wander": {
+      "behaviours": [
+        { "type": "wander", "speed": 0.5 }
+      ],
+      "transitions": [
+        { "type": "playerWithin", "range": 12, "target": "chase" }
+      ]
+    }
+  }
+}

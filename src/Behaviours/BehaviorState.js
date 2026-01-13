@@ -130,9 +130,10 @@ export class Behavior {
    * @param {Object} bulletManager - Reference to bullet manager
    * @param {Object} target - Target for behavior (usually player)
    * @param {number} deltaTime - Time elapsed in seconds
-   * @param {Object} stateData - State-specific data for this enemy
+   * @param {Object} stateData - State-specific data for this enemy (fallback for complex behaviors)
+   * @param {Object} behaviorSystem - Reference to BehaviorSystem for SoA array access
    */
-  execute(index, enemyManager, bulletManager, target, deltaTime, stateData) {
+  execute(index, enemyManager, bulletManager, target, deltaTime, stateData, behaviorSystem) {
     // Base class does nothing - override in subclasses
   }
 } 

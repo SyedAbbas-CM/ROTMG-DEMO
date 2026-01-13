@@ -44,6 +44,13 @@ export const worldSpawns = {
       { id: 'archer', x: 35, y: 40, comment: 'Archer Center' },
       { id: 'archer', x: 40, y: 40, comment: 'Archer Right Center' },
       { id: 'archer', x: 45, y: 40, comment: 'Archer Right' },
+
+      // NEW CUSTOM ENEMIES (for testing)
+      { id: 'necromancer', x: 60, y: 30, comment: 'Necromancer - summons skeletons' },
+      { id: 'berserker', x: 65, y: 30, comment: 'Berserker - rages at low HP' },
+      { id: 'skeleton_minion', x: 55, y: 35, comment: 'Skeleton 1' },
+      { id: 'skeleton_minion', x: 70, y: 35, comment: 'Skeleton 2' },
+      { id: 'lich_king', x: 80, y: 40, comment: 'Lich King - 3 phase boss' },
     ]
   },
 
@@ -58,12 +65,19 @@ export const worldSpawns = {
   },
 
   // ========================================
-  // BOSS ROOM
+  // BOSS ROOM - Lich King Encounter
   // ========================================
   map_3: {
-    description: "SampleBossRoom.json - Major boss encounter",
+    description: "SampleBossRoom.json - Lich King boss encounter",
     spawns: [
-      // Empty for now
+      // The Lich King - center of the room
+      { id: 'lich_king', x: 25, y: 25, comment: 'Lich King Boss' },
+      // Guardian necromancers
+      { id: 'necromancer', x: 15, y: 15, comment: 'Necromancer Guard Left' },
+      { id: 'necromancer', x: 35, y: 15, comment: 'Necromancer Guard Right' },
+      // Berserker sentinels
+      { id: 'berserker', x: 15, y: 35, comment: 'Berserker Sentinel Left' },
+      { id: 'berserker', x: 35, y: 35, comment: 'Berserker Sentinel Right' },
     ]
   },
 
@@ -78,22 +92,35 @@ export const worldSpawns = {
   },
 
   // ========================================
-  // TEST DUNGEON
+  // TEST DUNGEON - New Enemy Testing
   // ========================================
   map_5: {
     description: "TestDungeon.json - Enemy variety testing ground",
     spawns: [
-      // Empty for now - add your custom enemies here for testing
+      // Necromancers (casters that summon skeletons)
+      { id: 'necromancer', x: 20, y: 20, comment: 'Necromancer 1' },
+      { id: 'necromancer', x: 30, y: 20, comment: 'Necromancer 2' },
+      // Berserkers (melee brutes that rage at low HP)
+      { id: 'berserker', x: 25, y: 30, comment: 'Berserker 1' },
+      { id: 'berserker', x: 35, y: 30, comment: 'Berserker 2' },
+      // Skeleton minions
+      { id: 'skeleton_minion', x: 15, y: 25, comment: 'Skeleton 1' },
+      { id: 'skeleton_minion', x: 40, y: 25, comment: 'Skeleton 2' },
+      { id: 'skeleton_minion', x: 25, y: 15, comment: 'Skeleton 3' },
     ]
   },
 
   // ========================================
-  // TEST MAP
+  // TEST MAP - Custom Enemy Testing
   // ========================================
   map_6: {
     description: "test.json - Small test arena for custom enemies",
     spawns: [
-      // Empty for now - perfect place to test your new custom enemy!
+      // Test the new custom enemies defined in public/assets/enemies-custom/
+      { id: 'fire_mage', x: 20, y: 20, comment: 'Fire Mage - Triple shot caster' },
+      { id: 'fire_mage', x: 25, y: 20, comment: 'Fire Mage 2' },
+      { id: 'shadow_assassin', x: 30, y: 25, comment: 'Shadow Assassin - Fast dashing attacker' },
+      { id: 'crystal_guardian', x: 25, y: 30, comment: 'Crystal Guardian - Multi-phase boss' },
     ]
   },
 
@@ -132,4 +159,15 @@ export const availableEnemies = [
 
   // Boss
   { id: 'enemy_8', name: 'AI Pattern Boss', hp: 5000, description: 'Large boss, uses ML patterns' },
+
+  // Custom Enemies (loaded from public/assets/enemies-custom/*.enemy.json)
+  { id: 'fire_mage', name: 'Fire Mage', hp: 200, description: 'Caster with triple-shot attack, retreats when close' },
+  { id: 'crystal_guardian', name: 'Crystal Guardian', hp: 1500, description: 'Multi-phase boss with increasing aggression' },
+  { id: 'shadow_assassin', name: 'Shadow Assassin', hp: 100, description: 'Fast, teleporting assassin with dash attacks' },
+
+  // New Enemies (Jan 2026)
+  { id: 'necromancer', name: 'Necromancer', hp: 150, description: 'Dark caster, summons skeletons, flees when close' },
+  { id: 'berserker', name: 'Berserker', hp: 400, description: 'Melee brute, rages at low HP' },
+  { id: 'skeleton_minion', name: 'Skeleton Minion', hp: 40, description: 'Summoned minion, weak but numerous' },
+  { id: 'lich_king', name: 'Lich King', hp: 3000, description: '3-phase boss: orbit->spiral->rage' },
 ];

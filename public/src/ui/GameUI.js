@@ -398,11 +398,12 @@ export class GameUI {
    */
   update(gameState) {
     if (!this.isLoaded || !gameState) return;
-    
-    // Update player health and mana
-    if (gameState.player) {
-      this.updateHealth(gameState.player.health || 0, gameState.player.maxHealth || 100);
-      this.updateMana(gameState.player.mana || 0, gameState.player.maxMana || 100);
+
+    // Support both gameState.player and gameState.character
+    const player = gameState.character || gameState.player;
+    if (player) {
+      this.updateHealth(player.health || 0, player.maxHealth || 200);
+      this.updateMana(player.mana || 0, player.maxMana || 100);
     }
   }
 

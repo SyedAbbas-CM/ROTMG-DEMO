@@ -132,10 +132,11 @@ export default class EnemyManager {
     // Storage for parsed behaviour trees (per type index)
     this.behaviourTreeRunners = [];
 
+    // Initialize cache BEFORE loading external defs (they use it)
+    this.rootStateCache = new Map(); // type -> rootState for lazy registration
+
     // Load additional enemy definitions from the entity database (e.g. Red Demon)
     this._loadExternalEnemyDefs();
-
-    this.rootStateCache = new Map(); // type -> rootState for lazy registration
   }
 
   /**

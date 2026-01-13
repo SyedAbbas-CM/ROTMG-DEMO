@@ -1481,8 +1481,17 @@ function spawnInitialUnits(soldierMgr) {
 
 // ---------------------------------------------------------------------------
 // Damage players from enemy bullets belonging to the same world context
+// CLIENT-FAVORED: Client does collision detection, server only confirms ~20% of hits
+// This reduces server load while still being authoritative for anti-cheat
 // ---------------------------------------------------------------------------
+let serverCollisionCounter = 0;
+const SERVER_COLLISION_RATE = 5; // Check every 5th frame (20% sample rate)
+
 function applyEnemyBulletsToPlayers(bulletMgr, players) {
+  // Only run server collision check periodically - client handles most hits
+  serverCollisionCounter++;
+  if (serverCollisionCounter % SERVER_COLLISION_RATE !== 0) return;
+
   const bulletCount = bulletMgr.bulletCount;
   for (let bi = 0; bi < bulletCount; bi++) {
     if (bulletMgr.life[bi] <= 0) continue;
@@ -1513,7 +1522,8 @@ function applyEnemyBulletsToPlayers(bulletMgr, players) {
         player.health -= dmg;
         if (player.health < 0) player.health = 0;
         bulletMgr.markForRemoval(bi);
-        console.log(`[DAMAGE] Player ${player.id || 'unknown'} hit by bullet ${bulletMgr.id[bi]}: ${oldHealth} -> ${player.health} (-${dmg})`);
+        // Server confirmation of hit (client already showed this)
+        console.log(`[SERVER CONFIRM] Player ${player.id || 'unknown'} hit: ${oldHealth} -> ${player.health} (-${dmg})`);
       }
     }
   }

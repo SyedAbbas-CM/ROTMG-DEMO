@@ -1,0 +1,43 @@
+{
+  "id": "fire_mage",
+  "name": "Fire Mage",
+  "sprite": "chars:goblin",
+  "hp": 200,
+  "speed": 8,
+  "attack": {
+    "damage": 15,
+    "range": 12,
+    "cooldown": 1500,
+    "projectileCount": 3,
+    "spread": 15,
+    "speed": 18
+  },
+  "states": {
+    "idle": {
+      "behaviours": [
+        { "type": "wander", "params": { "speed": 0.5, "duration": 2 } }
+      ],
+      "transitions": [
+        { "type": "playerWithin", "range": 15, "target": "attack" }
+      ]
+    },
+    "attack": {
+      "behaviours": [
+        { "type": "follow", "params": { "speed": 0.8, "acquireRange": 15, "stopDistance": 8 } },
+        { "type": "shoot", "params": { "cooldownMultiplier": 1, "projectileCount": 3, "spread": 0.26 } }
+      ],
+      "transitions": [
+        { "type": "playerWithin", "range": 5, "target": "retreat" },
+        { "type": "timed", "time": 8, "target": "idle" }
+      ]
+    },
+    "retreat": {
+      "behaviours": [
+        { "type": "wander", "params": { "speed": 1.5, "duration": 1 } }
+      ],
+      "transitions": [
+        { "type": "timed", "time": 2, "target": "attack" }
+      ]
+    }
+  }
+}

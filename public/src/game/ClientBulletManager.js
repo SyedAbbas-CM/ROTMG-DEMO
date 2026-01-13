@@ -134,21 +134,20 @@ export class ClientBulletManager {
       return; // Skip if delta time is zero or negative
     }
 
-    // DIAGNOSTIC: Log deltaTime to check if it's in correct units
-    if (this.bulletCount > 0 && Math.random() < 0.05) {
-      // console.error(`⏱️ [BULLET UPDATE] deltaTime=${deltaTime.toFixed(4)}s, bulletCount=${this.bulletCount}`);
-    }
-
     let count = this.bulletCount;
 
-    for (let i = 0; i < count; i++) {
-      const lifeBefore = this.life[i];
+    // Get player position for client-side collision
+    const player = window.gameState?.character;
+    const playerX = player?.x;
+    const playerY = player?.y;
+    const playerRadius = 0.4; // Player hitbox radius in tiles
+    const hasPlayer = player && isFinite(playerX) && isFinite(playerY) && !player.isDead;
 
+    for (let i = 0; i < count; i++) {
       // DEFENSIVE: Skip if velocity is NaN (would corrupt position)
       const vx = this.vx[i];
       const vy = this.vy[i];
       if (!isFinite(vx) || !isFinite(vy)) {
-        // Log once and remove the corrupted bullet
         console.error(`[BULLET] Removing bullet with NaN velocity: id=${this.id[i]}, vx=${vx}, vy=${vy}`);
         this.swapRemove(i);
         count--;
@@ -174,24 +173,50 @@ export class ClientBulletManager {
       this.x[i] += (this.targetX[i] - this.x[i]) * interpFactor;
       this.y[i] += (this.targetY[i] - this.y[i]) * interpFactor;
 
+      // CLIENT-SIDE COLLISION: Check if enemy bullet hits player
+      if (hasPlayer && this.faction[i] === 0) { // faction 0 = enemy bullets
+        const dx = this.x[i] - playerX;
+        const dy = this.y[i] - playerY;
+        const bulletRadius = (this.width[i] || 0.6) / 2;
+        const hitDist = playerRadius + bulletRadius;
+
+        if (dx * dx + dy * dy < hitDist * hitDist) {
+          // HIT! Apply damage client-side immediately
+          const damage = this.damage[i] || 10;
+          player.health = Math.max(0, (player.health || 0) - damage);
+
+          console.log(`[CLIENT HIT] Bullet ${this.id[i]} hit player! Damage: ${damage}, HP: ${player.health}/${player.maxHealth}`);
+
+          // Update UI immediately
+          if (window.gameUI?.updateHealth) {
+            window.gameUI.updateHealth(player.health, player.maxHealth || 200);
+          }
+
+          // Check for death
+          if (player.health <= 0) {
+            player.isDead = true;
+            console.log('[CLIENT] Player died!');
+          }
+
+          // Remove the bullet
+          this.swapRemove(i);
+          count--;
+          i--;
+          continue;
+        }
+      }
+
       // Decrement lifetime
       this.life[i] -= deltaTime;
 
-      // DIAGNOSTIC: Log lifetime changes
-      if (Math.random() < 0.05 && lifeBefore > 0) {
-        // console.error(`⏱️ [LIFE] Bullet ${this.id[i]}: life ${lifeBefore.toFixed(3)} → ${this.life[i].toFixed(3)} (delta: ${deltaTime.toFixed(4)})`);
-      }
-
       // Remove expired bullets
       if (this.life[i] <= 0) {
-        // DIAGNOSTIC: Log bullet removal
-        // console.error(`❌ [BULLET EXPIRED] ID: ${this.id[i]}, Pos: (${this.x[i].toFixed(2)}, ${this.y[i].toFixed(2)}), Life: ${this.life[i].toFixed(3)}, DeltaTime: ${deltaTime.toFixed(4)}`);
         this.swapRemove(i);
         count--;
         i--;
       }
     }
-    
+
     this.bulletCount = count;
   }
   

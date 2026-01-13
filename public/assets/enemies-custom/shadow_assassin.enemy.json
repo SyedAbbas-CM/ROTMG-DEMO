@@ -1,0 +1,51 @@
+{
+  "id": "shadow_assassin",
+  "name": "Shadow Assassin",
+  "sprite": "chars:archer",
+  "hp": 100,
+  "speed": 15,
+  "attack": {
+    "damage": 35,
+    "range": 6,
+    "cooldown": 800,
+    "projectileCount": 1,
+    "spread": 0,
+    "speed": 25
+  },
+  "states": {
+    "stalk": {
+      "behaviours": [
+        { "type": "follow", "params": { "speed": 0.6, "acquireRange": 20, "stopDistance": 12 } }
+      ],
+      "transitions": [
+        { "type": "playerWithin", "range": 10, "target": "dash" },
+        { "type": "timed", "time": 5, "target": "reposition" }
+      ]
+    },
+    "dash": {
+      "behaviours": [
+        { "type": "follow", "params": { "speed": 3.0, "acquireRange": 15, "stopDistance": 2 } },
+        { "type": "shoot", "params": { "cooldownMultiplier": 1 } }
+      ],
+      "transitions": [
+        { "type": "timed", "time": 1.5, "target": "retreat" }
+      ]
+    },
+    "retreat": {
+      "behaviours": [
+        { "type": "wander", "params": { "speed": 2.0, "duration": 0.5 } }
+      ],
+      "transitions": [
+        { "type": "timed", "time": 2, "target": "stalk" }
+      ]
+    },
+    "reposition": {
+      "behaviours": [
+        { "type": "charge", "params": { "chargeSpeed": 3.0, "duration": 0.5, "range": 8 } }
+      ],
+      "transitions": [
+        { "type": "timed", "time": 0.5, "target": "stalk" }
+      ]
+    }
+  }
+}

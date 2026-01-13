@@ -14,16 +14,170 @@ export default class BehaviorSystem {
   constructor() {
     // Registry of behavior templates by type
     this.behaviorTemplates = new Map();
-    
+
     // SoA data layout for current behavior states
     this.maxEnemies = 1000; // Match EnemyManager's default
     this.currentState = new Array(this.maxEnemies);
-    this.stateData = new Array(this.maxEnemies);
+    this.stateData = new Array(this.maxEnemies); // Fallback for complex behaviors
     this.behaviorTimers = new Float32Array(this.maxEnemies);
     this.transitionChecks = new Array(this.maxEnemies);
-    
+
+    // ========================================
+    // SoA Packed Arrays for Common Behaviors
+    // ========================================
+
+    // Wander behavior state
+    this.wanderDirX = new Float32Array(this.maxEnemies);
+    this.wanderDirY = new Float32Array(this.maxEnemies);
+    this.wanderTimer = new Float32Array(this.maxEnemies);
+
+    // CavalryCharge behavior state
+    // Phase: 0=IDLE, 1=CHARGING, 2=DECELERATING, 3=STATIONARY
+    this.chargePhase = new Uint8Array(this.maxEnemies);
+    this.chargeSpeed = new Float32Array(this.maxEnemies);
+    this.chargeTimer = new Float32Array(this.maxEnemies);
+    this.chargeDirX = new Float32Array(this.maxEnemies);
+    this.chargeDirY = new Float32Array(this.maxEnemies);
+
+    // Orbit behavior state
+    this.orbitAngle = new Float32Array(this.maxEnemies);
+    this.orbitCenterX = new Float32Array(this.maxEnemies);
+    this.orbitCenterY = new Float32Array(this.maxEnemies);
+
+    // Swirl behavior state
+    this.swirlAngle = new Float32Array(this.maxEnemies);
+    this.swirlCenterX = new Float32Array(this.maxEnemies);
+    this.swirlCenterY = new Float32Array(this.maxEnemies);
+
+    // Follow behavior state
+    // State: 0=DontKnowWhere, 1=Acquired, 2=Resting
+    this.followState = new Uint8Array(this.maxEnemies);
+    this.followLastX = new Float32Array(this.maxEnemies);
+    this.followLastY = new Float32Array(this.maxEnemies);
+    this.followRestTimer = new Float32Array(this.maxEnemies);
+
+    // Simple charge behavior (Charge class)
+    // State: 0=ready, 1=charging, 2=cooldown
+    this.simpleChargeState = new Uint8Array(this.maxEnemies);
+    this.simpleChargeTimer = new Float32Array(this.maxEnemies);
+    this.simpleChargeCooldown = new Float32Array(this.maxEnemies);
+    this.simpleChargeDirX = new Float32Array(this.maxEnemies);
+    this.simpleChargeDirY = new Float32Array(this.maxEnemies);
+
+    // Flash behavior state
+    // State: 0=idle, 1=flashing, 2=cooldown
+    this.flashState = new Uint8Array(this.maxEnemies);
+    this.flashTimer = new Float32Array(this.maxEnemies);
+    this.flashCooldown = new Float32Array(this.maxEnemies);
+
+    // Grenade behavior cooldown
+    this.grenadeCooldown = new Float32Array(this.maxEnemies);
+
+    // Spawn position tracking (for StayCloseToSpawn, ReturnToSpawn)
+    this.spawnPosX = new Float32Array(this.maxEnemies);
+    this.spawnPosY = new Float32Array(this.maxEnemies);
+    this.spawnPosSet = new Uint8Array(this.maxEnemies); // 0=not set, 1=set
+
+    // MoveTo behavior
+    this.moveToCompleted = new Uint8Array(this.maxEnemies);
+
+    // Generic cooldown slots for heal/spawn behaviors (4 slots per enemy)
+    this.cooldownSlots = new Float32Array(this.maxEnemies * 4);
+
+    // Buzz behavior state
+    this.buzzPhase = new Uint8Array(this.maxEnemies); // 0=waiting, 1=buzzing
+    this.buzzTimer = new Float32Array(this.maxEnemies);
+    this.buzzAngle = new Float32Array(this.maxEnemies);
+
+    // BackAndForth behavior state
+    this.backForthDir = new Int8Array(this.maxEnemies); // 1 or -1
+    this.backForthTimer = new Float32Array(this.maxEnemies);
+    this.backForthSteps = new Uint8Array(this.maxEnemies);
+
+    // Invisibility state
+    this.invisiVisible = new Uint8Array(this.maxEnemies); // 0=invisible, 1=visible
+    this.invisiTimer = new Float32Array(this.maxEnemies);
+
     // Initialize the default behavior templates
     this.initDefaultBehaviors();
+  }
+
+  /**
+   * Reset all SoA state for an enemy index (called on spawn/init)
+   * @param {number} index - Enemy index
+   */
+  resetSoAState(index) {
+    // Wander
+    this.wanderDirX[index] = 0;
+    this.wanderDirY[index] = 0;
+    this.wanderTimer[index] = 0;
+
+    // CavalryCharge
+    this.chargePhase[index] = 0;
+    this.chargeSpeed[index] = 0;
+    this.chargeTimer[index] = 0;
+    this.chargeDirX[index] = 0;
+    this.chargeDirY[index] = 0;
+
+    // Orbit
+    this.orbitAngle[index] = 0;
+    this.orbitCenterX[index] = 0;
+    this.orbitCenterY[index] = 0;
+
+    // Swirl
+    this.swirlAngle[index] = 0;
+    this.swirlCenterX[index] = 0;
+    this.swirlCenterY[index] = 0;
+
+    // Follow
+    this.followState[index] = 0;
+    this.followLastX[index] = 0;
+    this.followLastY[index] = 0;
+    this.followRestTimer[index] = 0;
+
+    // Simple charge
+    this.simpleChargeState[index] = 0;
+    this.simpleChargeTimer[index] = 0;
+    this.simpleChargeCooldown[index] = 0;
+    this.simpleChargeDirX[index] = 0;
+    this.simpleChargeDirY[index] = 0;
+
+    // Flash
+    this.flashState[index] = 0;
+    this.flashTimer[index] = 0;
+    this.flashCooldown[index] = 0;
+
+    // Grenade
+    this.grenadeCooldown[index] = 0;
+
+    // Spawn position
+    this.spawnPosX[index] = 0;
+    this.spawnPosY[index] = 0;
+    this.spawnPosSet[index] = 0;
+
+    // MoveTo
+    this.moveToCompleted[index] = 0;
+
+    // Cooldown slots
+    const slotBase = index * 4;
+    this.cooldownSlots[slotBase] = 0;
+    this.cooldownSlots[slotBase + 1] = 0;
+    this.cooldownSlots[slotBase + 2] = 0;
+    this.cooldownSlots[slotBase + 3] = 0;
+
+    // Buzz
+    this.buzzPhase[index] = 0;
+    this.buzzTimer[index] = 0;
+    this.buzzAngle[index] = 0;
+
+    // BackAndForth
+    this.backForthDir[index] = 1;
+    this.backForthTimer[index] = 0;
+    this.backForthSteps[index] = 0;
+
+    // Invisibility
+    this.invisiVisible[index] = 1;
+    this.invisiTimer[index] = 0;
   }
   
   /**
@@ -71,18 +225,21 @@ export default class BehaviorSystem {
    */
   initBehavior(index, type) {
     const template = this.behaviorTemplates.get(type);
-    
+
     if (!template) {
       console.warn(`No behavior template for enemy type ${type}`);
       return;
     }
-    
+
+    // Reset all SoA state arrays for this index
+    this.resetSoAState(index);
+
     // Clone the behavior state for this instance
     this.currentState[index] = template;
-    this.stateData[index] = {}; // State-specific data
+    this.stateData[index] = {}; // Fallback for complex behaviors that need object storage
     this.behaviorTimers[index] = 0;
     this.transitionChecks[index] = [...template.transitions]; // Copy transitions
-    
+
     // Initialize state
     this.onStateEntry(index);
   }
@@ -173,9 +330,10 @@ export default class BehaviorSystem {
     }
 
     // Execute behaviors
+    // Pass both stateData (for complex behaviors) and behaviorSystem (for SoA access)
     if (state.behaviors) {
       for (const behavior of state.behaviors) {
-        behavior.execute(index, enemyManager, bulletManager, target, deltaTime, this.stateData[index]);
+        behavior.execute(index, enemyManager, bulletManager, target, deltaTime, this.stateData[index], this);
       }
     }
   }
@@ -187,17 +345,91 @@ export default class BehaviorSystem {
    * @param {number} lastIndex - Index being moved (last enemy position)
    */
   swapBehaviorData(index, lastIndex) {
-    // Swap all behavior state data from lastIndex to index
+    // Swap core state data
     this.currentState[index] = this.currentState[lastIndex];
     this.stateData[index] = this.stateData[lastIndex];
     this.behaviorTimers[index] = this.behaviorTimers[lastIndex];
     this.transitionChecks[index] = this.transitionChecks[lastIndex];
 
-    // Clear the last index data (optional, but good practice)
+    // Swap SoA arrays - Wander
+    this.wanderDirX[index] = this.wanderDirX[lastIndex];
+    this.wanderDirY[index] = this.wanderDirY[lastIndex];
+    this.wanderTimer[index] = this.wanderTimer[lastIndex];
+
+    // Swap SoA arrays - CavalryCharge
+    this.chargePhase[index] = this.chargePhase[lastIndex];
+    this.chargeSpeed[index] = this.chargeSpeed[lastIndex];
+    this.chargeTimer[index] = this.chargeTimer[lastIndex];
+    this.chargeDirX[index] = this.chargeDirX[lastIndex];
+    this.chargeDirY[index] = this.chargeDirY[lastIndex];
+
+    // Swap SoA arrays - Orbit
+    this.orbitAngle[index] = this.orbitAngle[lastIndex];
+    this.orbitCenterX[index] = this.orbitCenterX[lastIndex];
+    this.orbitCenterY[index] = this.orbitCenterY[lastIndex];
+
+    // Swap SoA arrays - Swirl
+    this.swirlAngle[index] = this.swirlAngle[lastIndex];
+    this.swirlCenterX[index] = this.swirlCenterX[lastIndex];
+    this.swirlCenterY[index] = this.swirlCenterY[lastIndex];
+
+    // Swap SoA arrays - Follow
+    this.followState[index] = this.followState[lastIndex];
+    this.followLastX[index] = this.followLastX[lastIndex];
+    this.followLastY[index] = this.followLastY[lastIndex];
+    this.followRestTimer[index] = this.followRestTimer[lastIndex];
+
+    // Swap SoA arrays - Simple charge
+    this.simpleChargeState[index] = this.simpleChargeState[lastIndex];
+    this.simpleChargeTimer[index] = this.simpleChargeTimer[lastIndex];
+    this.simpleChargeCooldown[index] = this.simpleChargeCooldown[lastIndex];
+    this.simpleChargeDirX[index] = this.simpleChargeDirX[lastIndex];
+    this.simpleChargeDirY[index] = this.simpleChargeDirY[lastIndex];
+
+    // Swap SoA arrays - Flash
+    this.flashState[index] = this.flashState[lastIndex];
+    this.flashTimer[index] = this.flashTimer[lastIndex];
+    this.flashCooldown[index] = this.flashCooldown[lastIndex];
+
+    // Swap SoA arrays - Grenade
+    this.grenadeCooldown[index] = this.grenadeCooldown[lastIndex];
+
+    // Swap SoA arrays - Spawn position
+    this.spawnPosX[index] = this.spawnPosX[lastIndex];
+    this.spawnPosY[index] = this.spawnPosY[lastIndex];
+    this.spawnPosSet[index] = this.spawnPosSet[lastIndex];
+
+    // Swap SoA arrays - MoveTo
+    this.moveToCompleted[index] = this.moveToCompleted[lastIndex];
+
+    // Swap SoA arrays - Cooldown slots
+    const srcBase = lastIndex * 4;
+    const dstBase = index * 4;
+    this.cooldownSlots[dstBase] = this.cooldownSlots[srcBase];
+    this.cooldownSlots[dstBase + 1] = this.cooldownSlots[srcBase + 1];
+    this.cooldownSlots[dstBase + 2] = this.cooldownSlots[srcBase + 2];
+    this.cooldownSlots[dstBase + 3] = this.cooldownSlots[srcBase + 3];
+
+    // Swap SoA arrays - Buzz
+    this.buzzPhase[index] = this.buzzPhase[lastIndex];
+    this.buzzTimer[index] = this.buzzTimer[lastIndex];
+    this.buzzAngle[index] = this.buzzAngle[lastIndex];
+
+    // Swap SoA arrays - BackAndForth
+    this.backForthDir[index] = this.backForthDir[lastIndex];
+    this.backForthTimer[index] = this.backForthTimer[lastIndex];
+    this.backForthSteps[index] = this.backForthSteps[lastIndex];
+
+    // Swap SoA arrays - Invisibility
+    this.invisiVisible[index] = this.invisiVisible[lastIndex];
+    this.invisiTimer[index] = this.invisiTimer[lastIndex];
+
+    // Clear the last index data
     this.currentState[lastIndex] = null;
     this.stateData[lastIndex] = null;
     this.behaviorTimers[lastIndex] = 0;
     this.transitionChecks[lastIndex] = null;
+    // Note: SoA arrays don't need clearing - they'll be overwritten on next use
   }
   
   /* === Behavior Template Factories === */

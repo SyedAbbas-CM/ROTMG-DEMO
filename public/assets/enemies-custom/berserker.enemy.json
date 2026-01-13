@@ -1,0 +1,51 @@
+{
+  "id": "berserker",
+  "name": "Berserker",
+  "sprite": "Black_Knight",
+  "hp": 400,
+  "speed": 4,
+  "width": 2,
+  "height": 2,
+  "renderScale": 5,
+  "contactDamage": 40,
+  "knockbackForce": 6,
+  "attack": {
+    "damage": 30,
+    "range": 4,
+    "cooldown": 1200,
+    "projectileCount": 1,
+    "spread": 0,
+    "speed": 10,
+    "lifetime": 800
+  },
+  "initialState": "patrol",
+  "states": {
+    "patrol": {
+      "behaviours": [
+        { "type": "wander", "speed": 0.6 }
+      ],
+      "transitions": [
+        { "type": "playerWithin", "range": 12, "target": "chase" }
+      ]
+    },
+    "chase": {
+      "behaviours": [
+        { "type": "chase", "speed": 1.2, "minDistance": 2 },
+        { "type": "shoot", "cooldownMultiplier": 1.0, "projectileCount": 1 }
+      ],
+      "transitions": [
+        { "type": "noPlayerWithin", "range": 18, "target": "patrol" },
+        { "type": "healthBelow", "threshold": 0.3, "target": "rage" }
+      ]
+    },
+    "rage": {
+      "behaviours": [
+        { "type": "chase", "speed": 1.8, "minDistance": 1 },
+        { "type": "shoot", "cooldownMultiplier": 0.5, "projectileCount": 2, "spread": 0.2 }
+      ],
+      "transitions": [
+        { "type": "noPlayerWithin", "range": 25, "target": "patrol" }
+      ]
+    }
+  }
+}

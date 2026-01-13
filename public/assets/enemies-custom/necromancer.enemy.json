@@ -1,0 +1,60 @@
+{
+  "id": "necromancer",
+  "name": "Necromancer",
+  "sprite": "red_skull",
+  "hp": 150,
+  "speed": 2.5,
+  "width": 2,
+  "height": 2,
+  "renderScale": 4,
+  "contactDamage": 15,
+  "knockbackForce": 2,
+  "attack": {
+    "damage": 20,
+    "range": 12,
+    "cooldown": 1800,
+    "projectileCount": 2,
+    "spread": 15,
+    "speed": 8,
+    "lifetime": 2000
+  },
+  "initialState": "idle",
+  "states": {
+    "idle": {
+      "behaviours": [
+        { "type": "wander", "speed": 0.4 }
+      ],
+      "transitions": [
+        { "type": "playerWithin", "range": 15, "target": "summon" }
+      ]
+    },
+    "summon": {
+      "behaviours": [
+        { "type": "wander", "speed": 0.2 }
+      ],
+      "transitions": [
+        { "type": "timed", "time": 2.0, "target": "attack" }
+      ]
+    },
+    "attack": {
+      "behaviours": [
+        { "type": "chase", "speed": 0.5, "minDistance": 10 },
+        { "type": "shoot", "cooldownMultiplier": 1.0, "projectileCount": 2, "spread": 0.3 }
+      ],
+      "transitions": [
+        { "type": "playerWithin", "range": 6, "target": "flee" },
+        { "type": "noPlayerWithin", "range": 18, "target": "idle" },
+        { "type": "timed", "time": 5.0, "target": "summon" }
+      ]
+    },
+    "flee": {
+      "behaviours": [
+        { "type": "runAway", "speed": 1.5, "maxDistance": 15 },
+        { "type": "shoot", "cooldownMultiplier": 1.5, "projectileCount": 1 }
+      ],
+      "transitions": [
+        { "type": "noPlayerWithin", "range": 10, "target": "attack" }
+      ]
+    }
+  }
+}

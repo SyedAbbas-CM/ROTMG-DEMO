@@ -458,11 +458,13 @@ export class CharacterPanel extends UIComponent {
    * @param {Object} gameState - Game state reference
    */
   update(gameState) {
-    if (!gameState || !gameState.player) return;
-    
+    // Support both gameState.player and gameState.character for flexibility
+    const player = gameState?.character || gameState?.player;
+    if (!player) return;
+
     // Update health and mana
-    this.updateHealth(gameState.player.health, gameState.player.maxHealth);
-    this.updateMana(gameState.player.mana, gameState.player.maxMana);
+    this.updateHealth(player.health, player.maxHealth);
+    this.updateMana(player.mana, player.maxMana);
     
     // TODO: Update inventory and stats when they're available in gameState
   }

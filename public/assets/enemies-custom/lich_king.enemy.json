@@ -1,0 +1,56 @@
+{
+  "id": "lich_king",
+  "name": "Lich King",
+  "sprite": "dark_lord",
+  "hp": 3000,
+  "speed": 2,
+  "width": 3,
+  "height": 3,
+  "renderScale": 8,
+  "contactDamage": 60,
+  "knockbackForce": 10,
+  "attack": {
+    "damage": 35,
+    "range": 16,
+    "cooldown": 1500,
+    "projectileCount": 1,
+    "spread": 0,
+    "speed": 7,
+    "lifetime": 3000
+  },
+  "initialState": "dormant",
+  "states": {
+    "dormant": {
+      "behaviours": [],
+      "transitions": [
+        { "type": "playerWithin", "range": 12, "target": "phase1" }
+      ]
+    },
+    "phase1": {
+      "behaviours": [
+        { "type": "orbit", "speed": 0.4, "radius": 6 },
+        { "type": "shoot", "cooldownMultiplier": 1.0, "projectileCount": 3, "spread": 0.4 }
+      ],
+      "transitions": [
+        { "type": "healthBelow", "threshold": 0.6, "target": "phase2" },
+        { "type": "noPlayerWithin", "range": 20, "target": "dormant" }
+      ]
+    },
+    "phase2": {
+      "behaviours": [
+        { "type": "orbit", "speed": 0.7, "radius": 5 },
+        { "type": "shoot", "cooldownMultiplier": 0.7, "projectileCount": 5, "spread": 0.6 }
+      ],
+      "transitions": [
+        { "type": "healthBelow", "threshold": 0.3, "target": "phase3" }
+      ]
+    },
+    "phase3": {
+      "behaviours": [
+        { "type": "swirl", "speed": 1.0, "radius": 4, "rotationSpeed": 6 },
+        { "type": "shoot", "cooldownMultiplier": 0.4, "projectileCount": 8, "spread": 0.8, "inaccuracy": 0.1 }
+      ],
+      "transitions": []
+    }
+  }
+}

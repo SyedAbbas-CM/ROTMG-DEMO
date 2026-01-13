@@ -60,3 +60,6 @@ Thumbs.db
 .secrets
 *.pem
 certs/
+# Ignore macOS resource forks
+._*
+.DS_Store

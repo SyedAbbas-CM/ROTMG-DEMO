@@ -1,56 +1,135 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "EnemyDefinition",
+  "description": "Define custom enemies with behaviors and attack patterns",
   "type": "object",
   "required": ["id", "name", "sprite", "hp", "states"],
   "properties": {
-    "id": { "type": ["integer", "string"] },
-    "name": { "type": "string" },
-    "sprite": { "type": "string" },
-    "hp": { "type": "number", "minimum": 1 },
-    "speed": { "type": "number", "minimum": 0 },
+    "initialState": {
+      "type": "string",
+      "description": "Name of the initial/starting state (default: 'idle' or first state)"
+    },
+    "id": {
+      "type": ["integer", "string"],
+      "description": "Unique identifier for the enemy (used in spawns)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the enemy"
+    },
+    "sprite": {
+      "type": "string",
+      "description": "Sprite reference (e.g., 'chars:goblin' or just 'goblin')"
+    },
+    "hp": {
+      "type": "number",
+      "minimum": 1,
+      "description": "Maximum health points"
+    },
+    "speed": {
+      "type": "number",
+      "minimum": 0,
+      "default": 10,
+      "description": "Base movement speed"
+    },
+    "width": {
+      "type": "number",
+      "default": 1,
+      "description": "Collision width in tiles"
+    },
+    "height": {
+      "type": "number",
+      "default": 1,
+      "description": "Collision height in tiles"
+    },
+    "renderScale": {
+      "type": "number",
+      "default": 2,
+      "description": "Visual scale multiplier"
+    },
+    "contactDamage": {
+      "type": "number",
+      "default": 0,
+      "description": "Damage dealt on contact per second"
+    },
+    "knockbackForce": {
+      "type": "number",
+      "default": 0,
+      "description": "Knockback force applied on contact"
+    },
     "attack": {
       "type": "object",
+      "description": "Projectile attack configuration",
       "properties": {
-        "damage": { "type": "number" },
-        "range": { "type": "number" },
-        "cooldown": { "type": "number" },
-        "projectileCount": { "type": "integer", "minimum": 1 },
-        "spread": { "type": "number" }
+        "damage": { "type": "number", "default": 10 },
+        "range": { "type": "number", "default": 120, "description": "Attack range in tiles" },
+        "cooldown": { "type": "number", "default": 1000, "description": "Cooldown in milliseconds" },
+        "projectileCount": { "type": "integer", "minimum": 1, "default": 1 },
+        "count": { "type": "integer", "minimum": 1, "description": "Alias for projectileCount" },
+        "spread": { "type": "number", "default": 0, "description": "Angle spread in degrees" },
+        "inaccuracy": { "type": "number", "default": 0, "description": "Random inaccuracy in degrees" },
+        "speed": { "type": "number", "default": 20, "description": "Projectile speed" },
+        "lifetime": { "type": "number", "default": 2000, "description": "Projectile lifetime in ms" },
+        "sprite": { "type": "string", "description": "Custom projectile sprite" }
       },
       "additionalProperties": true
     },
     "states": {
       "type": "object",
+      "description": "Behavior state machine. First state (or 'idle'/'default') is the starting state.",
       "patternProperties": {
         ".+": {
           "type": "object",
           "properties": {
             "behaviours": {
               "type": "array",
+              "description": "List of behaviors active in this state",
               "items": {
                 "oneOf": [
-                  { "type": "string" },
+                  {
+                    "type": "string",
+                    "enum": ["wander", "chase", "follow", "shoot", "orbit", "runAway", "swirl", "charge", "directionalShoot", "protect", "teleportToTarget", "tossObject", "suicide"]
+                  },
                   {
                     "type": "object",
                     "required": ["type"],
                     "properties": {
-                      "type": { "type": "string" },
-                      "params": { "type": "object" }
+                      "type": {
+                        "type": "string",
+                        "enum": ["wander", "chase", "follow", "shoot", "orbit", "runAway", "swirl", "charge", "directionalShoot", "protect", "teleportToTarget", "tossObject", "suicide"]
+                      },
+                      "params": {
+                        "type": "object",
+                        "description": "Behavior-specific parameters (or put params directly on object)"
+                      }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": true
                   }
                 ]
               }
             },
             "transitions": {
               "type": "array",
+              "description": "Conditions that trigger state changes",
               "items": {
                 "type": "object",
                 "required": ["type", "target"],
                 "properties": {
-                  "type": { "type": "string" },
-                  "target": { "type": "string" }
+                  "type": {
+                    "type": "string",
+                    "enum": ["timed", "randomTimer", "playerWithin", "noPlayerWithin", "healthBelow", "healthAbove", "damageTaken", "randomChance", "entityExists", "entityNotExists"]
+                  },
+                  "target": {
+                    "type": "string",
+                    "description": "Name of target state"
+                  },
+                  "time": { "type": "number", "description": "Duration in seconds (for timed)" },
+                  "minTime": { "type": "number", "description": "Min duration (for randomTimer)" },
+                  "maxTime": { "type": "number", "description": "Max duration (for randomTimer)" },
+                  "range": { "type": "number", "description": "Detection range in tiles" },
+                  "threshold": { "type": "number", "description": "HP ratio 0.0-1.0 or damage amount" },
+                  "chance": { "type": "number", "description": "Probability per second 0.0-1.0" },
+                  "entityId": { "type": ["string", "integer"], "description": "Entity to check for" }
                 },
                 "additionalProperties": true
               }
@@ -60,7 +139,22 @@
         }
       }
     },
-    "loot": { "type": "object" }
+    "loot": {
+      "type": "object",
+      "description": "Loot drop configuration",
+      "properties": {
+        "drops": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "itemId": { "type": "string" },
+              "chance": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }
+    }
   },
   "additionalProperties": false
-} 
+}
