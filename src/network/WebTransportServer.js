@@ -384,6 +384,12 @@ export class WebTransportServer {
             return false;
         }
 
+        // Guard against double initialization
+        if (this.server) {
+            console.log('[WebTransport Server] Already started, skipping');
+            return true;
+        }
+
         // Validate certificate files
         if (!this.certPath || !this.keyPath) {
             console.error('[WebTransport Server] Certificate paths not configured');
