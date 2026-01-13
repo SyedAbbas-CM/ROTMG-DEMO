@@ -1010,7 +1010,7 @@ async function handlePlayerRespawn(clientId) {
   console.log(`[SERVER] 🌍 Respawning at random location: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)}) in world ${mapId}`);
 
   // Get player's class for correct stats (preserve from before death, or default to warrior)
-  const playerClassName = oldClient?.player?.class || 'warrior';
+  const playerClassName = client?.player?.class || 'warrior';
   const playerClass = getClassById(playerClassName);
 
   // MMO-STYLE: Create a completely NEW player object (like a fresh login)
@@ -1509,9 +1509,11 @@ function applyEnemyBulletsToPlayers(bulletMgr, players) {
 
       if (hit) {
         const dmg = bulletMgr.damage ? bulletMgr.damage[bi] : 10;
+        const oldHealth = player.health;
         player.health -= dmg;
         if (player.health < 0) player.health = 0;
         bulletMgr.markForRemoval(bi);
+        console.log(`[DAMAGE] Player ${player.id || 'unknown'} hit by bullet ${bulletMgr.id[bi]}: ${oldHealth} -> ${player.health} (-${dmg})`);
       }
     }
   }
@@ -1803,6 +1805,9 @@ if (ENABLE_FIXED_MAP_LOADING) {
 // Initialise manager bundle for the procedural default world
 const { bulletMgr: bulletManager, enemyMgr: enemyManager, collMgr: collisionManager } = getWorldCtx(defaultMapId);
 console.log('[WORLD_CTX] Default world managers ready – bullets:', typeof bulletManager, 'enemies:', typeof enemyManager);
+
+// Spawn enemies for the default overworld map
+spawnMapEnemies(defaultMapId);
 
 // WebSocket server state
 const clients = new Map(); // clientId -> { socket, player, lastUpdate, mapId }
@@ -2504,7 +2509,7 @@ function broadcastWorldUpdates() {
       // Include local player health separately (server-authoritative)
       const localPlayerHealth = {
         health: c.player.health,
-        maxHealth: c.player.maxHealth || 1000,
+        maxHealth: c.player.maxHealth || 200,  // Default to typical class HP, not 1000
         isDead: c.player.isDead || false
       };
 

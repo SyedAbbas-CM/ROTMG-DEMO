@@ -759,7 +759,7 @@ export class ClientNetworkManager {
             if (data.localPlayer && window.gameState?.character) {
                 const oldHealth = window.gameState.character.health;
                 window.gameState.character.health = data.localPlayer.health;
-                window.gameState.character.maxHealth = data.localPlayer.maxHealth || 1000;
+                window.gameState.character.maxHealth = data.localPlayer.maxHealth || 200;  // Match class HP default
                 window.gameState.character.isDead = data.localPlayer.isDead || false;
 
                 // DEBUG: Log health changes
@@ -769,7 +769,7 @@ export class ClientNetworkManager {
 
                 // Update UI if health changed
                 if (oldHealth !== data.localPlayer.health && window.gameUI?.updateHealth) {
-                    window.gameUI.updateHealth(data.localPlayer.health, data.localPlayer.maxHealth || 1000);
+                    window.gameUI.updateHealth(data.localPlayer.health, data.localPlayer.maxHealth || 200);
                 }
             }
 
