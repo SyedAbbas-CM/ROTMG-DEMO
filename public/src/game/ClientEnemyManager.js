@@ -384,27 +384,26 @@ export class ClientEnemyManager {
     }
     
     /**
-     * Update position interpolation
+     * Update position interpolation using exponential smoothing
      * @param {number} index - Enemy index
      * @param {number} deltaTime - Time elapsed since last update
      */
     updateInterpolation(index, deltaTime) {
-      // Interpolation factor (0 to 1)
-      const INTERP_SPEED = 5; // Adjust for smoother/faster interpolation
-      this.interpTime[index] += deltaTime * INTERP_SPEED;
-      
-      if (this.interpTime[index] >= 1) {
-        // Reached target, prepare for next interpolation
-        this.prevX[index] = this.targetX[index];
-        this.prevY[index] = this.targetY[index];
+      // Use exponential smoothing - works better with frequent updates
+      // Higher value = faster catch-up, but less smooth
+      const SMOOTH_FACTOR = 15; // Tuned for 30 updates/sec from server
+      const t = Math.min(1.0, SMOOTH_FACTOR * deltaTime);
+
+      // Smoothly move current position towards target
+      this.x[index] += (this.targetX[index] - this.x[index]) * t;
+      this.y[index] += (this.targetY[index] - this.y[index]) * t;
+
+      // Snap if very close to avoid floating point drift
+      const dx = this.targetX[index] - this.x[index];
+      const dy = this.targetY[index] - this.y[index];
+      if (dx * dx + dy * dy < 0.0001) {
         this.x[index] = this.targetX[index];
         this.y[index] = this.targetY[index];
-        this.interpTime[index] = 1;
-      } else {
-        // Interpolate between previous and target positions
-        const t = this.interpTime[index];
-        this.x[index] = this.prevX[index] + (this.targetX[index] - this.prevX[index]) * t;
-        this.y[index] = this.prevY[index] + (this.targetY[index] - this.prevY[index]) * t;
       }
     }
     
@@ -608,14 +607,9 @@ export class ClientEnemyManager {
         const index = this.findIndexById(enemy.id);
         
         if (index !== -1) {
-          // Update existing enemy (interpolated movement)
-
-          // Update target position for interpolation
-          this.prevX[index] = this.x[index];
-          this.prevY[index] = this.y[index];
+          // Update existing enemy - just set new target, interpolation handles smoothing
           this.targetX[index] = enemy.x;
           this.targetY[index] = enemy.y;
-          this.interpTime[index] = 0; // reset interpolation timer
 
           // Update health (with hit flash)
           if (this.health[index] !== enemy.health) {
