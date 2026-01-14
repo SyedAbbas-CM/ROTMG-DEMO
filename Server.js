@@ -2731,30 +2731,22 @@ function tryListen(port, attemptsLeft = 5) {
         strategicEnabled: llmConfig.strategicEnabled
       });
 
-      // Spawn 4 AI Pattern Bosses with different configs
+      // DISABLED: Boss spawning causing server instability
+      // TODO: Fix BossManager max limit before re-enabling
+      /*
       if (bossManager && mainMapCtx?.enemyMgr && aiPatternBoss) {
-        // Boss 1: Bloom Guardian (Easy) - Near spawn
         bossManager.spawnBoss('enemy_8', 30, 30, gameState.mapId);
         aiPatternBoss.setBossConfig(0, 'bloom_guardian');
-
-        // Boss 2: Storm Caller (Medium) - East
         bossManager.spawnBoss('enemy_8', 80, 30, gameState.mapId);
         aiPatternBoss.setBossConfig(1, 'storm_caller');
-
-        // Boss 3: Void Burst (Hard) - South
         bossManager.spawnBoss('enemy_8', 30, 80, gameState.mapId);
         aiPatternBoss.setBossConfig(2, 'void_burst');
-
-        // Boss 4: Serpent King (Expert) - Southeast
         bossManager.spawnBoss('enemy_8', 80, 80, gameState.mapId);
         aiPatternBoss.setBossConfig(3, 'serpent_king');
-
-        console.log('[SERVER] Spawned 4 AI Pattern Bosses:');
-        console.log('  - Bloom Guardian (Easy) at (30, 30)');
-        console.log('  - Storm Caller (Medium) at (80, 30)');
-        console.log('  - Void Burst (Hard) at (30, 80)');
-        console.log('  - Serpent King (Expert) at (80, 80)');
+        console.log('[SERVER] Spawned 4 AI Pattern Bosses');
       }
+      */
+      console.log('[SERVER] Boss spawning disabled for stability');
     } catch (err) {
       console.error('[SERVER] Failed to initialize boss AI:', err);
     }
