@@ -389,6 +389,169 @@ app.get('/api/assets/atlas/:file', (req, res) => {
   }
 });
 
+// ============================================================================
+// SERVER LOG MONITORING ENDPOINTS
+// ============================================================================
+
+// In-memory log buffer for fast access (keeps last 1000 lines)
+const logBuffer = {
+  lines: [],
+  maxLines: 1000,
+  add(line) {
+    this.lines.push({ time: Date.now(), text: line });
+    if (this.lines.length > this.maxLines) {
+      this.lines.shift();
+    }
+  },
+  getLast(n = 100) {
+    return this.lines.slice(-n);
+  },
+  search(pattern, n = 200) {
+    const regex = new RegExp(pattern, 'i');
+    return this.lines.slice(-n).filter(l => regex.test(l.text));
+  },
+  getErrors(n = 100) {
+    const errorPattern = /error|exception|failed|crash|warn/i;
+    return this.lines.slice(-n).filter(l => errorPattern.test(l.text));
+  }
+};
+
+// Intercept console.log/error to capture in buffer
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+console.log = (...args) => {
+  const line = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+  logBuffer.add(line);
+  originalLog.apply(console, args);
+};
+
+console.error = (...args) => {
+  const line = '[ERROR] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+  logBuffer.add(line);
+  originalError.apply(console, args);
+};
+
+console.warn = (...args) => {
+  const line = '[WARN] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+  logBuffer.add(line);
+  originalWarn.apply(console, args);
+};
+
+// GET /api/logs - Get recent logs
+app.get('/api/logs', (req, res) => {
+  const lines = parseInt(req.query.lines) || 100;
+  const logs = logBuffer.getLast(lines);
+  res.json({
+    count: logs.length,
+    logs: logs.map(l => ({
+      time: new Date(l.time).toISOString(),
+      text: l.text
+    }))
+  });
+});
+
+// GET /api/logs/errors - Get recent errors only
+app.get('/api/logs/errors', (req, res) => {
+  const lines = parseInt(req.query.lines) || 200;
+  const errors = logBuffer.getErrors(lines);
+  res.json({
+    count: errors.length,
+    errors: errors.map(l => ({
+      time: new Date(l.time).toISOString(),
+      text: l.text
+    }))
+  });
+});
+
+// GET /api/logs/search - Search logs with pattern
+app.get('/api/logs/search', (req, res) => {
+  const pattern = req.query.q || req.query.pattern;
+  const lines = parseInt(req.query.lines) || 200;
+  if (!pattern) {
+    return res.status(400).json({ error: 'Pattern required (?q=pattern)' });
+  }
+  try {
+    const matches = logBuffer.search(pattern, lines);
+    res.json({
+      pattern,
+      count: matches.length,
+      matches: matches.map(l => ({
+        time: new Date(l.time).toISOString(),
+        text: l.text
+      }))
+    });
+  } catch (err) {
+    res.status(400).json({ error: 'Invalid regex pattern' });
+  }
+});
+
+// GET /api/logs/stream - SSE stream of logs (real-time)
+app.get('/api/logs/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  // Send last 20 lines immediately
+  const recent = logBuffer.getLast(20);
+  recent.forEach(l => {
+    res.write(`data: ${JSON.stringify({ time: new Date(l.time).toISOString(), text: l.text })}\n\n`);
+  });
+
+  // Track position in buffer
+  let lastIndex = logBuffer.lines.length;
+
+  const interval = setInterval(() => {
+    const newLines = logBuffer.lines.slice(lastIndex);
+    newLines.forEach(l => {
+      res.write(`data: ${JSON.stringify({ time: new Date(l.time).toISOString(), text: l.text })}\n\n`);
+    });
+    lastIndex = logBuffer.lines.length;
+  }, 500);
+
+  req.on('close', () => {
+    clearInterval(interval);
+  });
+});
+
+// GET /api/status - Server status summary
+app.get('/api/status', (req, res) => {
+  const uptime = process.uptime();
+  const memUsage = process.memoryUsage();
+
+  // Count entities
+  let totalEnemies = 0;
+  let totalBullets = 0;
+  let totalPlayers = clients.size;
+
+  worldContexts.forEach(ctx => {
+    totalEnemies += ctx.enemyMgr?.enemyCount || 0;
+    totalBullets += ctx.bulletMgr?.bulletCount || 0;
+  });
+
+  res.json({
+    status: 'running',
+    uptime: {
+      seconds: Math.floor(uptime),
+      formatted: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`
+    },
+    memory: {
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB',
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + 'MB',
+      rss: Math.round(memUsage.rss / 1024 / 1024) + 'MB'
+    },
+    entities: {
+      players: totalPlayers,
+      enemies: totalEnemies,
+      bullets: totalBullets
+    },
+    recentErrors: logBuffer.getErrors(50).length
+  });
+});
+
+// ============================================================================
+
 // POST /api/assets/atlases/save – persist atlas JSON sent from the editor
 app.post('/api/assets/atlases/save', (req, res) => {
   const { filename, data } = req.body || {};
