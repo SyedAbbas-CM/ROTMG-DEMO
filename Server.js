@@ -2687,8 +2687,8 @@ function tryListen(port, attemptsLeft = 5) {
 
       // Build LLM controller config from environment variables
       const llmConfig = {
-        // Tactical tier (enabled by default unless explicitly disabled)
-        tacticalEnabled: process.env.TACTICAL_ENABLED !== 'false',
+        // Tactical tier (DISABLED by default - set TACTICAL_ENABLED=true to enable)
+        tacticalEnabled: process.env.TACTICAL_ENABLED === 'true',
 
         // Adaptive frequency (enabled by default)
         adaptiveFrequency: process.env.TACTICAL_ADAPTIVE !== 'false',
