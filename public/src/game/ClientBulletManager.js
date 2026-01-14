@@ -155,23 +155,23 @@ export class ClientBulletManager {
         continue;
       }
 
-      // Update target position based on velocity (server prediction)
-      this.targetX[i] += vx * deltaTime;
-      this.targetY[i] += vy * deltaTime;
+      // DIRECT POSITION UPDATE: Bullets move too fast for interpolation to help
+      // Just apply velocity directly - server corrections will snap position when needed
+      this.x[i] += vx * deltaTime;
+      this.y[i] += vy * deltaTime;
 
-      // DEFENSIVE: Check if target became NaN somehow
-      if (!isFinite(this.targetX[i]) || !isFinite(this.targetY[i])) {
-        console.error(`[BULLET] Target became NaN: id=${this.id[i]}, targetX=${this.targetX[i]}, targetY=${this.targetY[i]}`);
+      // Keep targetX/targetY in sync for any code that reads them
+      this.targetX[i] = this.x[i];
+      this.targetY[i] = this.y[i];
+
+      // DEFENSIVE: Check if position became NaN
+      if (!isFinite(this.x[i]) || !isFinite(this.y[i])) {
+        console.error(`[BULLET] Position became NaN: id=${this.id[i]}, x=${this.x[i]}, y=${this.y[i]}`);
         this.swapRemove(i);
         count--;
         i--;
         continue;
       }
-
-      // Smoothly interpolate actual position towards target (reduces jitter)
-      const interpFactor = Math.min(1.0, this.interpolationSpeed * deltaTime);
-      this.x[i] += (this.targetX[i] - this.x[i]) * interpFactor;
-      this.y[i] += (this.targetY[i] - this.y[i]) * interpFactor;
 
       // CLIENT-SIDE COLLISION: Check if enemy bullet hits player
       if (hasPlayer && this.faction[i] === 0) { // faction 0 = enemy bullets
@@ -371,22 +371,16 @@ export class ClientBulletManager {
           continue;
         }
 
-        // Update existing bullet - use interpolation to prevent jitter
-        // Set TARGET position from server, actual position will interpolate towards it
+        // DIRECT SNAP: Server position is authoritative - no interpolation for bullets
+        // This prevents jitter from prediction/correction conflicts
+        this.x[index] = bullet.x;
+        this.y[index] = bullet.y;
         this.targetX[index] = bullet.x;
         this.targetY[index] = bullet.y;
-        // Only update velocity if provided (binary protocol may only send position)
+
+        // Update velocity if provided (binary protocol may only send position)
         if (bullet.vx !== undefined && isFinite(bullet.vx)) this.vx[index] = bullet.vx;
         if (bullet.vy !== undefined && isFinite(bullet.vy)) this.vy[index] = bullet.vy;
-
-        // If this is the first update or bullet jumped too far (>10 tiles), snap immediately
-        const deltaX = bullet.x - this.x[index];
-        const deltaY = bullet.y - this.y[index];
-        const distSq = deltaX * deltaX + deltaY * deltaY;
-        if (distSq > 100) { // > 10 tiles, snap immediately
-          this.x[index] = bullet.x;
-          this.y[index] = bullet.y;
-        }
         if (bullet.life !== undefined || bullet.lifetime !== undefined) {
           this.life[index] = bullet.life || bullet.lifetime || 3.0;
         }

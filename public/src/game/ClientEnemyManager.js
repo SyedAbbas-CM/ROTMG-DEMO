@@ -391,7 +391,7 @@ export class ClientEnemyManager {
     updateInterpolation(index, deltaTime) {
       // Use exponential smoothing - works better with frequent updates
       // Higher value = faster catch-up, but less smooth
-      const SMOOTH_FACTOR = 15; // Tuned for 30 updates/sec from server
+      const SMOOTH_FACTOR = 25; // Increased for faster response to server updates
       const t = Math.min(1.0, SMOOTH_FACTOR * deltaTime);
 
       // Smoothly move current position towards target
