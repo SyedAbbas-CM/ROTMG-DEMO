@@ -109,6 +109,76 @@ function initLogDir() {
 // Initialize on first import
 const logsInitialized = initLogDir();
 
+// =============================================================================
+// CONSOLE INTERCEPTION - Auto-capture all console output to files
+// =============================================================================
+
+// Extract module name from log message like "[ModuleName] message"
+function extractModule(text) {
+  const match = String(text).match(/^\[([^\]]+)\]/);
+  return match ? match[1] : 'General';
+}
+
+// Store original console methods
+const originalConsole = {
+  log: console.log.bind(console),
+  error: console.error.bind(console),
+  warn: console.warn.bind(console),
+  info: console.info.bind(console)
+};
+
+// Write raw line to appropriate log file based on content
+function writeRawLog(level, args) {
+  if (!logsInitialized || !args.length) return;
+
+  const text = args.map(a => {
+    if (a === undefined) return 'undefined';
+    if (a === null) return 'null';
+    if (typeof a === 'object') {
+      try { return JSON.stringify(a); }
+      catch { return '[object]'; }
+    }
+    return String(a);
+  }).join(' ');
+
+  const module = extractModule(text);
+  const category = getCategory(module);
+  const ts = new Date().toISOString();
+
+  const line = `[${ts}] [${level}] ${text}\n`;
+
+  // Write to category file
+  streams[category]?.write(line);
+
+  // Write errors to errors.log too
+  if (level === 'ERROR' || level === 'WARN') {
+    streams.errors?.write(line);
+  }
+}
+
+// Intercept console methods
+console.log = (...args) => {
+  originalConsole.log(...args);
+  writeRawLog('INFO', args);
+};
+
+console.error = (...args) => {
+  originalConsole.error(...args);
+  writeRawLog('ERROR', args);
+};
+
+console.warn = (...args) => {
+  originalConsole.warn(...args);
+  writeRawLog('WARN', args);
+};
+
+console.info = (...args) => {
+  originalConsole.info(...args);
+  writeRawLog('INFO', args);
+};
+
+// =============================================================================
+
 function timestamp() {
   return new Date().toISOString();
 }
