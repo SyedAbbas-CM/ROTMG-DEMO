@@ -18,6 +18,9 @@ export const MessageType = {
   PLAYER_LEAVE: 11,
   PLAYER_UPDATE: 12,
   PLAYER_LIST: 13,
+  PLAYER_DEATH: 14,
+  PLAYER_RESPAWN: 15,
+  CHARACTER_SELECT: 16,  // Server->Client: prompt class selection (all chars dead)
 
   // Entity messages
   ENEMY_LIST: 20,
@@ -38,6 +41,9 @@ export const MessageType = {
   PICKUP_DENIED: 37,
   MOVE_ITEM: 38,
   MOVE_DENIED: 39,
+  EQUIP_ITEM: 42,      // Client->Server: equip item from inventory slot
+  UNEQUIP_ITEM: 43,    // Client->Server: unequip item to inventory
+  EQUIPMENT_UPDATE: 44, // Server->Client: equipment changed
 
   // Collision messages
   COLLISION: 40,
@@ -63,14 +69,14 @@ export const MessageType = {
   PLAYER_LIST_REQUEST: 80,
 
   // Chat and text
-  PLAYER_TEXT: 89,
   CHAT_MESSAGE: 90,
   SPEECH: 91,
+  PLAYER_TEXT: 92,
 
   // Unit control
-  UNIT_SPAWN: 100,
-  UNIT_COMMAND: 101,
-  UNIT_SELECT: 102
+  UNIT_COMMAND: 100,
+  UNIT_UPDATE: 101,
+  UNIT_SPAWN: 102
 };
 
 // Helpers to build/validate message payloads (lightweight – no runtime deps)

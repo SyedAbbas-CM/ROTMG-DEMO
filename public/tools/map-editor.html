@@ -464,14 +464,31 @@
     // ============= INITIALIZATION =============
     async function init() {
       try {
-        // Load sprite atlases
-        const atlRes = await fetch('/api/assets/atlases');
-        const atlJson = await atlRes.json();
-        if (!atlJson.atlases.length) {
+        // Load sprite atlases - try API first, fallback to hardcoded list
+        let atlasPaths = [];
+        try {
+          const atlRes = await fetch('/api/assets/atlases');
+          if (!atlRes.ok) throw new Error('API unavailable');
+          const atlJson = await atlRes.json();
+          atlasPaths = atlJson.atlases || [];
+        } catch (e) {
+          console.warn('[MapEditor] API unavailable, using fallback atlas list');
+          // Fallback: hardcoded atlas paths for local development
+          atlasPaths = [
+            '/assets/atlases/chars.json',
+            '/assets/atlases/chars2.json',
+            '/assets/atlases/tiles.json',
+            '/assets/atlases/tiles2.json',
+            '/assets/atlases/lofi_obj.json',
+            '/assets/atlases/lofi_environment.json',
+            '/assets/atlases/Mixed_Units.json'
+          ];
+        }
+        if (!atlasPaths.length) {
           alert('No atlases found');
           return;
         }
-        await spriteDatabase.loadAtlases(atlJson.atlases.map(p => p.startsWith('/') ? p : '/' + p));
+        await spriteDatabase.loadAtlases(atlasPaths.map(p => p.startsWith('/') ? p : '/' + p));
         
         // Load entity database
         await entityDatabase.load();
@@ -658,7 +675,6 @@
         }
         enemyListDiv.appendChild(thumb);
       }
-    }
     }
 
     function updateTilePicker() {
@@ -869,17 +885,55 @@
     }
 
     async function refreshMapList() {
+      const mapListSelect = document.getElementById('mapList');
+      mapListSelect.innerHTML = '';
+      const addedMaps = new Set();
+
+      // Try server API first
       try {
         const response = await fetch('/api/map-editor/maps');
+        if (!response.ok) throw new Error('API unavailable');
         const data = await response.json();
-        const mapListSelect = document.getElementById('mapList');
-        
-        mapListSelect.innerHTML = '';
         data.maps.forEach(mapName => {
-          mapListSelect.appendChild(new Option(mapName, mapName));
+          if (!addedMaps.has(mapName)) {
+            mapListSelect.appendChild(new Option(mapName, mapName));
+            addedMaps.add(mapName);
+          }
         });
       } catch (error) {
-        console.error('Failed to refresh map list:', error);
+        console.warn('[MapEditor] Map list API unavailable, using fallback');
+        // Fallback: try to load known maps directly
+        const knownMaps = ['test.json', 'StartingArea.json', 'RiverBridge.json', 'SampleBossRoom.json', 'SampleNexus.json'];
+        for (const mapName of knownMaps) {
+          try {
+            const res = await fetch(`/maps/${mapName}`);
+            if (res.ok && !addedMaps.has(mapName)) {
+              mapListSelect.appendChild(new Option(mapName, mapName));
+              addedMaps.add(mapName);
+            }
+          } catch {}
+        }
+      }
+
+      // Also add maps from localStorage
+      try {
+        const savedMaps = JSON.parse(localStorage.getItem('MAP_LIST') || '[]');
+        savedMaps.forEach(mapName => {
+          // Skip invalid entries (not strings or empty)
+          if (typeof mapName !== 'string' || !mapName) return;
+          if (!addedMaps.has(mapName)) {
+            mapListSelect.appendChild(new Option(`${mapName} (local)`, `local:${mapName}`));
+            addedMaps.add(mapName);
+          }
+        });
+      } catch (e) {
+        // Clear corrupted localStorage
+        console.warn('[MapEditor] Clearing corrupted MAP_LIST');
+        localStorage.removeItem('MAP_LIST');
+      }
+
+      if (mapListSelect.options.length === 0) {
+        console.log('[MapEditor] No maps found, starting fresh');
       }
     }
 
@@ -1598,7 +1652,7 @@
     async function saveMap() {
       const filename = prompt('Save map as:');
       if (!filename) return;
-      
+
       const mapData = {
         width: mapW,
         height: mapH,
@@ -1607,7 +1661,7 @@
         layers: layers,
         entities: entities
       };
-      
+
       try {
         const response = await fetch('/api/map-editor/save', {
           method: 'POST',
@@ -1617,7 +1671,9 @@
             mapData: mapData
           })
         });
-        
+
+        if (!response.ok) throw new Error('API unavailable');
+
         const result = await response.json();
         if (result.success) {
           updateStatus(`Map saved to ${result.path}`);
@@ -1626,18 +1682,43 @@
           alert(`Save failed: ${result.error}`);
         }
       } catch (error) {
-        console.error('Save failed:', error);
-        alert('Save failed: ' + error.message);
+        // Fallback: save to localStorage when server unavailable
+        console.warn('[MapEditor] Server unavailable, saving to localStorage');
+        const mapKey = `MAP_${filename.replace(/\.json$/i, '')}`;
+        localStorage.setItem(mapKey, JSON.stringify(mapData));
+
+        // Track saved maps in localStorage
+        let savedMaps = JSON.parse(localStorage.getItem('MAP_LIST') || '[]');
+        if (!savedMaps.includes(filename)) {
+          savedMaps.push(filename);
+          localStorage.setItem('MAP_LIST', JSON.stringify(savedMaps));
+        }
+
+        updateStatus(`Map saved to localStorage: ${filename}`);
+        await refreshMapList();
       }
     }
 
     async function loadMap() {
-      const filename = document.getElementById('mapList').value;
-      if (!filename) return;
-      
+      const rawFilename = document.getElementById('mapList').value;
+      if (!rawFilename) return;
+
+      let mapData;
+      let filename = rawFilename;
+
       try {
-        const response = await fetch('/maps/' + filename);
-        const mapData = await response.json();
+        // Check if this is a localStorage map
+        if (rawFilename.startsWith('local:')) {
+          filename = rawFilename.replace('local:', '');
+          const mapKey = `MAP_${filename.replace(/\.json$/i, '')}`;
+          const stored = localStorage.getItem(mapKey);
+          if (!stored) throw new Error('Map not found in localStorage');
+          mapData = JSON.parse(stored);
+        } else {
+          const response = await fetch('/maps/' + filename);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          mapData = await response.json();
+        }
         
         // Load basic properties
         mapW = mapData.width || 32;

@@ -4,11 +4,13 @@
  * This file defines enemy spawns for each world/map.
  * Easy to edit - just add enemy objects with { id, x, y } format.
  *
- * Available Enemy Types:
- * - 'goblin'           : Basic chase enemy, 30 HP, single shots
- * - 'charging_shooter' : Charges while shooting rapidly, 80 HP
- *
- * Add your custom enemies after creating them in the behavior designer!
+ * NEW Enemy Types (5 tiers):
+ * - 'imp'          : Tier 1 - Fast, weak (50 HP), single shots
+ * - 'skeleton'     : Tier 2 - Medium (150 HP), 2-bullet spread
+ * - 'beholder'     : Tier 3 - Tanky (400 HP), 4-way spread
+ * - 'red_demon'    : Tier 4 - Strong (800 HP), 3-shot burst
+ * - 'green_dragon' : Tier 5 - Boss (2000 HP), 8-bullet ring
+ * - 'boss_enemy'   : Pattern Boss (5000 HP), AI patterns
  */
 
 export const worldSpawns = {
@@ -17,40 +19,30 @@ export const worldSpawns = {
   // OVERWORLD (Procedural Generated World)
   // ========================================
   overworld: {
-    description: "Battle formation: 5 cavalry, 10 soldiers, 5 archers",
+    description: "Mixed enemy tiers for testing progression",
     spawns: [
-      // Front line: 5 Light Cavalry (red_demon)
-      { id: 'red_demon', x: 20, y: 30, comment: 'Cavalry Left Flank' },
-      { id: 'red_demon', x: 25, y: 30, comment: 'Cavalry Left' },
-      { id: 'red_demon', x: 30, y: 30, comment: 'Cavalry Center' },
-      { id: 'red_demon', x: 35, y: 30, comment: 'Cavalry Right' },
-      { id: 'red_demon', x: 40, y: 30, comment: 'Cavalry Right Flank' },
+      // Tier 1 - Imps (weak, fast scouts)
+      { id: 'imp', x: 15, y: 25, comment: 'Imp Scout 1' },
+      { id: 'imp', x: 20, y: 25, comment: 'Imp Scout 2' },
+      { id: 'imp', x: 25, y: 25, comment: 'Imp Scout 3' },
+      { id: 'imp', x: 30, y: 25, comment: 'Imp Scout 4' },
+      { id: 'imp', x: 35, y: 25, comment: 'Imp Scout 5' },
 
-      // Middle line: 10 Infantry (goblin soldiers)
-      { id: 'goblin', x: 18, y: 35, comment: 'Infantry' },
-      { id: 'goblin', x: 22, y: 35, comment: 'Infantry' },
-      { id: 'goblin', x: 26, y: 35, comment: 'Infantry' },
-      { id: 'goblin', x: 30, y: 35, comment: 'Infantry Center' },
-      { id: 'goblin', x: 34, y: 35, comment: 'Infantry' },
-      { id: 'goblin', x: 38, y: 35, comment: 'Infantry' },
-      { id: 'goblin', x: 42, y: 35, comment: 'Infantry' },
-      { id: 'goblin', x: 46, y: 35, comment: 'Infantry' },
-      { id: 'goblin', x: 50, y: 35, comment: 'Infantry' },
-      { id: 'goblin', x: 54, y: 35, comment: 'Infantry' },
+      // Tier 2 - Skeletons (medium fighters)
+      { id: 'skeleton', x: 18, y: 32, comment: 'Skeleton Warrior 1' },
+      { id: 'skeleton', x: 24, y: 32, comment: 'Skeleton Warrior 2' },
+      { id: 'skeleton', x: 30, y: 32, comment: 'Skeleton Warrior 3' },
+      { id: 'skeleton', x: 36, y: 32, comment: 'Skeleton Warrior 4' },
 
-      // Back line: 5 Archers
-      { id: 'archer', x: 25, y: 40, comment: 'Archer Left' },
-      { id: 'archer', x: 30, y: 40, comment: 'Archer Left Center' },
-      { id: 'archer', x: 35, y: 40, comment: 'Archer Center' },
-      { id: 'archer', x: 40, y: 40, comment: 'Archer Right Center' },
-      { id: 'archer', x: 45, y: 40, comment: 'Archer Right' },
+      // Tier 3 - Beholders (tough ranged)
+      { id: 'beholder', x: 22, y: 40, comment: 'Beholder 1' },
+      { id: 'beholder', x: 32, y: 40, comment: 'Beholder 2' },
 
-      // NEW CUSTOM ENEMIES (for testing)
-      { id: 'necromancer', x: 60, y: 30, comment: 'Necromancer - summons skeletons' },
-      { id: 'berserker', x: 65, y: 30, comment: 'Berserker - rages at low HP' },
-      { id: 'skeleton_minion', x: 55, y: 35, comment: 'Skeleton 1' },
-      { id: 'skeleton_minion', x: 70, y: 35, comment: 'Skeleton 2' },
-      { id: 'lich_king', x: 80, y: 40, comment: 'Lich King - 3 phase boss' },
+      // Tier 4 - Red Demon (elite)
+      { id: 'red_demon', x: 50, y: 35, comment: 'Red Demon Elite' },
+
+      // Tier 5 - Green Dragon (mini-boss)
+      { id: 'green_dragon', x: 70, y: 40, comment: 'Green Dragon' },
     ]
   },
 
@@ -60,24 +52,26 @@ export const worldSpawns = {
   map_2: {
     description: "RiverBridge.json - Small bridge encounter",
     spawns: [
-      // Empty for now
+      { id: 'imp', x: 10, y: 15, comment: 'Bridge Imp 1' },
+      { id: 'imp', x: 20, y: 15, comment: 'Bridge Imp 2' },
+      { id: 'skeleton', x: 15, y: 20, comment: 'Bridge Guard' },
     ]
   },
 
   // ========================================
-  // BOSS ROOM - Lich King Encounter
+  // BOSS ROOM - Dragon Encounter
   // ========================================
   map_3: {
-    description: "SampleBossRoom.json - Lich King boss encounter",
+    description: "SampleBossRoom.json - Dragon boss encounter",
     spawns: [
-      // The Lich King - center of the room
-      { id: 'lich_king', x: 25, y: 25, comment: 'Lich King Boss' },
-      // Guardian necromancers
-      { id: 'necromancer', x: 15, y: 15, comment: 'Necromancer Guard Left' },
-      { id: 'necromancer', x: 35, y: 15, comment: 'Necromancer Guard Right' },
-      // Berserker sentinels
-      { id: 'berserker', x: 15, y: 35, comment: 'Berserker Sentinel Left' },
-      { id: 'berserker', x: 35, y: 35, comment: 'Berserker Sentinel Right' },
+      // The Dragon Boss - center of the room
+      { id: 'green_dragon', x: 25, y: 25, comment: 'Green Dragon Boss' },
+      // Guardian beholders
+      { id: 'beholder', x: 15, y: 15, comment: 'Beholder Guard Left' },
+      { id: 'beholder', x: 35, y: 15, comment: 'Beholder Guard Right' },
+      // Skeleton sentinels
+      { id: 'skeleton', x: 15, y: 35, comment: 'Skeleton Sentinel Left' },
+      { id: 'skeleton', x: 35, y: 35, comment: 'Skeleton Sentinel Right' },
     ]
   },
 
@@ -92,35 +86,32 @@ export const worldSpawns = {
   },
 
   // ========================================
-  // TEST DUNGEON - New Enemy Testing
+  // STARTING AREA - Easy Enemies
   // ========================================
   map_5: {
-    description: "TestDungeon.json - Enemy variety testing ground",
+    description: "StartingArea.json - New player introduction",
     spawns: [
-      // Necromancers (casters that summon skeletons)
-      { id: 'necromancer', x: 20, y: 20, comment: 'Necromancer 1' },
-      { id: 'necromancer', x: 30, y: 20, comment: 'Necromancer 2' },
-      // Berserkers (melee brutes that rage at low HP)
-      { id: 'berserker', x: 25, y: 30, comment: 'Berserker 1' },
-      { id: 'berserker', x: 35, y: 30, comment: 'Berserker 2' },
-      // Skeleton minions
-      { id: 'skeleton_minion', x: 15, y: 25, comment: 'Skeleton 1' },
-      { id: 'skeleton_minion', x: 40, y: 25, comment: 'Skeleton 2' },
-      { id: 'skeleton_minion', x: 25, y: 15, comment: 'Skeleton 3' },
+      // Only tier 1 enemies for new players
+      { id: 'imp', x: 15, y: 15, comment: 'Training Imp 1' },
+      { id: 'imp', x: 25, y: 15, comment: 'Training Imp 2' },
+      { id: 'imp', x: 20, y: 25, comment: 'Training Imp 3' },
+      // One skeleton for challenge
+      { id: 'skeleton', x: 25, y: 30, comment: 'Skeleton Challenge' },
     ]
   },
 
   // ========================================
-  // TEST MAP - Custom Enemy Testing
+  // TEST MAP - All Enemy Types
   // ========================================
   map_6: {
-    description: "test.json - Small test arena for custom enemies",
+    description: "test.json - All enemy types showcase",
     spawns: [
-      // Test the new custom enemies defined in public/assets/enemies-custom/
-      { id: 'fire_mage', x: 20, y: 20, comment: 'Fire Mage - Triple shot caster' },
-      { id: 'fire_mage', x: 25, y: 20, comment: 'Fire Mage 2' },
-      { id: 'shadow_assassin', x: 30, y: 25, comment: 'Shadow Assassin - Fast dashing attacker' },
-      { id: 'crystal_guardian', x: 25, y: 30, comment: 'Crystal Guardian - Multi-phase boss' },
+      // One of each tier for testing
+      { id: 'imp', x: 10, y: 15, comment: 'Tier 1 - Imp' },
+      { id: 'skeleton', x: 20, y: 15, comment: 'Tier 2 - Skeleton' },
+      { id: 'beholder', x: 30, y: 15, comment: 'Tier 3 - Beholder' },
+      { id: 'red_demon', x: 20, y: 25, comment: 'Tier 4 - Red Demon' },
+      { id: 'green_dragon', x: 25, y: 35, comment: 'Tier 5 - Dragon' },
     ]
   },
 
@@ -142,32 +133,37 @@ export function getWorldSpawns(worldId) {
 }
 
 /**
- * Get all available enemy types (from public/assets/entities/enemies.json)
- * To add new enemies, edit enemies.json and restart the server.
+ * Enemy Types Reference
+ * All enemies are defined in public/assets/entities/enemies.json
  */
 export const availableEnemies = [
-  // Infantry Units
-  { id: 'goblin', name: 'Light Infantry', hp: 120, description: 'Basic melee unit, moderate damage' },
-  { id: 'heavy_knight', name: 'Heavy Infantry', hp: 800, description: 'Tanky melee unit with axe attacks' },
+  // Tier 1 - Trash mobs
+  { id: 'imp', name: 'Fire Imp', hp: 50, tier: 1, description: 'Fast, weak, single shot' },
 
-  // Ranged Units
-  { id: 'archer', name: 'Archer', hp: 60, description: 'Long range, high single-shot damage' },
+  // Tier 2 - Common enemies
+  { id: 'skeleton', name: 'Skeleton Warrior', hp: 150, tier: 2, description: 'Medium HP, 2-bullet spread' },
 
-  // Cavalry Units
-  { id: 'red_demon', name: 'Light Cavalry', hp: 500, description: 'Fast, multi-projectile attacks' },
-  { id: 'heavy_cavalry', name: 'Heavy Cavalry', hp: 900, description: 'Heavily armored, devastating charge' },
+  // Tier 3 - Strong enemies
+  { id: 'beholder', name: 'Beholder', hp: 400, tier: 3, description: 'Tanky, 4-way spread attack' },
+
+  // Tier 4 - Elite enemies
+  { id: 'red_demon', name: 'Red Demon', hp: 800, tier: 4, description: 'Elite, 3-shot burst' },
+
+  // Tier 5 - Mini-bosses
+  { id: 'green_dragon', name: 'Green Dragon', hp: 2000, tier: 5, description: 'Boss, 8-bullet ring attack' },
 
   // Boss
-  { id: 'enemy_8', name: 'AI Pattern Boss', hp: 5000, description: 'Large boss, uses ML patterns' },
+  { id: 'boss_enemy', name: 'AI Pattern Boss', hp: 5000, tier: 6, description: 'Pattern boss with ML attacks' },
+];
 
-  // Custom Enemies (loaded from public/assets/enemies-custom/*.enemy.json)
-  { id: 'fire_mage', name: 'Fire Mage', hp: 200, description: 'Caster with triple-shot attack, retreats when close' },
-  { id: 'crystal_guardian', name: 'Crystal Guardian', hp: 1500, description: 'Multi-phase boss with increasing aggression' },
-  { id: 'shadow_assassin', name: 'Shadow Assassin', hp: 100, description: 'Fast, teleporting assassin with dash attacks' },
-
-  // New Enemies (Jan 2026)
-  { id: 'necromancer', name: 'Necromancer', hp: 150, description: 'Dark caster, summons skeletons, flees when close' },
-  { id: 'berserker', name: 'Berserker', hp: 400, description: 'Melee brute, rages at low HP' },
-  { id: 'skeleton_minion', name: 'Skeleton Minion', hp: 40, description: 'Summoned minion, weak but numerous' },
-  { id: 'lich_king', name: 'Lich King', hp: 3000, description: '3-phase boss: orbit->spiral->rage' },
+/**
+ * Unit Types Reference (separate from enemies - for controllable units)
+ * Units are defined in public/assets/entities/units.json
+ */
+export const availableUnits = [
+  { id: 'light_infantry', name: 'Light Infantry', hp: 120, type: 'infantry' },
+  { id: 'archer', name: 'Archer', hp: 60, type: 'ranged' },
+  { id: 'light_cavalry', name: 'Light Cavalry', hp: 500, type: 'cavalry' },
+  { id: 'heavy_cavalry', name: 'Heavy Cavalry', hp: 900, type: 'cavalry' },
+  { id: 'heavy_infantry', name: 'Heavy Infantry', hp: 800, type: 'infantry' },
 ];

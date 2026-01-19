@@ -35,6 +35,7 @@ export const MessageType = {
     PLAYER_LIST: 13,
     PLAYER_DEATH: 14,
     PLAYER_RESPAWN: 15,
+    CHARACTER_SELECT: 16,  // Server->Client: prompt class selection
 
     // Enemies
     ENEMY_LIST: 20,

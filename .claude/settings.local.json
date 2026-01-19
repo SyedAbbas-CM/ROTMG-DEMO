@@ -119,7 +119,20 @@
       "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"echo Connected && tasklist | findstr -i ''node playit cloudflare'' && netstat -an | findstr '':4000''\")",
       "Bash(xargs -I{} sh -c 'echo \"\"\"\"=== {} ===\"\"\"\" && grep -l \"\"\"\"red_skull\\|Black_Knight\\|dark_lord\"\"\"\" {} 2>/dev/null')",
       "Bash(timeout 15 node:*)",
-      "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"cd C:/ROTMG-DEMO && git log --oneline -3 && echo ''---'' && grep -n ''SMOOTH_FACTOR'' public/src/game/ClientEnemyManager.js | head -5\")"
+      "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.202 \"cd C:/ROTMG-DEMO && git log --oneline -3 && echo ''---'' && grep -n ''SMOOTH_FACTOR'' public/src/game/ClientEnemyManager.js | head -5\")",
+      "Bash(for ip in 192.168.0.{200..210})",
+      "Bash(do ping -c 1 -W 1 $ip)",
+      "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.105 \"echo Connected && tasklist | findstr -i ''node playit'' && netstat -an | findstr '':4000''\")",
+      "Bash(/Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO/config/world-spawns.js )",
+      "Bash(/Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO/public/assets/entities/enemies.json )",
+      "Bash(/Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO/public/assets/entities/units.json )",
+      "Bash(newadmin@192.168.0.202:\"C:/ROTMG-DEMO/public/assets/entities/\")",
+      "Bash(/Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO/public/game.html )",
+      "Bash(/Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO/public/src/ )",
+      "Bash(newadmin@192.168.0.202:\"C:/ROTMG-DEMO/public/\")",
+      "Bash(/Users/az/Desktop/Rotmg-Pservers/ROTMG-DEMO/src/ )",
+      "Bash(for ip in 192.168.0.{100..120} 192.168.0.{200..210})",
+      "Bash(timeout 30 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=20 newadmin@192.168.0.202 \"echo Connected && tasklist | findstr -i ''node playit cloudflare'' && netstat -an | findstr '':4000''\")"
     ],
     "deny": []
   }

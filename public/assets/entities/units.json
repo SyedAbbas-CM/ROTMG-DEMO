@@ -1,0 +1,152 @@
+[
+  {
+    "id": "light_infantry_dart",
+    "sprite": "Light_Infantry",
+    "speed": 6,
+    "lifetime": 1500
+  },
+  {
+    "id": "light_infantry",
+    "name": "Light Infantry",
+    "sprite": "Light_Infantry",
+    "hp": 120,
+    "speed": 3,
+    "width": 2,
+    "height": 2,
+    "renderScale": 3,
+    "contactDamage": 25,
+    "knockbackForce": 3,
+    "controllable": true,
+    "unitType": "infantry",
+    "attack": {
+      "bulletId": "light_infantry_dart",
+      "cooldown": 2000,
+      "speed": 6,
+      "lifetime": 1500,
+      "count": 1,
+      "spread": 0,
+      "range": 24,
+      "damage": 10
+    }
+  },
+  {
+    "id": "archer_arrow",
+    "sprite": "Archer",
+    "speed": 12,
+    "lifetime": 2000
+  },
+  {
+    "id": "archer",
+    "name": "Archer",
+    "sprite": "Archer",
+    "hp": 60,
+    "speed": 3,
+    "width": 2,
+    "height": 2,
+    "renderScale": 3,
+    "contactDamage": 10,
+    "knockbackForce": 2,
+    "controllable": true,
+    "unitType": "ranged",
+    "attack": {
+      "bulletId": "archer_arrow",
+      "cooldown": 2500,
+      "speed": 12,
+      "lifetime": 2000,
+      "count": 1,
+      "spread": 0,
+      "range": 28,
+      "damage": 15
+    }
+  },
+  {
+    "id": "light_cavalry_spear",
+    "sprite": "Light_Cavalry",
+    "speed": 10,
+    "lifetime": 1500
+  },
+  {
+    "id": "light_cavalry",
+    "name": "Light Cavalry",
+    "sprite": "Light_Cavalry",
+    "hp": 500,
+    "speed": 5,
+    "width": 2,
+    "height": 2,
+    "renderScale": 5,
+    "contactDamage": 50,
+    "knockbackForce": 8,
+    "controllable": true,
+    "unitType": "cavalry",
+    "attack": {
+      "bulletId": "light_cavalry_spear",
+      "cooldown": 2500,
+      "speed": 10,
+      "lifetime": 1500,
+      "count": 1,
+      "spread": 0,
+      "range": 8,
+      "damage": 20
+    }
+  },
+  {
+    "id": "heavy_cavalry_lance",
+    "sprite": "Heavy_Cavalry",
+    "speed": 8,
+    "lifetime": 1800
+  },
+  {
+    "id": "heavy_cavalry",
+    "name": "Heavy Cavalry",
+    "sprite": "Heavy_Cavalry",
+    "hp": 900,
+    "speed": 4,
+    "width": 2,
+    "height": 2,
+    "renderScale": 6,
+    "contactDamage": 60,
+    "knockbackForce": 10,
+    "controllable": true,
+    "unitType": "cavalry",
+    "attack": {
+      "bulletId": "heavy_cavalry_lance",
+      "cooldown": 2800,
+      "speed": 8,
+      "lifetime": 1800,
+      "count": 1,
+      "spread": 0,
+      "range": 6,
+      "damage": 30
+    }
+  },
+  {
+    "id": "heavy_infantry_axe",
+    "sprite": "Heavy_Infantry",
+    "speed": 4,
+    "lifetime": 1200
+  },
+  {
+    "id": "heavy_infantry",
+    "name": "Heavy Infantry",
+    "sprite": "Heavy_Infantry",
+    "hp": 800,
+    "speed": 2.5,
+    "width": 2,
+    "height": 2,
+    "renderScale": 5,
+    "contactDamage": 35,
+    "knockbackForce": 5,
+    "controllable": true,
+    "unitType": "infantry",
+    "attack": {
+      "bulletId": "heavy_infantry_axe",
+      "cooldown": 3000,
+      "speed": 4,
+      "lifetime": 1200,
+      "count": 1,
+      "spread": 0,
+      "range": 6,
+      "damage": 25
+    }
+  }
+]

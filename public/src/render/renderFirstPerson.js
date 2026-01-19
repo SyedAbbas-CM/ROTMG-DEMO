@@ -5,6 +5,9 @@ import { spriteManager } from '../assets/spriteManager.js';
 import * as THREE from 'three';
 import { spriteDatabase } from '../assets/SpriteDatabase.js';
 
+// IMMEDIATE LOG: Proves this file version is loaded
+console.log('!!!!!!! renderFirstPerson.js LOADED - DEBUG VERSION ' + Date.now() + ' !!!!!!!!');
+
 // Caches for THREE.Texture per spriteName so we don't create multiple copies
 const textureCache = new Map();
 
@@ -55,38 +58,56 @@ function getSpriteFlexibleFP(name, tryLoadSheet=true){
 }
 
 function getSpriteTexture(spriteName) {
+  if (!spriteName) return null;
   if (textureCache.has(spriteName)) return textureCache.get(spriteName);
 
-  // First try via spriteManager (supports flexible names)
-  const spr = getSpriteFlexibleFP(spriteName,false);
-  if(spr){
-    const sheetObj = spriteManager.getSpriteSheet(spr.sheetName);
-    if(sheetObj){
+  // Try multiple name variations to find the sprite
+  const namesToTry = [
+    spriteName,
+    `chars_${spriteName}`,       // Enemy sprites often in chars atlas
+    `chars2_${spriteName}`,      // Or chars2
+    `lofi_obj_${spriteName}`,    // Objects
+    spriteName.replace(/_/g, '') // Try without underscores
+  ];
+
+  for (const name of namesToTry) {
+    // Try via spriteManager (supports flexible names)
+    const spr = getSpriteFlexibleFP(name, false);
+    if (spr) {
+      const sheetObj = spriteManager.getSpriteSheet(spr.sheetName);
+      if (sheetObj?.image) {
+        const canvas = document.createElement('canvas');
+        canvas.width = spr.width;
+        canvas.height = spr.height;
+        const ctx2d = canvas.getContext('2d');
+        ctx2d.drawImage(sheetObj.image, spr.x, spr.y, spr.width, spr.height, 0, 0, spr.width, spr.height);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.magFilter = THREE.NearestFilter;
+        tex.minFilter = THREE.NearestFilter;
+        textureCache.set(spriteName, tex);
+        return tex;
+      }
+    }
+
+    // Fallback – use legacy spriteDatabase (lofi_* etc.)
+    if (spriteDatabase?.hasSprite?.(name)) {
+      const frame = spriteDatabase.getSprite(name);
       const canvas = document.createElement('canvas');
-      canvas.width = spr.width;
-      canvas.height = spr.height;
-      const ctx2d = canvas.getContext('2d');
-      ctx2d.drawImage(sheetObj.image, spr.x, spr.y, spr.width, spr.height, 0,0, spr.width, spr.height);
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
-      textureCache.set(spriteName, tex);
-      return tex;
+      canvas.width = frame.width;
+      canvas.height = frame.height;
+      const ctx = canvas.getContext('2d');
+      spriteDatabase.drawSprite(ctx, name, 0, 0, frame.width, frame.height);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.magFilter = THREE.NearestFilter;
+      texture.minFilter = THREE.NearestFilter;
+      textureCache.set(spriteName, texture);
+      return texture;
     }
   }
 
-  // Fallback – use legacy spriteDatabase (lofi_* etc.)
-  if (spriteDatabase && spriteDatabase.hasSprite(spriteName)) {
-    const frame = spriteDatabase.getSprite(spriteName);
-    const canvas = document.createElement('canvas');
-    canvas.width = frame.width;
-    canvas.height = frame.height;
-    const ctx = canvas.getContext('2d');
-    spriteDatabase.drawSprite(ctx, spriteName, 0, 0, frame.width, frame.height);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.magFilter = THREE.NearestFilter;
-    texture.minFilter = THREE.NearestFilter;
-    textureCache.set(spriteName, texture);
-    return texture;
+  // Log missing sprites occasionally for debugging
+  if (Math.random() < 0.01) {
+    console.warn(`[FirstPerson] Could not find texture for sprite: ${spriteName}`);
   }
 
   return null;
@@ -122,12 +143,19 @@ let bulletInstancedMesh;
 
 // Fallback colors for different tile types
 const FALLBACK_COLORS = {
-  [TILE_IDS.FLOOR]: 0x808080,      // Gray
-  [TILE_IDS.WALL]: 0x303030,       // Dark Gray
-  [TILE_IDS.OBSTACLE]: 0xFF0000,   // Red
-  [TILE_IDS.WATER]: 0x0000FF,      // Blue
-  [TILE_IDS.MOUNTAIN]: 0x00FF00,   // Green
+  [TILE_IDS.FLOOR]: 0x4a7c4e,      // Grass green
+  [TILE_IDS.WALL]: 0x505050,       // Dark Gray
+  [TILE_IDS.OBSTACLE]: 0x3d6b3d,   // Tree green
+  [TILE_IDS.WATER]: 0x3366aa,      // Water blue
+  [TILE_IDS.MOUNTAIN]: 0x6b5344,   // Mountain brown
 };
+
+// Track if lofi_environment sheet is loaded and ready
+let lofiEnvironmentReady = false;
+let lofiEnvironmentLoadPromise = null;
+
+// Track tiles that need re-rendering when sheets load
+let pendingTileRefresh = false;
 
 // Track last update position
 let lastUpdateX = 0;
@@ -223,15 +251,23 @@ function getInstancedMeshForBiome(tileType, spriteX, spriteY) {
   if (cache.has(spriteKey)) return cache.get(spriteKey);
 
   // Create material using biome sprite coordinates
+  // Note: createBiomeTileMaterial now always returns a material (colored fallback if sheet not ready)
   const mat = createBiomeTileMaterial(spriteX, spriteY, tileType);
 
-  // FIX #3: If material creation failed (returned null), return null immediately
-  // This prevents caching broken meshes in meshesByType Maps
+  // Safety check - should never happen now but keep for robustness
   if (!mat) {
-    if (Math.random() < 0.01) {
-      console.warn(`[FirstPerson] Cannot create mesh for biome (${spriteX},${spriteY}) - material is null`);
-    }
-    return null;  // Don't create or cache mesh with null material
+    console.error(`[FirstPerson] Unexpected null material for biome (${spriteX},${spriteY})`);
+    // Create emergency fallback
+    const emergencyMat = new THREE.MeshStandardMaterial({
+      color: FALLBACK_COLORS[tileType] || 0x808080,
+      side: THREE.DoubleSide
+    });
+    const mesh = new THREE.InstancedMesh(baseGeometry.clone(), emergencyMat, MAX_INSTANCES);
+    mesh.frustumCulled = false;
+    mesh.name = `${TILE_IDS[tileType] || tileType}_emergency_${spriteX}_${spriteY}`;
+    cache.set(spriteKey, mesh);
+    if (sceneGlobalRef) sceneGlobalRef.add(mesh);
+    return mesh;
   }
 
   const mesh = new THREE.InstancedMesh(baseGeometry.clone(), mat, MAX_INSTANCES);
@@ -292,23 +328,53 @@ export async function addFirstPersonElements(scene, callback) {
   sceneGlobalRef = scene;
   console.log('[FirstPerson] Adding first-person elements to the scene.');
 
-  // CRITICAL: Wait for lofi_environment sprite sheet to load for biome tiles
-  try {
-    await ensureSheetLoadedFP('lofi_environment');
-    const sheetObj = spriteManager.getSpriteSheet('lofi_environment');
-    console.log('[FirstPerson] ✅ lofi_environment sprite sheet loaded:', {
-      exists: !!sheetObj,
-      hasImage: !!sheetObj?.image,
-      imageWidth: sheetObj?.image?.width,
-      imageHeight: sheetObj?.image?.height,
-      imageSrc: sheetObj?.image?.src
-    });
+  // CRITICAL: Pre-load all required sprite sheets for first-person view
+  // Load in parallel for faster startup
+  const sheetsToLoad = [
+    'lofi_environment',  // Biome tiles
+    'chars',             // Enemy sprites
+    'chars2',            // More enemy sprites
+    'lofi_obj',          // Objects (trees, rocks)
+    'lofi_obj_packB'     // More objects
+  ];
 
-    // FIX #4: Clear any biome meshes that may have been created with null materials
-    // before the sheet finished loading (handles race condition edge case)
+  console.log('[FirstPerson] Pre-loading sprite sheets:', sheetsToLoad);
+
+  const loadPromises = sheetsToLoad.map(sheet =>
+    ensureSheetLoadedFP(sheet).catch(err => {
+      console.warn(`[FirstPerson] Failed to load ${sheet}:`, err.message);
+      return null;
+    })
+  );
+
+  await Promise.all(loadPromises);
+
+  // Check which sheets loaded successfully
+  sheetsToLoad.forEach(sheet => {
+    const loaded = !!spriteManager.getSpriteSheet(sheet);
+    console.log(`[FirstPerson] ${loaded ? '✅' : '❌'} ${sheet}: ${loaded ? 'loaded' : 'failed'}`);
+  });
+
+  const sheetObj = spriteManager.getSpriteSheet('lofi_environment');
+  if (sheetObj?.image) {
+    console.log('[FirstPerson] lofi_environment details:', {
+      imageWidth: sheetObj.image.width,
+      imageHeight: sheetObj.image.height
+    });
+  }
+
+  // Mark sheet as ready
+  lofiEnvironmentReady = true;
+
+  // Clear any biome meshes that were created with fallback materials
+  // before the sheet finished loading (handles race condition)
+  if (pendingTileRefresh) {
+    console.log('[FirstPerson] Clearing cached biome meshes to use real textures');
     clearBiomeMeshCache();
-  } catch (err) {
-    console.warn('[FirstPerson] ⚠️ Failed to preload lofi_environment:', err);
+    pendingTileRefresh = false;
+    // Force re-render of visible tiles
+    lastUpdateX = -999;
+    lastUpdateY = -999;
   }
 
   // Create a THREE.Texture from the loaded Image
@@ -535,12 +601,34 @@ function createBiomeTileMaterial(spriteX, spriteY, tileType) {
   // Check if sheet loaded SYNCHRONOUSLY (don't await - sheet should be pre-loaded at init)
   const sheetObj = spriteManager.getSpriteSheet('lofi_environment');
 
+  // DEBUG: Log sheet status on first few calls
+  if (!createBiomeTileMaterial._debugCount) createBiomeTileMaterial._debugCount = 0;
+  if (createBiomeTileMaterial._debugCount < 5) {
+    createBiomeTileMaterial._debugCount++;
+    console.log(`[FP-DEBUG] createBiomeTileMaterial called:`, {
+      spriteX, spriteY, tileType,
+      sheetExists: !!sheetObj,
+      hasImage: !!sheetObj?.image,
+      imageComplete: sheetObj?.image?.complete,
+      imageWidth: sheetObj?.image?.width,
+      imageHeight: sheetObj?.image?.height,
+      lofiEnvironmentReady
+    });
+  }
+
   if (!sheetObj || !sheetObj.image) {
-    // Sheet not ready - return null to allow Priority 2/3 fallback
-    if (Math.random() < 0.01) {
-      console.warn(`[FirstPerson] lofi_environment not ready for (${spriteX}, ${spriteY}), returning null to allow fallback`);
+    // Sheet not ready - return a COLORED fallback material so tiles are visible
+    if (!lofiEnvironmentReady) {
+      // Schedule a refresh when sheet loads
+      pendingTileRefresh = true;
     }
-    return null;  // KEY CHANGE: return null instead of grey material
+    console.warn(`[FirstPerson] lofi_environment not loaded! Using colored fallback.`);
+    // Return colored fallback using MeshBasicMaterial (doesn't need lighting)
+    const fallbackColor = FALLBACK_COLORS[tileType] || 0x808080;
+    return new THREE.MeshBasicMaterial({
+      color: fallbackColor,
+      side: THREE.DoubleSide
+    });
   }
 
   try {
@@ -556,25 +644,56 @@ function createBiomeTileMaterial(spriteX, spriteY, tileType) {
     // Draw the sprite from the lofi_environment sheet
     ctx.drawImage(sheetObj.image, spriteX, spriteY, spriteW, spriteH, 0, 0, spriteW, spriteH);
 
+    // Check if the canvas is completely transparent/empty (invalid sprite coords)
+    const imageData = ctx.getImageData(0, 0, spriteW, spriteH);
+    let hasContent = false;
+    for (let i = 3; i < imageData.data.length; i += 4) {
+      if (imageData.data[i] > 0) {
+        hasContent = true;
+        break;
+      }
+    }
+
+    if (!hasContent) {
+      // Sprite coords are invalid/empty - use colored fallback
+      console.warn(`[FirstPerson] Empty sprite at (${spriteX}, ${spriteY}), using colored fallback`);
+      const fallbackColor = FALLBACK_COLORS[tileType] || 0x808080;
+      return new THREE.MeshBasicMaterial({
+        color: fallbackColor,
+        side: THREE.DoubleSide
+      });
+    }
+
     const texture = new THREE.CanvasTexture(canvas);
     texture.magFilter = THREE.NearestFilter;
     texture.minFilter = THREE.NearestFilter;
 
-    // DEBUG: Log successful material creation (increased frequency)
-    if (Math.random() < 0.1) {
-      console.log(`[FirstPerson] ✅ Created biome material from lofi_environment: pixels (${spriteX}, ${spriteY})`);
+    // DEBUG: Log successful texture creation
+    if (!createBiomeTileMaterial._texDebugCount) createBiomeTileMaterial._texDebugCount = 0;
+    if (createBiomeTileMaterial._texDebugCount < 3) {
+      createBiomeTileMaterial._texDebugCount++;
+      console.log(`[FP-DEBUG] Created texture for biome (${spriteX},${spriteY}):`, {
+        textureId: texture.id,
+        hasImage: !!texture.image,
+        imageWidth: texture.image?.width,
+        imageHeight: texture.image?.height
+      });
     }
 
-    return new THREE.MeshStandardMaterial({
+    // Use MeshBasicMaterial for reliability - doesn't depend on lighting
+    return new THREE.MeshBasicMaterial({
       map: texture,
       transparent: true,
-      side: THREE.DoubleSide,
-      emissive: new THREE.Color(0x000000),
-      emissiveIntensity: 0
+      side: THREE.DoubleSide
     });
   } catch (error) {
     console.error(`[FirstPerson] Error creating biome material for coords (${spriteX}, ${spriteY}):`, error);
-    return null;  // Return null on error to allow fallback
+    // Return colored fallback on error
+    const fallbackColor = FALLBACK_COLORS[tileType] || 0x808080;
+    return new THREE.MeshBasicMaterial({
+      color: fallbackColor,
+      side: THREE.DoubleSide
+    });
   }
 }
 
@@ -651,7 +770,24 @@ function useFallbackMaterials(scene) {
  * Only renders tiles within the VIEW_RADIUS of the character.
  */
 function updateVisibleTiles() {
-  if (!floorInstancedMesh || !sceneGlobalRef || !bulletInstancedMesh || !enemySpriteGroup || !billboardSpriteGroup) return;
+  // CRITICAL: Check if this function is being called at all
+  if (!updateVisibleTiles._callCount) updateVisibleTiles._callCount = 0;
+  updateVisibleTiles._callCount++;
+  if (updateVisibleTiles._callCount <= 3) {
+    console.log(`[FP] updateVisibleTiles called (call #${updateVisibleTiles._callCount})`);
+    console.log('[FP] Prerequisites check:', {
+      floorInstancedMesh: !!floorInstancedMesh,
+      sceneGlobalRef: !!sceneGlobalRef,
+      bulletInstancedMesh: !!bulletInstancedMesh,
+      enemySpriteGroup: !!enemySpriteGroup,
+      billboardSpriteGroup: !!billboardSpriteGroup
+    });
+  }
+
+  if (!floorInstancedMesh || !sceneGlobalRef || !bulletInstancedMesh || !enemySpriteGroup || !billboardSpriteGroup) {
+    console.error('[FP] updateVisibleTiles early return - missing prerequisites!');
+    return;
+  }
 
   const character = gameState.character;
   if (!character) {
@@ -663,6 +799,27 @@ function updateVisibleTiles() {
   if (!mapManager) {
     console.warn('[FirstPerson] Cannot update visible tiles: map manager not available');
     return;
+  }
+
+  // CRITICAL DEBUG: Log first tile to verify data flow
+  if (!updateVisibleTiles._dataFlowChecked) {
+    updateVisibleTiles._dataFlowChecked = true;
+    const testX = Math.floor(character.x);
+    const testY = Math.floor(character.y);
+    const testTile = mapManager.getTile ? mapManager.getTile(testX, testY) : null;
+    console.log('=== CRITICAL FIRST-PERSON DATA FLOW CHECK ===');
+    console.log('Character position:', testX, testY);
+    console.log('Test tile exists:', !!testTile);
+    if (testTile) {
+      console.log('Test tile full dump:', JSON.stringify(testTile, null, 2));
+      console.log('spriteX:', testTile.spriteX, '(type:', typeof testTile.spriteX, ')');
+      console.log('spriteY:', testTile.spriteY, '(type:', typeof testTile.spriteY, ')');
+      console.log('spriteName:', testTile.spriteName);
+      console.log('type:', testTile.type);
+      console.log('biome:', testTile.biome);
+    }
+    console.log('lofi_environment sheet:', !!spriteManager.getSpriteSheet('lofi_environment'));
+    console.log('=== END DATA FLOW CHECK ===');
   }
 
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
@@ -681,10 +838,15 @@ function updateVisibleTiles() {
 
   // Store matrices per InstancedMesh so we can support many meshes (one per sprite)
   const matricesByMesh = new Map();
+  let pushCount = 0;
   const pushMatrix = (mesh, mat) => {
-    if (!mesh) return;
+    if (!mesh) {
+      if (pushCount < 5) console.error('[FP] pushMatrix called with NULL mesh!');
+      return;
+    }
     if (!matricesByMesh.has(mesh)) matricesByMesh.set(mesh, []);
     matricesByMesh.get(mesh).push(mat);
+    pushCount++;
   };
   const rampMatrices = []; // ramps unchanged for now
 
@@ -734,34 +896,49 @@ function updateVisibleTiles() {
         // Priority 1: Check for biome system sprite coordinates ---------------------------
         let instMesh  = null;
 
-        // DEBUG: Log tiles that DON'T have biome data
-        if ((tile.spriteX === null || tile.spriteX === undefined ||
-             tile.spriteY === null || tile.spriteY === undefined) &&
-            Math.random() < 0.01) {
-          console.log(`[FirstPerson] ❌ Tile at (${tileX},${tileY}) MISSING biome data: spriteX=${tile.spriteX}, spriteY=${tile.spriteY}, type=${tile.type}`);
+        // DEBUG: Track tile priority selection (first 10 tiles only)
+        if (!updateVisibleTiles._tileDebugCount) updateVisibleTiles._tileDebugCount = 0;
+        const shouldLogTile = updateVisibleTiles._tileDebugCount < 10;
+
+        const hasBiomeData = tile.spriteX !== null && tile.spriteX !== undefined &&
+                             tile.spriteY !== null && tile.spriteY !== undefined;
+
+        if (shouldLogTile) {
+          console.log(`[FP-TILE-DEBUG] Tile(${tileX},${tileY}):`, {
+            type: tile.type,
+            hasBiomeData,
+            spriteX: tile.spriteX,
+            spriteY: tile.spriteY,
+            spriteName: tile.spriteName,
+            biome: tile.biome
+          });
         }
 
-        if (tile.spriteX !== null && tile.spriteY !== null &&
-            tile.spriteX !== undefined && tile.spriteY !== undefined) {
-
+        if (hasBiomeData) {
           // Server already sends pixel coordinates (TileRegistry.js converts row/col to pixels)
           // No conversion needed - use values directly
           const pixelX = tile.spriteX;
           const pixelY = tile.spriteY;
 
-          // DEBUG: Log biome tile detection (increased frequency for debugging)
-          if (Math.random() < 0.05) {
-            console.log(`[FirstPerson] 🎨 Biome tile at (${tileX},${tileY}): pixelX=${pixelX}, pixelY=${pixelY}, type=${tile.type}`);
-          }
-
           // Use biome-specific InstancedMesh with PIXEL coordinates
           instMesh = getInstancedMeshForBiome(tile.type, pixelX, pixelY);
 
-          // FIX #2: Validate material has valid texture - if not, force fallback to Priority 2/3
-          if (instMesh && (!instMesh.material || !instMesh.material.map)) {
-            if (Math.random() < 0.01) {
-              console.warn(`[FirstPerson] Biome mesh for pixels (${pixelX},${pixelY}) has invalid material, forcing fallback`);
-            }
+          if (shouldLogTile) {
+            console.log(`[FP-TILE-DEBUG] Priority 1 result:`, {
+              gotMesh: !!instMesh,
+              meshName: instMesh?.name,
+              hasMaterial: !!instMesh?.material,
+              materialType: instMesh?.material?.type,
+              hasMap: !!instMesh?.material?.map,
+              materialColor: instMesh?.material?.color?.getHexString?.()
+            });
+            updateVisibleTiles._tileDebugCount++;
+          }
+
+          // Note: Colored fallback materials don't have .map but are still valid
+          // Only reject if material itself is missing
+          if (instMesh && !instMesh.material) {
+            console.warn(`[FirstPerson] Biome mesh for pixels (${pixelX},${pixelY}) has no material`);
             instMesh = null;  // Force fallback to Priority 2/3
           }
         }
@@ -882,13 +1059,34 @@ function updateVisibleTiles() {
   updateInstancedMesh(rampInstancedMesh, rampMatrices);
 
   // Update any dynamically-created per-sprite meshes not covered above
+  let dynamicMeshCount = 0;
   matricesByMesh.forEach((matArr, mesh) => {
     if (mesh === floorInstancedMesh || mesh === wallInstancedMesh || mesh === obstacleInstancedMesh || mesh === waterInstancedMesh || mesh === mountainInstancedMesh) return;
     updateInstancedMesh(mesh, matArr);
+    dynamicMeshCount++;
   });
 
-  if (DEBUG_RENDERING && Math.random() < 0.01) {
-    console.log(`[FP] mesh counts floor:${floorInstancedMesh?.count} wall:${wallInstancedMesh?.count}`);
+  // CRITICAL: Log mesh update summary (always, not just debug mode)
+  if (!updateVisibleTiles._meshLogCount) updateVisibleTiles._meshLogCount = 0;
+  if (updateVisibleTiles._meshLogCount < 3) {
+    updateVisibleTiles._meshLogCount++;
+    console.log('=== MESH UPDATE SUMMARY ===');
+    console.log('Total pushMatrix calls:', pushCount);
+    console.log('matricesByMesh size:', matricesByMesh.size);
+    console.log('Dynamic meshes updated:', dynamicMeshCount);
+    console.log('Base mesh counts after update:', {
+      floor: floorInstancedMesh?.count,
+      wall: wallInstancedMesh?.count,
+      obstacle: obstacleInstancedMesh?.count,
+      water: waterInstancedMesh?.count,
+      mountain: mountainInstancedMesh?.count
+    });
+    console.log('Base meshes in scene:', {
+      floor: floorInstancedMesh?.parent === sceneGlobalRef,
+      wall: wallInstancedMesh?.parent === sceneGlobalRef,
+      obstacle: obstacleInstancedMesh?.parent === sceneGlobalRef
+    });
+    console.log('=== END MESH SUMMARY ===');
   }
 
   if (DEBUG_RENDERING && Math.random() < DEBUG_FREQUENCY) {
@@ -935,6 +1133,13 @@ function updateVisibleTiles() {
  * @param {THREE.PerspectiveCamera} camera - The Three.js camera to update.
  */
 export function updateFirstPerson(camera) {
+  // Log first 3 calls to prove this function is being called
+  if (!updateFirstPerson._logCount) updateFirstPerson._logCount = 0;
+  if (updateFirstPerson._logCount < 3) {
+    updateFirstPerson._logCount++;
+    console.log(`!!!! updateFirstPerson CALLED (call #${updateFirstPerson._logCount}) !!!!`);
+  }
+
   const character = gameState.character;
   if (!character) return;
 
@@ -1007,15 +1212,36 @@ export function updateFirstPerson(camera) {
       const id = em.id[i];
       activeIds.add(id);
       let spr = enemySpriteMap.get(id);
+      const sName = em.spriteName ? em.spriteName[i] : (em.enemyTypes?.[em.type[i]]?.spriteName);
+
       if (!spr) {
-        const sName = em.spriteName ? em.spriteName[i] : (em.enemyTypes[em.type[i]]?.spriteName);
         const tex = sName ? getSpriteTexture(sName) : null;
-        const mat = new THREE.SpriteMaterial({ map: tex || null, color: tex ? 0xffffff : 0xff0000, transparent: true });
+        // Use magenta for missing sprites (more visible than red)
+        const mat = new THREE.SpriteMaterial({
+          map: tex || null,
+          color: tex ? 0xffffff : 0xff00ff, // Magenta for missing
+          transparent: true
+        });
         spr = new THREE.Sprite(mat);
         spr.scale.set(SCALING_3D, SCALING_3D, 1);
+        spr._spriteName = sName; // Track sprite name for retry
+        spr._hasTexture = !!tex;
         enemySpriteGroup.add(spr);
         enemySpriteMap.set(id, spr);
+      } else if (!spr._hasTexture && sName) {
+        // Try to load texture again if it was missing before
+        const tex = getSpriteTexture(sName);
+        if (tex) {
+          spr.material.map = tex;
+          spr.material.color.setHex(0xffffff);
+          spr.material.needsUpdate = true;
+          spr._hasTexture = true;
+        }
       }
+
+      // Scale based on enemy render scale if available
+      const renderScale = em.renderScale?.[i] || 1;
+      spr.scale.set(SCALING_3D * renderScale, SCALING_3D * renderScale, 1);
       spr.position.set(em.x[i] * SCALING_3D, (em.height[i]||0.5)*SCALING_3D*0.5, em.y[i] * SCALING_3D);
     }
     // Remove dead
@@ -1115,10 +1341,76 @@ export function disposeFirstPersonView() {
   console.log('[FirstPerson] Disposed first-person view resources');
 }
 
+/**
+ * DEBUG: Dump scene state to console for debugging rendering issues
+ */
+function debugDumpSceneState() {
+  console.log('=== FIRST-PERSON SCENE DEBUG DUMP ===');
+  console.log('sceneGlobalRef:', !!sceneGlobalRef);
+  console.log('lofiEnvironmentReady:', lofiEnvironmentReady);
+  console.log('pendingTileRefresh:', pendingTileRefresh);
+
+  // Check sprite sheets
+  const lofiSheet = spriteManager.getSpriteSheet('lofi_environment');
+  console.log('lofi_environment sheet:', {
+    exists: !!lofiSheet,
+    hasImage: !!lofiSheet?.image,
+    imageComplete: lofiSheet?.image?.complete,
+    imageWidth: lofiSheet?.image?.width,
+    imageHeight: lofiSheet?.image?.height
+  });
+
+  // List all meshes by type
+  console.log('meshesByType counts:', {
+    floor: meshesByType.floor.size,
+    wall: meshesByType.wall.size,
+    obstacle: meshesByType.obstacle.size,
+    water: meshesByType.water.size,
+    mountain: meshesByType.mountain.size
+  });
+
+  // Show first few biome meshes
+  let shown = 0;
+  meshesByType.floor.forEach((mesh, key) => {
+    if (shown++ < 3) {
+      console.log(`Floor mesh "${key}":`, {
+        name: mesh.name,
+        count: mesh.count,
+        inScene: mesh.parent === sceneGlobalRef,
+        hasMaterial: !!mesh.material,
+        materialType: mesh.material?.type,
+        hasMap: !!mesh.material?.map,
+        color: mesh.material?.color?.getHexString?.()
+      });
+    }
+  });
+
+  // Check base meshes
+  console.log('Base meshes:', {
+    floor: { exists: !!floorInstancedMesh, count: floorInstancedMesh?.count, inScene: floorInstancedMesh?.parent === sceneGlobalRef },
+    wall: { exists: !!wallInstancedMesh, count: wallInstancedMesh?.count, inScene: wallInstancedMesh?.parent === sceneGlobalRef },
+    obstacle: { exists: !!obstacleInstancedMesh, count: obstacleInstancedMesh?.count },
+    water: { exists: !!waterInstancedMesh, count: waterInstancedMesh?.count },
+    mountain: { exists: !!mountainInstancedMesh, count: mountainInstancedMesh?.count }
+  });
+
+  // Check scene children
+  if (sceneGlobalRef) {
+    const meshChildren = sceneGlobalRef.children.filter(c => c.type === 'InstancedMesh' || c.type === 'Mesh');
+    console.log(`Scene has ${sceneGlobalRef.children.length} children, ${meshChildren.length} are meshes`);
+    meshChildren.slice(0, 5).forEach(m => {
+      console.log(`  - ${m.name}: type=${m.type}, count=${m.count}, visible=${m.visible}`);
+    });
+  }
+
+  console.log('=== END DEBUG DUMP ===');
+}
+
 // Expose for consumers like game.js world-switch handler and render.js
 if (typeof window !== 'undefined') {
   window.updateFirstPerson = updateFirstPerson; // Expose update function for render.js
   window.disposeFirstPersonView = disposeFirstPersonView;
+  window.debugDumpSceneState = debugDumpSceneState; // DEBUG: expose for console
   // Ensure resources are freed when the tab is closed or reloaded
   window.addEventListener('beforeunload', () => {
     try { disposeFirstPersonView(); } catch(e) {}

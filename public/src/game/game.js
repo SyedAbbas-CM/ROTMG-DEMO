@@ -347,8 +347,10 @@ export async function initGame() {
 
         // Create Three.js Scene
         scene = new THREE.Scene();
+        // DEBUG: Add visible background color to help diagnose black tiles
+        scene.background = new THREE.Color(0x1a0a2e); // Dark purple - makes black tiles visible
         window.scene = scene; // Expose to render.js for first-person view
-        console.log('Three.js Scene created.');
+        console.log('Three.js Scene created with debug background.');
 
         // Create Camera
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);

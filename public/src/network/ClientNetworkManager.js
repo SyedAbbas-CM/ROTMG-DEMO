@@ -1076,18 +1076,27 @@ export class ClientNetworkManager {
             delete window.gameState.character;
 
             // Create brand new character object at respawn location using imported Player class
+            const newClass = data.class || 'warrior';
+            const newSpriteRow = data.spriteRow ?? 0;
+            console.log(`[CLIENT] Respawning as class: ${newClass}, spriteRow: ${newSpriteRow}`);
+
             window.gameState.character = new Player({
                 id: characterId,
                 x: data.x,
                 y: data.y,
                 health: data.health || 100,
                 maxHealth: data.maxHealth || 100,
+                mana: data.mana || 100,
+                maxMana: data.maxMana || 100,
+                damage: data.damage || 10,
+                speed: data.speed || 5,
+                defense: data.defense || 0,
                 isDead: false,
-                class: data.class || window.gameState.character?.class || 'warrior',
-                spriteRow: data.spriteRow ?? window.gameState.character?.spriteRow ?? 0
+                class: newClass,
+                spriteRow: newSpriteRow
             });
 
-            console.log(`[CLIENT] Created NEW character at (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`);
+            console.log(`[CLIENT] Created NEW character at (${data.x.toFixed(2)}, ${data.y.toFixed(2)}) as ${newClass}`);
 
             // Update camera position to follow respawned character
             if (window.gameState.camera) {
@@ -1103,6 +1112,23 @@ export class ClientNetworkManager {
                 setTimeout(() => {
                     deathScreen.style.display = 'none';
                 }, 500);
+            }
+        };
+
+        // Handle CHARACTER_SELECT - all characters dead, show class picker
+        this.handlers[MessageType.CHARACTER_SELECT] = (data) => {
+            console.log('[CLIENT] Character selection required:', data);
+
+            // Show class selection overlay
+            const classSelectOverlay = document.getElementById('class-select-overlay');
+            if (classSelectOverlay) {
+                classSelectOverlay.style.display = 'flex';
+                setTimeout(() => classSelectOverlay.classList.add('visible'), 50);
+            } else {
+                // Fallback: redirect to menu for class selection
+                console.log('[CLIENT] No class select overlay found, redirecting to menu');
+                alert(`Your previous character died. Choose a new class.`);
+                window.location.href = 'menu.html';
             }
         };
     }
@@ -1628,11 +1654,13 @@ export class ClientNetworkManager {
 
     /**
      * Request player respawn after death
+     * @param {string} newClass - Optional new class to respawn as
      */
-    sendRespawn() {
-        console.log('[NETWORK] Sending respawn request to server');
+    sendRespawn(newClass = null) {
+        console.log('[NETWORK] Sending respawn request to server, class:', newClass);
         return this.send(MessageType.PLAYER_RESPAWN, {
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            class: newClass  // Server will use this to change class if provided
         });
     }
 

@@ -138,7 +138,7 @@ export const PlayerClasses = {
     stats: {
       health: 110,
       maxHealth: 110,
-      damage: 15,
+      damage: 14,
       speed: 5.0,
       defense: 4,
       mana: 120,
@@ -155,6 +155,58 @@ export const PlayerClasses = {
       drainAmount: 30
     },
     sprite: { sheet: 'characters', row: 5 }
+  },
+
+  WIZARD: {
+    id: 'wizard',
+    name: 'Wizard',
+    description: 'Powerful spellcaster with spread attacks',
+    stats: {
+      health: 100,
+      maxHealth: 100,
+      damage: 22,
+      speed: 5.0,
+      defense: 2,
+      mana: 175,
+      maxMana: 175
+    },
+    ability: {
+      id: 'spellbomb',
+      name: 'Spell Bomb',
+      description: 'Launch a powerful explosive spell',
+      cooldown: 6,
+      manaCost: 50,
+      effect: 'aoe_explosion',
+      explosionRadius: 4,
+      explosionDamage: 100
+    },
+    sprite: { sheet: 'characters', row: 2 }  // shares with mage
+  },
+
+  PRIEST: {
+    id: 'priest',
+    name: 'Priest',
+    description: 'Healer with low damage but support abilities',
+    stats: {
+      health: 120,
+      maxHealth: 120,
+      damage: 8,
+      speed: 5.5,
+      defense: 5,
+      mana: 150,
+      maxMana: 150
+    },
+    ability: {
+      id: 'heal',
+      name: 'Divine Heal',
+      description: 'Heal yourself and nearby allies',
+      cooldown: 5,
+      manaCost: 40,
+      effect: 'heal',
+      healRadius: 5,
+      healAmount: 50
+    },
+    sprite: { sheet: 'characters', row: 5 }  // shares with necromancer
   }
 };
 

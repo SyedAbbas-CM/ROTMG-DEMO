@@ -15,10 +15,11 @@ export const ProjectilePatterns = {
 };
 
 // Class weapon definitions with attack characteristics
+// NOTE: Damage values here are for client display only - server uses PlayerClasses.js for actual damage
 export const ClassWeapons = {
   warrior: {
     name: 'Sword of the Warrior',
-    damage: 15,
+    damage: 15,           // Server: 15
     range: 3.5,           // Short range melee
     projectileSpeed: 12,
     rateOfFire: 1.8,      // Attacks per second
@@ -26,12 +27,12 @@ export const ClassWeapons = {
     projectileSize: 0.8,  // Bigger sword slash
     projectileColor: '#ffcc00',
     projectileLifetime: 0.3,
-    spriteRow: 0          // Use row 0 of bullet sprites
+    spriteRow: 0
   },
 
   archer: {
     name: 'Longbow',
-    damage: 10,
+    damage: 12,           // Server: 12
     range: 9,             // Long range
     projectileSpeed: 14,
     rateOfFire: 1.5,
@@ -44,7 +45,7 @@ export const ClassWeapons = {
 
   mage: {
     name: 'Staff of Fire',
-    damage: 18,
+    damage: 20,           // Server: 20
     range: 7,
     projectileSpeed: 10,
     rateOfFire: 1.2,
@@ -61,7 +62,7 @@ export const ClassWeapons = {
 
   wizard: {
     name: 'Crystal Wand',
-    damage: 22,
+    damage: 22,           // Server: 22
     range: 8,
     projectileSpeed: 11,
     rateOfFire: 1.0,
@@ -73,12 +74,12 @@ export const ClassWeapons = {
     projectileSize: 0.5,
     projectileColor: '#00ccff',
     projectileLifetime: 0.75,
-    spriteRow: 2  // Same sprite as mage
+    spriteRow: 2
   },
 
   rogue: {
     name: 'Shadow Dagger',
-    damage: 20,
+    damage: 18,           // Server: 18
     range: 4,             // Short-medium range
     projectileSpeed: 16,  // Fast projectiles
     rateOfFire: 2.5,      // Very fast attack speed
@@ -91,7 +92,7 @@ export const ClassWeapons = {
 
   knight: {
     name: 'Broadsword',
-    damage: 12,
+    damage: 12,           // Server: 12
     range: 3,             // Very short range
     projectileSpeed: 10,
     rateOfFire: 1.5,
@@ -108,7 +109,7 @@ export const ClassWeapons = {
 
   necromancer: {
     name: 'Staff of Decay',
-    damage: 14,
+    damage: 14,           // Server: 14
     range: 6.5,
     projectileSpeed: 8,   // Slower projectiles
     rateOfFire: 1.3,
@@ -125,7 +126,7 @@ export const ClassWeapons = {
 
   priest: {
     name: 'Holy Wand',
-    damage: 8,
+    damage: 8,            // Server: 8
     range: 7,
     projectileSpeed: 12,
     rateOfFire: 1.4,
@@ -133,7 +134,7 @@ export const ClassWeapons = {
     projectileSize: 0.5,
     projectileColor: '#ffffff',
     projectileLifetime: 0.6,
-    spriteRow: 5  // Shares with necro for now
+    spriteRow: 5
   }
 };
 

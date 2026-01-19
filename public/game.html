@@ -88,6 +88,120 @@
         #death-screen .respawn-button:active {
             transform: scale(0.95);
         }
+
+        /* Class selection on death screen */
+        #death-screen .class-select-label {
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        #death-screen .class-select {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 30px;
+            max-width: 400px;
+        }
+        #death-screen .class-btn {
+            padding: 10px 16px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 4px;
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #death-screen .class-btn:hover {
+            border-color: #0f9;
+            color: #fff;
+        }
+        #death-screen .class-btn.selected {
+            border-color: #0f9;
+            background: rgba(0, 255, 153, 0.2);
+            color: #0f9;
+        }
+
+        /* Class Select Overlay (shown when reconnecting after death) */
+        #class-select-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        #class-select-overlay.visible {
+            opacity: 1;
+        }
+        #class-select-overlay .select-title {
+            font-family: Arial, sans-serif;
+            font-size: 36px;
+            font-weight: bold;
+            color: #0f9;
+            margin-bottom: 10px;
+        }
+        #class-select-overlay .select-subtitle {
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            color: #888;
+            margin-bottom: 30px;
+        }
+        #class-select-overlay .class-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            max-width: 600px;
+            margin-bottom: 30px;
+        }
+        #class-select-overlay .class-option {
+            padding: 20px 30px;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            border: 2px solid #333;
+            border-radius: 8px;
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        #class-select-overlay .class-option:hover {
+            border-color: #0f9;
+            color: #fff;
+            transform: scale(1.05);
+        }
+        #class-select-overlay .class-option.selected {
+            border-color: #0f9;
+            background: rgba(0, 255, 153, 0.15);
+            color: #0f9;
+        }
+        #class-select-overlay .play-button {
+            padding: 15px 50px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000;
+            background-color: #0f9;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #class-select-overlay .play-button:hover {
+            background-color: #0d8;
+            transform: scale(1.05);
+        }
     </style>
     <script type="importmap">
       {
@@ -120,8 +234,36 @@
         <div class="death-content">
             <div class="death-title">YOU DIED</div>
             <div class="death-message">Your journey has ended...</div>
+            <div class="class-select-label">Choose your class</div>
+            <div class="class-select" id="death-class-select">
+                <div class="class-btn" data-class="warrior">Warrior</div>
+                <div class="class-btn" data-class="archer">Archer</div>
+                <div class="class-btn" data-class="wizard">Wizard</div>
+                <div class="class-btn" data-class="rogue">Rogue</div>
+                <div class="class-btn" data-class="knight">Knight</div>
+                <div class="class-btn" data-class="mage">Mage</div>
+                <div class="class-btn" data-class="necromancer">Necromancer</div>
+                <div class="class-btn" data-class="priest">Priest</div>
+            </div>
             <button class="respawn-button" onclick="handleRespawn()">RESPAWN</button>
         </div>
+    </div>
+
+    <!-- Class Select Overlay (shown on reconnect if previous character died) -->
+    <div id="class-select-overlay">
+        <div class="select-title">Choose Your Class</div>
+        <div class="select-subtitle">Your previous character has fallen. Start a new adventure!</div>
+        <div class="class-grid" id="reconnect-class-select">
+            <div class="class-option" data-class="warrior">Warrior</div>
+            <div class="class-option" data-class="archer">Archer</div>
+            <div class="class-option" data-class="wizard">Wizard</div>
+            <div class="class-option" data-class="rogue">Rogue</div>
+            <div class="class-option" data-class="knight">Knight</div>
+            <div class="class-option" data-class="mage">Mage</div>
+            <div class="class-option" data-class="necromancer">Necromancer</div>
+            <div class="class-option" data-class="priest">Priest</div>
+        </div>
+        <button class="play-button" onclick="handleClassSelect()">PLAY</button>
     </div>
 
     <script type="module">
@@ -183,17 +325,72 @@
             }
         }
 
+        // Death screen class selection
+        let selectedRespawnClass = playerClass; // Default to current class
+
+        // Initialize class selection on death screen
+        document.querySelectorAll('#death-class-select .class-btn').forEach(btn => {
+            // Pre-select current class
+            if (btn.dataset.class === playerClass) {
+                btn.classList.add('selected');
+            }
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#death-class-select .class-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedRespawnClass = btn.dataset.class;
+                console.log('[CLIENT] Selected respawn class:', selectedRespawnClass);
+            });
+        });
+
         // Handle respawn button click
         window.handleRespawn = function() {
-            console.log('[CLIENT] Respawn button clicked');
+            console.log('[CLIENT] Respawn button clicked, class:', selectedRespawnClass);
 
-            // Send respawn request to server (networkManager is exposed globally)
+            // Send respawn request to server with selected class
             if (window.networkManager) {
-                window.networkManager.sendRespawn();
-                console.log('[CLIENT] Sent respawn request to server');
+                window.networkManager.sendRespawn(selectedRespawnClass);
+                console.log('[CLIENT] Sent respawn request with class:', selectedRespawnClass);
+
+                // Update local character class
+                if (window.gameState && window.gameState.character) {
+                    window.gameState.character.class = selectedRespawnClass;
+                }
             } else {
                 console.error('[CLIENT] Cannot respawn: networkManager not available');
             }
+        };
+
+        // Reconnect class select overlay (shown when all characters are dead)
+        let selectedReconnectClass = 'warrior';
+
+        // Initialize class selection on reconnect overlay
+        document.querySelectorAll('#reconnect-class-select .class-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#reconnect-class-select .class-option').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedReconnectClass = btn.dataset.class;
+                console.log('[CLIENT] Selected reconnect class:', selectedReconnectClass);
+            });
+        });
+        // Pre-select warrior
+        document.querySelector('#reconnect-class-select .class-option[data-class="warrior"]')?.classList.add('selected');
+
+        // Handle class select play button
+        window.handleClassSelect = function() {
+            console.log('[CLIENT] Class selected for new character:', selectedReconnectClass);
+
+            // Update localStorage with new class
+            const saved = localStorage.getItem('rotmg_player');
+            if (saved) {
+                const player = JSON.parse(saved);
+                player.class = selectedReconnectClass;
+                localStorage.setItem('rotmg_player', JSON.stringify(player));
+            }
+
+            // Reload page with new class parameter
+            const params = new URLSearchParams(window.location.search);
+            params.set('class', selectedReconnectClass);
+            window.location.href = 'game.html?' + params.toString();
         };
 
         // Function to start the game

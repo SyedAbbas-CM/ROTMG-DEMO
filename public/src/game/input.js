@@ -8,6 +8,7 @@ import { Camera } from '../camera.js';
 import { createLogger, LOG_LEVELS, setGlobalLogLevel } from '../utils/logger.js';
 import { MessageType } from '../shared/messages.js';
 import { getClassWeapon, calculateProjectiles, canShoot as canShootWeapon } from '../items/ClassWeapons.js';
+import { applyEquipmentToWeapon, calculateRateOfFire, calculateStats, getBulletModifiers } from '../items/StatCalculator.js';
 
 // Track last shot time for rate limiting
 let lastShotTime = 0;
@@ -22,12 +23,27 @@ function handleShoot(targetX, targetY) {
         return;
     }
 
-    // Get the player's class and weapon
+    // Get the player's class and base weapon
     const playerClass = gameState.character.className || gameState.character.class || 'warrior';
-    const weapon = getClassWeapon(playerClass);
+    const baseWeapon = getClassWeapon(playerClass);
 
-    // Check rate of fire limit
-    if (!canShootWeapon(lastShotTime, weapon)) {
+    // Apply equipment modifiers to weapon
+    const equipment = gameState.character.equipment || {};
+    const weapon = applyEquipmentToWeapon(baseWeapon, equipment);
+
+    // Calculate effective rate of fire with equipment bonuses
+    const stats = calculateStats(
+      { damage: weapon.damage, attackSpeed: 0 },
+      equipment
+    );
+    const effectiveRateOfFire = calculateRateOfFire(weapon.rateOfFire, stats.attackSpeed);
+
+    // Debug: Log class and weapon info
+    console.log(`[SHOOT] Class: ${playerClass}, Weapon: ${weapon.name}, Pattern: ${weapon.pattern}, Speed: ${weapon.projectileSpeed}, Lifetime: ${weapon.projectileLifetime?.toFixed(2)}, RoF: ${effectiveRateOfFire.toFixed(1)}/s`);
+
+    // Check rate of fire limit (using effective rate)
+    const modifiedWeapon = { ...weapon, rateOfFire: effectiveRateOfFire };
+    if (!canShootWeapon(lastShotTime, modifiedWeapon)) {
         return; // Still on cooldown
     }
 
@@ -52,44 +68,43 @@ function handleShoot(targetX, targetY) {
     // Calculate all projectiles based on weapon pattern
     const projectiles = calculateProjectiles(weapon, playerX, playerY, angle);
 
+    // Get bullet modifiers from equipment
+    const bulletMods = weapon.bulletMods || {};
+
+    // Debug: Show projectile data
+    if (projectiles.length > 0) {
+        const p = projectiles[0];
+        const modsStr = bulletMods.piercing ? ` [piercing:${bulletMods.piercing}]` : '';
+        console.log(`[SHOOT] Sending ${projectiles.length} bullet(s): speed=${p.speed}, lifetime=${p.lifetime?.toFixed(2)}, range=${(p.speed * p.lifetime).toFixed(1)} tiles${modsStr}`);
+    }
+
     // Send each projectile to the server
     if (typeof networkManager.sendShoot === 'function') {
         for (const bullet of projectiles) {
-            // Skip delayed bullets for now (burst pattern) - could implement with setTimeout
+            const bulletData = {
+                x: bullet.x,
+                y: bullet.y,
+                angle: bullet.angle,
+                speed: bullet.speed,
+                damage: bullet.damage,
+                lifetime: bullet.lifetime,
+                width: bullet.width,
+                height: bullet.height,
+                color: bullet.color,
+                spriteRow: bullet.spriteRow,
+                waveAmp: bullet.waveAmp,
+                waveFreq: bullet.waveFreq,
+                angularVel: bullet.angularVel,
+                // Equipment-based bullet modifiers
+                piercing: bulletMods.piercing || 0,
+                explosive: bulletMods.explosive || false,
+                explosionRadius: bulletMods.explosionRadius || 0
+            };
+
             if (bullet.delay > 0) {
-                setTimeout(() => {
-                    networkManager.sendShoot({
-                        x: bullet.x,
-                        y: bullet.y,
-                        angle: bullet.angle,
-                        speed: bullet.speed,
-                        damage: bullet.damage,
-                        lifetime: bullet.lifetime,
-                        width: bullet.width,
-                        height: bullet.height,
-                        color: bullet.color,
-                        spriteRow: bullet.spriteRow,
-                        waveAmp: bullet.waveAmp,
-                        waveFreq: bullet.waveFreq,
-                        angularVel: bullet.angularVel
-                    });
-                }, bullet.delay);
+                setTimeout(() => networkManager.sendShoot(bulletData), bullet.delay);
             } else {
-                networkManager.sendShoot({
-                    x: bullet.x,
-                    y: bullet.y,
-                    angle: bullet.angle,
-                    speed: bullet.speed,
-                    damage: bullet.damage,
-                    lifetime: bullet.lifetime,
-                    width: bullet.width,
-                    height: bullet.height,
-                    color: bullet.color,
-                    spriteRow: bullet.spriteRow,
-                    waveAmp: bullet.waveAmp,
-                    waveFreq: bullet.waveFreq,
-                    angularVel: bullet.angularVel
-                });
+                networkManager.sendShoot(bulletData);
             }
         }
     }
@@ -199,7 +214,7 @@ export function initControls() {
         }
         
         // Add spacebar to also trigger shooting
-        if (e.code === 'Space') {
+        if (e.code === 'Space' && gameState.character) {
             // Shoot in the direction the player is facing
             const rotation = typeof gameState.character.rotation === 'object' ?
                    gameState.character.rotation.yaw || 0 :

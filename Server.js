@@ -53,6 +53,9 @@ import { initDatabase, getDatabase } from './src/database/Database.js';
 // ---- Player Classes & Abilities ----
 import { PlayerClasses, getClassById } from './src/player/PlayerClasses.js';
 import AbilitySystem from './src/player/AbilitySystem.js';
+// ---- Item System ----
+import { getItem, canClassUseItem } from './src/items/ItemDatabase.js';
+import { calculateStats } from './src/items/StatCalculator.js';
 // ---- WebRTC for UDP-like transport ----
 import { getWebRTCServer } from './src/network/WebRTCServer.js';
 // ---- WebTransport for true UDP transport (QUIC) ----
@@ -854,7 +857,7 @@ function handlePlayerShoot(clientId, bulletData) {
   // Record this bullet timestamp
   timestamps.push(now);
 
-  const { x, y, angle, speed, lifetime, width, height, color, spriteRow, waveAmp, waveFreq, angularVel } = bulletData;
+  const { x, y, angle, speed, lifetime, width, height, color, spriteRow, waveAmp, waveFreq, angularVel, piercing, explosive, explosionRadius } = bulletData;
   const mapId = client.mapId;
 
   // Get world context
@@ -864,14 +867,22 @@ function handlePlayerShoot(clientId, bulletData) {
     return;
   }
 
-  // Calculate bullet damage from player's attack stat (base + equipment)
-  const bulletDamage = getPlayerAttackDamage(client.player);
+  // Calculate bullet damage using stat calculator (base + equipment)
+  const baseStats = {
+    damage: client.player.baseDamage || 10,
+    defense: client.player.baseDefense || 0,
+    speed: client.player.baseSpeed || 5
+  };
+  const equipment = client.player.equipment || {};
+  const computedStats = calculateStats(baseStats, equipment);
+  const bulletDamage = computedStats.damage;
 
   // Validate and clamp client-provided values (anti-cheat)
-  const validSpeed = Math.max(5, Math.min(20, speed || 10));
-  const validLifetime = Math.max(0.1, Math.min(2.0, lifetime || 1.0));
+  const validSpeed = Math.max(5, Math.min(25, speed || 10));
+  const validLifetime = Math.max(0.1, Math.min(3.0, lifetime || 1.0));
   const validWidth = Math.max(0.3, Math.min(1.5, width || 0.6));
   const validHeight = Math.max(0.3, Math.min(1.5, height || 0.6));
+  const validPiercing = Math.max(0, Math.min(5, piercing || 0));  // Max 5 pierces
 
   // Spawn bullet slightly offset from player position to prevent immediate boundary collision
   const BULLET_SPAWN_OFFSET = 0.4;
@@ -897,7 +908,12 @@ function handlePlayerShoot(clientId, bulletData) {
     // Motion modifiers (clamped for anti-cheat)
     waveAmp: Math.max(0, Math.min(2, waveAmp || 0)),
     waveFreq: Math.max(0, Math.min(10, waveFreq || 0)),
-    angularVel: Math.max(-5, Math.min(5, angularVel || 0))
+    angularVel: Math.max(-5, Math.min(5, angularVel || 0)),
+    // Equipment-based modifiers
+    piercing: validPiercing > 0,
+    pierceCount: validPiercing,
+    explosive: explosive || false,
+    explosionRadius: Math.max(0, Math.min(5, explosionRadius || 0))
   };
 
   const bulletId = ctx.bulletMgr.addBullet(bullet);
@@ -981,14 +997,16 @@ async function loadStartingAreaSpawnPoints() {
 // ---------------------------------------------------------------
 // Helper: Handle player respawn (MMO-style: full delete and recreate)
 // ---------------------------------------------------------------
-async function handlePlayerRespawn(clientId) {
+async function handlePlayerRespawn(clientId, data = {}) {
   const client = clients.get(clientId);
   if (!client) {
     console.warn(`[SERVER] ⚠️ Respawn request from unknown client ${clientId}`);
     return;
   }
 
-  console.log(`[SERVER] 🔄 Player ${clientId} requesting respawn - DELETING old character and CREATING new one`);
+  // Get new class from request, or keep previous class, or default to warrior
+  const requestedClass = data?.class || client?.player?.class || 'warrior';
+  console.log(`[SERVER] 🔄 Player ${clientId} requesting respawn as ${requestedClass}`);
 
   const socket = client.socket;
   const mapId = client.mapId || 'map_1';
@@ -1009,9 +1027,8 @@ async function handlePlayerRespawn(clientId) {
 
   console.log(`[SERVER] 🌍 Respawning at random location: (${spawnX.toFixed(2)}, ${spawnY.toFixed(2)}) in world ${mapId}`);
 
-  // Get player's class for correct stats (preserve from before death, or default to warrior)
-  const playerClassName = client?.player?.class || 'warrior';
-  const playerClass = getClassById(playerClassName);
+  // Get class stats from requested class
+  const playerClass = getClassById(requestedClass);
 
   // MMO-STYLE: Create a completely NEW player object (like a fresh login)
   const newPlayer = {
@@ -1021,6 +1038,13 @@ async function handlePlayerRespawn(clientId) {
     inventory: new Array(20).fill(null),
     health: playerClass.stats.health,
     maxHealth: playerClass.stats.maxHealth,
+    baseDamage: playerClass.stats.damage,  // Class-based damage
+    damage: playerClass.stats.damage,
+    baseSpeed: playerClass.stats.speed,
+    speed: playerClass.stats.speed,
+    defense: playerClass.stats.defense,
+    mana: playerClass.stats.mana,
+    maxMana: playerClass.stats.maxMana,
     class: playerClass.id,
     className: playerClass.name,
     worldId: mapId,
@@ -1049,6 +1073,14 @@ async function handlePlayerRespawn(clientId) {
     y: spawnY,
     health: playerClass.stats.health,
     maxHealth: playerClass.stats.maxHealth,
+    class: playerClass.id,
+    className: playerClass.name,
+    spriteRow: playerClass.sprite?.row ?? 0,
+    damage: playerClass.stats.damage,
+    speed: playerClass.stats.speed,
+    defense: playerClass.stats.defense,
+    mana: playerClass.stats.mana,
+    maxMana: playerClass.stats.maxMana,
     timestamp: Date.now(),
     clientId: clientId
   });
@@ -1278,7 +1310,7 @@ function routePacket(clientId, type, data) {
   } else if (type === MessageType.PLAYER_UPDATE) {
     handlePlayerUpdate(clientId, data);
   } else if (type === MessageType.PLAYER_RESPAWN) {
-    handlePlayerRespawn(clientId);
+    handlePlayerRespawn(clientId, data);
   } else if (type === MessageType.UNIT_SPAWN) {
     handleUnitSpawn(clientId, data);
   } else if (type === MessageType.UNIT_COMMAND) {
@@ -2023,14 +2055,34 @@ wss.on('connection', async (socket, req) => {
         // Get most recently played character, or create new one
         const characters = gameDatabase.getCharactersByPlayerId(dbPlayer.id);
         console.log(`[SERVER] 💾 getCharactersByPlayerId(${dbPlayer.id}) found ${characters.length} characters`);
-        if (characters.length > 0) {
-          dbCharacter = characters[0]; // Most recent
-          console.log(`[SERVER] 🎮 Loaded character: ${dbCharacter.name} (${dbCharacter.class})`);
-        } else {
-          // Create new character with player name
+
+        // Find first ALIVE character, or null if all dead
+        const aliveCharacter = characters.find(c => !c.is_dead);
+
+        if (aliveCharacter) {
+          dbCharacter = aliveCharacter;
+          console.log(`[SERVER] 🎮 Loaded alive character: ${dbCharacter.name} (${dbCharacter.class})`);
+        } else if (characters.length > 0) {
+          // All characters are dead - prompt client to choose new class
+          console.log(`[SERVER] 💀 All ${characters.length} characters are dead, prompting class selection`);
+
+          // Send CHARACTER_SELECT message to client
+          sendToClient(socket, MessageType.CHARACTER_SELECT, {
+            reason: 'all_dead',
+            deadCount: characters.length,
+            playerName: playerName
+          });
+
+          // Still create a character with requested class so they can play
           dbCharacter = gameDatabase.createCharacter(dbPlayer.id, playerName, requestedClass);
           if (dbCharacter) {
-            console.log(`[SERVER] ✨ Created new character: ${dbCharacter.name}`);
+            console.log(`[SERVER] ✨ Created new character after death: ${dbCharacter.name} (${dbCharacter.class})`);
+          }
+        } else {
+          // No characters at all - create new one
+          dbCharacter = gameDatabase.createCharacter(dbPlayer.id, playerName, requestedClass);
+          if (dbCharacter) {
+            console.log(`[SERVER] ✨ Created first character: ${dbCharacter.name}`);
           } else {
             console.error(`[SERVER] ❌ Failed to create character for player ${playerName}`);
           }
@@ -2239,7 +2291,7 @@ wss.on('connection', async (socket, req) => {
         } else if(packet.type === MessageType.PLAYER_UPDATE){
           handlePlayerUpdate(clientId, packet.data);
         } else if(packet.type === MessageType.PLAYER_RESPAWN){
-          handlePlayerRespawn(clientId);
+          handlePlayerRespawn(clientId, packet.data);
         } else if(packet.type === MessageType.UNIT_SPAWN){
           handleUnitSpawn(clientId, packet.data);
         } else if(packet.type === MessageType.UNIT_COMMAND){

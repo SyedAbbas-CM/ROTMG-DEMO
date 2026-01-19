@@ -9,13 +9,33 @@ const spriteRegistry = new Map();
 // Pre-register all known enemy sprites in deterministic order
 // MUST match the order in common/BinaryProtocol.js on the server
 const KNOWN_SPRITES = [
+  // Unit sprites (for controllable units)
   'Light_Infantry',
   'Archer',
   'Light_Cavalry',
   'Heavy_Cavalry',
   'Heavy_Infantry',
   'Mega_Cavalry',
-  // Add more as needed - MUST match server list
+  // Enemy sprites (monsters) - MUST match common/BinaryProtocol.js
+  'red_imp',
+  'skeleton',
+  'beholder',
+  'red_demon',
+  'green_dragon',
+  'Medusa',
+  // Additional monster sprites from chars.json
+  'robber',
+  'scorpion',
+  'spider',
+  'bear',
+  'red_skull',
+  'flayer_god',
+  'Lizard_God',
+  'silver_knight',
+  'red_knight',
+  'Skeleton_God',
+  'dark_lord',
+  'Black_Knight',
 ];
 
 // Entity ID registry (synchronized from server)
