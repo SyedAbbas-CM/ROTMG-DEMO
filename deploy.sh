@@ -2,7 +2,7 @@
 # =============================================================================
 # ROTMG Server Deploy Script
 # =============================================================================
-# Target: Windows Laptop at 192.168.0.202
+# Target: Windows Laptop at 192.168.0.105
 # Server Directory: C:\ROTMG-DEMO
 #
 # WARNING: NEVER DEPLOY THESE FILES (they contain server-specific settings):
@@ -15,7 +15,7 @@
 # See SERVER_SETUP.md for full documentation.
 # =============================================================================
 
-REMOTE="newadmin@192.168.0.202"
+REMOTE="newadmin@192.168.0.105"
 PASS="12345"
 REMOTE_DIR="C:/ROTMG-DEMO"
 BACKUP_DIR="C:/ROTMG-BACKUP"

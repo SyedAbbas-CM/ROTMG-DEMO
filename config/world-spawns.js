@@ -19,30 +19,15 @@ export const worldSpawns = {
   // OVERWORLD (Procedural Generated World)
   // ========================================
   overworld: {
-    description: "Mixed enemy tiers for testing progression",
+    description: "Test spawn area near origin - one of each enemy type in a row",
     spawns: [
-      // Tier 1 - Imps (weak, fast scouts)
-      { id: 'imp', x: 15, y: 25, comment: 'Imp Scout 1' },
-      { id: 'imp', x: 20, y: 25, comment: 'Imp Scout 2' },
-      { id: 'imp', x: 25, y: 25, comment: 'Imp Scout 3' },
-      { id: 'imp', x: 30, y: 25, comment: 'Imp Scout 4' },
-      { id: 'imp', x: 35, y: 25, comment: 'Imp Scout 5' },
-
-      // Tier 2 - Skeletons (medium fighters)
-      { id: 'skeleton', x: 18, y: 32, comment: 'Skeleton Warrior 1' },
-      { id: 'skeleton', x: 24, y: 32, comment: 'Skeleton Warrior 2' },
-      { id: 'skeleton', x: 30, y: 32, comment: 'Skeleton Warrior 3' },
-      { id: 'skeleton', x: 36, y: 32, comment: 'Skeleton Warrior 4' },
-
-      // Tier 3 - Beholders (tough ranged)
-      { id: 'beholder', x: 22, y: 40, comment: 'Beholder 1' },
-      { id: 'beholder', x: 32, y: 40, comment: 'Beholder 2' },
-
-      // Tier 4 - Red Demon (elite)
-      { id: 'red_demon', x: 50, y: 35, comment: 'Red Demon Elite' },
-
-      // Tier 5 - Green Dragon (mini-boss)
-      { id: 'green_dragon', x: 70, y: 40, comment: 'Green Dragon' },
+      // TEST AREA - All enemy types in a row at y=20 for easy testing
+      // Spaced 6 tiles apart starting at x=20
+      { id: 'imp', x: 20, y: 20, comment: 'TEST: Tier 1 - Imp (50 HP)' },
+      { id: 'skeleton', x: 26, y: 20, comment: 'TEST: Tier 2 - Skeleton (150 HP)' },
+      { id: 'beholder', x: 32, y: 20, comment: 'TEST: Tier 3 - Beholder (400 HP)' },
+      { id: 'red_demon', x: 38, y: 20, comment: 'TEST: Tier 4 - Red Demon (800 HP)' },
+      { id: 'green_dragon', x: 44, y: 20, comment: 'TEST: Tier 5 - Dragon (2000 HP)' },
     ]
   },
 

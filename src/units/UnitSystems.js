@@ -38,6 +38,36 @@ export default class UnitSystems {
     return this.u.SOLDIER_TYPES[typeId] || this.u.SOLDIER_TYPES[0];
   }
 
+  // ============================================
+  // Command Issuing Methods (called by UnitNetworkAdaptor)
+  // ============================================
+
+  /** Issue a MOVE command to a unit */
+  issueMove(unitIndex, tx, ty) {
+    this.cmdKind[unitIndex] = 1;  // MOVE command
+    this.cmdTX[unitIndex] = tx;
+    this.cmdTY[unitIndex] = ty;
+  }
+
+  /** Issue an ATTACK_MOVE command to a unit */
+  issueAttack(unitIndex, tx, ty) {
+    this.cmdKind[unitIndex] = 2;  // ATTACK_MOVE command
+    this.cmdTX[unitIndex] = tx;
+    this.cmdTY[unitIndex] = ty;
+  }
+
+  /** Issue a GUARD command to a unit (hold current position) */
+  issueGuard(unitIndex) {
+    this.cmdKind[unitIndex] = 3;  // GUARD command
+    this.cmdTX[unitIndex] = this.u.x[unitIndex];
+    this.cmdTY[unitIndex] = this.u.y[unitIndex];
+  }
+
+  /** Clear command - return unit to idle */
+  issueIdle(unitIndex) {
+    this.cmdKind[unitIndex] = 0;  // IDLE - clear command
+  }
+
   /** called once per server tick */
   update(dt) {
     const {u} = this;

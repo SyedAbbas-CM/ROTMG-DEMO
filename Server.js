@@ -122,12 +122,22 @@ const __dirname = path.dirname(__filename);
 // Helper: Random Spawn Location
 // -----------------------------------------------------------------------------
 /**
- * Generates a random spawn location within the map bounds
+ * Generates a spawn location within the map bounds
+ * TEST_MODE: Spawns near test area (20, 15) to see enemies/units immediately
  * @param {Object} mapMetadata - Map metadata with width/height
  * @param {Object} mapManager - MapManager instance for walkability checks
  * @returns {Object} {x, y} coordinates in tile units
  */
+const TEST_SPAWN_MODE = true; // Set to false for random spawns
+
 function generateRandomSpawnLocation(mapMetadata, mapManager) {
+  // TEST MODE: Spawn near test area so player can see enemies/units
+  if (TEST_SPAWN_MODE) {
+    const testSpawn = { x: 30, y: 15 }; // Above the enemy/unit test rows
+    console.log(`[SPAWN] TEST MODE: Spawning at fixed location (${testSpawn.x}, ${testSpawn.y})`);
+    return testSpawn;
+  }
+
   const { width, height } = mapMetadata;
   const margin = 50; // Stay 50 tiles away from edges
   const maxAttempts = 100;
@@ -1470,45 +1480,37 @@ function getWorldCtx(mapId) {
 
     logger.info('worldCtx',`Created managers for world ${mapId} including unit systems`);
     worldContexts.set(mapId, { bulletMgr, enemyMgr, collMgr, bagMgr, soldierMgr, unitSystems, unitNetAdapter, deltaTracker });
+
+    // TEST UNITS - spawn test units for sprite verification
+    spawnInitialUnits(soldierMgr);
   }
   return worldContexts.get(mapId);
 }
 
 /**
  * Spawn initial units for demonstration/testing
+ * TEST MODE: One of each unit type in a row at y=25 for sprite verification
  */
 function spawnInitialUnits(soldierMgr) {
-  // Spawn a small army formation
-  const formations = [
-    { x: 30, y: 30, type: 0, count: 8, team: 'blue' },   // Infantry
-    { x: 30, y: 40, type: 1, count: 6, team: 'blue' },   // Heavy Infantry
-    { x: 30, y: 50, type: 4, count: 10, team: 'blue' },  // Archers
-
-    { x: 170, y: 30, type: 2, count: 6, team: 'red' },   // Light Cavalry
-    { x: 170, y: 40, type: 3, count: 4, team: 'red' },   // Heavy Cavalry
-    { x: 170, y: 50, type: 5, count: 8, team: 'red' },   // Crossbowmen
-
-    { x: 100, y: 100, type: 6, count: 1, team: 'boss' }, // Boss Infantry
+  // TEST AREA - One of each unit type in a row at y=25
+  // Spaced 6 tiles apart starting at x=20 (below enemies at y=20)
+  const testUnits = [
+    { x: 20, y: 26, type: 0, name: 'Light Infantry' },
+    { x: 26, y: 26, type: 1, name: 'Heavy Infantry' },
+    { x: 32, y: 26, type: 2, name: 'Light Cavalry' },
+    { x: 38, y: 26, type: 3, name: 'Heavy Cavalry' },
+    { x: 44, y: 26, type: 4, name: 'Archer' },
+    { x: 50, y: 26, type: 5, name: 'Crossbowman' },
   ];
-  
-  formations.forEach(formation => {
-    for (let i = 0; i < formation.count; i++) {
-      const x = formation.x + (i % 4) * 3;
-      const y = formation.y + Math.floor(i / 4) * 3;
-      const unitId = soldierMgr.spawn(formation.type, x, y, { team: formation.team });
-      
-      if (unitId) {
-        const index = soldierMgr.findIndexById(unitId);
-        // Set team for combat identification
-        if (!soldierMgr.owner) {
-          soldierMgr.owner = new Array(soldierMgr.max);
-        }
-        soldierMgr.owner[index] = formation.team;
-      }
+
+  testUnits.forEach(unit => {
+    const unitId = soldierMgr.spawn(unit.type, unit.x, unit.y, { team: 'test' });
+    if (unitId) {
+      logger.info('units', `Spawned TEST unit: ${unit.name} (type ${unit.type}) at (${unit.x}, ${unit.y})`);
     }
   });
-  
-  logger.info('units', `Spawned ${formations.reduce((sum, f) => sum + f.count, 0)} initial units`);
+
+  logger.info('units', `Spawned ${testUnits.length} test units for sprite verification`);
 }
 
 // ---------------------------------------------------------------------------

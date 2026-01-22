@@ -262,9 +262,7 @@ export class CommandSystem {
         let commandedCount = 0;
         for (let i = 0; i < worldCtx.soldierMgr.count; i++) {
             if (worldCtx.soldierMgr.owner && worldCtx.soldierMgr.owner[i] === team) {
-                worldCtx.soldierMgr.cmdKind[i] = 1; // Move command
-                worldCtx.soldierMgr.cmdTX[i] = targetX;
-                worldCtx.soldierMgr.cmdTY[i] = targetY;
+                worldCtx.unitSystems.issueMove(i, targetX, targetY);
                 commandedCount++;
             }
         }
@@ -290,21 +288,19 @@ export class CommandSystem {
         const mapId = this.server.clients?.get(clientId)?.mapId || this.server.gameState?.mapId || 'map_1';
         const worldCtx = this.server.getWorldCtx ? this.server.getWorldCtx(mapId) : null;
         
-        if (!worldCtx || !worldCtx.soldierMgr) {
+        if (!worldCtx || !worldCtx.soldierMgr || !worldCtx.unitSystems) {
             this.sendMessageToClient(clientId, 'Error: Could not access unit systems.');
             return;
         }
-        
+
         let commandedCount = 0;
         for (let i = 0; i < worldCtx.soldierMgr.count; i++) {
             if (worldCtx.soldierMgr.owner && worldCtx.soldierMgr.owner[i] === team) {
-                worldCtx.soldierMgr.cmdKind[i] = 2; // Attack-move command
-                worldCtx.soldierMgr.cmdTX[i] = targetX;
-                worldCtx.soldierMgr.cmdTY[i] = targetY;
+                worldCtx.unitSystems.issueAttack(i, targetX, targetY);
                 commandedCount++;
             }
         }
-        
+
         this.sendMessageToClient(clientId, `Ordered ${commandedCount} units from team ${team} to attack-move to (${targetX}, ${targetY})`);
     }
     

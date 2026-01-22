@@ -46,31 +46,35 @@ export class ClientUnitRenderer {
             try {
                 const spriteSheet = spriteManager.getSpriteSheet(sprite.sheet);
                 if (spriteSheet) {
-                    const spriteData = spriteManager.getSpriteData(sprite.sheet, sprite.name);
-                    if (spriteData) {
+                    // Use getSprite with proper key format: "sheetName_spriteName"
+                    const spriteKey = `${sprite.sheet}_${sprite.name}`;
+                    const spriteData = spriteManager.getSprite(spriteKey);
+                    if (spriteData && spriteData.x !== undefined) {
                         const size = (sprite.scale || 0.5) * SCALE * scaleFactor;
-                        
+
                         // Save context for team coloring
                         ctx.save();
-                        
+
                         // Apply team coloring filter
                         const teamColor = this.teamColors[unit.team] || this.teamColors.neutral;
                         if (unit.team && unit.team !== 'neutral') {
                             ctx.filter = `hue-rotate(${this.getTeamHueRotation(unit.team)}deg) saturate(1.2)`;
                         }
-                        
+
                         // Draw the unit sprite
                         spriteManager.drawSprite(
                             ctx,
                             sprite.sheet,
-                            spriteData.x || 0,
-                            spriteData.y || 0, 
+                            spriteData.x,
+                            spriteData.y,
                             screenX - size/2,
                             screenY - size/2,
                             size,
-                            size
+                            size,
+                            spriteData.width,
+                            spriteData.height
                         );
-                        
+
                         ctx.restore();
                         renderSuccess = true;
                     }

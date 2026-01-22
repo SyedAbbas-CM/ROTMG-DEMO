@@ -1138,10 +1138,30 @@ export function updateFirstPerson(camera) {
   if (updateFirstPerson._logCount < 3) {
     updateFirstPerson._logCount++;
     console.log(`!!!! updateFirstPerson CALLED (call #${updateFirstPerson._logCount}) !!!!`);
+    console.log('floorInstancedMesh exists:', !!floorInstancedMesh);
+    console.log('sceneGlobalRef exists:', !!sceneGlobalRef);
   }
 
   const character = gameState.character;
   if (!character) return;
+
+  // DEBUG TEST: Force render a single floor tile at camera position
+  // This tests if basic InstancedMesh rendering works AT ALL
+  if (!updateFirstPerson._testTileAdded && floorInstancedMesh) {
+    updateFirstPerson._testTileAdded = true;
+    console.log('!!!!! ADDING TEST FLOOR TILE DIRECTLY UNDER CAMERA !!!!!');
+    const testMatrix = new THREE.Matrix4().makeTranslation(
+      character.x * SCALING_3D,
+      0, // Ground level
+      character.y * SCALING_3D
+    );
+    floorInstancedMesh.count = 1;
+    floorInstancedMesh.setMatrixAt(0, testMatrix);
+    floorInstancedMesh.instanceMatrix.needsUpdate = true;
+    console.log('Test tile added at:', character.x * SCALING_3D, 0, character.y * SCALING_3D);
+    console.log('floorInstancedMesh.count is now:', floorInstancedMesh.count);
+    console.log('floorInstancedMesh.parent:', floorInstancedMesh.parent?.type);
+  }
 
   // Position camera according to tile coordinates
   camera.position.set(

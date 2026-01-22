@@ -55,6 +55,9 @@ export const UnitTypes = {
       projectileSpeed: 190,
     }
   };
-  
-  export const UnitTypeKeys = Object.keys(UnitTypes);   // handy for random spawn
+
+  // Add __keys array for numeric index lookup (used by UnitSystems)
+  UnitTypes.__keys = Object.keys(UnitTypes);
+
+  export const UnitTypeKeys = UnitTypes.__keys;   // handy for random spawn
   

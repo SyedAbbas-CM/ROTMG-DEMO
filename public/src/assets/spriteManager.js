@@ -245,15 +245,29 @@ export class SpriteManager {
     });
 
     // Define each sprite using key format "sheetName_spriteName"
+    const defaultWidth = spriteData.defaultSpriteWidth || 8;
+    const defaultHeight = spriteData.defaultSpriteHeight || 8;
+
     spriteData.sprites.forEach(sprite => {
       const spriteName = sprite.name || `sprite_${sprite.id}`;
       const key = `${sheetName}_${spriteName}`;
+
+      // Compute x/y from row/col if not provided directly
+      let x = sprite.x;
+      let y = sprite.y;
+      if (x === undefined && sprite.col !== undefined) {
+        x = sprite.col * (sprite.width || defaultWidth);
+      }
+      if (y === undefined && sprite.row !== undefined) {
+        y = sprite.row * (sprite.height || defaultHeight);
+      }
+
       this.sprites[key] = {
         sheetName: sheetName,
-        x: sprite.x,
-        y: sprite.y,
-        width: sprite.width,
-        height: sprite.height
+        x: x || 0,
+        y: y || 0,
+        width: sprite.width || defaultWidth,
+        height: sprite.height || defaultHeight
       };
 
       // Auto-register the bare sprite name as an alias if it is unique across the project.

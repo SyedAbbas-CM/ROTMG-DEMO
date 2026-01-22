@@ -182,31 +182,32 @@ export default class BehaviorSystem {
   
   /**
    * Initialize default behavior templates for standard enemy types
+   * NOTE: These are ENEMY behaviors, not unit behaviors. Units use UnitSystems.
    */
   initDefaultBehaviors() {
-    // Type 0: Light Infantry - chases and shoots single bullets
+    // Type 0: BasicChaser (imp) - chases and shoots single bullets
     this.registerBehaviorTemplate(0, this.createBasicEnemyBehavior());
 
-    // Type 1: Archer - long-range sniper that maintains 18+ tile distance
-    this.registerBehaviorTemplate(1, this.createArcherBehavior());
+    // Type 1: Sniper (skeleton) - long-range shooter that maintains 18+ tile distance
+    this.registerBehaviorTemplate(1, this.createSniperBehavior());
 
-    // Type 2: Light Cavalry - charges with velocity phases, directional shooting
-    this.registerBehaviorTemplate(2, this.createCavalryBehavior());
+    // Type 2: Charger (beholder) - charges with velocity phases, directional shooting
+    this.registerBehaviorTemplate(2, this.createChargerBehavior());
 
-    // Type 3: Heavy Cavalry - slower but tankier cavalry, slightly slower max speed
-    this.registerBehaviorTemplate(3, this.createHeavyCavalryBehavior());
+    // Type 3: HeavyCharger (red_demon) - slower but tankier charger
+    this.registerBehaviorTemplate(3, this.createHeavyChargerBehavior());
 
-    // Type 4: Heavy Infantry - defensive, chases when close, rages when damaged
-    this.registerBehaviorTemplate(4, this.createDefensiveHeavyBehavior());
+    // Type 4: Defender (green_dragon) - defensive, chases when close, rages when damaged
+    this.registerBehaviorTemplate(4, this.createDefenderBehavior());
 
-    // Type 5: AI Pattern Boss - wander only, no attacks (attacks handled by AIPatternBoss)
-    this.registerBehaviorTemplate(5, this.createWanderOnlyBehavior());
+    // Type 5: BossWander (boss_enemy) - wander only, attacks handled by AIPatternBoss
+    this.registerBehaviorTemplate(5, this.createBossWanderBehavior());
 
-    // Type 6: Charging Shooter - charges while shooting rapidly
-    this.registerBehaviorTemplate(6, this.createChargingShooterBehavior());
+    // Type 6: RushAttacker - charges while shooting rapidly
+    this.registerBehaviorTemplate(6, this.createRushAttackerBehavior());
 
-    // Type 7: Heavy Infantry - defensive, only chases when player is close
-    this.registerBehaviorTemplate(7, this.createDefensiveHeavyBehavior());
+    // Type 7: Defender variant - defensive, only chases when player is close
+    this.registerBehaviorTemplate(7, this.createDefenderBehavior());
   }
   
   /**
@@ -488,10 +489,10 @@ export default class BehaviorSystem {
   }
 
   /**
-   * Create behavior template for Archer (Type 1)
-   * Long-range sniper that maintains distance and retreats when threatened
+   * Create behavior template for Sniper enemy (skeleton - Type 1)
+   * Long-range shooter that maintains distance and retreats when threatened
    */
-  createArcherBehavior() {
+  createSniperBehavior() {
     // Idle state when no players nearby
     const idleState = new BehaviorState('idle', [
       new Behaviors.Wander(0.4) // Slow wandering
@@ -614,10 +615,10 @@ export default class BehaviorSystem {
   }
 
   /**
-   * Create behavior template for Cavalry (Type 5)
+   * Create behavior template for Charger enemy (beholder - Type 2)
    * Charges with velocity phases - fast charging with limited turning, slow mode for shooting
    */
-  createCavalryBehavior() {
+  createChargerBehavior() {
     // Idle state - wander until enemy detected
     const idleState = new BehaviorState('idle', [
       new Behaviors.Wander(0.5) // Medium speed wandering
@@ -637,10 +638,10 @@ export default class BehaviorSystem {
   }
 
   /**
-   * Create behavior template for Heavy Cavalry (Type 3)
-   * Slower base speed but charges to high speed, tankier than light cavalry
+   * Create behavior template for HeavyCharger enemy (red_demon - Type 3)
+   * Slower base speed but charges to high speed, tankier than regular charger
    */
-  createHeavyCavalryBehavior() {
+  createHeavyChargerBehavior() {
     // Idle state - wander until enemy detected
     const idleState = new BehaviorState('idle', [
       new Behaviors.Wander(0.4) // Slower wandering than light cavalry
@@ -660,10 +661,10 @@ export default class BehaviorSystem {
   }
 
   /**
-   * Create behavior template for Defensive Heavy Infantry (Type 4)
+   * Create behavior template for Defender enemy (green_dragon - Type 4)
    * Only chases when player is very close, otherwise stays defensive
    */
-  createDefensiveHeavyBehavior() {
+  createDefenderBehavior() {
     // Idle/defensive state - wander slowly
     const idleState = new BehaviorState('idle', [
       new Behaviors.Wander(0.2) // Very slow wandering
@@ -736,10 +737,10 @@ export default class BehaviorSystem {
   }
 
   /**
-   * Create behavior template for Wander-Only (AI Pattern Boss - Type 5)
+   * Create behavior template for BossWander (boss_enemy - Type 5)
    * No attacks - attacks are handled by AIPatternBoss system
    */
-  createWanderOnlyBehavior() {
+  createBossWanderBehavior() {
     // Single state that just wanders, no transitions, no attacks
     const wanderState = new BehaviorState('wander', [
       new Behaviors.Wander(1.0) // Normal wandering speed
@@ -788,9 +789,10 @@ export default class BehaviorSystem {
   }
 
   /**
-   * Create behavior template for Charging Shooter (Type 6)
+   * Create behavior template for RushAttacker enemy (Type 6)
+   * Charges aggressively while shooting rapidly
    */
-  createChargingShooterBehavior() {
+  createRushAttackerBehavior() {
     // Charge state - aggressively chase and shoot rapidly
     const chargeState = new BehaviorState('charge', [
       new Behaviors.Chase(2.0, 50),    // Fast aggressive chase

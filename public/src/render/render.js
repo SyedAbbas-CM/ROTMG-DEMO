@@ -504,6 +504,32 @@ export function renderUnits() {
   // Get units for rendering
   let units = [];
   try {
+    // Unit type to sprite name mapping (matches Mixed_Units.json atlas)
+    const UNIT_SPRITE_NAMES = [
+      'Light_Infantry',   // type 0
+      'Heavy_Infantry',   // type 1
+      'Light_Cavalry',    // type 2
+      'Heavy_Cavalry',    // type 3
+      'Archer',           // type 4
+      'Mage'              // type 5 (Crossbowman)
+    ];
+    const UNIT_DISPLAY_NAMES = [
+      'Light Infantry',
+      'Heavy Infantry',
+      'Light Cavalry',
+      'Heavy Cavalry',
+      'Archer',
+      'Crossbowman'
+    ];
+    const UNIT_CATEGORIES = [
+      'infantry',
+      'infantry',
+      'cavalry',
+      'cavalry',
+      'ranged',
+      'ranged'
+    ];
+
     // Use different methods based on what's available
     if (unitManager.getUnitsForRender) {
       units = unitManager.getUnitsForRender();
@@ -511,12 +537,14 @@ export function renderUnits() {
       // Generate units array from SoA data
       units = [];
       for (let i = 0; i < unitManager.count; i++) {
+        const typeIdx = unitManager.typeIdx ? unitManager.typeIdx[i] : unitManager.type[i];
+        const spriteName = UNIT_SPRITE_NAMES[typeIdx] || 'Light_Infantry';
         units.push({
           id: unitManager.id[i],
-          type: unitManager.typeIdx ? unitManager.typeIdx[i] : unitManager.type[i],
-          typeName: `Unit${unitManager.typeIdx ? unitManager.typeIdx[i] : unitManager.type[i]}`,
-          displayName: `Unit ${unitManager.typeIdx ? unitManager.typeIdx[i] : unitManager.type[i]}`,
-          category: 'military',
+          type: typeIdx,
+          typeName: UNIT_DISPLAY_NAMES[typeIdx] || 'Unknown Unit',
+          displayName: UNIT_DISPLAY_NAMES[typeIdx] || 'Unknown Unit',
+          category: UNIT_CATEGORIES[typeIdx] || 'infantry',
           x: unitManager.x[i],
           y: unitManager.y[i],
           health: unitManager.hp ? unitManager.hp[i] : unitManager.health[i],
@@ -526,7 +554,7 @@ export function renderUnits() {
           team: unitManager.owner ? unitManager.owner[i] : 'neutral',
           sprite: {
             sheet: 'Mixed_Units',
-            name: `Mixed_Units_0_${Math.min(5, unitManager.typeIdx ? unitManager.typeIdx[i] : unitManager.type[i])}`,
+            name: spriteName,
             scale: 0.5
           }
         });
