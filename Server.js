@@ -2729,19 +2729,23 @@ function tryListen(port, attemptsLeft = 5) {
       const mainMapCtx = getWorldCtx(gameState.mapId);
       bossManager = new BossManager(mainMapCtx?.enemyMgr);
 
-      // Initialize AI Pattern Boss system
-      try {
-        aiPatternBoss = new AIPatternBoss(bossManager, mainMapCtx?.bulletMgr);
-        console.log('[SERVER] AI Pattern Boss system enabled');
-      } catch (aiErr) {
-        console.warn('[SERVER] AI Pattern Boss failed to initialize:', aiErr.message);
-        console.log('[SERVER] Boss will use fallback patterns only');
+      // Initialize AI Pattern Boss system (CNN-based patterns)
+      // DISABLED by default - set AI_PATTERN_ENABLED=true to enable
+      if (process.env.AI_PATTERN_ENABLED === 'true') {
+        try {
+          aiPatternBoss = new AIPatternBoss(bossManager, mainMapCtx?.bulletMgr);
+          console.log('[SERVER] AI Pattern Boss system enabled (CNN patterns)');
+        } catch (aiErr) {
+          console.warn('[SERVER] AI Pattern Boss failed to initialize:', aiErr.message);
+        }
+      } else {
+        console.log('[SERVER] AI Pattern Boss disabled (AI_PATTERN_ENABLED=false)');
       }
 
       // Build LLM controller config from environment variables
       const llmConfig = {
-        // Tactical tier (DISABLED by default - set TACTICAL_ENABLED=true to enable)
-        tacticalEnabled: process.env.TACTICAL_ENABLED === 'true',
+        // Tactical tier (ENABLED by default - set TACTICAL_ENABLED=false to disable)
+        tacticalEnabled: process.env.TACTICAL_ENABLED !== 'false',
 
         // Adaptive frequency (enabled by default)
         adaptiveFrequency: process.env.TACTICAL_ADAPTIVE !== 'false',
@@ -2768,7 +2772,7 @@ function tryListen(port, attemptsLeft = 5) {
         );
         console.log('[SERVER] Tactical LLM Boss AI enabled');
       } else {
-        console.log('[SERVER] Tactical LLM Boss AI disabled (TACTICAL_ENABLED=false)');
+        console.log('[SERVER] Tactical LLM Boss AI disabled (set TACTICAL_ENABLED=true to enable)');
       }
 
       if (llmConfig.tacticalEnabled) {
