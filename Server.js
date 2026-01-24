@@ -1997,8 +1997,7 @@ function spawnMapEnemies(mapId) {
 
 // Spawn initial enemies for the game world
 // also spawn any enemies defined inside the procedural map metadata (none by default)
-// DISABLED: Only boss unit spawns now
-// spawnMapEnemies(gameState.mapId);
+spawnMapEnemies(gameState.mapId);
 
 // WebSocket connection handler
 wss.on('connection', async (socket, req) => {
