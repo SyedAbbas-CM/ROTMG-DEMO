@@ -27,7 +27,11 @@ export function createProvider(config = {}) {
 
   switch (backend) {
     case 'gemini':
+      opts.apiKey = apiKey;
+      return new GeminiProvider(opts);
     case 'ollama':
+      opts.host = config.host || process.env.OLLAMA_HOST || 'http://192.168.0.206:11434';
+      return new OllamaProvider(opts);
     case 'mock':
       return new MockProvider(opts);
     default:
