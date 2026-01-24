@@ -137,7 +137,8 @@
       "Bash(for ip in 192.168.0.{1..20} 192.168.0.{100..110} 192.168.0.{200..210})",
       "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.105 \"echo Connected\")",
       "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.105 \"cd C:/ROTMG-DEMO && C:\\node-v22.12.0-win-x64\\node.exe Server.js 2>&1\")",
-      "Bash(for ip in 192.168.0.{1..30})"
+      "Bash(for ip in 192.168.0.{1..30})",
+      "Bash(timeout 30 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 newadmin@192.168.0.105 \"cd C:/ROTMG-DEMO && git pull origin main\")"
     ],
     "deny": []
   }
