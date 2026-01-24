@@ -16,8 +16,11 @@ import MockProvider from './providers/MockProvider.js';
 export function createProvider(config = {}) {
   // Support both new config object style and legacy env var style
   const backend = config.backend || process.env.LLM_BACKEND || 'gemini';
-  const model = config.model || process.env.LLM_MODEL || 'models/gemini-2.5-flash';
   const apiKey = config.apiKey || process.env.GOOGLE_API_KEY;
+
+  // Default model depends on backend
+  const defaultModel = backend === 'ollama' ? 'lfm2.5-1.2b' : 'models/gemini-2.5-flash';
+  const model = config.model || process.env.LLM_MODEL || defaultModel;
 
   const opts = {
     model,
