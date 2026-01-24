@@ -373,7 +373,7 @@ app.get('/api/assets/atlases', (req, res) => {
   try {
     const atlases = fs
       .readdirSync(atlasesDirBase)
-      .filter((f) => f.endsWith('.json'))
+      .filter((f) => f.endsWith('.json') && !f.startsWith('._'))  // Exclude macOS resource forks
       .map((f) => '/assets/atlases/' + f);
     res.json({ atlases });
   } catch (err) {
