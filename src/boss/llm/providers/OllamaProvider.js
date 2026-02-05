@@ -13,9 +13,9 @@ registry.events.on('update', () => {
 export default class OllamaProvider extends BaseProvider {
   constructor(opts = {}) {
     super(opts);
-    // Connect to remote Ollama server (default: Jetson Nano)
-    this.client = new Ollama({ host: opts.host || 'http://192.168.0.206:11434' });
-    console.log(`[OllamaProvider] Connecting to ${opts.host || 'http://192.168.0.206:11434'}`);
+    // Connect to remote Ollama server (default: Acer E5 with 940MX GPU)
+    this.client = new Ollama({ host: opts.host || 'http://192.168.0.203:11434' });
+    console.log(`[OllamaProvider] Connecting to ${opts.host || 'http://192.168.0.203:11434'}`);
   }
   async generate(snapshot) {
     return tracer.startActiveSpan('llm.generate.ollama', async span => {
@@ -25,7 +25,7 @@ export default class OllamaProvider extends BaseProvider {
       const t0 = Date.now();
       const res = await Promise.race([
         this.client.generate({
-          model: this.opts.model || 'lfm2.5-1.2b',
+          model: this.opts.model || 'hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF:Q4_K_M',
           prompt: `${systemMsg}\n\n${prompt}`,
           stream: false,
         }),

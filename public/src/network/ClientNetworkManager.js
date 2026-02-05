@@ -27,6 +27,7 @@ function throttledLog(key, message, data, interval = 1000) {
 // realm first, so disable persistence by default.
 export const ENABLE_MAP_ID_PERSISTENCE = false;
 
+// TODO(cleanup): Debug-only map export helper; move to tools module or remove after purge.
 // Simple utility to save map data to a file
 window.saveMapData = function() {
     try {
@@ -447,6 +448,7 @@ function saveTileTypeArray() {
     }
 }
 
+// TODO(cleanup): Debug-only console hint; remove after debug purge.
 console.log("Map save function available. Use window.saveMapData() in the console to download map data.");
 
 /**
@@ -517,6 +519,7 @@ export class ClientNetworkManager {
         
         console.log("ClientNetworkManager initialized with server URL:", serverUrl);
 
+        // TODO(cleanup): Debug-only globals; move to debug module or remove after purge.
         // Debug: Expose network status globally
         window.getNetworkStatus = () => {
             const wtStats = this.webtransport?.getStats() || { isReady: false };
@@ -762,6 +765,7 @@ export class ClientNetworkManager {
                 window.gameState.character.maxHealth = data.localPlayer.maxHealth || 200;  // Match class HP default
                 window.gameState.character.isDead = data.localPlayer.isDead || false;
 
+                // TODO(cleanup): Debug-only health logging; remove after debug purge.
                 // DEBUG: Log health changes
                 if (oldHealth !== data.localPlayer.health) {
                     console.log(`[HEALTH DEBUG] Server health update: ${oldHealth} -> ${data.localPlayer.health}`);
@@ -789,7 +793,8 @@ export class ClientNetworkManager {
                 // Data is already an ArrayBuffer from WebTransport
                 const delta = decodeWorldDelta(data);
 
-                // Debug: Log incoming binary world updates
+            // TODO(cleanup): Debug-only binary logging; remove after debug purge.
+            // Debug: Log incoming binary world updates
                 if (!this._binaryRxCount) this._binaryRxCount = 0;
                 this._binaryRxCount++;
                 if (this._binaryRxCount <= 5 || this._binaryRxCount % 100 === 0) {
@@ -1203,6 +1208,7 @@ export class ClientNetworkManager {
                 };
                 
                 this.socket.onmessage = (event) => {
+                    // TODO(cleanup): Debug-only raw message diagnostics; remove after debug purge.
                     // RAW MESSAGE DIAGNOSTIC: Only log when bullets are present
                     try {
                         const packet = BinaryPacket.decode(event.data);
@@ -1331,6 +1337,7 @@ export class ClientNetworkManager {
             const packet = BinaryPacket.decode(data);
             const { type, data: messageData } = packet;
             
+            // TODO(cleanup): Debug-only diagnostics; remove after debug purge.
             // Diagnostic: Always log PLAYER_LIST messages raw format for debugging
             // This will help understand exactly what the server is sending
             if (type === MessageType.PLAYER_LIST) {

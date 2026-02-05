@@ -2,6 +2,7 @@
 
 import { gameState } from './gamestate.js';
 import { openSpriteEditor } from '../screens/spriteEditor.js';
+// TODO(cleanup): Unused import; remove after debug purge.
 import { handleShoot as handleShootOriginal } from './game.js';
 import { TILE_SIZE, SCALE } from '../constants/constants.js';
 import { Camera } from '../camera.js';
@@ -38,6 +39,7 @@ function handleShoot(targetX, targetY) {
     );
     const effectiveRateOfFire = calculateRateOfFire(weapon.rateOfFire, stats.attackSpeed);
 
+    // TODO(cleanup): Debug-only logging; remove after debug purge.
     // Debug: Log class and weapon info
     console.log(`[SHOOT] Class: ${playerClass}, Weapon: ${weapon.name}, Pattern: ${weapon.pattern}, Speed: ${weapon.projectileSpeed}, Lifetime: ${weapon.projectileLifetime?.toFixed(2)}, RoF: ${effectiveRateOfFire.toFixed(1)}/s`);
 
@@ -71,6 +73,7 @@ function handleShoot(targetX, targetY) {
     // Get bullet modifiers from equipment
     const bulletMods = weapon.bulletMods || {};
 
+    // TODO(cleanup): Debug-only logging; remove after debug purge.
     // Debug: Show projectile data
     if (projectiles.length > 0) {
         const p = projectiles[0];
@@ -148,6 +151,7 @@ function isRTSCommandMode(event) {
  * Initialize game controls
  */
 export function initControls() {
+    // TODO(cleanup): Debug-only marker; remove after debug purge.
     // SUPER VISIBLE: Prove initControls is called
     document.title = '🎮 INPUT.JS LOADED!';
     console.error('🎮🎮🎮 [INPUT.JS] initControls() CALLED AT:', new Date().toISOString());
@@ -227,7 +231,8 @@ export function initControls() {
             handleShoot(targetX, targetY);
         }
 
-        // Add F3 key to toggle debug mode
+    // TODO(cleanup): Debug-only key (F3); remove after debug purge if unused.
+    // Add F3 key to toggle debug mode
         if (e.code === 'F3') {
           if (gameState.camera) {
             const debugEnabled = gameState.camera.toggleDebugMode();
@@ -240,6 +245,7 @@ export function initControls() {
           }
         }
         
+        // TODO(cleanup): Debug-only key (F4); remove after debug purge if unused.
         // Add F4 key to toggle logging verbosity
         if (e.code === 'F4') {
             // If current log level is set to VERBOSE, set it to INFO
@@ -253,6 +259,7 @@ export function initControls() {
             logger.info(`Logging verbosity set to ${newLevel === LOG_LEVELS.INFO ? 'NORMAL' : 'VERBOSE'}`);
         }
 
+        // TODO(cleanup): Debug-only unit spawning keys; remove after debug purge.
         // Unit spawning controls
         if (e.code === 'Digit1' && !e.ctrlKey && !e.shiftKey) {
             // Spawn Light Infantry
@@ -311,6 +318,7 @@ export function initControls() {
 
     // Mouse movement for camera rotation in first-person view
     window.addEventListener('click', (e) => {
+        // TODO(cleanup): Debug-only click diagnostics; remove after debug purge.
         // console.error('🎯 [CLICK LISTENER #1] Fired!', {
         //     viewType: gameState.camera?.viewType,
         //     targetId: e.target.id,
@@ -437,9 +445,11 @@ export function initControls() {
         }
     });
 
+    // TODO(cleanup): Debug-only click diagnostics; remove after debug purge.
     // Add mouse click event for shooting (first-person only – top-down is handled by handleMouseClick above)
     window.addEventListener('click', (e) => {
         const targetId = e.target.id;
+        // TODO(cleanup): Debug-only click diagnostics; remove after debug purge.
         // console.error('🎯 [CLICK LISTENER #2] Fired!', {
         //     targetId,
         //     viewType: gameState.camera?.viewType,
@@ -621,6 +631,7 @@ function handleMouseClick(event) {
         // Check if in RTS command mode (Tab toggle or shift held)
         const rtsMode = isRTSCommandMode(event);
 
+        // TODO(cleanup): Debug-only logging; remove after debug purge.
         // Debug logging
         if (Math.random() < 0.1) { // Log occasionally to avoid spam
             console.log(`[CLICK] RTS Mode: ${rtsMode}, Tab Toggle: ${rtsCommandMode}, Shift: ${event.shiftKey}`);

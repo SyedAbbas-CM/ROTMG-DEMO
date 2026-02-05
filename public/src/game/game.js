@@ -126,19 +126,25 @@ const collisionStats = {
     }
 };
 
+// TODO(cleanup): Debug flags and globals below should move to a debug module.
+// Keep for now; remove after purge/testing.
 // Debug flags
 window.DEBUG_COLLISIONS = false; // Can be toggled with 'C' key
 window.ALLOW_CLIENT_ENEMY_BEHAVIOR = false; // Can be toggled with 'B' key
 
+// TODO(cleanup): Debug globals for console usage; remove once debug tooling is separated.
 // Make collision stats available globally for UI
 window.collisionStats = collisionStats;
 
+// TODO(cleanup): Debug globals for console usage; remove once debug tooling is separated.
 // Make spriteDatabase globally visible for console usage
 window.spriteDatabase = spriteDatabase;
 
+// TODO(cleanup): Debug globals for console usage; remove once debug tooling is separated.
 // Expose entity database as well so other modules can consume definitions early
 window.entityDatabase = entityDatabase;
 
+// TODO(cleanup): Debug global for network handler; remove once debug tooling is separated.
 // expose globally for network handler
 if (typeof window !== 'undefined') window.speechBubbleManager = speechBubbleManager;
 
@@ -333,6 +339,7 @@ export async function initGame() {
         initializeGameState();
         console.log('[DEBUG] initializeGameState completed.');
         
+        // TODO(cleanup): Dev-only note; remove after debug purge.
         // The sprite editor container is already in the HTML, skip initialization
         console.log('Sprite editor container already exists in HTML');
         
@@ -347,6 +354,7 @@ export async function initGame() {
 
         // Create Three.js Scene
         scene = new THREE.Scene();
+        // TODO(cleanup): Debug-only background color; remove after debug purge.
         // DEBUG: Add visible background color to help diagnose black tiles
         scene.background = new THREE.Color(0x1a0a2e); // Dark purple - makes black tiles visible
         window.scene = scene; // Expose to render.js for first-person view
@@ -397,6 +405,7 @@ export async function initGame() {
             // Start the Game Loop after connection is established
             requestAnimationFrame(gameLoop);
 
+            // TODO(cleanup): Debug overlay should be optional; remove after debug purge.
             // Debug overlay is enabled but not shown by default
             debugOverlay.enabled = true;
 
@@ -419,6 +428,7 @@ export async function initGame() {
             // Start game loop anyway for offline testing
             requestAnimationFrame(gameLoop);
 
+            // TODO(cleanup): Debug overlay should be optional; remove after debug purge.
             // Debug overlay is enabled but not shown by default
             debugOverlay.enabled = true;
 
@@ -437,6 +447,7 @@ export async function initGame() {
         window.addEventListener('resize', handleResize);
         console.log('Window resize event listener added.');
 
+        // TODO(cleanup): Debug-only key handlers; remove after debug purge.
         // Add debug key for testing player rendering
         window.addEventListener('keydown', (e) => {
             // DEBUG: 'p' key - removed test player functionality
@@ -543,11 +554,13 @@ export async function initGame() {
             }
         });
 
+        // TODO(cleanup): Debug-only teleport helper; remove after debug purge.
         // Setup emergency teleport (guard if not available)
         if (typeof setupDebugTeleport === 'function') {
             setupDebugTeleport();
         }
 
+        // TODO(cleanup): Debug tools hook; remove after debug purge.
         // After all managers created and attached
         setupDebugTools({
             spriteDatabase: window.spriteDatabase || spriteDatabase,
@@ -557,6 +570,7 @@ export async function initGame() {
             playerManager
         });
 
+        // TODO(cleanup): Editor hot-reload hook; move to tools module or remove after purge.
         // Hot-reload atlases when saved from editor
         window.addEventListener('storage', (e) => {
             if (e.key === 'atlasReload' && e.newValue) {
@@ -899,6 +913,7 @@ function initializeGameState() {
     const uiMgr = getUIManager && getUIManager();
     const inventoryManager = new ClientInventoryManager();
     if(uiMgr) inventoryManager.init(uiMgr);
+    // TODO(cleanup): Legacy hook; remove after debug purge if GameManager stays removed.
     if (window.gameManager) window.gameManager.inventoryManager = inventoryManager;
     // Expose for console
     window.inventoryManager = inventoryManager;
@@ -933,6 +948,7 @@ function gameLoop(time) {
     update(cappedDelta);
     render();
     
+    // TODO(cleanup): Debug overlay update; remove after debug purge.
     // Update debug overlay
     if (debugOverlay && debugOverlay.enabled) {
         debugOverlay.update(cappedDelta);
@@ -965,6 +981,7 @@ function handleResize() {
  * @param {number} delta - Time elapsed since last frame in seconds
  */
 function update(delta) {
+    // TODO(cleanup): Debug-only stuck-character fix hook; remove after debug purge.
     // Add emergency fix check
     if (typeof checkAndFixStuckCharacter === 'function') {
         checkAndFixStuckCharacter();
@@ -980,6 +997,7 @@ function update(delta) {
         updateTileEffects(gameState.character);
     }
 
+    // TODO(cleanup): Debug-only collision visualization; remove after debug purge.
     // Update collision visualization when enabled
     if (typeof updateCollisionVisualization === 'function') {
         updateCollisionVisualization();
@@ -1081,6 +1099,7 @@ function render() {
  * @param {number} targetY - World Y coordinate to shoot at
  */
 export function handleShoot(targetX, targetY) {
+    // TODO(cleanup): Diagnostic logging and title update should be removed after debug purge.
     // SUPER VISIBLE DIAGNOSTIC - Can't be cached!
     document.title = `SHOOT! ${Date.now()}`;
     console.log("=== DIAGNOSTIC: NEW CODE LOADED - handleShoot called ===", {
@@ -1147,6 +1166,7 @@ export function handleShoot(targetX, targetY) {
 /**
  * Game class (for main.js)
  */
+// TODO(cleanup): Legacy wrapper class; remove if no longer used by entrypoints.
 export class Game {
     constructor(serverUrl) {
         this.serverUrl = serverUrl;
@@ -1222,6 +1242,7 @@ async function connectToServer() {
     }
 }
 
+// TODO(cleanup): Debug-only ping test; move to debug module or remove after purge.
 // Ping test function - call from console: testPing(10)
 window.testPing = function(count = 10) {
     if (!networkManager || !networkManager.ws || networkManager.ws.readyState !== WebSocket.OPEN) {

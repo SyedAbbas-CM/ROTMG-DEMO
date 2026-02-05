@@ -138,7 +138,21 @@
       "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.105 \"echo Connected\")",
       "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.105 \"cd C:/ROTMG-DEMO && C:\\node-v22.12.0-win-x64\\node.exe Server.js 2>&1\")",
       "Bash(for ip in 192.168.0.{1..30})",
-      "Bash(timeout 30 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 newadmin@192.168.0.105 \"cd C:/ROTMG-DEMO && git pull origin main\")"
+      "Bash(timeout 30 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 newadmin@192.168.0.105 \"cd C:/ROTMG-DEMO && git pull origin main\")",
+      "Bash(timeout 15 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 newadmin@192.168.0.100 \"echo Connected && tasklist | findstr -i ''node'' && netstat -an | findstr '':4000''\")",
+      "Bash(for ip in 192.168.0.100 192.168.0.200 192.168.0.203 192.168.0.204 192.168.0.205 192.168.0.206)",
+      "Bash(do echo \"=== Trying $ip ===\" nc -zv -w 2 $ip 22)",
+      "Bash(docker:*)",
+      "Bash(pip3 show:*)",
+      "Bash(timeout 30 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 newadmin@192.168.0.100 \"schtasks /delete /tn CloudflareTunnel /f 2>nul; schtasks /create /tn CloudflareTunnel /tr \"\"C:\\cloudflared\\cloudflared.exe tunnel run rotmg-tunnel\"\" /sc onstart /ru SYSTEM /rl HIGHEST\")",
+      "Bash(timeout 30 sshpass -p \"12345\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=15 scrapenode@192.168.0.203 \"taskkill /f /im ollama.exe 2>nul & timeout /t 2 >nul & powershell -Command \"\"Expand-Archive -Path ''C:\\Users\\scrapenode\\Downloads\\ollama-new.zip'' -DestinationPath ''C:\\Ollama-new'' -Force\"\" & echo Extraction complete\")",
+      "Bash(time curl -s http://192.168.0.203:11434/api/generate -d '{\"\"model\"\": \"\"lfm2.5-1.2b\"\", \"\"prompt\"\": \"\"Count from 1 to 5:\"\", \"\"stream\"\": false}')",
+      "Bash(time curl -s http://192.168.0.203:11434/api/generate -d '{\"\"model\"\": \"\"qwen2.5:0.5b\"\", \"\"prompt\"\": \"\"Count from 1 to 10. Be brief.\"\", \"\"stream\"\": false}')",
+      "Bash(TaskOutput --task_id b7e2fb1 --block false)",
+      "Bash(time curl:*)",
+      "Bash(timeout 15 sshpass -p \"123456\" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 a344@192.168.0.206 \"ps aux | grep llama && echo ''---'' && ls -la ~/llama.cpp/\")",
+      "Bash(git stash:*)",
+      "Bash(jq:*)"
     ],
     "deny": []
   }

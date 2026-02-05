@@ -19,7 +19,7 @@ export function createProvider(config = {}) {
   const apiKey = config.apiKey || process.env.GOOGLE_API_KEY;
 
   // Default model depends on backend
-  const defaultModel = backend === 'ollama' ? 'lfm2.5-1.2b' : 'models/gemini-2.5-flash';
+  const defaultModel = backend === 'ollama' ? 'hf.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF:Q4_K_M' : 'models/gemini-2.5-flash';
   const model = config.model || process.env.LLM_MODEL || defaultModel;
 
   const opts = {
@@ -33,7 +33,7 @@ export function createProvider(config = {}) {
       opts.apiKey = apiKey;
       return new GeminiProvider(opts);
     case 'ollama':
-      opts.host = config.host || process.env.OLLAMA_HOST || 'http://192.168.0.206:11434';
+      opts.host = config.host || process.env.OLLAMA_HOST || 'http://192.168.0.203:11434';
       return new OllamaProvider(opts);
     case 'mock':
       return new MockProvider(opts);

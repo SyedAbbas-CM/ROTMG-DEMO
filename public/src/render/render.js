@@ -9,6 +9,7 @@ import { unitRenderer } from '../entities/ClientUnitRenderer.js';
 // import { renderTopDownView} from './renderTopDown.js';
 // import { renderStrategicView } from './renderStrategic.js';
 
+// TODO(cleanup): Debug-only module load logs; remove after debug purge.
 // CRITICAL DEBUG: This log proves render.js is being loaded
 console.log('====== render.js FILE LOADED! TIMESTAMP:', new Date().toISOString(), '======');
 console.log('[render.js] Module loaded and executing');
@@ -24,6 +25,7 @@ const scaleFactor = SCALE;
 // Global scaling factor for the strategic (zoomed-out) view
 const STRATEGIC_VIEW_SCALE = 0.25;  // was 0.5 – much smaller to fit more of the map
 
+// TODO(cleanup): Debug flag; remove after debug purge if unused.
 // Add a debug flag for rendering
 const DEBUG_ENEMY_SPRITES = false; // Set to false to disable sprite debugging visuals
 
@@ -31,6 +33,7 @@ const DEBUG_ENEMY_SPRITES = false; // Set to false to disable sprite debugging v
  * Render the character
  */
 export function renderCharacter() {
+  // TODO(cleanup): Debug-only renderCharacter logs; remove after debug purge.
   console.log('[DEBUG renderCharacter] Called');
   const character = gameState.character;
   console.log('[DEBUG renderCharacter] character =', character);
@@ -43,6 +46,7 @@ export function renderCharacter() {
 
   // Don't render character if dead
   if (character.isDead) {
+    // TODO(cleanup): Debug-only log; remove after debug purge.
     console.log('[DEBUG renderCharacter] Character is dead, skipping render');
     return;
   }
@@ -115,6 +119,7 @@ export function renderCharacter() {
     character._lastTileY = tileY;
     const tile = gameState.mapManager?.getTile(tileX, tileY);
 
+    // TODO(cleanup): Debug-only water tile logging; remove after debug purge.
     // AGGRESSIVE DEBUG: Always log tile data when position changes
     if (Math.random() < 0.1) { // 10% of position changes
       console.log('[WATER DEBUG] Tile check at', tileX, tileY);
@@ -131,12 +136,14 @@ export function renderCharacter() {
       const spriteName = tile.spriteName.toLowerCase();
       isWater = spriteName.includes('water') || spriteName.includes('deep') || spriteName.includes('lava');
       if (isWater) {
+        // TODO(cleanup): Debug-only water logging; remove after debug purge.
         console.log(`[WATER DETECTED] Found water by spriteName: "${tile.spriteName}" at (${tileX}, ${tileY})`);
       }
     }
     // Fallback: check by type ID (TILE_IDS.WATER = 3)
     else if (tile && tile.type === 3) {
       isWater = true;
+      // TODO(cleanup): Debug-only water logging; remove after debug purge.
       console.log(`[WATER DETECTED] Found water by type ID=3 at (${tileX}, ${tileY})`);
     }
 
@@ -235,6 +242,7 @@ export function renderEnemies() {
     console.warn("Enemy sprite sheet not loaded – will use SpriteDatabase aliases or fallback rectangles");
   }
   
+  // TODO(cleanup): Debug-only sprite sheet logging; remove after debug purge.
   // Log sheet info once to help with debugging
   if (enemySheetObj && !window.enemySpriteDebugLogged) {
     window.enemySpriteDebugLogged = true;
@@ -325,6 +333,7 @@ export function renderEnemies() {
 
       const spriteDB = window.spriteDatabase;
 
+      // TODO(cleanup): Debug-only boss sprite logging; remove after debug purge.
       // DEBUG: Log boss sprite info (throttled)
       if (enemy.renderScale >= 6 || enemy.id?.includes('boss')) {
         if (!renderEnemies._bossDebugCount) renderEnemies._bossDebugCount = 0;
@@ -415,6 +424,7 @@ export function renderEnemies() {
         ctx.fillRect(screenX - width/2, screenY - height/2, width, height);
       }
       
+      // TODO(cleanup): Debug-only sprite source visualization; remove after debug purge.
       // Debug visualization of sprite source rectangle
       if (DEBUG_ENEMY_SPRITES) {
         // Draw a small version of the sprite sheet in corner for reference
@@ -582,6 +592,7 @@ export function renderUnits() {
   try {
     unitRenderer.renderUnits(ctx, units, gameState.camera.position, viewType);
     
+    // TODO(cleanup): Debug-only unit render logging; remove after debug purge.
     // Debug info occasionally
     if (Math.random() < 0.001) { // Very occasionally
       console.log(`[renderUnits] Rendered ${units.length} units in ${viewType} view`);
@@ -612,6 +623,7 @@ export function renderBullets() {
   // Get bullet scale factor if available
   const bulletScale = bm.bulletScale || 1.0;
 
+  // TODO(cleanup): Debug-only bullet render logging; remove after debug purge.
   // DIAGNOSTIC: Log every bullet position being rendered (first 3 bullets only to avoid spam)
   if (bm.bulletCount > 0 && Math.random() < 0.05) { // 5% sample rate
     console.log(`[BULLET RENDER] Rendering ${bm.bulletCount} bullets. First bullet at world pos: (${bm.x[0].toFixed(2)}, ${bm.y[0].toFixed(2)}), ID: ${bm.id[0]}`);
@@ -819,6 +831,7 @@ export function renderGame() {
     console.error("[RENDER] renderUI crashed:", error);
   }
   
+  // TODO(cleanup): Debug-only coordinate test; remove after debug purge.
   // Run coordinate system test if debug mode is enabled
   if (gameState.camera && gameState.camera.debugMode) {
     try {
@@ -915,12 +928,14 @@ function renderUI() {
     ctx.fillStyle = 'white';
     ctx.fillText(`Players: ${totalPlayers} (${playerCount} others)`, canvas2D.width - 120, 40);
     
+    // TODO(cleanup): Debug-only collision stats overlay; remove after debug purge.
     // Add collision statistics if available
     if (window.collisionStats) {
       ctx.fillStyle = 'white';
       ctx.fillText(`Collisions: ${window.collisionStats.validated}/${window.collisionStats.reported} (${window.collisionStats.getValidationRate()})`, canvas2D.width - 120, 60);
     }
 
+    // TODO(cleanup): Debug-only behavior mode UI; remove after debug purge.
     // Show behavior mode if enabled
     if (window.ALLOW_CLIENT_ENEMY_BEHAVIOR !== undefined) {
       ctx.fillStyle = window.ALLOW_CLIENT_ENEMY_BEHAVIOR ? 'yellow' : 'white';

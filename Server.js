@@ -2775,11 +2775,12 @@ function tryListen(port, attemptsLeft = 5) {
         console.log('[SERVER] Tactical LLM Boss AI disabled (set TACTICAL_ENABLED=true to enable)');
       }
 
-      if (llmConfig.tacticalEnabled) {
+      // Boss Speech (disabled by default - not implemented for Ollama yet)
+      if (llmConfig.tacticalEnabled && process.env.BOSS_SPEECH_ENABLED === 'true') {
         bossSpeechCtrl = new BossSpeechController(bossManager);
         console.log('[SERVER] Boss Speech controller enabled');
       } else {
-        console.log('[SERVER] Boss Speech controller disabled (TACTICAL_ENABLED=false)');
+        console.log('[SERVER] Boss Speech controller disabled');
       }
 
       console.log('[SERVER] Boss AI initialized for main map:', gameState.mapId, {

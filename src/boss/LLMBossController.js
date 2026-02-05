@@ -74,6 +74,33 @@ export default class LLMBossController {
     // 2. Call LLM provider if cooldown elapsed and snapshot changed
     this.cooldown -= dt;
     if (this.pendingLLM) return; // Only one in-flight call allowed
+
+    // Skip LLM calls if no players in game - don't waste API calls
+    if (!players || players.length === 0) {
+      this.cooldown = 5; // Check again in 5 seconds
+      return;
+    }
+
+    // Skip if no boss spawned
+    if (!this.bossMgr.bossCount) {
+      this.cooldown = 5;
+      return;
+    }
+
+    // Skip if no players within engagement range (20 tiles) of boss
+    const bossX = this.bossMgr.x[0];
+    const bossY = this.bossMgr.y[0];
+    const ENGAGE_RANGE_SQ = 400; // 20 tiles squared
+    const hasNearbyPlayer = players.some(p => {
+      const dx = p.x - bossX;
+      const dy = p.y - bossY;
+      return (dx * dx + dy * dy) <= ENGAGE_RANGE_SQ;
+    });
+    if (!hasNearbyPlayer) {
+      this.cooldown = 3; // Check more frequently for approaching players
+      return;
+    }
+
     if (this.cooldown <= 0) {
       const snap = this.bossMgr.buildSnapshot(players, this.bulletMgr, this.tickCount);
       import('./llm/llmLogger.js').then(m=>m.logLLM({type:'snapshot',tick:this.tickCount,data:snap})).catch(()=>{});

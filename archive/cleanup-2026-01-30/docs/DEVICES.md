@@ -60,3 +60,27 @@ sshpass -p "123456" ssh a344@192.168.0.206
 - Cloudflare tunnel (rotmg-tunnel)
 - Playit tunnel
 - Auto-start configured via Task Scheduler
+
+### 192.168.0.206 (Jetson Nano - LLM Server)
+- Ollama v0.14.3 (port 11434)
+- Model: lfm2.5-1.2b (1.2B params, Q8_0)
+- CPU-only inference (CUDA 10.2 incompatible with Ollama)
+- ~1-2 tokens/sec, ~60-120s per response
+- Auto-start via systemd
+
+### 192.168.0.203 (Acer E5 - LLM Server)
+- Ollama v0.13.4 (port 11434)
+- Models: LFM2.5-1.2B (~24 tok/s), Qwen2.5-0.5B (~37 tok/s)
+- GPU: 940MX with CUDA v11 (384 cores, 2GB VRAM)
+- Auto-start via Task Scheduler
+- Note: LFM2.5 requires Ollama 0.13.4 (0.14.x has missing tensor bug)
+
+## LLM API Endpoints
+
+| Server | URL | Model | GPU Accel | Speed |
+|--------|-----|-------|-----------|-------|
+| Acer E5 | http://192.168.0.203:11434 | LFM2.5-1.2B | Yes (940MX) | ~24 tok/s |
+| Acer E5 | http://192.168.0.203:11434 | Qwen2.5-0.5B | Yes (940MX) | ~37 tok/s |
+| Jetson Nano | http://192.168.0.206:11434 | lfm2.5-1.2b | No (CPU) | ~2 tok/s |
+
+OpenAI-compatible API at `/v1/chat/completions`

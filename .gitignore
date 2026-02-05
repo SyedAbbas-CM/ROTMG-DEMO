@@ -63,3 +63,8 @@ certs/
 # Ignore macOS resource forks
 ._*
 .DS_Store
+
+# LLM/Jetson tools (not part of game)
+jetson-chat.html
+llm-tools/
+*.gguf
